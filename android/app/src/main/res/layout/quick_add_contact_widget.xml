@@ -64,6 +64,5 @@
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 </FrameLayout>

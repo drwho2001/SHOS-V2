@@ -96,15 +96,23 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
     // each provider overwrite the previous one's line.
     private static final String KEY_REDACTED_TEXT = "redacted_text_clinic";
 
-    // ADDED 21 Oct 2026 - how far DOWN the location row moves on the narrow card,
-    // where the date is two lines. 18dp is one line of 14sp text (17dp) plus the
-    // gap that used to hold the visit-time row.
-    private static final float NARROW_LOCATION_OFFSET_DP = 18f;
+    // ADDED 21 Oct 2026 - how far DOWN the date and the place move on the
+    // narrow card, where the appointment's name is TWO lines.
+    //
+    // 27dp is the name's second line (18sp, about 22dp) and the gap before the
+    // date; 48dp is the same, plus the date's own second line (14sp, about
+    // 17dp) and its gap. The narrow card is a different arrangement of the
+    // same rows, and a translation is how it says so: setViewLayoutMargin is
+    // API 31+, and a RemoteViews action naming a method the launcher's API
+    // level does not have throws at reapply, where the host turns it into
+    // "Can't load widget". setTranslationY has been on View since API 11.
+    private static final float NARROW_DATE_OFFSET_DP = 27f;
+    private static final float NARROW_LOCATION_OFFSET_DP = 48f;
 
 
 
     /**
-     * How far DOWN the location row moves on the narrow card.
+     * How far DOWN a row moves on the narrow card, in PIXELS.
      *
      * ADDED 21 Oct 2026. In PIXELS, because setTranslationY takes pixels and the
      * layout's margins are in dp - converting here rather than at the call site
@@ -112,41 +120,38 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
      * display's, so it is right on a device whose font size or display size has
      * been changed.
      *
-     * The narrow card's date is TWO lines ("Thu 18 Mar · 16:00" does not fit
-     * 211px on one line), so the location has to move down past it rather than
-     * up into the space the section headings used to hold: one line of 14sp text
-     * plus the gap that used to hold the visit-time row.
+     * The narrow card's appointment name is TWO lines - "Biannual PrEP" needs
+     * 215px at 12sp and the narrow card's text is 211px - so the date and the
+     * place move down past it. The translation is a pixel offset on the view,
+     * not a layout change: setViewLayoutMargin is API 31+, and a RemoteViews
+     * action naming a method the launcher's API level does not have throws at
+     * reapply, where the host turns it into "Can't load widget" - the same
+     * trap as setTextColorInt, from the other side. setTranslationY has been
+     * on View since API 11.
      */
-    private static float narrowLocationOffset(Context context) {
-        return NARROW_LOCATION_OFFSET_DP * context.getResources().getDisplayMetrics().density;
+    private static float offsetPx(Context context, float dp) {
+        return dp * context.getResources().getDisplayMetrics().density;
     }
 
     /**
-     * The place, as the CARD shows it.
+     * The place, as the CARD shows it: the place's name and its postcode.
      *
-     * ADDED 21 Oct 2026. The wide card has room for the address under the
-     * place's name; the narrow card has the name and the postcode, which is
-     * what fits its 76.7dp of text width. The owner asked for the postcode and
-     * the address to be on the widget, and also that it not be too long -
-     * which is why the two widths show different amounts of it.
+     * ADDED 21 Oct 2026. The owner asked for the "postcode, address/#" on the
+     * card, and the POSTCODE fits and the STREET does not: "56 Dean Street,
+     * Hull HU1 1AA" is twenty-eight characters, which is two lines on the
+     * wide card too. So the card carries the name and the postcode, and the
+     * Maps link - one tap away - carries the whole address.
+     *
+     * The NARROW card carries the name alone: "Conifer - HU1 1AA" is sixteen
+     * characters at 12sp, which is 264px against the narrow card's 211px, and
+     * the fitter's floor is 12sp - so it could not shrink to fit, only be cut
+     * off. The name fits; the postcode does not.
      */
-    private static String locationText(String name, String address, String postcode, boolean narrow) {
+    private static String locationText(String name, String postcode, boolean narrow) {
         String safeName = name == null ? "" : name;
-        String safeAddress = address == null ? "" : address;
         String safePostcode = postcode == null ? "" : postcode;
-        if (narrow) {
-            if (safeName.isEmpty() || safePostcode.isEmpty()) return safeName;
-            return safeName + " · " + safePostcode;
-        }
-        StringBuilder sb = new StringBuilder(safeName);
-        String rest = safeAddress.isEmpty()
-                ? safePostcode
-                : (safePostcode.isEmpty() ? safeAddress : safeAddress + ", " + safePostcode);
-        if (!rest.isEmpty()) {
-            if (sb.length() > 0) sb.append("\n");
-            sb.append(rest);
-        }
-        return sb.toString();
+        if (narrow || safeName.isEmpty() || safePostcode.isEmpty()) return safeName;
+        return safeName + " · " + safePostcode;
     }
 
     /**
@@ -298,10 +303,10 @@ private static RemoteViews unavailableViews(Context context) {
         // sixteen characters and its text is 211px wide at 12sp - the label
         // would ellipsize, and a truncated label is worse than a shorter one.
         String cardLabel = narrow ? "Appointment:" : "Next appointment:";
-        // THE PLACE, as the card shows it. The wide card has room for the
-        // address under the name; the narrow card has the name and the
-        // postcode, which is what fits in 76.7dp.
-        String locationText = locationText(location, locationAddress, locationPostcode, narrow);
+        // THE PLACE, as the card shows it: the name and the postcode. The
+        // street address goes to the Maps link, not to the card - it does not
+        // fit on a card this width.
+        String locationText = locationText(location, locationPostcode, narrow);
         if (redactedText != null && !redactedText.isEmpty()) {
             // At a Redacted tier the card carries the one safe line and nothing
             // else. Every other field is hidden BY NAME rather than by relying on
@@ -321,7 +326,7 @@ private static RemoteViews unavailableViews(Context context) {
             // ("PrEP review", "Routine screening") and it is not in
             // ALLOWED_AT_REDACTED, so it never reaches the widget at all.
             views.setViewVisibility(R.id.widget_clinic_reason, android.view.View.GONE);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 12f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 16f, 2);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
             // ADDED 10 Oct 2026 (t087) - the three section headings are hidden too.
             // A static label carries no user data, so it is SAFE to show, but a
@@ -427,12 +432,12 @@ private static RemoteViews unavailableViews(Context context) {
             // and the maxLines are the layout's own maxLines - the guard
             // checks both axes, so a number that drifts from the layout fails
             // the build rather than rendering larger than the design allows.
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, cardLabel, wDp, 12f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_appt_title, title, wDp, 16f, 1);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, cardLabel, wDp, 16f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_appt_title, title, wDp, 18f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_date, dateText, wDp, 13f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, locationText, wDp, 12f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, testsText, wDp, 11f, 1);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_reason, reasonText, wDp, 11f, 1);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, locationText, wDp, 12f, 1);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, testsText, wDp, 11f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_reason, reasonText, wDp, 11f, 2);
             // The NHS number is NEVER stored - WidgetBridgePlugin ignores the field
             // and this provider has no parameter for it - so it is hidden rather
             // than left blank, because an empty line next to a real clinic number
@@ -489,21 +494,25 @@ private static RemoteViews unavailableViews(Context context) {
                  // been on View since API 11.
                  views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
-                  // The date is TWO lines at this width, so the location moves
-                  // DOWN past it rather than up into the space the headings
-                  // used to hold. The offset is a pixel value on the view:
-                  // setViewLayoutMargin is API 31+, and a RemoteViews action
-                  // naming a method the launcher's API level does not have
-                  // throws at reapply, where the host turns it into "Can't load
-                  // widget". setTranslationY has been on View since API 11.
-                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", narrowLocationOffset(context));
+                  // The narrow card's appointment name is TWO lines, so the date
+                  // and the place move down past it. Both offsets are pixel
+                  // values on the view: setViewLayoutMargin is API 31+, and a
+                  // RemoteViews action naming a method the launcher's API level
+                  // does not have throws at reapply, where the host turns it
+                  // into "Can't load widget". setTranslationY has been on View
+                  // since API 11.
+                  views.setFloat(R.id.widget_clinic_date, "setTranslationY",
+                          offsetPx(context, NARROW_DATE_OFFSET_DP));
+                  views.setFloat(R.id.widget_clinic_location, "setTranslationY",
+                          offsetPx(context, NARROW_LOCATION_OFFSET_DP));
              } else {
-                 // AND the offset is CLEARED on the wide card. A RemoteViews
+                 // AND the offsets are CLEARED on the wide card. A RemoteViews
                  // update applies only the actions it carries, and the launcher
                  // RECYCLES the inflated view, so an offset set at the narrow
-                 // width would survive a resize and leave the place floating
-                 // 19dp above where it belongs. Setting a property in one branch
-                 // obliges you to set it in the others.
+                 // width would survive a resize and leave the date and the
+                 // place floating below where they belong. Setting a property
+                 // in one branch obliges you to set it in the others.
+                 views.setFloat(R.id.widget_clinic_date, "setTranslationY", 0f);
                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", 0f);
              }
 } else {
@@ -555,8 +564,12 @@ private static RemoteViews unavailableViews(Context context) {
                   // and it has the same headings eating the same space.
                   views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
                   views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
-                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", narrowLocationOffset(context));
+                  views.setFloat(R.id.widget_clinic_date, "setTranslationY",
+                          offsetPx(context, NARROW_DATE_OFFSET_DP));
+                  views.setFloat(R.id.widget_clinic_location, "setTranslationY",
+                          offsetPx(context, NARROW_LOCATION_OFFSET_DP));
               } else {
+                  views.setFloat(R.id.widget_clinic_date, "setTranslationY", 0f);
                   views.setFloat(R.id.widget_clinic_location, "setTranslationY", 0f);
               }
         }

@@ -42,33 +42,37 @@
      row now have. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
 
-    <!-- The card's own name, and it is a LABEL now.
-         CHANGED 21 Oct 2026 - the owner's words: "Next appointment:" (with
-         the colon), and "on bigger appt widget the title and next appt are
-         same colour, similar thickness, so not inherently clear from a
-         glance".
-         So the card's name is a small muted eyebrow and the APPOINTMENT's own
-         name is the big white line under it: the card reads label: value,
-         and the colon is what makes it read that way. The narrow card says
-         "Appointment:" instead - sixteen characters do not fit its width at
-         12sp - so the label always has a value under it. -->
+    <!-- The card's own name, and it is the same kind of line every other card
+         has: 16sp, bold, white, at the top.
+         CHANGED 21 Oct 2026 - the owner asked for the title and the appointment's
+         name to be told apart ("same colour, similar thickness, so not
+         inherently clear from a glance") and then asked for the changes to be
+         swapped back "to keep in consistency with other widgets". So the title
+         is 16sp white like every other card's title, and the APPOINTMENT'S name
+         is what is marked: 18sp, in the accent, because it is the useful
+         information and the card's colour principle is that the useful
+         information reads first.
+         The narrow card says "Appointment:" instead - sixteen characters do not
+         fit its width at 16sp - and it shows the appointment's name too, on
+         two lines, because "Biannual PrEP" needs 215px at 12sp and the narrow
+         card's text is 211px: one line would cut off the very word the owner
+         was reading. -->
     <TextView
         android:id="@+id/widget_clinic_title"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Next appointment:"
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted"
+        android:textSize="16sp"
+        android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <!-- The appointment's own title, on the line below. The big one: this is
-         what the card is about, and it is the value the label above points
-         at. One line, with the fitter shrinking it if a longer title does
-         not fit - the narrow card is 76.7dp of text width. -->
+         what the card is about, and the accent colour is what makes it read
+         first. Two lines, because the narrow card cannot fit "Biannual PrEP" on
+         one. -->
     <TextView
         android:id="@+id/widget_clinic_appt_title"
         android:layout_gravity="top|start"
@@ -76,11 +80,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:text=""
-        android:textSize="16sp"
-        android:textColor="@color/widget_text_primary"
+        android:textSize="18sp"
+        android:textColor="@color/widget_accent"
         android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 
     <!-- The date and the time of day, on one line. 13sp because the wide
@@ -90,65 +93,70 @@
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="45dp"
+        android:layout_marginTop="43dp"
         android:text="No upcoming appointment"
         android:textSize="13sp"
         android:textColor="@color/widget_good"
         android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- Where. The place's name, and on the wide card its address under it:
-         the clinic visit now links to a Locations record, which carries the
-         street and the postcode, and the Maps link needs the whole of it. -->
+    <!-- Where. The place's name and its POSTCODE, on one line: the clinic
+         visit now links to a Locations record, which carries the street and
+         the postcode, and the Maps link searches for the whole address. The
+         street itself does not fit on a card this width - "56 Dean Street,
+         Hull HU1 1AA" is 28 characters, which is two lines on the wide card
+         too - so the card carries the name and the postcode and the link
+         carries the rest. -->
     <TextView
         android:id="@+id/widget_clinic_location"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="66dp"
+        android:layout_marginTop="60dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_accent"
         android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"
+        android:maxLines="1"
         android:breakStrategy="simple" />
 
     <!-- WHAT THE APPOINTMENT IS FOR, on the owner's instruction ("in bigger
          card could include tests/procedures planned for that appt"). The
          visit's own reasonForVisit list - "PrEP review", "Routine
          screening" - is the closest thing the app has to procedures planned.
-         Wide card only: a smaller widget has just what's necessary. -->
+         Two lines, because "Planned: PrEP review, Routine screening" does
+         not fit one at any legible size. Wide card only: a smaller widget
+         has just what's necessary. -->
     <TextView
         android:id="@+id/widget_clinic_reason"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="77dp"
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 
     <!-- The tests booked for that visit: the reason a clinic card exists.
          The NAMES now, not a count - the owner asked for the tests
          themselves, and "Tests: 3" says there are three without saying
-         three of what. -->
+         three of what. Two lines, because a test's name is long ("Biannual
+         PrEP screen" is twenty-seven characters, which is 405px against the
+         wide card's 382px) - and the owner's rule is that text which does not
+         fit wraps to the next line rather than being cut off. -->
     <TextView
         android:id="@+id/widget_clinic_tests"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="118dp"
+        android:layout_marginTop="104dp"
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 
     <TextView
@@ -161,7 +169,6 @@
         android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <!-- The rows the card no longer shows. They are kept in the layout because
@@ -183,7 +190,6 @@
         android:textSize="13sp"
         android:textColor="@color/widget_text_primary"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <TextView
@@ -199,7 +205,6 @@
         android:letterSpacing="0.06"
         android:textAllCaps="true"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <TextView
@@ -215,7 +220,6 @@
         android:letterSpacing="0.06"
         android:textAllCaps="true"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
@@ -232,7 +236,6 @@
         android:letterSpacing="0.06"
         android:textAllCaps="true"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <TextView
@@ -245,7 +248,6 @@
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <TextView
@@ -259,6 +261,5 @@
         android:textColor="@color/widget_text_muted"
         android:visibility="gone"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 </FrameLayout>

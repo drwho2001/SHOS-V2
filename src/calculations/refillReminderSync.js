@@ -144,55 +144,73 @@ export function orderByNextRefill(rows) {
  * lines it had. Asserting on a copy of this logic in a test would prove
  * nothing, so the logic lives here and the test calls it.
  *
- * Each medication spends two lines - its name and what has happened with its
- * refill - and a third for how much is left in the container, but that third
- * line is a luxury: it is added only when every medication still fits. When
- * even the two lines do not fit, the medications that will not fit are left
- * off the card and the last line says how many, because a card that quietly
- * drops a medication is worse than one that is a line taller.
+ * TWO GROUPS, because the owner's colour principle (21 Oct 2026): "colour
+ * principle of useful information at first glance and then just muddled
+ * remainder isn't great". The medication that needs reordering is BRIGHT and
+ * everything else is DIM, and a single TextView is a single colour - so the
+ * card has two views, and this returns the text for each.
  *
- * A BLANK LINE SEPARATES ONE MEDICATION FROM THE NEXT, on the owner's
- * instruction (21 Oct 2026: the spacing of the lines was not right). Four
- * undifferentiated lines read as one list; a name and its state with a gap
- * between the pairs read as what they are. It costs a line, and the budget
- * below counts it, which is why two medications with their stock counts no
- * longer fit: the count is the one fact here that the owner did not ask for,
- * and the grouping is the one they did.
+ * The bright group is ONE medication - the soonest one that needs action -
+ * and it has two lines: its name and what has happened with its refill. The
+ * dim group is everything else, a blank line between medications so the
+ * grouping reads, and a last line saying how many are not shown. A card that
+ * quietly drops a medication is worse than one that is a line taller, so
+ * nothing is dropped without saying so.
  *
- * @param {{name: string, count: string, timing: string}[]} entries
+ * The stock count ("14 left") is not on the card any more: the two lines the
+ * bright group spends are the name and the state, and the count was the one
+ * fact here the owner never asked for. It is in the app.
+ *
+ * @param {{name: string, timing: string, due: boolean}[]} entries
  * @param {number} capacity lines the card can show
- * @returns {string[]} the lines, top to bottom
+ * @returns {{due: string[], later: string[]}} the lines, in reading order
  */
 export function buildRefillCardLines(entries, capacity = REFILL_CARD_LINES) {
   const nameLines = (name) => (name.length > REFILL_CARD_CHARS_PER_LINE ? 2 : 1);
-  // The lines a block of `n` medications takes: each one's name, its state,
-  // and its stock count if the count is being shown, plus the blank line
-  // between one medication and the next.
-  const linesFor = (n, withCount) => {
-    let total = Math.max(0, n - 1);
-    for (const entry of entries.slice(0, n)) {
-      total += nameLines(entry.name) + 1 + (withCount ? 1 : 0);
+  // The medication that needs action now: the soonest one, because the
+  // entries arrive in refill order.
+  const dueEntry = entries.find((e) => e.due) || null;
+  const others = entries.filter((e) => e !== dueEntry);
+  // The dim group's lines: two a medication, a BLANK LINE between them, and
+  // a line for "+N more" when something does not fit.
+  //
+  // The blank line is the owner's "spacing of lines not great", and it is also
+  // the gap between the bright medication and the dim ones - so the dim group
+  // starts with one when there is a bright group to be separated from.
+  const restLines = (shown, withLeadingGap) => {
+    const lines = withLeadingGap ? [""] : [];
+    others.slice(0, shown).forEach((entry, index) => {
+      if (index > 0) lines.push("");
+      lines.push(entry.name);
+      lines.push(entry.timing);
+    });
+    return lines;
+  };
+  // The bright group's lines are fixed: the name and the state.
+  const dueLines = dueEntry ? [dueEntry.name, dueEntry.timing] : [];
+  // THE LINES A GIVEN SET OF MEDICATIONS COSTS, which is what the capacity is
+  // spent against. A name longer than a line takes two (the budget has to
+  // know, or the last line of the card is pushed off the bottom).
+  const costOf = (shown) => {
+    let total = dueLines.length + (dueEntry ? 1 : 0); // the leading blank line
+    for (const entry of others.slice(0, shown)) {
+      total += nameLines(entry.name) + 1;
     }
+    if (shown > 1) total += shown - 1; // the blank lines between medications
     return total;
   };
-
-  let shown = entries.length;
-  const includeCount = linesFor(shown, true) <= capacity;
-  if (!includeCount && linesFor(shown, false) > capacity) {
-    // Not even two lines each fit. Leave the last line for the count of what
-    // is not shown, and take medications off the card until the rest fits.
-    while (shown > 1 && linesFor(shown, false) + 1 > capacity) shown -= 1;
+  // How many of the dim medications fit, given the bright one has taken its
+  // two lines?
+  let shown = others.length;
+  while (
+    shown > 0 &&
+    costOf(shown) + (others.length - shown > 0 ? 1 : 0) > capacity
+  ) {
+    shown -= 1;
   }
-
-  const lines = [];
-  entries.slice(0, shown).forEach((entry, index) => {
-    if (index > 0) lines.push("");
-    lines.push(entry.name);
-    if (includeCount) lines.push(entry.count);
-    lines.push(entry.timing);
-  });
-  if (entries.length > shown) lines.push(`+${entries.length - shown} more`);
-  return lines;
+  const later = restLines(shown, dueEntry !== null);
+  if (others.length > shown) later.push(`+${others.length - shown} more`);
+  return { due: dueLines, later };
 }
 
 export async function getRefillWidgetSummary() {
@@ -253,7 +271,9 @@ export async function getRefillWidgetSummary() {
     // fits, and the card's own title ("Refills due") says what is due when.
     return {
       name: med.name,
-      count: `${Math.max(0, stock.currentStock)} left`,
+      // WHETHER IT NEEDS ACTION NOW, which is what makes it the card's bright
+      // line rather than part of the dim remainder.
+      due: stock.needsAction,
       timing,
     };
   });
@@ -265,11 +285,13 @@ export async function getRefillWidgetSummary() {
   const soon = rows.some(
     ({ days }) => days !== null && Number.isFinite(days) && days <= REFILL_SOON_DAYS,
   );
+  // TWO STRINGS, because the card has two views: the medication that needs
+  // action now is BRIGHT, and the rest are dim. See buildRefillCardLines.
+  const lines = buildRefillCardLines(blocks);
   return {
     count: due.length,
-    nextRefill: blocks.length
-      ? buildRefillCardLines(blocks).join("\n")
-      : "No medications tracked",
+    nextRefillDue: lines.due.join("\n"),
+    nextRefill: lines.later.join("\n"),
     headline: soon ? "Soon" : "None",
   };
 }
@@ -381,7 +403,7 @@ export async function syncRefillReminder() {
 
 export async function updateRefillWidget() {
   try {
-    const { count, nextRefill, headline } = await getRefillWidgetSummary();
+    const { count, nextRefill, nextRefillDue, headline } = await getRefillWidgetSummary();
 
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateRefill) {
@@ -396,7 +418,12 @@ export async function updateRefillWidget() {
       // a Full-tier field: it is not in ALLOWED_AT_REDACTED, so default-deny
       // drops it at the Redacted tier, where the pre-formatted redacted line
       // carries the meaning instead.
-      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, headline, category: "Refills" },
+      // `nextRefillDue` is the medication that needs reordering now - the
+      // card's BRIGHT line - and `nextRefill` is everything else, dim. Both
+      // are Full-tier fields: neither is in ALLOWED_AT_REDACTED, so
+      // default-deny drops them at the Redacted tier, where the pre-formatted
+      // redacted line carries the meaning instead.
+      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, nextRefillDue, headline, category: "Refills" },
         refillRedactedLine(count));
     }
   } catch (e) {

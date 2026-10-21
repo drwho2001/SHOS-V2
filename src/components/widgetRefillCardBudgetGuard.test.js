@@ -50,10 +50,22 @@ const SYNC = join(
 const CONTENT_BOX_DP = 131;
 
 /**
- * The line height, in em. Measured on the device: six lines of 11sp
+ * The card's line height, in em. Measured on the device: six lines of 11sp
  * occupied 80dp, which is 13.3dp a line.
  */
 const LINE_HEIGHT_EM = 1.212;
+
+/**
+ * The card's two views that SHARE its line budget.
+ *
+ * ADDED 21 Oct 2026: the medication that needs reordering now is shown BRIGHT
+ * and the rest of the medications are dim, because the owner's colour
+ * principle is that the useful information reads first and the remainder
+ * should not be a muddle. A view is one colour, so that is two views - and
+ * two views means the card's capacity is the SUM of their lines, not one
+ * number.
+ */
+const SHARED_VIEWS = ["widget_refill_due", "widget_next_refill"];
 
 /** Every TextView in the layout, with the numbers the arithmetic needs. */
 function bands() {
@@ -113,18 +125,24 @@ describe("the Refills card's bands fit the card", () => {
     // number of LINES. If they drift, the card either wastes a line or cuts
     // one - and the JS's number is the one that is easier to change without
     // thinking about the layout, so it is the one that has to be checked.
-    const layoutLines = Number(
-      /android:id="@\+id\/widget_next_refill"[\s\S]*?android:maxLines="(\d+)"/.exec(
-        readFileSync(LAYOUT, "utf8").replace(/<!--[\s\S]*?-->/g, "")
-      )?.[1] ?? 0
-    );
+    //
+    // The card has TWO views that SHARE the budget: the medication that needs
+    // reordering now (bright) and the rest (dim). The owner's colour
+    // principle - "colour principle of useful information at first glance and
+    // then just muddled remainder isn't great" - is why they are two views
+    // rather than one, because a view is one colour. So the layout's capacity
+    // is the SUM of the two, and the JS's number has to be that sum.
+    const layoutLines = SHARED_VIEWS.reduce((total, id) => {
+      const band = bands().find((b) => b.id === id);
+      return total + (band ? band.lines : 0);
+    }, 0);
     const jsLines = Number(
       /export const REFILL_CARD_LINES = (\d+);/.exec(readFileSync(SYNC, "utf8"))?.[1] ?? 0
     );
     expect(
       layoutLines,
-      `the layout's widget_next_refill declares no maxLines, so the card has no ` +
-        `line capacity for the JS to build against`,
+      `the layout's ${SHARED_VIEWS.join(" and ")} declare no maxLines, so the card ` +
+        `has no line capacity for the JS to build against`,
     ).toBeGreaterThan(0);
     expect(
       jsLines,

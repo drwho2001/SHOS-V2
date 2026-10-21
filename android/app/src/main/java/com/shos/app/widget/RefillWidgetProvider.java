@@ -14,6 +14,14 @@ public class RefillWidgetProvider extends ResizingWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_REFILL_COUNT = "refill_count";
     private static final String KEY_NEXT_REFILL = "next_refill_med";
+    // ADDED 21 Oct 2026 - the medication that needs reordering NOW, which the
+    // card shows BRIGHT while the rest of the medications are dim.
+    //
+    // The owner's colour principle: "colour principle of useful information
+    // at first glance and then just muddled remainder isn't great". A view is
+    // one colour, so the card has two views: this one for the medication that
+    // needs action, and KEY_NEXT_REFILL for everything else.
+    private static final String KEY_NEXT_REFILL_DUE = "next_refill_due";
     // ADDED 20 Oct 2026 - the card's one-word headline, "Soon" or "None".
     //
     // Distinct from KEY_REFILL_COUNT, which is the number of medications AT
@@ -61,7 +69,9 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
             return;
         }
         int refillCount = prefs.getInt(KEY_REFILL_COUNT, 0);
-        String nextRefill = prefs.getString(KEY_NEXT_REFILL, "No refills due");
+        String nextRefill = prefs.getString(KEY_NEXT_REFILL, "");
+        // The BRIGHT medication - the one that needs reordering now.
+        String nextRefillDue = prefs.getString(KEY_NEXT_REFILL_DUE, "");
         // The headline. Empty only if a push predates this field, in which case
         // the count still gives an honest fallback - see below.
         String storedHeadline = prefs.getString(KEY_REFILL_HEADLINE, "");
@@ -106,7 +116,8 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_refill_title, redactedText);
             views.setViewVisibility(R.id.widget_refill_count, android.view.View.GONE);
-views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_refill_due, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
                 WidgetTextFit.fit(views, context, R.id.widget_refill_title, redactedText, wDp, 16f);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
@@ -138,21 +149,33 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
                 ? (refillCount > 0 ? "Soon" : "None")
                 : storedHeadline;
         views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
+        views.setViewVisibility(R.id.widget_refill_due, android.view.View.VISIBLE);
         views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
         views.setTextViewText(R.id.widget_refill_title, "Refills due");
         views.setTextViewText(R.id.widget_refill_count, headline);
         views.setTextColor(R.id.widget_refill_count, context.getColor(
                 "Soon".equals(headline) ? R.color.widget_warn : R.color.widget_good));
+        // THE BRIGHT MEDICATION and THE DIM REMAINDER, in two views. The bright
+        // one is hidden when there is nothing due, rather than left as an empty
+        // line - a blank line under a real one reads as a rendering fault.
+        views.setTextViewText(R.id.widget_refill_due, nextRefillDue);
+        views.setViewVisibility(R.id.widget_refill_due,
+                nextRefillDue == null || nextRefillDue.isEmpty()
+                        ? android.view.View.GONE : android.view.View.VISIBLE);
         views.setTextViewText(R.id.widget_next_refill, nextRefill);
-        // Fitted in BOTH states, which is why the two fit() calls live here
+        views.setViewVisibility(R.id.widget_next_refill,
+                nextRefill == null || nextRefill.isEmpty()
+                        ? android.view.View.GONE : android.view.View.VISIBLE);
+        // Fitted in BOTH states, which is why the fit() calls live here
         // rather than inside a branch: the headline is a different string in each
         // state ("Soon" and "None") and both have to be measured against the
-        // real field width. 24f / maxLines 1 matches what the layout declares
-        // for this view - widgetTextFitMaxLinesGuard checks BOTH axes, so a
-        // stale number here fails the build instead of silently rendering larger
+        // real field width. The ceilings here are what the LAYOUT declares for
+        // each view - widgetTextFitMaxLinesGuard checks BOTH axes, so a stale
+        // number here fails the build instead of silently rendering larger
         // than the design allows.
         WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 20f, 1);
-        WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 11f, 6);
+        WidgetTextFit.fit(views, context, R.id.widget_refill_due, nextRefillDue, wDp, 11f, 2);
+        WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 11f, 4);
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.
         // Owner's explicit correction: a widget called "Refills Due" that lands
@@ -167,6 +190,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
     }
 
     public static void updateRefill(Context context, int count, String nextRefillMed,
+                                     String nextRefillDueMed,
                                      String headline, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
@@ -179,7 +203,12 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
             // updateAppWidget() above is what pushes the fallback
         prefs.edit()
             .putInt(KEY_REFILL_COUNT, count)
-            .putString(KEY_NEXT_REFILL, nextRefillMed)
+            .putString(KEY_NEXT_REFILL, nextRefillMed == null ? "" : nextRefillMed)
+            // ADDED 21 Oct 2026 - the BRIGHT medication, in its own key. The
+            // bridge's argument order and this method's parameter order are
+            // checked against each other by widgetArgumentOrderGuard, so the
+            // two are added in the same place.
+            .putString(KEY_NEXT_REFILL_DUE, nextRefillDueMed == null ? "" : nextRefillDueMed)
             .putString(KEY_REFILL_HEADLINE, headline == null ? "" : headline)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();

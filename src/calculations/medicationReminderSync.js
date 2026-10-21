@@ -201,7 +201,7 @@ export async function updateRefillWidget() {
     // two of the three repositories they needed were imported solely for a
     // call that never happened.
     const { getRefillWidgetSummary } = await import("./refillReminderSync");
-    const { count, nextRefill, headline } = await getRefillWidgetSummary();
+    const { count, nextRefill, nextRefillDue, headline } = await getRefillWidgetSummary();
 
       const bridge = await getWidgetBridge();
   if (bridge && bridge.plugin.updateRefill) {
@@ -211,7 +211,14 @@ export async function updateRefillWidget() {
         //
         // `headline` is the card's one-word answer - "Soon" or "None" - and it
         // is computed from the same stock projection as the lines beside it.
-        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, headline },
+        //
+        // `nextRefillDue` is the medication that needs reordering NOW, which the
+        // card shows BRIGHT while the rest of the medications are dim. This
+        // file and refillReminderSync.js BOTH push the Refills widget - the
+        // duplication is documented in both - so a field added to one has to be
+        // added to the other, or the widget shows whichever the last pusher
+        // sent.
+        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, nextRefillDue, headline },
           refillRedactedLine(count));
         }
 

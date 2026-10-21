@@ -54,7 +54,6 @@
          android:textColor="@color/widget_text_primary"
          android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <!-- 50dp, moved UP to 26dp from the top of the card.
@@ -136,11 +135,17 @@
     <!-- The medication the time belongs to, directly under the ring: the name
          is what the dose is FOR, and the time is when.
 
-         The JS sends it as "Sertraline +2" rather than "Sertraline +2 more" -
-         the full phrase is 271px against the 211px this card has, so it
-         ellipsized on the device. The count of the later doses is still on the
-         card, which is what the owner's invariant asks for: anything that will
-         alert must be visible here. -->
+         The JS sends now sends EVERY medication with a dose pending, by name
+         (the owner: "next dose, if space list all meds not just +2"), so
+         this line can be two lines: "Sertraline, PrEP, Vitamin D" is twenty-
+         eight characters, and the card's text is 76.7dp - about fourteen
+         characters a line at 11sp. The autosize steps the text down until it
+         fits in two lines, and the widest word is what it measures, so the
+         names break at their spaces rather than mid-word.
+
+         The count of the later doses is gone: a count says how many and not
+         which, and the owner's own rule is that anything which will alert
+         must be visible on this widget. -->
     <TextView
         android:id="@+id/widget_med_name"
         android:layout_width="match_parent"
@@ -152,8 +157,7 @@
         android:textSize="14sp"
         android:textStyle="bold"
         android:textColor="@color/widget_text_primary"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple"
         android:autoSizeTextType="uniform"
         android:autoSizeMaxTextSize="14sp"
@@ -163,17 +167,19 @@
     <!-- The FIXED TIME, under the name: "4:00am" is when the dose is due, and
          it does not change, so it is the caption under the ring rather than the
          number inside it. In the DUE and OVERDUE states this line carries the
-         state instead ("Due now"). -->
+         state instead ("Due now").
+
+         It is at 110dp because the names above it can be two lines: 80dp plus
+         two lines of 11sp is 108dp, and the card is 134dp tall. -->
     <TextView
         android:id="@+id/widget_next_dose"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="102dp"
+        android:layout_marginTop="110dp"
         android:text="--:--"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 </FrameLayout>

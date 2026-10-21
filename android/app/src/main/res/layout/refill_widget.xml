@@ -9,12 +9,18 @@
 
      The bands are now close together and the HEADLINE - the one-word answer to
      "do I need to reorder?" - is the biggest thing on the card, because that
-     is the thing being glanced at. "Soon" in 24sp says more in a glance than
-     "Soon" in 18sp, and the per-medication lines under it are the detail.
+     is the thing being glanced at.
 
-     The body's own maxLines is 4, so a card with four medications tracked fills
-     the space and one with a single medication does not - which is the truth
-     about the data rather than a layout trying to invent content. -->
+     AND THE COLOUR CARRIES THE MEANING (21 Oct 2026): "colour principle of
+     useful information at first glance and then just muddled remainder isn't
+     great". So the medication that needs reordering now is BRIGHT and
+     everything else is DIM, which is two views - a view is one colour - and
+     the two share the card's six lines. The dim group starts with a blank
+     line, which is the gap between the bright medication and the rest.
+
+     The two views' maxLines are 2 and 4, so the card's capacity is six lines
+     - the same six the JS builds to. widgetRefillCardBudgetGuard.test.js
+     checks that they agree. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -56,30 +62,42 @@
         android:maxLines="1"
         android:breakStrategy="simple" />
 
-    <!-- The per-medication lines: name, what is left, and what has happened.
+    <!-- THE MEDICATIONS THAT NEED ACTION NOW, and then the rest.
 
-         SIX lines at 11sp, and the reason is the width: this card is 76.7dp
-         across, which is about 13 characters a line at 11sp. "Sertraline - 14
-         left - requested" is 29 characters, so it wraps onto three lines - and
-         the medication below it needs three more. The JS now sends one fact per
-         line, so each medication spends exactly three lines and two
-         medications fill the card.
+         The owner's colour principle (21 Oct 2026): "colour principle of
+         useful information at first glance and then just muddled remainder
+         isn't great". So the medication that needs reordering is BRIGHT and
+         everything else is dim - the same split the other cards make with
+         their headline, and it is why this is two views rather than one: a
+         single TextView is a single colour, and interleaving a name and its
+         state in one string cannot mark which one matters.
 
-         The body starts at 48dp because the headline above it ends at 46dp: the
-         card is 131dp tall inside its padding, and six lines of 11sp are 80dp,
-         so 48 + 80 = 128 leaves three dp of slack. That slack is what stops
-         the last line being clipped - the card was measured with its last line
-         cut off, and the fix was to spend the space the headline was wasting,
-         not to shorten the text. -->
+         The two views SHARE the card's six lines (the guard says so), so a
+         card with two medications still fits. -->
+    <TextView
+        android:id="@+id/widget_refill_due"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="47dp"
+        android:text=""
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_primary"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:breakStrategy="simple" />
+
+    <!-- Everything else: the medications that are not due yet, dim, and a
+         last line saying how many are not shown. -->
     <TextView
         android:id="@+id/widget_next_refill"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="75dp"
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-         android:maxLines="6"
+         android:maxLines="4"
         android:breakStrategy="simple" />
 </FrameLayout>

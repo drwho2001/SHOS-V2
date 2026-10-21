@@ -240,10 +240,10 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
   // is a DETERMINISTIC NO-OP - and fit() logs the size it chose. This repo reads
   // that log to decide whether text fit, so a fitter quietly doing nothing would
   // manufacture evidence of a fit that never happened. Fewer, real sites.
-  // CHANGED 21 Oct 2026 - 16 -> 17, for the Clinic Card's new "Planned" row.
+  // CHANGED 21 Oct 2026 - 16 -> 17 for the Clinic Card's new "Planned" row, and
   // The Clinic Card now fits six fields rather than five: the label, the
   // appointment's name, the date, the place, what it is for and the tests.
-  const EXPECTED_FIT_CALL_SITES = 17;
+  const EXPECTED_FIT_CALL_SITES = 18;
 
   it("found both sides of the contract, and every call site parsed", () => {
     // Without this the whole file passes if either the layout parse or the

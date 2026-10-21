@@ -85,7 +85,7 @@ Everything below came from the owner's own notes on the cards, in their words.
 |---|---|
 | Next appointment | The card's name is now a small muted LABEL, "Next appointment:" with a colon, and the appointment's own name is the big white line under it. The two were both white and near the same weight, which the owner read as "not inherently clear from a glance". The narrow card says "Appointment:" and now SHOWS the appointment's name, so the label always has a value under it. |
 | Next appointment | The time is twelve-hour ("Thu 18 Mar · 4:00pm"). It was 24-hour because `toLocaleTimeString` follows the DEVICE locale and this phone is 24-hour — the Next Dose card already said "4:00am" on the same home screen. `formatClock12` in `dateInputHelpers.js` is the shared form, and it matches the Java side exactly (lower case, no space). |
-| Next appointment | The Maps link searches for the FULL ADDRESS. The tap itself already existed; it could only search for the clinic's name, which Maps cannot turn into a pin. A clinic visit now LINKS to a Locations record (the owner's choice over a free-text address field), and that record carries the address and a new postcode field. The card shows the name and the postcode on the narrow card, the name and the whole address on the wide one. |
+| Next appointment | The Maps link searches for the FULL ADDRESS. The tap itself already existed; it could only search for the clinic's name, which Maps cannot turn into a pin. A clinic visit now LINKS to a Locations record (the owner's choice over a free-text address field), and that record carries the address and a new postcode field. The card shows the name and the POSTCODE - the street is twenty-eight characters and does not fit a card this width at any legible size - and the Maps link searches for the whole address. |
 | Next appointment | The "Tests:" row carries the NAMES of the linked tests, not a count, and a new "Planned:" row carries the visit's own reason for visit — the closest thing the app has to "tests/procedures planned for that appt". Both are wide-card only. The clinic number row is gone: the card has room for six rows and not seven. |
 | Next dose | Every medication with a dose pending is named, not counted: "Sertraline, PrEP" instead of "Sertraline +2". The `upcoming` list is also SORTED by when each dose unlocks, which it was not — the widget was counting down to whichever medication the repository happened to list first. |
 | Refills due | A blank line separates one medication from the next (four undifferentiated lines read as one list), and the medications are listed by when each one next needs reordering — the same number the card's own "request in 179d" counts down to. |
@@ -96,6 +96,39 @@ sounded: the Maps tap (it was already there) and the "12h time" (one helper and
 one call site). The one that needed more: the clinic's address, which had
 nowhere to live at all — a repo-wide search for postcode, zip, addressLine or
 houseNumber found nothing but prose.
+
+### 0.6 Widget round three (21 Oct 2026) — the owner's third pass
+
+Three instructions, and the first one is a rule rather than a change.
+
+**NO ELLIPSIS, EVER.** "If any text truncates, it should go to the next line
+instead, never elipses, especially if theres free space above/below. or if
+almost fits on the line decrease font size slightly." Every
+`android:ellipsize="end"` is gone from the eight widget layouts, and the
+fields that were capped at one line now declare two, so a long value WRAPS.
+The second half of the rule was already true: `WidgetTextFit.fit()` shrinks
+the text a whole sp at a time until it fits the field's `maxLines`, so with
+two lines to spend there is nothing left to truncate.
+
+**THE APPOINTMENT CARD'S TITLE AND NAME.** "Swap the changes you made to appt
+title and appt name, to keep in consistency with other widgets." The title is
+16sp, bold, white, at the top — the same as every other card's title — and
+the appointment's own name is what is marked: 18sp in the accent, because it
+is the useful information and the card's colour principle is that the useful
+information reads first. The narrow card says "Appointment:" and shows the
+name on two lines, because "Biannual PrEP" needs 215px at 12sp and the narrow
+card's text is 211px — one line would have cut off the very word the owner
+was reading.
+
+**THE REFILLS CARD'S COLOUR.** "Colour principle of useful information at
+first glance and then just muddled remainder isn't great." The medication
+that needs reordering now is BRIGHT and everything else is DIM. A view is one
+colour, so that is two views, and the two share the card's six lines: the
+bright medication takes two (its name and what has happened with its refill)
+and the dim group takes four (a blank line, a medication, and the count of
+the ones not shown). The stock count ("14 left") is off the card now — it was
+the one fact on it the owner never asked for, and the two lines the bright
+group spends are the name and the state.
 
 ## 1. What the device actually shows (screenshot `wb1.png`, 1080x2400, 440dpi)
 

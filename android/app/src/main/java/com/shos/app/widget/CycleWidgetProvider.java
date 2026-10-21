@@ -96,7 +96,7 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
                 views.setTextViewText(R.id.widget_cycle_title, redactedText);
             views.setViewVisibility(R.id.widget_cycle_phase, android.view.View.GONE);
 views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
-                WidgetTextFit.fit(views, context, R.id.widget_cycle_title, redactedText, wDp, 16f);
+                WidgetTextFit.fit(views, context, R.id.widget_cycle_title, redactedText, wDp, 16f, 2);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -115,7 +115,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
             views.setTextViewText(R.id.widget_cycle_phase, phase);
             views.setTextViewText(R.id.widget_next_period, "Next period: " + nextPeriod);
             WidgetTextFit.fit(views, context, R.id.widget_cycle_phase, phase, wDp, 18f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_next_period, "Next period: " + nextPeriod, wDp, 12f);
+            WidgetTextFit.fit(views, context, R.id.widget_next_period, "Next period: " + nextPeriod, wDp, 12f, 2);
         } else {
             views.setViewVisibility(R.id.widget_cycle_phase, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_next_period, android.view.View.VISIBLE);

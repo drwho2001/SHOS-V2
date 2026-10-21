@@ -61,7 +61,6 @@
          android:textColor="@color/widget_text_primary"
          android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <!-- 50dp, at the top of the card. Same geometry as the Next Dose ring,
@@ -176,7 +175,6 @@
         android:autoSizeMinTextSize="9sp"
         android:autoSizeStepGranularity="1sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 </FrameLayout>

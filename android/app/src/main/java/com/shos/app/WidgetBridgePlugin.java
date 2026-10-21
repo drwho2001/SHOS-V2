@@ -103,6 +103,11 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 call.getInt("count", 0),
                 opt(call, "nextRefill"),
+      // ADDED 21 Oct 2026 - the medication that needs reordering NOW, which the
+      // card shows BRIGHT while the rest of the medications are dim. The
+      // owner's colour principle: useful information at first glance, and the
+      // remainder dim rather than muddled.
+      opt(call, "nextRefillDue"),
       // ADDED 20 Oct 2026 - the card's one-word headline, "Soon" or "None".
       //
       // It is computed in JS, from the same stock projection the lines under it

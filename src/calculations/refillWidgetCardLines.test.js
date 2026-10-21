@@ -15,6 +15,11 @@
 // lines, and the number of lines is the card's real capacity. The second half
 // is the layout, which `widgetRefillCardBudgetGuard.test.js` checks.
 //
+// The card has TWO views that share that capacity: the medication that needs
+// reordering now is BRIGHT and the rest are dim, because the owner's colour
+// principle is that the useful information reads first and the remainder
+// should not be a muddle. A view is one colour, so that is two views.
+//
 // The logic under test is EXPORTED and called here. A test that pasted a copy
 // of the line-building into its own file would prove that the copy is right -
 // the repo has been bitten by that shape before, on the DoxyPEP payload.
@@ -27,106 +32,60 @@ import {
   REFILL_CARD_CHARS_PER_LINE,
 } from "./refillReminderSync.js";
 
-/** A medication's three facts, as the summary builds them. */
-const entry = (name, count, timing) => ({ name, count, timing });
+/** A medication's facts, as the summary builds them. */
+const entry = (name, timing, due = false) => ({ name, timing, due });
 
 describe("the Refills card's lines", () => {
-  it("separates one medication from the next with a blank line", () => {
-    // The owner's instruction (21 Oct 2026): "spacing of lines not great".
+  it("gives the medication that needs action its own bright block", () => {
+    const { due, later } = buildRefillCardLines([
+      entry("Sertraline", "requested", true),
+      entry("PrEP", "due in 179d"),
+    ]);
+    expect(due).toEqual(["Sertraline", "requested"]);
+    // The dim group starts with a BLANK line: that is the gap between the
+    // medication that needs action and the ones that do not.
+    expect(later).toEqual(["", "PrEP", "due in 179d"]);
+  });
+
+  it("keeps the rest dim, and says how many it left off", () => {
     // Four undifferentiated lines read as one list; a name and its state with
-    // a gap between the pairs read as what they are.
-    const lines = buildRefillCardLines([
-      entry("Sertraline", "14 left", "requested"),
-      entry("PrEP", "199 left", "due in 179d"),
+    // a gap between the pairs read as what they are. And a card that quietly
+    // loses a medication is worse than one that is a line taller - the
+    // owner's own data is four medications, of which the card has room for
+    // two.
+    const { due, later } = buildRefillCardLines([
+      entry("Sertraline", "requested", true),
+      entry("PrEP", "due in 179d"),
+      entry("Vitamin D", "due in 19d"),
+      entry("DoxyPEP", "due in 40d"),
     ]);
-    expect(lines).toEqual([
-      "Sertraline",
-      "requested",
-      "",
-      "PrEP",
-      "due in 179d",
-    ]);
-  });
-
-  it("shows the stock count when there is room for it", () => {
-    // One medication spends three lines and there is nothing to separate it
-    // from, so the count - how much is left in the container - is shown.
-    const lines = buildRefillCardLines([entry("Sertraline", "14 left", "requested")]);
-    expect(lines).toEqual(["Sertraline", "14 left", "requested"]);
-  });
-
-  it("drops the count before it drops a medication", () => {
-    // Three medications do not fit with a count line each and a blank line
-    // between them, so the count goes first: the card shows what it can and
-    // says how many it left off. Silently dropping a medication instead would
-    // be the worse of the two.
-    const lines = buildRefillCardLines([
-      entry("Sertraline", "14 left", "requested"),
-      entry("PrEP", "199 left", "due in 179d"),
-      entry("Buprenorphine", "3 left", "request now"),
-    ]);
-    expect(lines).toEqual([
-      "Sertraline",
-      "requested",
-      "",
-      "PrEP",
-      "due in 179d",
-      "+1 more",
-    ]);
+    expect(due).toEqual(["Sertraline", "requested"]);
+    expect(later).toEqual(["", "PrEP", "due in 179d", "+2 more"]);
   });
 
   it("says how many medications it left off, rather than dropping them silently", () => {
-    // Four medications is eight lines with the blank separators. Two fit, and
-    // the card says what the other two are - a card that quietly loses a
-    // medication is worse than one that is a line taller.
-    const lines = buildRefillCardLines([
-      entry("Aaa", "1 left", "request now"),
-      entry("Bbb", "2 left", "request now"),
-      entry("Ccc", "3 left", "request now"),
-      entry("Ddd", "4 left", "request now"),
+    // A card that quietly loses a medication is worse than one that is a line
+    // taller - and the owner's own data is four medications, of which the
+    // card has room for two.
+    const { due, later } = buildRefillCardLines([
+      entry("Sertraline", "requested", true),
+      entry("PrEP", "due in 179d"),
+      entry("Vitamin D", "due in 19d"),
+      entry("DoxyPEP", "due in 40d"),
     ]);
-    expect(lines[lines.length - 1]).toBe("+2 more");
-    expect(lines.length).toBeLessThanOrEqual(REFILL_CARD_LINES);
+    expect(due).toEqual(["Sertraline", "requested"]);
+    expect(later[later.length - 1]).toBe("+2 more");
   });
 
-  it("counts a long name as two lines, because it wraps", () => {
-    // "Co-trimoxazole" is fourteen characters, which is more than the narrow
-    // card holds, so it takes two of the card's lines. The budget has to know
-    // that, or the last line of the card is pushed off the bottom - which is
-    // the defect this change exists to remove.
-    const lines = buildRefillCardLines([
-      entry("Co-trimoxazole", "10 left", "request now"),
-      entry("Sertraline", "14 left", "requested"),
+  it("leaves the bright block empty when nothing needs action", () => {
+    // No bright medication means no leading blank line either - there is
+    // nothing to separate the dim group from.
+    const { due, later } = buildRefillCardLines([
+      entry("PrEP", "due in 179d"),
+      entry("Vitamin D", "due in 19d"),
     ]);
-    expect(lines).toEqual([
-      "Co-trimoxazole",
-      "request now",
-      "",
-      "Sertraline",
-      "requested",
-    ]);
-    expect(lines.length).toBeLessThanOrEqual(REFILL_CARD_LINES);
-  });
-
-  it("keeps every fact it writes on one line of the narrowest card", () => {
-    // Thirteen characters is what fits at 11sp in 76.7dp, and it is measured
-    // on the device. A fact that does not fit wraps, and a wrapped fact
-    // spends a line the budget did not know about.
-    const facts = [
-      "requested",
-      "request now",
-      "due in 179d",
-      "no schedule",
-      "14 left",
-      "199 left",
-      "+2 more",
-    ];
-    for (const fact of facts) {
-      expect(
-        fact.length,
-        `"${fact}" is ${fact.length} characters, which is more than the ${REFILL_CARD_CHARS_PER_LINE} a line of the narrowest card holds, so it would wrap and spend a line the budget did not know about`,
-      ).toBeLessThanOrEqual(REFILL_CARD_CHARS_PER_LINE);
-    }
+    expect(due).toEqual([]);
+    expect(later).toEqual(["PrEP", "due in 179d", "", "Vitamin D", "due in 19d"]);
   });
 
   it("never writes more lines than the card has", () => {
@@ -135,13 +94,27 @@ describe("the Refills card's lines", () => {
     // lines for eight medications would pass every other test here.
     for (let n = 1; n <= 8; n++) {
       const entries = Array.from({ length: n }, (_, i) =>
-        entry(`Medication ${i + 1}`, `${i + 1} left`, "request now")
+        entry(`Medication ${i + 1}`, "request now", i === 0)
       );
-      const lines = buildRefillCardLines(entries);
+      const { due, later } = buildRefillCardLines(entries);
       expect(
-        lines.length,
-        `${n} medications produced ${lines.length} lines, which is more than the card's ${REFILL_CARD_LINES}`,
+        due.length + later.length,
+        `${n} medications produced ${due.length + later.length} lines, which is ` +
+          `more than the card's ${REFILL_CARD_LINES}`,
       ).toBeLessThanOrEqual(REFILL_CARD_LINES);
+    }
+  });
+
+  it("keeps every fact it writes on one line of the narrowest card", () => {
+    // Thirteen characters is what fits at 11sp in 76.7dp, and it is measured
+    // on the device. A fact that does not fit wraps, and a wrapped fact
+    // spends a line the budget did not know about.
+    const facts = ["requested", "request now", "due in 179d", "no schedule", "+2 more"];
+    for (const fact of facts) {
+      expect(
+        fact.length,
+        `"${fact}" is ${fact.length} characters, which is more than the ${REFILL_CARD_CHARS_PER_LINE} a line of the narrowest card holds, so it would wrap and spend a line the budget did not know about`,
+      ).toBeLessThanOrEqual(REFILL_CARD_CHARS_PER_LINE);
     }
   });
 });
