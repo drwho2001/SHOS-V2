@@ -1,3 +1,129 @@
+# Handover — session MAKER (21 Oct 2026)
+
+Written by session **MAKER** at the end of a long session, immediately before
+its context was compacted. It supersedes the ORCHID handover below, which is
+kept unedited for the record.
+
+**Read this section and skip to ORCHID only for history.** Several of that
+handover's actionable claims were false when it was written.
+
+## Where things stand
+
+**Shipped and CI-green** (all three workflows, on `main`):
+
+| Commit | What |
+|---|---|
+| `893a433` | Healthcare's **Calendar shortcut** next to Attachments — reuses the existing Calendar screen through the same handler Home's card uses, so there is one owner and the back button keeps working |
+| `ef30988` | The **refresh handler is observable** — five smoke assertions that could not fail (a refresh produced *zero* DOM mutations) now prove the refresh ran |
+| `5ac1ca1` | The **dose-timing advisory is dismissible** — the NHS-sourced 2-hour window untouched, and now asserted so nobody tidies up a clinical constant |
+| `16c39d1` | **Clearing the sample data is confirmed, and the confirmation names the records** — it was one tap with no confirmation |
+| `01a5cd5` | The **duress PIN is a verifier**, not plaintext at rest — it was the one secret in the app sitting in cleartext in unencrypted storage |
+| `43d7781` | **One rule for planned tests** — a future-dated test is a plan everywhere, which closed the derived-HIV-status leak (a future-dated HIV test used to *win* the "latest test" race), the Clinic Card PDF leak and "tests this year" |
+| `5d333a9` | **"Schedule routine retest" opens the pre-filled New test form** — the owner's own workflow, not a third way to say it |
+| `8a3a62a` | **Vaccination doses reach the phone's own calendar, one event per dose** — a 4-week course is four events; mpox + bexcero on one day is two |
+| `7526943` | **All 14 nested overlays are in the back chain** — the repo had no mechanism for this at all, so there is a stack now |
+| `a5d80ac` + `f6a4fa3` | **The Settings sub-screen headers sit flush under the status bar**, with a **notch band** so the notch sits on a solid colour |
+| `9802d0b` | The **encounter form infers its DoxyPEP and PrEP fields** from the medication log |
+
+**Device-verified on 23124RA7EO** (the dose events, the retest shortcut's
+pre-fill, the sticky headers and the notch band, and the encounter form's
+inferred PrEP coverage). The phone was left exactly as it was found.
+
+## What is outstanding, in the order the owner asked for it
+
+1. **t138 — the encounter form's DoxyPEP field.** The owner's own reasoning:
+   DoxyPEP is **retroactive** and PrEP is **proactive**. At the moment an
+   encounter is created the only knowable DoxyPEP answers are "Not indicated"
+   and "not yet taken" — "missed window" is only true 72 hours later — and
+   the stored snapshot goes **stale**: a dose logged tomorrow leaves the
+   encounter saying "not yet taken" for ever. The app already owns the
+   authoritative DoxyPEP state (the medication log plus the 72-hour window,
+   which the widget and the notification already read), so the encounter's
+   stored copy is a second, staling source of truth. **The plan: drop the
+   DoxyPEP select from the form and show the DERIVED state in the encounter's
+   read view instead.** PrEP coverage stays on the form — proactive, knowable
+   at creation, stable afterwards, and already inferred.
+2. **t139 — planned events on the phone calendar.** Today it gets doses that
+   *happened*; what is missing is the future: a planned retest (a Testing
+   record with `isRoutineRetestPlan`, dated by `plannedForDate`) and a planned
+   next vaccine dose (a dose's `nextDue`). One new marker family, its own
+   cleanup, and **the app's own Calendar screen must show the same set** or
+   the two calendars disagree again.
+3. **t131 — the App Lock PIN as a verifier.** The raw PIN is encrypted at
+   rest today, so this is defence-in-depth, not an open hole. The cost is
+   real: turning App Lock off, changing the PIN, setting the recovery string
+   and enabling biometrics would each ask you to re-type the PIN. It also
+   closes `deactivate()`'s string comparison (a free 4-digit-PIN oracle for an
+   in-page script) and the PIN copy inside encrypted backups. **Ship it as its
+   own batch, with a device test of the recovery path first** — it is the one
+   change that could lock the owner out of their own data.
+4. **t062 — Quick Add from a warm app.** Device-only, and the WebView driver
+   below makes it quick.
+
+**Session A's area**: `t113`, `t114`, `t115`, `t117`, and `t134` (still
+**proposed** — it needs the owner's approval). A's claims on six widget files
+are **orphans** (no task in flight) and A has six uncommitted files in the
+tree. The local unit suite shows **13 failures, all from that in-flight work,
+none from mine**; they clear when A lands it.
+
+## How to drive the device — this is the transferable part
+
+That phone has ~96 MB of free RAM and the OS killed the app three or four
+times mid-session (SIGKILL / LOW_MEMORY), so **tapping through the UI is
+unreliable**. A debug build has WebView debugging on, so the page can be
+driven over the **Chrome DevTools Protocol** instead — no taps, no
+coordinates, and the app's own state can be *read* rather than inferred from
+a screenshot:
+
+```powershell
+$adb = "C:\Users\kanem\AppData\Local\Android\Sdk\platform-tools\adb.exe"
+# the devtools socket is named after the app's pid
+$pid = (& $adb shell cat /proc/net/unix) | Select-String "webview_devtools_remote_(\d+)" | % { $_.Matches[0].Groups[1].Value }
+& $adb forward tcp:9222 "localabstract:webview_devtools_remote_$pid"
+curl.exe -s http://127.0.0.1:9222/json      # the page's webSocketDebuggerUrl
+# then Runtime.evaluate over a WebSocket (Node 22+ has a global WebSocket)
+```
+
+Two traps worth knowing: **a backgrounded WebView is frozen** (Chrome
+throttles it, so `Runtime.evaluate` with `awaitPromise` never returns — bring
+the app forward first), and **an SVG element has no `.click()`** — dispatch a
+synthetic bubbling `MouseEvent` instead.
+
+## Mistakes made here, so they are not made again
+
+- **I swept another session's staged deletions into my commit — twice.** The
+  second time the evidence was in plain sight: `git diff --cached --name-only`
+  had printed four of another session's files alongside mine, and the commit
+  took them anyway. It broke `main` for one cycle. The fix was a
+  path-limited commit (`git commit -- <paths>`), never an amend. **Re-run the
+  staged check IMMEDIATELY before committing, and use the path-limited form
+  whenever the index might hold someone else's work** (L-134).
+- **A guard that matched a name rather than a call.** The sticky-header guard
+  asserted a file *contained* `useOverlayBackHandler` — and the IMPORT line
+  contains that name too, so removing the call left the assertion green. A
+  mutation that unwired the whole thing survived. Assert the CALL.
+- **A test fixture too loose to fail.** The dose-inference test put its dose
+  ten hours after the encounter, inside both the 24-hour and the 72-hour
+  window, so a mutation that shrank the window to 24 survived. Fixtures have
+  to sit where the two answers differ.
+- **A latent deadlock in the test suite**: `Promise.all` of dynamic imports
+  after `vi.resetModules()` hangs the vitest runner. Sequential imports take
+  1.5 seconds (L-133).
+
+## The recurring lesson from this session
+
+**Measure it on the device, and prototype before you touch twenty files.**
+The notch band was prototyped live in the page and measured first, because
+two of the three ways of doing it would have moved the title — which the
+owner had explicitly said was fine as it was. The 43-pixel gap was found by
+measuring two screens' header offsets against each other, not by reading the
+CSS. The "does the calendar event move" question was answered by reading the
+phone's own calendar provider, not by looking at the app.
+
+**Read the ORCHID handover below only for history.**
+
+---
+
 # Handover — session ORCHID (13 Oct 2026, later the same day)
 
 Written by session **ORCHID** after a fresh session condensed three conflicting
