@@ -35,6 +35,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 
 // Domain key for CustomGroupsRepository — shared mechanism, this
 // module's own namespace within it (see customGroupsRepository.js).
@@ -997,6 +998,12 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
 // values (measurement types, medication categories, …) that can be
 // assigned into a group.
 function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
+  // ADDED 21 Oct 2026 (t129) - the hardware back button and Escape now close
+  // this screen. It had neither: back fell through to the module's own
+  // handler, which knew nothing about it, and so abandoned the whole
+  // Healthcare tab; Escape did nothing here at all.
+  useEscapeToClose(onBack);
+  useOverlayBackHandler(() => { onBack?.(); return true; });
   const [groups, setGroups] = useLoadedState(() => CustomGroupsRepository.get(domain), [], []);
   const [newName, setNewName] = useState("");
   const [expandedId, setExpandedId] = useState(null);
@@ -1097,6 +1104,11 @@ function detectUnitSystem(prefs) {
     // being `setShowPreferences(false)`, so it registered on the Escape stack
     // even when the preferences sheet was not showing.
     useEscapeToClose(onClose, isOpen);
+    // ADDED 21 Oct 2026 (t129) - and the hardware back button closes it too.
+    // It closed on Escape but not on back: the back button fell through to
+    // the module's handler, which knew nothing about this sheet, and so
+    // abandoned the whole Healthcare tab.
+    useOverlayBackHandler(() => { onClose?.(); return true; }, isOpen);
   const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const prefsRef = useRef(null);
   useEffect(() => { prefsRef.current?.focus(); }, []);

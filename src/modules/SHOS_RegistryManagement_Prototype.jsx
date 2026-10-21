@@ -26,6 +26,8 @@ const TEXT_SAFE_BY_HEX = {
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 
 // ADDED 19 Aug 2026 — Registry Management, per the user's priority order.
 // ONE shared screen for all 6 registries (Kink/Chems/Protection/
@@ -117,6 +119,19 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   // findDuplicatePairs' own comment in fuzzyMatch.js for why this
   // flags for review rather than auto-merging.
   const [showDuplicates, setShowDuplicates] = useState(false);
+  // ADDED 21 Oct 2026 (t129) - this screen is a NESTED one (Settings ->
+  // Manage lists -> Registry management), and neither it nor the
+  // "Possible duplicates" panel inside it was in the back chain: the
+  // hardware back button closed the WHOLE Manage-lists screen, skipping
+  // this level entirely, and Escape did nothing. Both now close the level
+  // they belong to.
+  // Escape closes the INNERMOST thing first: the "Possible duplicates"
+  // panel when it is open, and this screen otherwise. One hook, whose target
+  // depends on the state - because the panel is rendered inline rather than
+  // as its own component, and a hook cannot be called conditionally.
+  useEscapeToClose(showDuplicates ? () => setShowDuplicates(false) : onClose);
+  useOverlayBackHandler(() => { onClose?.(); return true; }, !showDuplicates);
+  useOverlayBackHandler(() => { setShowDuplicates(false); return true; }, showDuplicates);
 
   const allEntries = useLoadedMemo(() => registry.getAll(), [refreshKey], []);
   const duplicatePairs = useMemo(() => findDuplicatePairs(allEntries), [allEntries]);

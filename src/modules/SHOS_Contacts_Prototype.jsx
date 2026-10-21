@@ -66,6 +66,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar, displayableAge, dedupeContactMethods } from "../calculations/contactCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
 // one-directional pattern as every other cross-module read in this app.
@@ -2895,6 +2896,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
     setDupPrefs(await AppPreferencesRepository.update({ dismissedContactDuplicatePairs: [...(dupPrefs.dismissedContactDuplicatePairs || []), key] }));
   };
   const [showDuplicates, setShowDuplicates] = useState(false);
+  // ADDED 21 Oct 2026 (t129) - the hardware back button and Escape now close
+  // the "Possible duplicates" panel. It had neither, and it is rendered
+  // inside the Contacts list, whose own back handler knew nothing about it -
+  // so a back press went to the list underneath (or, with nothing else to
+  // pop, to Home) and left the panel on screen.
+  useEscapeToClose(() => setShowDuplicates(false), showDuplicates);
+  useOverlayBackHandler(() => { setShowDuplicates(false); return true; }, showDuplicates);
   // ADDED 26 Aug 2026 — real ask: long-press a card to enter multi-
   // select mode, then bulk delete/archive/edit. "Edit" deliberately
   // not included in bulk actions — editing several different

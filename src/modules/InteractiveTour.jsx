@@ -27,6 +27,8 @@
 import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X } from "@phosphor-icons/react";
 import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACCENT_TEXT_SAFE, RADIUS, TYPE } from "../calculations/designTokens";
+import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 
 export const TOUR_STEPS = [
   { id: "welcome", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
@@ -58,6 +60,14 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
     const first = isStepAvailable(steps[0]) ? 0 : findValidIndex(steps, 0, 1);
     return first < 0 ? -1 : first;
   });
+  // ADDED 21 Oct 2026 (t129) - the hardware back button and Escape now
+  // CLOSE the tour. It used to do neither: back fell through to the app's
+  // own fallbacks (the "press back again to exit" toast) and left the
+  // spotlight on screen, and only its X and its Next/Skip buttons could end
+  // it. On Home there is no module handler to consult, so the back press
+  // went nowhere at all.
+  useEscapeToClose(() => { onDone?.(); });
+  useOverlayBackHandler(() => { onDone?.(); return true; });
   const [rect, setRect] = useState(null);
   const [, forceRecalc] = useState(0);
   // ADDED — real bug found: the card's vertical position was computed

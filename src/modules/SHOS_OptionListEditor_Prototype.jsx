@@ -17,6 +17,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // retyped here. See designTokens.js.
 import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 
 // EXPORTED 1 Sep 2026 — real ask: "check settings not unnecessarily
 // over engineered - combine into similar things if better." Registries
@@ -83,6 +84,11 @@ function UsageDisclosure({ listName, value, T }) {
 
 export function OptionListDetail({ listName, onClose }) {
   useEscapeToClose(onClose);
+  // ADDED 21 Oct 2026 (t129) - and the hardware back button closes it too.
+  // It closed on Escape but not on back: the back button closed the WHOLE
+  // Manage-lists screen underneath it, so the two ways out of the same
+  // screen behaved differently.
+  useOverlayBackHandler(() => { onClose?.(); return true; });
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const detailRef = useRef(null);

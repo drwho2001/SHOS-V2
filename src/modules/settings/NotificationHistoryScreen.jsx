@@ -8,6 +8,8 @@ import { ACTION, NEUTRAL, TYPE, resolveDarkAccent } from "../../calculations/des
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { NotificationHistoryRepository } from "../../repositories/notificationHistoryRepository";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../../components/useOverlayBackHandler";
 
 export function NotificationHistoryScreen({ darkMode, onClose }) {
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
@@ -19,6 +21,14 @@ export function NotificationHistoryScreen({ darkMode, onClose }) {
   // a direct tap, no confirmation, unlike every other permanent-delete
   // action in the app.
   const [confirmClear, setConfirmClear] = useState(false);
+  // ADDED 21 Oct 2026 (t129) - this screen is NESTED (Settings ->
+  // Notifications -> Notification history) and was in neither chain: the
+  // hardware back button closed the WHOLE Notifications screen, skipping
+  // this level, and Escape did nothing here either. Both now close this
+  // screen, and the "clear the history" confirmation inside it closes first.
+  useEscapeToClose(confirmClear ? () => setConfirmClear(false) : onClose);
+  useOverlayBackHandler(() => { onClose?.(); return true; }, !confirmClear);
+  useOverlayBackHandler(() => { setConfirmClear(false); return true; }, confirmClear);
   const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); setConfirmClear(false); };
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);

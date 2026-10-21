@@ -53,11 +53,13 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent, applyRealAcc
 // search-return affordance show" decisions, split out of this file precisely so
 // they can be unit-tested. See backNavigation.js's own header.
 import { decideBackAction, shouldOfferSearchReturn, buildSearchReturn, BACK_ACTION } from "./calculations/backNavigation";
+import { handleOverlayBack } from "./calculations/overlayBackStack";
 // ADDED 28 Sep 2026 (Phase 3 fix) - the acknowledge sheet was a role="dialog"
 // with no Escape handling, which re-created the keyboard-trap defect the
 // previous session removed from 46 other components. Wired here rather than
 // inline so the hook can actually own the lifecycle. See AcknowledgeSheet.
 import { useEscapeToClose } from "./components/useEscapeToClose";
+import { useOverlayBackHandler } from "./components/useOverlayBackHandler";
 // ADDED 28 Sep 2026 (Phase 3) — banner suppression. Pure, so it can be
 // unit-tested; see reminderSuppression.js's own header for the design.
 import {
@@ -656,6 +658,11 @@ function DecoyHome({ onLockNow, darkMode }) {
 // rather than trying to build a PIN-setup flow inline here too.
 function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED 21 Oct 2026 (t129) - the hardware back button and Escape now close
+  // this prompt. It used to do neither: back switched the tab underneath it
+  // and left the prompt on screen, and Escape did nothing at all.
+  useEscapeToClose(onDismiss);
+  useOverlayBackHandler(() => { onDismiss?.(); return true; });
 
   return (
     // ADDED — same region-landmark gap as SettingsScreen/GlobalSearch:
@@ -872,6 +879,10 @@ function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose 
   // Without it, closeStack is pushed and spliced on every single render.
   const handleClose = useCallback(() => { onClose?.(); }, [onClose]);
   useEscapeToClose(handleClose);
+  // ADDED 21 Oct 2026 (t129) - the hardware back button closes it too. It
+  // already closed on Escape; the back button used to switch the tab
+  // UNDERNEATH it and leave the sheet on screen.
+  useOverlayBackHandler(() => { handleClose(); return true; });
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
@@ -1926,6 +1937,17 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // calculations/backNavigation.js — the ordering is the substance of this
     // feature and the easiest thing here to get quietly wrong by hand.
     // What lives here is only the side effects that follow from it.
+    //
+    // ADDED 21 Oct 2026 (t129) - the NESTED-OVERLAY STACK is asked FIRST,
+    // before the module's own handler. An overlay sitting on top of a screen
+    // has to be closed before the screen underneath it: without this, the
+    // Testing screen's "Scheduled retest already done" prompt closed the
+    // DETAIL screen under it and left the prompt on screen with nothing
+    // beneath it - which the smoke suite hit for real. The stack is a
+    // module-level store (calculations/overlayBackStack.js) precisely so
+    // that an overlay three levels down can register without the app
+    // having to know it exists.
+    if (handleOverlayBack()) return true;
     const action = decideBackAction({
       moduleHandled: !!(moduleBackHandlerRef.current && moduleBackHandlerRef.current()),
       showSettings,
@@ -2472,6 +2494,17 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   const [pendingEncryptedEnvelope, setPendingEncryptedEnvelope] = useState(null);
   const [decryptPassword, setDecryptPassword] = useState("");
   const [decryptError, setDecryptError] = useState("");
+  // ADDED 21 Oct 2026 (t129) - the hardware back button closes the
+  // "This backup is encrypted" prompt, and Escape does too. It used to do
+  // neither: back switched the tab underneath it and left the prompt on
+  // screen, and the only way out was the Cancel button.
+  const dismissEncryptedPrompt = useCallback(() => {
+    setPendingEncryptedEnvelope(null);
+    setDecryptPassword("");
+    setDecryptError("");
+  }, []);
+  useEscapeToClose(dismissEncryptedPrompt, !!pendingEncryptedEnvelope);
+  useOverlayBackHandler(() => { dismissEncryptedPrompt(); return true; }, !!pendingEncryptedEnvelope);
   const handleFileChosen = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";

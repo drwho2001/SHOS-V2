@@ -7,6 +7,7 @@ import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/desig
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
+import { useOverlayBackHandler } from "../../components/useOverlayBackHandler";
 import { EncounterRepository } from "../../repositories/encounterRepository";
 import { MedicationRepository } from "../../repositories/medicationRepository";
 import { TestingRepository } from "../../repositories/testingRepository";
@@ -69,6 +70,11 @@ function calendarModuleAccent(moduleKey) {
 
 function CalendarSyncSheet({ onClose }) {
   useEscapeToClose(onClose);
+  // ADDED 21 Oct 2026 (t129) - and the hardware back button closes it too.
+  // It closed on Escape but not on back: the back button closed the whole
+  // Calendar screen underneath it, so the two ways out of the same sheet
+  // behaved differently.
+  useOverlayBackHandler(() => { onClose?.(); return true; });
   const [darkMode] = useDarkModePreference();
   const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [calendarSyncError, setCalendarSyncError] = useState("");

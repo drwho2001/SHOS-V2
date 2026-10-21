@@ -10,6 +10,8 @@ import { useIsDesktopWidth } from "../../calculations/responsive";
 import { exportTextFile } from "../../storage/fileExportHelper";
 import { ErrorLogRepository } from "../../repositories/errorLogRepository";
 import { AppPreferencesRepository } from "../../repositories/appPreferencesRepository";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../../components/useOverlayBackHandler";
 
 export function ErrorLogScreen({ darkMode, onClose }) {
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
@@ -20,6 +22,18 @@ export function ErrorLogScreen({ darkMode, onClose }) {
   const isDesktopWidth = useIsDesktopWidth();
   const [entries, setEntries] = useLoadedState(() => ErrorLogRepository.getAll(), [], []);
   const [confirmClear, setConfirmClear] = useState(false);
+  // ADDED 21 Oct 2026 (t129) - this screen is NESTED (Settings ->
+  // Developer tools -> Error log) and was in neither chain: the hardware back
+  // button closed the WHOLE Developer-tools screen, skipping this level, and
+  // Escape did nothing here either. Both now close this screen, and the
+  // "clear the log" confirmation inside it closes first.
+  //
+  // AFTER the state declarations, on purpose: a hook that reads a const
+  // declared further down is a render-time crash, and this file has been
+  // broken on exactly that shape before.
+  useEscapeToClose(confirmClear ? () => setConfirmClear(false) : onClose);
+  useOverlayBackHandler(() => { onClose?.(); return true; }, !confirmClear);
+  useOverlayBackHandler(() => { setConfirmClear(false); return true; }, confirmClear);
   const clear = async () => { await ErrorLogRepository.clear(); setEntries([]); setConfirmClear(false); };
   const [exportStatus, setExportStatus] = useState(null);
   // ADDED 11 Sep 2026 — real ask: a way to note a real problem that

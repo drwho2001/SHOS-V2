@@ -60,6 +60,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { daysSinceStoredDay } from "../calculations/dateInputHelpers";
@@ -1705,6 +1706,17 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   // the default because a plan is not wrong when the user went early - they may
   // simply intend another screen.
   const keepPlans = () => setSupersededPlans(null);
+  // ADDED 21 Oct 2026 (t129) - the hardware back button and Escape now close
+  // this prompt.
+  //
+  // It was the WORST case in the app: the module's own back handler saw
+  // "the detail screen is open" and closed the DETAIL SCREEN UNDERNEATH, so
+  // the prompt stayed on screen with nothing beneath it, and a second back
+  // press fell through to HOME. The prompt had no X and no Escape, so those
+  // were the only ways out - until the smoke suite hit it for real and its
+  // next navigation's overlay sweep failed with "a dialog was still open".
+  useEscapeToClose(keepPlans, !!supersededPlans);
+  useOverlayBackHandler(() => { keepPlans(); return true; }, !!supersededPlans);
   const archivePlans = async () => {
     for (const p of supersededPlans.plans) await TestingRepository.archive(p.id);
     setSupersededPlans(null);

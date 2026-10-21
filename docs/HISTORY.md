@@ -16,6 +16,57 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - every nested overlay is in the back chain (t129)
+
+The hardware back button now closes what is on top of the screen, and every
+overlay can be dismissed with Escape. **Fourteen places** were affected, and
+they had been failing in three different ways:
+
+- **the wrong thing closed.** The Testing screen's "Scheduled retest already
+  done" prompt had no back entry of its own, so the module's own handler saw
+  "the detail screen is open" and closed the DETAIL SCREEN UNDERNEATH - the
+  prompt stayed on screen with nothing beneath it, and the next back press
+  abandoned the tab. **The smoke suite hit this for real**: its next
+  navigation's overlay sweep pressed Escape six times and failed with "a
+  dialog was still open".
+- **nothing closed.** The Interactive Tour was a trap: on Home there is no
+  module handler for back to consult, so the press went nowhere and only the
+  tour's own X and Next/Skip buttons could end it.
+- **the whole tab was abandoned.** Measurements' "Manage groups" fell through
+  to the module's handler, which knew nothing about it, and so left
+  Healthcare entirely.
+
+**THE REPO HAD NO MECHANISM FOR THIS, SO THERE IS ONE NOW.** The app's module
+back-handler is ONE slot - the last module to register wins - so a screen
+that opens a screen had nowhere to say "close ME, not the one underneath".
+The new `calculations/overlayBackStack.js` is a stack: the topmost registered
+overlay is asked first, and if it declines, the one below it is asked. The app
+consults it **before** anything else, so an overlay always closes before the
+screen under it. It is a module-level store on purpose - the overlays that
+need it are nested two or three levels down (the Error log is inside Developer
+Tools, which is inside Settings), and threading a prop down to each of them
+would mean changing every screen in between.
+
+**A FILE-LEVEL RULE WOULD HAVE BEEN WRONG, and the inventory is the reason
+it can say so.** Most of the app's full-screen screens are TOP-LEVEL: they
+use the module slot, and the Settings sub-screens deliberately share
+Settings' own single chain rather than each adding a second closer. Only an
+overlay that sits ON TOP of another screen needs the stack - so the guard is
+a hand-written inventory of those, each with its reason, and the count is
+exact so a site cannot be quietly dropped.
+
+**AND THE GUARD HAD TO BE FIXED AFTER A MUTATION SURVIVED IT.** It asserted
+that each file CONTAINED "useOverlayBackHandler" - and the IMPORT line
+contains that name too, so removing the call entirely left the assertion
+green. It now requires an actual CALL. That is the same lesson as the rest
+of this repo's guards: asserting that a name is present is not the same as
+asserting that it is used.
+
+Two mutations, all red: removing the stack call from the app's back chain,
+and unwiring one of the fourteen sites.
+
+---
+
 ## 21 Oct 2026 - vaccination doses reach the phone's own calendar (t130)
 
 A vaccination dose can now appear in the phone's real calendar app, not
