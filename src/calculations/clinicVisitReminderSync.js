@@ -21,10 +21,12 @@
 // countdown right now — the same "earliest" reasoning
 // medicationReminderSync already uses for its own "upcoming" case.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
+import { LocationsRepository } from "../repositories/locationsRepository";
+import { TestingRepository } from "../repositories/testingRepository";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, CLINIC_VISIT_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository, isClinicVisitSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
-import { realTimestampFromStored, storedDayKey, localDayKey, calendarDaysBetween } from "./dateInputHelpers";
+import { realTimestampFromStored, storedDayKey, localDayKey, calendarDaysBetween, formatClock12 } from "./dateInputHelpers";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 import { partitionVisitsByUrgency } from "./clinicVisitShape";
@@ -146,6 +148,64 @@ export function clinicCardRedactedLine(tests) {
   return `Clinic card - ${n} test${n > 1 ? "s" : ""} booked`;
 }
 
+/**
+ * The clinic's place, for the widget's location row and its Maps link.
+ *
+ * ADDED 21 Oct 2026, on the owner's instruction: the widget should launch
+ * Maps when the location is tapped, "but ideally includes postcode,
+ * address/#". The Maps tap itself already existed (the provider opens a
+ * `geo:` intent with the location string), but it could only search for
+ * whatever free text the visit carried - a clinic's name - so it could not
+ * find the place. The visit now LINKS to a Locations record, and that record
+ * carries the address and the postcode.
+ *
+ * PURE, and takes the locations as an argument, so it can be tested without a
+ * repository: the fallback rule - a visit with no linked place keeps its own
+ * free text - is the part worth pinning down, and it is the part a copy of
+ * this function in a test file would not prove.
+ *
+ * @param {{location?: string, locationId?: string}|undefined} visit
+ * @param {{id: string, name?: string, address?: string, postcode?: string}[]} locations
+ * @returns {{name: string, address: string, postcode: string}}
+ */
+export function placeForVisit(visit, locations) {
+  const fallbackName = visit?.location || "";
+  const linked = (visit?.locationId ? locations || [] : []).find(
+    (l) => l.id === visit.locationId
+  );
+  if (!linked) {
+    return { name: fallbackName, address: "", postcode: "" };
+  }
+  return {
+    name: linked.name || fallbackName,
+    address: linked.address || "",
+    postcode: linked.postcode || "",
+  };
+}
+
+/**
+ * The names of the tests linked to a visit, for the widget's "Tests:" row.
+ *
+ * ADDED 21 Oct 2026: the row used to carry a COUNT ("Tests: 3"), and the
+ * owner asked for "tests/procedures planned for that appt" - the names are
+ * the useful part. A count says there are three; the names say three of
+ * what.
+ *
+ * PURE for the same reason as placeForVisit above: the fallback (a linked id
+ * with no matching test) is the part a copied implementation would get wrong.
+ *
+ * @param {{linkedTestIds?: string[]}|undefined} visit
+ * @param {{id: string, title?: string}[]} tests
+ * @returns {string} the names, comma separated
+ */
+export function testNamesForVisit(visit, tests) {
+  const ids = visit?.linkedTestIds || [];
+  return ids
+    .map((id) => (tests || []).find((t) => t.id === id)?.title)
+    .filter(Boolean)
+    .join(", ");
+}
+
 export async function updateClinicCardWidget(visit) {  try {
     // Self-sufficient, and NULL-SAFE - see updateAppointmentWidget above.
     //
@@ -169,10 +229,37 @@ export async function updateClinicCardWidget(visit) {  try {
     // "None". The owner read "Tests: None" as a wrong fact, and it was: the
     // appointment simply has no tests linked, so the card should say nothing
     // about tests. An empty string is what the provider hides the row on.
-    const testsStr = tests > 0 ? `${tests}` : "";
+    //
+    // The row now carries the NAMES of the linked tests rather than a count
+    // ("Tests: 3" -> "Tests: HIV, Syphilis"), because the owner asked for
+    // "tests/procedures planned for that appt" and the names are the part that
+    // says what. The COUNT is still sent, as `count`, because it is the one
+    // number that survives a Redacted tier.
+    const testRecords = tests > 0 ? await TestingRepository.getAll() : [];
+    const testsStr = tests > 0 ? testNamesForVisit(visit, testRecords) : "";
       const docType = visit?.visitType || "";
       const clinicNum = visit?.clinicNumber || "";
       const nhsNum = visit?.nhsNumber || "";
+
+      // THE CLINIC'S PLACE, resolved from the Locations registry.
+      //
+      // ADDED 21 Oct 2026. The visit's own `location` string is a clinic's
+      // NAME ("Conifer"), and that is all it was: the app had nowhere formal
+      // to put a clinic's address, so the widget's Maps tap could only search
+      // for a name. A visit that links to a Locations record now carries that
+      // record's address and postcode, and the Maps link searches for the
+      // full address instead of the name.
+      const locations = visit?.locationId ? await LocationsRepository.getAll() : [];
+      const place = placeForVisit(visit, locations);
+
+      // WHY THE PROCEDURES, on the owner's instruction ("in bigger card could
+      // include tests/procedures planned for that appt"). The visit's
+      // `reasonForVisit` is the clinic's own list of what the appointment is
+      // for ("PrEP review", "Routine screening") - the closest thing the app
+      // has to "procedures planned". It is health data, so it is a Full-tier
+      // field only: it is not in ALLOWED_AT_REDACTED, and the provider hides
+      // the row at a Redacted tier.
+      const reason = (visit?.reasonForVisit || []).join(", ");
 
       // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. This widget
       // discloses more than any other: a location, a test count and a date.
@@ -185,7 +272,15 @@ export async function updateClinicCardWidget(visit) {  try {
         date: visit?.date
           ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
           : "",
-        location: visit?.location || "",
+        location: place.name,
+        // The address and the postcode, as SEPARATE fields rather than one
+        // composed string: the provider composes what the card shows, and it
+        // shows less of it on the narrow card than on the wide one. The Maps
+        // link wants all of it either way.
+        locationAddress: place.address,
+        locationPostcode: place.postcode,
+        // The clinic's own list of what the appointment is for. Full tier only.
+        reason,
         // ADDED 6 Oct 2026 - the time of day as its OWN field rather than appended
         // to `date`. The Clinic Card widget shows the date on its summary page and
         // the time on its appointment page, so neither has to parse the other's
@@ -195,8 +290,14 @@ export async function updateClinicCardWidget(visit) {  try {
         // is a deliberate fake-UTC local wall-clock string (see dateInputHelpers.js),
         // so formatting it in Java would put the timezone interpretation in the one
         // file that has no business owning it.
+        //
+        // TWELVE HOURS, on the owner's instruction (21 Oct 2026: "12h time
+        // 4.00pm not 16:00"). `toLocaleTimeString` with no `hour12` follows the
+        // DEVICE locale, and this phone is 24-hour, so the card said 16:00
+        // while the Next Dose card said 4:00am. formatClock12 is the same
+        // format the Next Dose widget's Java uses, so the two agree.
         visitTime: visit?.date
-          ? new Date(realTimestampFromStored(visit.date)).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+          ? formatClock12(new Date(realTimestampFromStored(visit.date)))
           : "",
         tests: testsStr,
         docType,

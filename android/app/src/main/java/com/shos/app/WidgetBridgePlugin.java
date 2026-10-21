@@ -242,6 +242,19 @@ public class WidgetBridgePlugin extends Plugin {
       opt(call, "title"),
       opt(call, "date"),
       opt(call, "location"),
+      // ADDED 21 Oct 2026 - the clinic's ADDRESS and POSTCODE, and what the
+      // appointment is FOR. The owner: the clinic had "no formal way to add
+      // registered address", the Maps tap could only search for the clinic's
+      // name, and the bigger card could carry "tests/procedures planned for
+      // that appt".
+      //
+      // The order here and the provider's parameter order are the same list,
+      // and widgetArgumentOrderGuard.test.js checks that they are: Java would
+      // still compile a mismatch if the types lined up, and the symptom would
+      // be a card showing one field's value in another's row.
+      opt(call, "locationAddress"),
+      opt(call, "locationPostcode"),
+      opt(call, "reason"),
       opt(call, "tests"),
       opt(call, "docType"),
       opt(call, "clinicNum"),

@@ -244,6 +244,13 @@ export const OPTIONAL_ELEMENTS = {
     { key: "showClinicNum", label: "Clinic number" },
     { key: "showTests", label: "Tests" },
     { key: "showDocType", label: "Clinician" },
+    // ADDED 21 Oct 2026 - what the appointment is FOR ("PrEP review",
+    // "Routine screening"), on the owner's instruction that the bigger card
+    // could carry "tests/procedures planned for that appt".
+    //
+    // The clinic's ADDRESS and POSTCODE are not rows of their own: they are
+    // part of the location, and the provider shows them with it.
+    { key: "showReason", label: "Reason for visit" },
   ],
 };
 

@@ -22,6 +22,7 @@ import { CustomOptionListsRepository } from "../repositories/customOptionListsRe
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import { compareKeysAreEqual } from "../calculations/textCanonicalisation";
 import { TestingRepository } from "../repositories/testingRepository";
+import { LocationsRepository } from "../repositories/locationsRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -403,14 +404,42 @@ function ReasonForVisitField({ value, onChange, options, T, listName }) {
   );
 }
 
-function ClinicVisitLocationField({ value, onChange, T }) {
+function ClinicVisitLocationField({ value, onChange, locationId, onLocationIdChange, T }) {
   const known = useLoadedMemo(() => getKnownClinicVisitLocations(), [], []);
-  // CHANGED — same real ask as Encounters' Location field this session:
+  // ADDED 21 Oct 2026 - the clinics the Locations registry already knows about.
+  //
+  // The owner's instruction: "the clinic has no formal way to add registered
+  // address". A clinic's address now lives on a Locations record (Settings ->
+  // Manage Lists -> Locations, which already had an address field and now has
+  // a postcode), and the visit POINTS at it rather than copying it.
+  //
+  // The free-text name stays, as the fallback for a place that is not worth a
+  // registry entry, and so that every visit stored before this field existed
+  // keeps working untouched.
+  const places = useLoadedMemo(
+    () => LocationsRepository.getAll().then((all) => all.filter((l) => !l.isArchived && l.name)),
+    [],
+    []
+  );
+  // CHANGED - same real ask as Encounters' Location field this session:
   // narrow to real matches once typing begins, instead of showing the
   // same static list of every known location regardless of input.
   const typed = (value || "").trim();
   const visibleSuggestions = (typed ? known.filter((l) => fuzzyIncludes(l, typed)) : known)
     .filter((l) => l !== value).slice(0, 8);
+  // The registry's places, narrowed the same way, and CLINICS FIRST: a
+  // clinic is the thing this field is for, and the registry holds houses and
+  // saunas too.
+  const clinicType = "🏥 Clinic";
+  const visiblePlaces = places
+    .filter((p) => (typed ? fuzzyIncludes(p.name, typed) : true))
+    .sort((a, b) => {
+      const aClinic = a.type === clinicType ? 0 : 1;
+      const bClinic = b.type === clinicType ? 0 : 1;
+      if (aClinic !== bClinic) return aClinic - bClinic;
+      return (a.name || "").localeCompare(b.name || "");
+    })
+    .slice(0, 8);
   // ADDED — real ask: "use current location", same pattern as
   // Encounters' own RegistrySinglePicker locate button — this field is
   // just a plain string (see the comment above getKnownClinicVisitLocations
@@ -425,12 +454,23 @@ function ClinicVisitLocationField({ value, onChange, T }) {
     try {
       const place = await getCurrentLocationPlace();
       onChange(summarizePlaceName(place));
+      // A located place is not a registry place, so the link is cleared.
+      if (onLocationIdChange) onLocationIdChange("");
     } catch (err) {
       setLocateError(err.message);
     } finally {
       setLocating(false);
     }
   };
+  // Typing a name is the user saying "not one of the registry places", so the
+  // link is cleared with it. Otherwise a visit could carry a typed name and
+  // still point at a registry record, and the widget would show the wrong
+  // address.
+  const typeName = (text) => {
+    onChange(text);
+    if (onLocationIdChange && locationId) onLocationIdChange("");
+  };
+  const linkedPlace = locationId ? places.find((p) => p.id === locationId) : null;
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -441,17 +481,36 @@ function ClinicVisitLocationField({ value, onChange, T }) {
         </span>
       </div>
       {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
+      {linkedPlace && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onChange(linkedPlace.name); if (onLocationIdChange) onLocationIdChange(""); }}
+            style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            {linkedPlace.name} <X size={10} />
+          </div>
+        </div>
+      )}
+      {visiblePlaces.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+          {visiblePlaces.map((p) => (
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p.id}
+              onClick={() => { onChange(p.name); if (onLocationIdChange) onLocationIdChange(p.id); }}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
+              {p.name}{p.postcode ? ` · ${p.postcode}` : ""}
+            </div>
+          ))}
+        </div>
+      )}
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((l) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={l} onClick={() => onChange(l)}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={l} onClick={() => typeName(l)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
               {l}
             </div>
           ))}
         </div>
       )}
-      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder="e.g. 56 Dean Street, London — leave blank if unknown"
+      <input value={value ?? ""} onChange={(e) => typeName(e.target.value)} placeholder="e.g. 56 Dean Street, London — leave blank if unknown"
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
@@ -1105,7 +1164,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
               required it - this was already true, just now also
               genuinely free-text). */}
           <ClinicianField value={form.clinician} onChange={set("clinician")} T={T} />
-          <ClinicVisitLocationField value={form.location} onChange={set("location")} T={T} />
+          <ClinicVisitLocationField value={form.location} onChange={set("location")} locationId={form.locationId} onLocationIdChange={set("locationId")} T={T} />
           {/* ADDED 24 Sep 2026 - real ask: free-text automap for Reason
               for visit. Type to filter existing options, Enter to select
               or create new (same pattern as ClinicianField). */}

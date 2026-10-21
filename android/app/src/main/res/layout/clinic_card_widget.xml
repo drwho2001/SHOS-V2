@@ -42,61 +42,72 @@
      row now have. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
 
-    <!-- The card's name. STATIC: it says what the card is, and it is the same
-         on every appointment. The appointment's own title is the row below.
-         maxLines 2 because "Next appointment" does not fit on one line at the
-         narrow width - the widest word, "appointment", is 202px at 12sp and the
-         narrow card's content is 211px. -->
+    <!-- The card's own name, and it is a LABEL now.
+         CHANGED 21 Oct 2026 - the owner's words: "Next appointment:" (with
+         the colon), and "on bigger appt widget the title and next appt are
+         same colour, similar thickness, so not inherently clear from a
+         glance".
+         So the card's name is a small muted eyebrow and the APPOINTMENT's own
+         name is the big white line under it: the card reads label: value,
+         and the colon is what makes it read that way. The narrow card says
+         "Appointment:" instead - sixteen characters do not fit its width at
+         12sp - so the label always has a value under it. -->
     <TextView
         android:id="@+id/widget_clinic_title"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Next appointment"
-        android:textSize="16sp"
-        android:textColor="@color/widget_text_primary"
+        android:text="Next appointment:"
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_muted"
         android:textStyle="bold"
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- The appointment's own title, on the line below. -->
+    <!-- The appointment's own title, on the line below. The big one: this is
+         what the card is about, and it is the value the label above points
+         at. One line, with the fitter shrinking it if a longer title does
+         not fit - the narrow card is 76.7dp of text width. -->
     <TextView
         android:id="@+id/widget_clinic_appt_title"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="23dp"
+        android:layout_marginTop="20dp"
         android:text=""
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
-        android:maxLines="2"
+        android:maxLines="1"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- The date and the time of day, on one line. -->
+    <!-- The date and the time of day, on one line. 13sp because the wide
+         card's date band is one line tall and the narrow card's is two. -->
     <TextView
         android:id="@+id/widget_clinic_date"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="46dp"
+        android:layout_marginTop="45dp"
         android:text="No upcoming appointment"
-        android:textSize="14sp"
+        android:textSize="13sp"
         android:textColor="@color/widget_good"
         android:textStyle="bold"
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- Where. -->
+    <!-- Where. The place's name, and on the wide card its address under it:
+         the clinic visit now links to a Locations record, which carries the
+         street and the postcode, and the Maps link needs the whole of it. -->
     <TextView
         android:id="@+id/widget_clinic_location"
         android:layout_gravity="top|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="68dp"
+        android:layout_marginTop="66dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_accent"
@@ -105,15 +116,36 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- The tests booked for that visit: the reason a clinic card exists. -->
+    <!-- WHAT THE APPOINTMENT IS FOR, on the owner's instruction ("in bigger
+         card could include tests/procedures planned for that appt"). The
+         visit's own reasonForVisit list - "PrEP review", "Routine
+         screening" - is the closest thing the app has to procedures planned.
+         Wide card only: a smaller widget has just what's necessary. -->
+    <TextView
+        android:id="@+id/widget_clinic_reason"
+        android:layout_gravity="top|start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:text=""
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
+
+    <!-- The tests booked for that visit: the reason a clinic card exists.
+         The NAMES now, not a count - the owner asked for the tests
+         themselves, and "Tests: 3" says there are three without saying
+         three of what. -->
     <TextView
         android:id="@+id/widget_clinic_tests"
         android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="87dp"
+        android:layout_marginTop="118dp"
         android:text=""
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
         android:maxLines="1"
         android:ellipsize="end"

@@ -29,6 +29,23 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
     private static final String KEY_APPT_TITLE = "clinic_appt_title";
     private static final String KEY_APPT_DATE = "clinic_appt_date";
     private static final String KEY_APPT_LOCATION = "clinic_appt_location";
+    // ADDED 21 Oct 2026 - the clinic's ADDRESS and its POSTCODE, as their own
+    // keys rather than one composed string.
+    //
+    // The owner: the clinic had "no formal way to add registered address",
+    // and the widget should launch Maps when the location is tapped. The Maps
+    // tap already existed, but it could only search for the clinic's NAME, so
+    // it could not find the place. A clinic visit now links to a Locations
+    // record, and that record's address and postcode arrive here separately:
+    // the card shows the postcode beside the place's name, and the Maps
+    // intent searches for the whole address.
+    private static final String KEY_APPT_LOCATION_ADDRESS = "clinic_appt_location_address";
+    private static final String KEY_APPT_LOCATION_POSTCODE = "clinic_appt_location_postcode";
+    // ADDED 21 Oct 2026 - what the appointment is FOR ("PrEP review", "Routine
+    // screening"), on the owner's instruction that the bigger card could
+    // include "tests/procedures planned for that appt". Health data, so it is
+    // a Full-tier field only.
+    private static final String KEY_APPT_REASON = "clinic_appt_reason";
     private static final String KEY_APPT_TESTS = "clinic_appt_tests";
     private static final String KEY_APPT_DOCTYPE = "clinic_appt_doctype";
     private static final String KEY_APPT_CLINIC_NUM = "clinic_appt_clinic_num";
@@ -105,6 +122,53 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
     }
 
     /**
+     * The place, as the CARD shows it.
+     *
+     * ADDED 21 Oct 2026. The wide card has room for the address under the
+     * place's name; the narrow card has the name and the postcode, which is
+     * what fits its 76.7dp of text width. The owner asked for the postcode and
+     * the address to be on the widget, and also that it not be too long -
+     * which is why the two widths show different amounts of it.
+     */
+    private static String locationText(String name, String address, String postcode, boolean narrow) {
+        String safeName = name == null ? "" : name;
+        String safeAddress = address == null ? "" : address;
+        String safePostcode = postcode == null ? "" : postcode;
+        if (narrow) {
+            if (safeName.isEmpty() || safePostcode.isEmpty()) return safeName;
+            return safeName + " · " + safePostcode;
+        }
+        StringBuilder sb = new StringBuilder(safeName);
+        String rest = safeAddress.isEmpty()
+                ? safePostcode
+                : (safePostcode.isEmpty() ? safeAddress : safeAddress + ", " + safePostcode);
+        if (!rest.isEmpty()) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(rest);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * The place, as the MAPS LINK searches for it: the name, the street and
+     * the postcode, in that order.
+     *
+     * The owner's reason for wanting the address at all: the Maps tap already
+     * existed and could only search for the clinic's NAME, which Maps cannot
+     * turn into a pin.
+     */
+    private static String mapQuery(String name, String address, String postcode) {
+        StringBuilder sb = new StringBuilder();
+        String[] parts = { name, address, postcode };
+        for (String part : parts) {
+            if (part == null || part.isEmpty()) continue;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(part);
+        }
+        return sb.toString();
+    }
+
+    /**
      * The "no data available" RemoteViews. Contains no user data at all, so
      * pushing it can neither write to the plaintext sink nor disclose anything
      * to the launcher process. See res/layout/widget_unavailable.xml.
@@ -153,6 +217,9 @@ private static RemoteViews unavailableViews(Context context) {
         String title = prefs.getString(KEY_APPT_TITLE, "No upcoming appointment");
         String date = prefs.getString(KEY_APPT_DATE, "");
         String location = prefs.getString(KEY_APPT_LOCATION, "");
+        String locationAddress = prefs.getString(KEY_APPT_LOCATION_ADDRESS, "");
+        String locationPostcode = prefs.getString(KEY_APPT_LOCATION_POSTCODE, "");
+        String reason = prefs.getString(KEY_APPT_REASON, "");
         String tests = prefs.getString(KEY_APPT_TESTS, "");
         String docType = prefs.getString(KEY_APPT_DOCTYPE, "");
         String clinicNum = prefs.getString(KEY_APPT_CLINIC_NUM, "");
@@ -219,6 +286,22 @@ private static RemoteViews unavailableViews(Context context) {
 
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
         int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
+        // ADDED 21 Oct 2026 - the width decides what the card can say, and
+        // three things depend on it: the card's own label, how much of the
+        // place's address fits, and which rows the card has room for.
+        boolean narrow = wDp < NARROW_WIDGET_DP;
+        // THE LABEL, with its colon. The owner asked for the colon, and it is
+        // what makes the card read as "label: value" now that the label is
+        // small and the appointment's name is the big line under it.
+        //
+        // The narrow card says "Appointment:" because "Next appointment:" is
+        // sixteen characters and its text is 211px wide at 12sp - the label
+        // would ellipsize, and a truncated label is worse than a shorter one.
+        String cardLabel = narrow ? "Appointment:" : "Next appointment:";
+        // THE PLACE, as the card shows it. The wide card has room for the
+        // address under the name; the narrow card has the name and the
+        // postcode, which is what fits in 76.7dp.
+        String locationText = locationText(location, locationAddress, locationPostcode, narrow);
         if (redactedText != null && !redactedText.isEmpty()) {
             // At a Redacted tier the card carries the one safe line and nothing
             // else. Every other field is hidden BY NAME rather than by relying on
@@ -233,7 +316,12 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 16f, 2);
+            // ADDED 21 Oct 2026 - the reason row, like every other data row
+            // here, is hidden by NAME at a Redacted tier. It is health data
+            // ("PrEP review", "Routine screening") and it is not in
+            // ALLOWED_AT_REDACTED, so it never reaches the widget at all.
+            views.setViewVisibility(R.id.widget_clinic_reason, android.view.View.GONE);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 12f, 2);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
             // ADDED 10 Oct 2026 (t087) - the three section headings are hidden too.
             // A static label carries no user data, so it is SAFE to show, but a
@@ -270,12 +358,21 @@ private static RemoteViews unavailableViews(Context context) {
             // carries, so a card that switched tiers would keep saying the
             // redacted thing. Setting a property in one branch obliges you to
             // set it in the others.
-            views.setTextViewText(R.id.widget_clinic_title, "Next appointment");
+            views.setTextViewText(R.id.widget_clinic_title, cardLabel);
             views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+            // ADDED 21 Oct 2026 - the clinic NUMBER is no longer on the card.
+            //
+            // It was VISIBLE here and empty in practice, and the card has no
+            // room left for it: the label, the appointment's name, the date,
+            // the place, what it is for and the tests are six rows in a
+            // 134dp card. It is in the app's own Clinic Card, which is one tap
+            // away, so nothing is lost - and a row that is empty in practice
+            // but would overlap the reason row if it were not is worse than no
+            // row at all.
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
             // The rows the card no longer shows. The section headings say what
             // the title already says, the visit time is part of the date line, and
             // the clinician's name is the one detail that did not fit.
@@ -285,28 +382,57 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
             views.setTextViewText(R.id.widget_clinic_appt_title, title);
-             views.setTextViewText(R.id.widget_clinic_date,
-                     visitTime == null || visitTime.isEmpty() ? date : date + " · " + visitTime);
+             // THE DATE LINE, fitted on the string that is actually rendered:
+             // the date and the time are one line, and fitting the date alone
+             // would measure half of what the field has to hold.
+             String dateText = (visitTime == null || visitTime.isEmpty())
+                     ? date : date + " · " + visitTime;
+             views.setTextViewText(R.id.widget_clinic_date, dateText);
              views.setTextViewText(R.id.widget_clinic_visit_time, "");
-            views.setTextViewText(R.id.widget_clinic_location, location);
-            views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
+            views.setTextViewText(R.id.widget_clinic_location, locationText);
+            views.setTextViewText(R.id.widget_clinic_clinic_num, "");
             // A row that says "Tests: None" is a wrong fact, not a missing
             // one: the appointment has no tests linked, so the card says
             // nothing about tests. The row is hidden rather than left blank,
             // because a blank line under a real one reads as a rendering fault.
+            //
+            // The row carries the NAMES of the tests now, not a count: the
+            // owner asked for "tests/procedures planned for that appt", and
+            // "Tests: 3" says there are three without saying three of what.
             String testsText = (tests == null || tests.isEmpty()) ? "" : "Tests: " + tests;
             views.setTextViewText(R.id.widget_clinic_tests, testsText);
             views.setViewVisibility(R.id.widget_clinic_tests,
                     testsText.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
+            // WHAT THE APPOINTMENT IS FOR. The owner's "tests/procedures
+            // planned for that appt" - the visit's own reasonForVisit list.
+            String reasonText = (reason == null || reason.isEmpty()) ? "" : "Planned: " + reason;
+            views.setTextViewText(R.id.widget_clinic_reason, reasonText);
+            // SET VISIBLE, THEN HIDE IT IF THERE IS NOTHING TO SHOW. Not a
+            // ternary: the visibility guard reads a literal visibility call
+            // with VISIBLE spelled out, because a RemoteViews update applies
+            // only the actions it carries and the launcher RECYCLES the
+            // inflated view - so a view the Redacted branch hid stays hidden
+            // for every later update unless some other branch says VISIBLE in
+            // so many words.
+            views.setViewVisibility(R.id.widget_clinic_reason, android.view.View.VISIBLE);
+            if (reasonText.isEmpty()) {
+                views.setViewVisibility(R.id.widget_clinic_reason, android.view.View.GONE);
+            }
             views.setTextViewText(R.id.widget_clinic_doctype, docType);
             // Measured on the device: the Clinic Card title was clipped by the
             // card's own top edge and the WHOLE card overflowed, so every field
             // is fitted rather than only the headline.
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, "Next appointment", wDp, 16f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_appt_title, title, wDp, 14f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_date, date, wDp, 14f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, location, wDp, 12f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, "Tests: " + tests, wDp, 12f);
+            //
+            // The ceilings here are the layout's own textSize for each field,
+            // and the maxLines are the layout's own maxLines - the guard
+            // checks both axes, so a number that drifts from the layout fails
+            // the build rather than rendering larger than the design allows.
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, cardLabel, wDp, 12f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_appt_title, title, wDp, 16f, 1);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_date, dateText, wDp, 13f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, locationText, wDp, 12f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, testsText, wDp, 11f, 1);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_reason, reasonText, wDp, 11f, 1);
             // The NHS number is NEVER stored - WidgetBridgePlugin ignores the field
             // and this provider has no parameter for it - so it is hidden rather
             // than left blank, because an empty line next to a real clinic number
@@ -319,17 +445,30 @@ private static RemoteViews unavailableViews(Context context) {
             // unmasked until Clear Storage. What is on screen is decided solely by
             // the privacy tier, so there is nothing to reveal.
              views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
-             if (wDp < NARROW_WIDGET_DP) {
+             if (narrow) {
                  views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-                 // The appointment's title does not fit at this width: the
-                 // card's own title is two lines here ("Next appointment" is
-                 // 300px at 16sp and the narrow card's content is 211px), and
-                 // the appointment's title is two lines as well. So it goes,
-                 // and what is left is when and where.
-                 views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.GONE);
+                 // CHANGED 21 Oct 2026 - the appointment's title is SHOWN here
+                 // now, where it used to be hidden.
+                 //
+                 // It was hidden because the card's own title was a two-line
+                 // 16sp headline and the two looked like the same kind of
+                 // line. The card's title is now a small muted LABEL
+                 // ("Appointment:") and this is the big value under it, so
+                 // there is nothing to be confused with - and without it the
+                 // label is a label with no value under it, which is the thing
+                 // the owner was reading.
+                 //
+                 // It fits: "Biannual PrEP" is thirteen characters, and the
+                 // fitter shrinks it if a longer title does not fit the
+                 // narrow card's 211px.
+                 views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.VISIBLE);
+                 // The reason row is the wide card's: a smaller widget has
+                 // just what's necessary, and the tests are already off here
+                 // for the same reason.
+                 views.setViewVisibility(R.id.widget_clinic_reason, android.view.View.GONE);
                  // CHANGED 20 Oct 2026 - the narrow card loses the section
                  // headings, and the row the last one labelled moves up into
                  // the space it occupied.
@@ -350,12 +489,6 @@ private static RemoteViews unavailableViews(Context context) {
                  // been on View since API 11.
                  views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
-                  // The appointment's title does not fit at this width: the
-                  // card's own title is two lines here ("Next appointment" is
-                  // 300px at 16sp and the narrow card's content is 211px), and
-                  // the appointment's title is two lines as well. So it goes,
-                  // and what is left is when and where.
-                  views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.GONE);
                   // The date is TWO lines at this width, so the location moves
                   // DOWN past it rather than up into the space the headings
                   // used to hold. The offset is a pixel value on the view:
@@ -387,7 +520,7 @@ private static RemoteViews unavailableViews(Context context) {
             // widget_clinic_nhs_num is NOT in this list, and that is deliberate: it
             // is hidden at every tier by design (the bridge never carries it and
             // there is no reveal affordance), so restoring it would be a leak.
-            views.setTextViewText(R.id.widget_clinic_title, "Next appointment");
+            views.setTextViewText(R.id.widget_clinic_title, cardLabel);
             views.setTextViewText(R.id.widget_clinic_appt_title, "");
             views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
@@ -402,13 +535,17 @@ private static RemoteViews unavailableViews(Context context) {
              views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+             // ADDED 21 Oct 2026 - the reason row, cleared with everything else.
+             // There is no appointment, so there is nothing it is for.
+             views.setViewVisibility(R.id.widget_clinic_reason, android.view.View.GONE);
              views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
             views.setTextViewText(R.id.widget_clinic_visit_time, "");
             views.setTextViewText(R.id.widget_clinic_location, "");
             views.setTextViewText(R.id.widget_clinic_clinic_num, "");
             views.setTextViewText(R.id.widget_clinic_tests, "");
+            views.setTextViewText(R.id.widget_clinic_reason, "");
              views.setTextViewText(R.id.widget_clinic_doctype, "");
-              if (wDp < NARROW_WIDGET_DP) {
+              if (narrow) {
                   views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
                   views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
                   views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
@@ -444,8 +581,18 @@ private static RemoteViews unavailableViews(Context context) {
         // tier has a tap target. The two below remain here because both depend on
         // data a Redacted tier does not render.
         // Location click opens Maps
-        if (!location.isEmpty()) {
-            Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(location)));
+        //
+        // CHANGED 21 Oct 2026 - the query is now the FULL ADDRESS, not the
+        // place's name. The tap always worked; what it searched for was
+        // "Conifer", and Maps could not turn a clinic's name into a map
+        // pin. With the visit linked to a Locations record the query carries
+        // the street and the postcode as well, so the pin is the clinic.
+        //
+        // The card's LOCATION text is deliberately not the query: the card
+        // shows what fits, and the query is what finds the place.
+        String mapQuery = mapQuery(location, locationAddress, locationPostcode);
+        if (!mapQuery.isEmpty()) {
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(mapQuery)));
             mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(
                 context, appWidgetId * 10 + 1, mapIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
@@ -474,6 +621,8 @@ private static RemoteViews unavailableViews(Context context) {
     // it impossible to reintroduce by accident, and
     // src/storage/widgetPlaintextSink.test.js asserts the write is absent.
     public static void updateClinicCard(Context context, String title, String date, String location,
+                                        String locationAddress, String locationPostcode,
+                                        String reason,
                                         String tests, String docType, String clinicNum,
                                         String visitTime,
                                         String redactedText) {
@@ -490,6 +639,15 @@ private static RemoteViews unavailableViews(Context context) {
             .putString(KEY_APPT_TITLE, title)
             .putString(KEY_APPT_DATE, date)
             .putString(KEY_APPT_LOCATION, location)
+            // ADDED 21 Oct 2026 - the address, the postcode and the reason.
+            // The address and the postcode are what the Maps link searches
+            // for; the reason is what the appointment is for. The guard that
+            // checks the bridge's argument order requires this method and the
+            // plugin's call site to declare the same parameters in the same
+            // order, so the three new ones are added in both places together.
+            .putString(KEY_APPT_LOCATION_ADDRESS, locationAddress == null ? "" : locationAddress)
+            .putString(KEY_APPT_LOCATION_POSTCODE, locationPostcode == null ? "" : locationPostcode)
+            .putString(KEY_APPT_REASON, reason == null ? "" : reason)
             .putString(KEY_APPT_TESTS, tests)
             .putString(KEY_APPT_DOCTYPE, docType)
             .putString(KEY_APPT_CLINIC_NUM, clinicNum)

@@ -159,6 +159,35 @@ export function formatInstantDateTime(iso) {
   return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
 
+/**
+ * A wall-clock time on a TWELVE-HOUR clock, with no space before the suffix:
+ * "4:00pm", "12:05am".
+ *
+ * ADDED 21 Oct 2026, on the owner's instruction ("12h time 4.00pm not 16:00").
+ *
+ * The format is the one the Next Dose WIDGET already uses, and it is not the
+ * one `toLocaleTimeString` gives by default: that follows the DEVICE locale,
+ * so on a 24-hour phone it renders "16:00" and on a 12-hour phone "4:00 PM".
+ * Two cards on the same home screen then disagree about the same appointment,
+ * and the owner reads the 24-hour one as the wrong answer.
+ *
+ * It matches the Android side exactly - `NextDoseWidgetProvider.clockOf()`
+ * formats with `SimpleDateFormat("h:mm", Locale.US)` and a lower-cased
+ * suffix - so the two cards read alike. Lower case, no space, and a leading
+ * zero on the minutes are all deliberate.
+ *
+ * It takes a REAL INSTANT, not a stored one: this uses local getters, so
+ * pointing it at a stored fake-UTC string would shift the time. The stored
+ * family has its own formatters above.
+ */
+export function formatClock12(date) {
+  if (!date || Number.isNaN(date.getTime?.())) return "";
+  const hours = date.getHours() % 12 || 12;
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const suffix = date.getHours() < 12 ? "am" : "pm";
+  return `${hours}:${minutes}${suffix}`;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // CALENDAR-DAY PRIMITIVES
 //

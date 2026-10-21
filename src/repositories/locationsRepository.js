@@ -36,6 +36,20 @@ export const DEFAULT_LOCATION = {
   name: "",
   type: "",
   address: "",
+  // ADDED 21 Oct 2026 — the POSTCODE, as its own field.
+  //
+  // The owner's instruction: the clinic's address should be able to include
+  // the "postcode, address/#", and the app had nowhere to put a postcode at
+  // all — a repo-wide search for postcode/zip/addressLine/houseNumber found
+  // nothing but prose. `address` is one flat free-text string, so a postcode
+  // typed into it could never be shown on its own, and the widget's location
+  // row wants exactly that: the place's name and its postcode, with the full
+  // address going to the Maps link.
+  //
+  // A field rather than a convention inside `address`, because the widget
+  // needs the postcode SEPARATELY from the street, and a string would have
+  // to be parsed apart again every time it was used.
+  postcode: "",
   notes: "",
   relatedContactId: "",
 };

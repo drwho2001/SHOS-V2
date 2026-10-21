@@ -42,6 +42,11 @@ export const ELEMENT_BRIDGE_FIELDS = {
     showClinicNum: "clinicNum",
     showTests: "tests",
     showDocType: "docType",
+    // ADDED 21 Oct 2026 - what the appointment is for. The clinic's address
+    // and postcode are part of the location rather than rows of their own,
+    // so they ride with the location field and the provider shows them with
+    // it.
+    showReason: "reason",
   },
 };
 

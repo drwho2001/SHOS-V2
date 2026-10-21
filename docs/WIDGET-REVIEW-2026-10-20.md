@@ -77,6 +77,26 @@ capacity:
   each other, which is the check the other widget guards could not make.
 
 
+### 0.5 Widget round two (21 Oct 2026) — the owner's second pass
+
+Everything below came from the owner's own notes on the cards, in their words.
+
+| Card | What changed |
+|---|---|
+| Next appointment | The card's name is now a small muted LABEL, "Next appointment:" with a colon, and the appointment's own name is the big white line under it. The two were both white and near the same weight, which the owner read as "not inherently clear from a glance". The narrow card says "Appointment:" and now SHOWS the appointment's name, so the label always has a value under it. |
+| Next appointment | The time is twelve-hour ("Thu 18 Mar · 4:00pm"). It was 24-hour because `toLocaleTimeString` follows the DEVICE locale and this phone is 24-hour — the Next Dose card already said "4:00am" on the same home screen. `formatClock12` in `dateInputHelpers.js` is the shared form, and it matches the Java side exactly (lower case, no space). |
+| Next appointment | The Maps link searches for the FULL ADDRESS. The tap itself already existed; it could only search for the clinic's name, which Maps cannot turn into a pin. A clinic visit now LINKS to a Locations record (the owner's choice over a free-text address field), and that record carries the address and a new postcode field. The card shows the name and the postcode on the narrow card, the name and the whole address on the wide one. |
+| Next appointment | The "Tests:" row carries the NAMES of the linked tests, not a count, and a new "Planned:" row carries the visit's own reason for visit — the closest thing the app has to "tests/procedures planned for that appt". Both are wide-card only. The clinic number row is gone: the card has room for six rows and not seven. |
+| Next dose | Every medication with a dose pending is named, not counted: "Sertraline, PrEP" instead of "Sertraline +2". The `upcoming` list is also SORTED by when each dose unlocks, which it was not — the widget was counting down to whichever medication the repository happened to list first. |
+| Refills due | A blank line separates one medication from the next (four undifferentiated lines read as one list), and the medications are listed by when each one next needs reordering — the same number the card's own "request in 179d" counts down to. |
+| Quick Add | The plus badge is a thin cross: 44 units across with 8-unit arms, about 1dp. It was a 16-unit stem with a 28-unit bar — 2.1dp of vertical arm and 3.6dp of horizontal, and not even square. |
+
+The two things the owner asked for that turned out to need less work than they
+sounded: the Maps tap (it was already there) and the "12h time" (one helper and
+one call site). The one that needed more: the clinic's address, which had
+nowhere to live at all — a repo-wide search for postcode, zip, addressLine or
+houseNumber found nothing but prose.
+
 ## 1. What the device actually shows (screenshot `wb1.png`, 1080x2400, 440dpi)
 
 Home-screen widget page, all ten widgets placed by the owner. Measured from

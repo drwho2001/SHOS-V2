@@ -93,6 +93,22 @@ export const DEFAULT_CLINIC_VISIT = {
   title: "",
   date: null,
   location: "",
+  // ADDED 21 Oct 2026 — the clinic's PLACE, as a link into the Locations
+  // registry rather than as more free text.
+  //
+  // The owner's words: "the clinic has no formal way to add registered
+  // address - widget should launch maps if clinic location on widget is
+  // clicked ... ideally includes postcode, address/#". The Maps tap on the
+  // widget already existed, but it could only search for whatever this field
+  // held — a clinic's NAME — so it could not find the place.
+  //
+  // A relation, not a copy: the address and the postcode live on the
+  // Locations record, and the visit points at it. `location` above stays as
+  // the free-text fallback for the visits that have no linked place, and for
+  // the places that are not worth a registry entry - which is every visit
+  // stored before this field existed, so nothing needs migrating and nothing
+  // breaks.
+  locationId: "",
   // CHANGED 19 Aug 2026 — real feedback batch: "Clinician should be
   // free text, not a fixed list, and not mandatory." Stays a plain
   // string (it already was one) — only the UI changes, from a

@@ -68,7 +68,9 @@ describe("optionalElementsFor (t089)", () => {
     // fieldAllowed ask about a field no widget ever sends, and the row would
     // then pass or fail for a reason that has nothing to do with privacy.
     const sent = {
-      clinicCard: ["title", "date", "visitTime", "location", "clinicNum", "tests", "docType", "count"],
+      // ADDED 21 Oct 2026 - "reason": what the appointment is for, the Clinic
+      // Card's "Planned" row.
+      clinicCard: ["title", "date", "visitTime", "location", "clinicNum", "tests", "docType", "count", "reason"],
     };
     for (const [widget, map] of Object.entries(ELEMENT_BRIDGE_FIELDS)) {
       for (const [toggle, field] of Object.entries(map)) {
