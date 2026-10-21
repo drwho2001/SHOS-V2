@@ -341,6 +341,18 @@ async function runAppRefresh(page) {
   return advanced;
 }
 
+// ADDED 21 Oct 2026 (t125 follow-up) - clearing the sample data is CONFIRMED
+// (the confirmation names the records it is about to remove), so the first
+// click opens the confirmation and the SECOND one clears. Every flow that
+// clears has to do both, and a flow that does only the first would sit there
+// with a confirmation open and then fail an assertion about the count - which
+// reads as "the clear is broken" rather than "the clear needs confirming".
+async function confirmClearSampleData(page) {
+  const confirm = page.getByRole("button", { name: /^Remove these \d+ records$/ }).first();
+  await confirm.waitFor({ state: "visible", timeout: 8000 });
+  await confirm.click({ timeout: 8000 });
+}
+
 async function dismissOpenOverlays(page) {
   for (let i = 0; i < 6; i++) {
     if ((await page.locator('[role="dialog"]').count()) === 0) return;
@@ -2220,6 +2232,9 @@ const devText = await page.evaluate(() => document.body.innerText);
       assert((await clear.count()) > 0,
         "the Clear Sample Data control is present on Developer Tools after the id migration");
       await clear.click({ timeout: 8000 });
+      // CHANGED 21 Oct 2026 (t125) - clearing is confirmed now, so the
+      // second click is the one that clears.
+      await confirmClearSampleData(page);
       await page.waitForTimeout(2500);
       const after = await page.evaluate(() => document.body.innerText);
       assert(!/sample records are still here/i.test(after),
@@ -2788,6 +2803,9 @@ async function testSampleDataClearInDeveloperTools(browser) {
       if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
     await page.waitForTimeout(3000);
+    // CHANGED 21 Oct 2026 (t125) - clearing is CONFIRMED now, and the
+    // confirmation names the records. The first click only opens it.
+    await confirmClearSampleData(page);
     void devPanel;
 
     const after = await page.evaluate(() => document.body.innerText);

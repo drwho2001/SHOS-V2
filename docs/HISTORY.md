@@ -16,6 +16,44 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the Appointments widget files, restored (a commit that swept up another session's staged deletions)
+
+Commit `5d333a9` ("The Dashboard's 'Schedule routine retest' opens the New
+test form") also **removed four files it never staged**:
+`AppointmentWidgetProvider.java`, `appointment_widget.xml`,
+`appointment_widget_info.xml` and `appointmentWidgetTimeLocation.test.js`.
+
+They had been staged by another session, in the middle of an unfinished
+change to the Appointments widget, and it staged them **between** this
+session's `git diff --cached --name-only` check and its `git commit` - so
+`git commit`, which takes the whole index, picked them up under this
+session's message. All three CI workflows went red for it: the manifest
+still declared a provider class that no longer existed, and the
+wired-provider inventory guard said a provider that had been wired was no
+longer wired.
+
+**The commit was not amended.** Rewriting shared history is not allowed when
+another session may be building from it, so it was fixed forward instead -
+`0daca0b` restores the four files, and the Appointments widget is back.
+
+**WHY RESTORE RATHER THAN COMPLETE THE REMOVAL.** Neither of that
+session's two finished widget tasks mentions removing the Appointments
+widget, the removal was only half done, and four separate inventories
+expected it (the wired-provider list, the per-widget element list, the
+bridge method list, and the argument-order sweep). The repo's own guard
+says it: *"Named rather than discovered, so the removal of a name from this
+list is itself the reviewable change."* A removal that leaves those
+inventories alone is not a reviewable change - it is a broken build. The
+removal can be redone as one commit that updates the manifest, the
+provider, the layout, the bridge and every inventory together.
+
+**THE LESSON, recorded as L-134:** in a shared tree the staged set can
+change between the check and the commit, so the check has to happen
+*immediately* before the commit - and if the index holds anything that is
+not yours, `git commit -- <your paths>` commits only yours.
+
+---
+
 ## 21 Oct 2026 - the Dashboard's "Schedule routine retest" opens the New test form (t128)
 
 The Dashboard shortcut used to **navigate** to the Testing list and write
