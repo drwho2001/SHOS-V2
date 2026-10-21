@@ -93,11 +93,24 @@ const ALWAYS_HIDDEN_BY_DESIGN = {
   widget_clinic_heading_details:
     "the Clinic Card keeps only appointment date/time/location in the glanceable card; " +
     "the details block was removed because it clipped the card at the placed 2-cell size",
+  widget_clinic_heading_when:
+    "the card's own title says what the card is (21 Oct 2026), so a heading saying " +
+    "WHEN over a date says it twice - and the room it took is what the " +
+    "appointment's own title needed",
+  widget_clinic_heading_where:
+    "the card's own title says what the card is (21 Oct 2026), so a heading saying " +
+    "WHERE over a place says it twice",
+  widget_clinic_visit_time:
+    "the time of day is part of the date line, so this row had no text of its own - " +
+    "and the band it held was the gap under the time the owner pointed at",
+  widget_clinic_doctype:
+    "the clinician's name is the one detail that did not fit the card once the " +
+    "appointment's own title took the row the visit-time row had",
 };
 
 describe("a view hidden in one branch is restored in another", () => {
   it("found the providers - otherwise every check below is vacuous", () => {
-    expect(providers.length, "no widget providers discovered").toBe(10);
+    expect(providers.length, "no widget providers discovered").toBe(9);
   });
 
   it("every view set GONE anywhere is also set VISIBLE somewhere", () => {

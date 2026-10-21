@@ -63,7 +63,6 @@ const widgetLayouts = readdirSync(LAYOUTS).filter((f) => /_widget\.xml$/.test(f)
 const REBUILT_ONTO_FRAME_LAYOUT = {
   "doxy_pep_widget.xml": "was 12.3dp over its 2-cell box",
   "next_dose_widget.xml": "was 23.7dp over its 2-cell box",
-  "appointment_widget.xml": "was 33dp over its 2-cell box",
 };
 
 /**

@@ -198,6 +198,16 @@ export async function updateTestWidget() {
         await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
           lastTest: lastTestCompact,
           retestDue: retestDueCompact,
+          // ADDED 21 Oct 2026 - is the next test the ROUTINE one? The card says
+          // when it is due; the owner was right that it should also say what
+          // kind of test it is, because a routine retest and an extra test
+          // for treatment are not the same thing to act on.
+          //
+          // The answer is the app's own routine-retest suggestion, so it is
+          // true exactly when that suggestion produced the date. A boolean,
+          // so it drops at a Redacted tier with everything else that is not
+          // on that tier's allowlist.
+          routine: Boolean(suggested),
           category: "Testing",
           state: lastTest ? "logged" : "none",
         },
@@ -206,6 +216,7 @@ export async function updateTestWidget() {
         await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
           lastTest: "No tests logged",
           retestDue: "-",
+          routine: false,
           category: "Testing",
           state: "none",
         },

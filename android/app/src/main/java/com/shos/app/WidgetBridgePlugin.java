@@ -124,42 +124,6 @@ public class WidgetBridgePlugin extends Plugin {
     }
 
     @PluginMethod
-    public void updateAppointment(PluginCall call) {
-        if (isBlank(call)) {
-            WidgetBootReceiver.blankWidget(getContext(), AppointmentWidgetProvider.class, R.layout.appointment_widget);
-            call.resolve();
-            return;
-        }
-        AppointmentWidgetProvider.updateAppointment(
-                getContext(),
-                call.getInt("count", 0),
-                opt(call, "nextAppt"),
-      // ADDED 10 Oct 2026 (t088) - the appointment's time of day and location.
-      //
-      // BEFORE redactedText, not after. widgetRedactedRender asserts
-      // redactedText is the LAST argument of every wired provider's call, and
-      // the failure names a DIFFERENT provider than the one you broke - so this
-      // is L-083 happening a second time in one session, and this comment is the
-      // receipt for why the order below is what it is.
-      opt(call, "nextApptTime"),
-      opt(call, "nextApptLocation"),
-      // ADDED 13 Oct 2026 (t060) - which appointment this widget is showing, so
-      // the tap opens THAT one. opt() with no default, because an absent field
-      // and an empty id mean the same thing here: "we are not allowed to name an
-      // appointment", which is the correct state for every Redacted-tier push.
-      opt(call, "nextApptId"),
-      // ADDED 13 Oct 2026 (t060) - how many booked visits are beyond the 14-day
-      // window. 0 when absent, which renders no suffix at all.
-      call.getInt("futureCount", 0),
-      // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
-      // tier is not Redacted. Empty rather than absent, so the provider needs no
-      // null case and a stale value cannot survive a change back to full.
-      opt(call, "redactedText")
-    );
-        call.resolve();
-    }
-
-    @PluginMethod
     public void updateTest(PluginCall call) {
         if (isBlank(call)) {
             WidgetBootReceiver.blankWidget(getContext(), TestWidgetProvider.class, R.layout.test_widget);
@@ -170,6 +134,11 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 opt(call, "lastTest"),
                 opt(call, "retestDue"),
+      // ADDED 21 Oct 2026 - whether the next test is the routine one, so the
+      // card can say what kind of test it is and not only when it is due.
+      // A boolean, so it drops at a Redacted tier with everything else that
+      // is not on that tier's allowlist.
+                call.getBoolean("routine", false),
       // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
       // tier is not Redacted. Empty rather than absent, so the provider needs no
       // null case and a stale value cannot survive a change back to full.

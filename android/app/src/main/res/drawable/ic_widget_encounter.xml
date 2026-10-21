@@ -1,37 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quick Add: Encounter.
+<!-- Quick Add: Pulse.
 
      THE ICON IS THE APP'S OWN PHOSPHOR "Pulse" GLYPH, in white on the
-     Encounters module's disc - the owner asked for the phosphor icons, and this
-     is the real path out of @phosphor-icons/react 2.1.10, regular weight
-     (the module's own mark in the bottom nav).
+     module's disc - the owner asked for the phosphor icons (21 Oct). The path is
+     the real one out of @phosphor-icons/react 2.1.10, regular weight: the
+     module's own mark in the bottom nav.
 
-     THE ADD BADGE IS SEPARATE, WHITE, AND TO THE LEFT of the disc (the
-     owner's instruction, 20 Oct: the plus was "compacted over" the module icon;
-     decompact it, put it to the left, and make it white). White because it
-     sits on the CARD's teal background rather than on the disc.
+     THE GLYPH IS SCALED TO FIT AND CENTRED IN THE DISC, and that is the part
+     that had to be measured rather than assumed. A phosphor icon is drawn on a
+     256-unit grid and its mark is NOT centred in that grid - "Users" is a wide
+     pair of people whose ink sits 13 units right of centre and 26 below it, so
+     centring the GRID puts the people half outside the disc.
 
-     The pair - plus, then disc - is centred as a unit by the layout, and the
-     plus and the disc share a centre line. -->
+     So the scale and the offset come from the glyph's own measured bounding
+     box: the path is walked (arcs sampled, because an arc's endpoints do not
+     bound it) and the mark is scaled to fit inside the disc with a margin, then
+     moved so the middle of the INK lands on the middle of the disc.
+
+     THE ADD BADGE IS SEPARATE, WHITE, AND TO THE LEFT of the disc (the owner's
+     instruction, 20 Oct: the plus was "compacted over" the module icon;
+     decompact it, put it to the left, and make it white). White because it sits
+     on the CARD's teal background rather than on the disc. It is on the disc's
+     centre line, so the pair is level.
+
+     The pair - plus, then disc - is centred as a unit by the layout. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="35dp"
+    android:width="33dp"
     android:height="22dp"
     android:viewportWidth="256"
-    android:viewportHeight="160">
+    android:viewportHeight="170">
     <!-- The add badge, in white. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M40,72h16V56h16v16h16v16H72v16H56V88H40z" />
-    <!-- The Encounters module disc. -->
+        android:pathData="M33,67H55V78H62V92H55V103H33V92H26V78H33Z" />
+    <!-- The module disc. -->
     <path
         android:fillColor="#8D3B7A"
-        android:pathData="M168,16A64,64 0,1 0,168 144A64,64 0,1 0,168 16Z" />
-    <!-- Phosphor "Pulse", regular weight, in white. -->
+        android:pathData="M160,15A70,70 0,1 0,160,155A70,70 0,1 0,160,15Z" />
+    <!-- Phosphor "Pulse", regular weight, in white, scaled to fit the disc
+         and centred on the ink's own middle. -->
     <group
-        android:scaleX="0.45"
-        android:scaleY="0.45"
-        android:translateX="110.4"
-        android:translateY="70.4">
+        android:scaleX="0.5185"
+        android:scaleY="0.5185"
+        android:translateX="91.56"
+        android:translateY="19.49">
         <path
             android:fillColor="#FFFFFF"
             android:pathData="M240,128a8,8,0,0,1-8,8H204.94l-37.78,75.58A8,8,0,0,1,160,216h-.4a8,8,0,0,1-7.08-5.14L95.35,60.76,63.28,131.31A8,8,0,0,1,56,136H24a8,8,0,0,1,0-16H50.85L88.72,36.69a8,8,0,0,1,14.76.46l57.51,151,31.85-63.71A8,8,0,0,1,200,120h32A8,8,0,0,1,240,128Z" />

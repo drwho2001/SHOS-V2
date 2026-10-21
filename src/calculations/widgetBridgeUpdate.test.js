@@ -242,45 +242,7 @@ describe("the Next Dose redacted line is ELAPSED time, not an absolute instant",
   });
 });
 
-describe("the Appointments redacted line carries a relative day bucket", () => {
-  // CHANGED 6 Oct 2026 - the owner reported "Appointments - 1 upcoming" as not
-  // giving enough confidence to keep using the widget. A bare count answers "is
-  // anything on" and not "do I need to act", so the line now says how far off it
-  // is in ELAPSED days, which is the distinction widgetPrivacy.js already makes
-  // for the two countdowns.
-  //
-  // Imported inside each `it` for the same reason the DoxyPEP tests below do:
-  // a top-level `await import` sits in a describe callback, which is not async,
-  // and fails to parse.
-  const NOW = new Date("2026-10-06T12:00:00.000Z");
 
-  it("states how far off the soonest visit is, without naming a date", async () => {
-    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
-    expect(appointmentRedactedLine(1, "2026-10-09T09:30:00.000Z", NOW)).toBe("Appointments - 1 booked - in 3 days");
-    // The privacy property, asserted directly: no month, no weekday, no hour.
-    expect(appointmentRedactedLine(1, "2026-10-09T09:30:00.000Z", NOW)).not.toMatch(/Oct|October|Mon|Tue|09:30/);
-  });
-
-  it("says today and tomorrow in words rather than 'in 0 days'", async () => {
-    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
-    expect(appointmentRedactedLine(1, "2026-10-06T09:30:00.000Z", NOW)).toBe("Appointments - 1 booked - today");
-    expect(appointmentRedactedLine(1, "2026-10-07T09:30:00.000Z", NOW)).toBe("Appointments - 1 booked - tomorrow");
-    expect(appointmentRedactedLine(1, "2026-10-06T09:30:00.000Z", NOW)).not.toMatch(/in 0 days/);
-  });
-
-  it("counts every booked visit, not just whether one exists", async () => {
-    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
-    expect(appointmentRedactedLine(3, "2026-10-09T09:30:00.000Z", NOW)).toBe("Appointments - 3 booked - in 3 days");
-  });
-
-  it("still answers honestly with nothing booked, or no usable date", async () => {
-    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
-    expect(appointmentRedactedLine(0, null, NOW)).toBe("Appointments - none booked");
-    expect(appointmentRedactedLine(undefined, undefined, NOW)).toBe("Appointments - none booked");
-    expect(appointmentRedactedLine(1, "", NOW)).toBe("Appointments - 1 booked");
-    expect(appointmentRedactedLine(1, "not a date", NOW)).toBe("Appointments - 1 booked");
-  });
-});
 
 describe("the DoxyPEP redacted line", () => {
   // CHANGED 2 Oct 2026. This suite originally FAILED, and the reason is the

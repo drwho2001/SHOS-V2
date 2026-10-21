@@ -158,7 +158,7 @@ it("every data widget with a layout is blanked, not just the first", () => {
     expect(
       dataProviders.length,
       "no provider that renders stored data was discovered - the assertion below would be vacuous",
-    ).toBeGreaterThanOrEqual(7);
+    ).toBeGreaterThanOrEqual(6);
 
     for (const provider of dataProviders) {
       const src = readFileSync(path.join(providerDir, provider), "utf8");

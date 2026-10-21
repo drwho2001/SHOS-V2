@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
+<!-- Refills due.
+
+     RE-LEARNED 21 Oct 2026: the owner said this card "has lots of empty
+     space", and the empty space was the GAPS between the bands, not the card's
+     height. The headline sat 42dp below the title and the body 45dp below that,
+     so the three lines were spread over less than half the card and the rest
+     was air.
+
+     The bands are now close together and the HEADLINE - the one-word answer to
+     "do I need to reorder?" - is the biggest thing on the card, because that
+     is the thing being glanced at. "Soon" in 24sp says more in a glance than
+     "Soon" in 18sp, and the per-medication lines under it are the detail.
+
+     The body's own maxLines is 4, so a card with four medications tracked fills
+     the space and one with a single medication does not - which is the truth
+     about the data rather than a layout trying to invent content. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@drawable/widget_background">
 
     <TextView
         android:id="@+id/widget_refill_title"
@@ -13,25 +34,29 @@
         android:maxLines="1"
         android:breakStrategy="simple" />
 
+    <!-- The headline: "Soon" or "None". The provider recolours it - amber when
+         something is due, green when nothing is - so the state is carried by the
+         word AND by its colour, never by colour alone. -->
     <TextView
         android:id="@+id/widget_refill_count"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="42dp"
-        android:text="All stocked"
-        android:textSize="18sp"
+        android:layout_marginTop="26dp"
+        android:text="None"
+        android:textSize="24sp"
         android:textColor="@color/widget_good"
         android:textStyle="bold"
-         android:maxLines="1"
+        android:maxLines="1"
         android:breakStrategy="simple" />
 
+    <!-- The per-medication lines: name, what is left, and when to request. -->
     <TextView
         android:id="@+id/widget_next_refill"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="87dp"
+        android:layout_marginTop="58dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"

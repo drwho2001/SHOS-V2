@@ -240,7 +240,7 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
   // is a DETERMINISTIC NO-OP - and fit() logs the size it chose. This repo reads
   // that log to decide whether text fit, so a fitter quietly doing nothing would
   // manufacture evidence of a fit that never happened. Fewer, real sites.
-  const EXPECTED_FIT_CALL_SITES = 19;
+  const EXPECTED_FIT_CALL_SITES = 16;
 
   it("found both sides of the contract, and every call site parsed", () => {
     // Without this the whole file passes if either the layout parse or the

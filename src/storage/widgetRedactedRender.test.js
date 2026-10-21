@@ -275,7 +275,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
   it("discovered the seven data widgets, or the inventory below is meaningless", () => {
     // NON-VACUITY. If this filter ever matched nothing, every test after it
     // would pass on an empty set and report a fully-wired privacy system.
-    expect(dataProviders.length, "no data-rendering providers discovered").toBe(7);
+    expect(dataProviders.length, "no data-rendering providers discovered").toBe(6);
   });
 
   it("DoxyPEP, the widget that was lying, is wired", () => {
@@ -836,7 +836,7 @@ describe("inventory of what is not wired yet", () => {
     for (const f of [
       "DoxyPEPWidgetProvider.java", "ClinicCardWidgetProvider.java",
       "TestWidgetProvider.java", "RefillWidgetProvider.java",
-      "AppointmentWidgetProvider.java", "NextDoseWidgetProvider.java",
+      "NextDoseWidgetProvider.java",
       "CycleWidgetProvider.java",
     ]) {
       expect(WIRED, `${f} was wired and is no longer - that is a privacy regression`).toContain(f);

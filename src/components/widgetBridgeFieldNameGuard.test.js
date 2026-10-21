@@ -96,7 +96,6 @@ function jsNamesIn(file) {
 // The bridge method name -> the JS file that builds that widget's payload.
 const BRIDGES = [
   { method: "updateDoxyPEP", js: "doxyPepSync.js" },
-  { method: "updateAppointment", js: "clinicVisitReminderSync.js" },
   { method: "updateClinicCard", js: "clinicVisitReminderSync.js" },
   { method: "updateRefill", js: "medicationReminderSync.js" },
   { method: "updateNextDose", js: "medicationReminderSync.js" },
@@ -117,7 +116,7 @@ describe("every field the Java bridge reads is a field the JS actually sends", (
       expect(javaKeysReadFor(b.method), `no plugin method ${b.method}`).not.toBeNull();
       expect(jsNamesIn(b.js), `no JS file ${b.js}`).not.toBeNull();
     }
-    expect(BRIDGES.length).toBe(7);
+    expect(BRIDGES.length).toBe(6);
   });
 
   for (const { method, js } of BRIDGES) {

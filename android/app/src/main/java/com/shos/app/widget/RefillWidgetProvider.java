@@ -147,11 +147,11 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         // Fitted in BOTH states, which is why the two fit() calls live here
         // rather than inside a branch: the headline is a different string in each
         // state ("Soon" and "None") and both have to be measured against the
-        // real field width. 18f / maxLines 1 matches what the layout declares
+        // real field width. 24f / maxLines 1 matches what the layout declares
         // for this view - widgetTextFitMaxLinesGuard checks BOTH axes, so a
         // stale number here fails the build instead of silently rendering larger
         // than the design allows.
-        WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 18f, 1);
+        WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 24f, 1);
         WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 12f, 4);
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.

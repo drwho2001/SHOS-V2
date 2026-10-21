@@ -27,7 +27,7 @@ import { ELEMENT_BRIDGE_FIELDS, elementShown } from "./widgetElements.js";
 describe("optionalElementsFor (t089)", () => {
   it("exposes optional rows for the widgets that have them", () => {
     expect(optionalElementsFor("clinicCard").length).toBeGreaterThan(0);
-    expect(optionalElementsFor("nextAppointment").length).toBeGreaterThan(0);
+    expect(optionalElementsFor("clinicCard").length).toBeGreaterThan(0);
   });
 
   it("returns an empty list for a widget with no optional rows", () => {
@@ -68,8 +68,7 @@ describe("optionalElementsFor (t089)", () => {
     // fieldAllowed ask about a field no widget ever sends, and the row would
     // then pass or fail for a reason that has nothing to do with privacy.
     const sent = {
-      clinicCard: ["title", "date", "visitTime", "location", "clinicNum", "tests", "docType", "nhsNum"],
-      nextAppointment: ["nextAppt", "apptTime", "apptLocation", "count"],
+      clinicCard: ["title", "date", "visitTime", "location", "clinicNum", "tests", "docType", "count"],
     };
     for (const [widget, map] of Object.entries(ELEMENT_BRIDGE_FIELDS)) {
       for (const [toggle, field] of Object.entries(map)) {

@@ -124,109 +124,9 @@ export async function syncClinicVisitReminders() {
     hoursBefore: prefs.clinicVisitReminderBHours,
     notificationId: NOTIFICATION_IDS.clinicVisitReminderB,
     label: `in ${prefs.clinicVisitReminderBHours}h`,
-  });
-
-  await updateAppointmentWidget(visit);
+  });
   await updateClinicCardWidget(visit);
   return { visit, resultA, resultB };
-}
-
-export async function updateAppointmentWidget(visit) {
-  try {
-    // ADDED 4 Oct 2026 - self-sufficient. A widget's visual state is
-    // UNCONDITIONAL while reminder logic is conditional by nature, so this is
-    // callable with no argument (from syncAllWidgets) and fetches its own data.
-    // Passing undefined is different from passing null on purpose: undefined
-    // means "go and look", null means "there genuinely is none".
-// ONE repository read, and the count is always the real one.
-    //
-    // The first version of this change called getSoonestBookedVisit() and then
-    // getUpcomingBookedVisits() unconditionally, which read every booked visit
-    // twice on every push - and this function runs from syncAllWidgets, which
-    // pushes every widget on every app foreground.
-    //
-    // It is read unconditionally even when the caller passed a visit, because a
-    // single passed visit cannot tell us how many OTHERS are booked. The passed
-    // visit is still what gets displayed - it is the soonest one by construction -
-    // so the two agree, and the count is no longer "1" for a user with three
-    // appointments.
-    const allFuture = await getUpcomingBookedVisits();
-    // t060 - the 14-day window. `allFuture` still means every booked future
-    // visit, unchanged, because that is what it has always meant and what
-    // getSoonestBookedVisit() (and therefore the reminders) depends on.
-    // partitionVisitsByUrgency() adds the OWNER'S distinction on top: within
-    // the next two weeks is "upcoming", beyond it is "later" - both still
-    // shown, counted and labelled separately. See clinicVisitShape.js for why
-    // that boundary is a calendar DAY rather than an elapsed duration.
-    const { upcoming, later } = partitionVisitsByUrgency(allFuture);
-    // The DISPLAYED visit is the soonest of ALL future visits, not the soonest
-    // inside the window. Hiding a real appointment from the widget because it is
-    // five weeks out would be the exact quiet inaccuracy this window exists to
-    // remove - the user is told "0 upcoming" AND still sees what is next.
-    if (visit === undefined) visit = allFuture[0] || null;
-    const count = upcoming.length;
-    const futureCount = later.length;
-    // The Redacted line is about "is an appointment booked at all", NOT about
-    // the 14-day window, so it keeps the TOTAL. Passing `count` here would make
-    // a user with one appointment in six weeks read "Appointments - none
-    // booked" on their home screen, which is a false statement about their own
-    // health, not a privacy improvement.
-    const totalCount = count + futureCount;
-    const nextAppt = visit
-      ? `${visit.title || "Appointment"} — ${new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
-      : "No appointments";
-
-    const bridge = await getWidgetBridge();
-if (bridge && bridge.plugin.updateAppointment) {
-// CHANGED 2 Oct 2026 - routed through sendWidgetUpdate, so the Redacted
-    // and Off tiers in Settings now reach this widget at all.
-        //
-        // ADDED 10 Oct 2026 (t088) - the TIME OF DAY and the LOCATION of the
-        // appointment being shown. Previously the widget rendered only a date,
-        // so a user with an appointment on a given day could not tell which of
-        // several they were looking at without opening the app.
-        //
-        // Both are sent as their OWN fields rather than appended to `nextAppt`,
-        // for the same reason the Clinic Card's visit time is its own field: the
-        // widget renders them on separate lines, and neither should have to
-        // parse the other's string.
-        //
-        // Neither survives a Redacted tier - both are identifying, and the
-        // allowlist for this widget is ["category", "count"], so they are
-        // dropped by fieldAllowed without any explicit hide here. That is
-        // default-deny doing its job, and it is asserted in t088's test rather
-        // than assumed.
-        await sendWidgetUpdate(bridge, "nextAppointment", "updateAppointment", {
-          count,
-          // t060 - how many are beyond the window. The provider renders it as
-          // "+N later" ONLY when it is above zero, so the common case (one
-          // appointment this month) looks exactly as it did before this task.
-          futureCount,
-          nextAppt,
-          nextApptTime: visit?.visitTime || "",
-          nextApptLocation: visit?.location || "",
-          // t060 - WHICH appointment the widget is showing, so the tap can open
-          // that one instead of the bare list.
-          //
-          // PRIVACY DECISION (per CLAUDE.md, adding a field to a widget is a
-          // privacy decision, not a display change): this id is NOT added to
-          // ALLOWED_AT_REDACTED for nextAppointment, and that is deliberate
-          // rather than an oversight. At a Redacted tier the widget says "an
-          // appointment is booked" without saying which - and a tap that opened
-          // that specific visit would disclose exactly what the tier was chosen
-          // to withhold, through the one route the user is most likely to take.
-          // Default-deny drops the field, the provider receives "" and falls back
-          // to the bare clinic-visits link. The deep link is therefore a Full-tier
-          // affordance, which is the honest shape of it.
-          nextApptId: visit?.id || "",
-          category: "Appointments",
-        },
-          appointmentRedactedLine(totalCount, visit?.date));
-    }
-  } catch (e) {
-    // Widget bridge not available (web) — ignore
-    console.debug("Widget update skipped:", e);
-  }
 }
 
 /**
@@ -419,19 +319,3 @@ export async function handleSnoozeClinicVisit() {
  * milliseconds - this repo has been bitten by dividing a span by 86400000 across
  * a DST boundary, and it is the recorded rule for exactly this shape.
  */
-export function appointmentRedactedLine(count, nextDate, now = new Date()) {
-  const n = Number(count);
-  if (!Number.isFinite(n) || n <= 0) return redactedWidgetLine("Appointments", "none booked");
-
-  const booked = n === 1 ? "1 booked" : `${n} booked`;
-  const from = storedDayKey(nextDate);
-  if (!from) return redactedWidgetLine("Appointments", booked);
-
-  const days = calendarDaysBetween(localDayKey(now), from);
-  if (days === null) return redactedWidgetLine("Appointments", booked);
-  // Same-day and past-dated are stated plainly: a booked visit whose day has
-  // arrived is the case where "in 0 days" would read as a bug.
-  if (days <= 0) return redactedWidgetLine("Appointments", `${booked} - today`);
-  if (days === 1) return redactedWidgetLine("Appointments", `${booked} - tomorrow`);
-  return redactedWidgetLine("Appointments", `${booked} - in ${days} days`);
-}

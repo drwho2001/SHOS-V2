@@ -14,6 +14,19 @@ public class TestWidgetProvider extends ResizingWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_LAST_TEST = "last_test";
     private static final String KEY_RETEST_DUE = "retest_due";
+    // ADDED 21 Oct 2026 - whether the next test is the ROUTINE one.
+    //
+    // The date on this card says WHEN; it did not say WHAT KIND of test it
+    // is, and the owner was right that it should: a routine retest and an
+    // extra test for treatment are not the same thing to act on, and the date
+    // reads the same either way.
+    //
+    // It is a BOOLEAN, not a string, because the app knows the answer and the
+    // card only needs to say it. A boolean also survives the Redacted tier
+    // being what it says: it is not in ALLOWED_AT_REDACTED, so default-deny
+    // drops it, and the row is simply absent rather than claiming something
+    // the tier is not allowed to say.
+    private static final String KEY_ROUTINE = "retest_routine";
 
 // CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
 // Redacted widget, decided in JS. Distinct per provider because all seven share
@@ -53,6 +66,7 @@ public class TestWidgetProvider extends ResizingWidgetProvider {
         }
         String lastTest = prefs.getString(KEY_LAST_TEST, "No tests logged");
         String retestDue = prefs.getString(KEY_RETEST_DUE, "-");
+        boolean routine = prefs.getBoolean(KEY_ROUTINE, false);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.test_widget);
 
@@ -95,6 +109,7 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
                 views.setTextViewText(R.id.widget_test_title, redactedText);
             views.setViewVisibility(R.id.widget_last_test, android.view.View.GONE);
 views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_routine, android.view.View.GONE);
                 WidgetTextFit.fit(views, context, R.id.widget_test_title, redactedText, wDp, 16f);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
@@ -121,6 +136,23 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_retest_due, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_last_test, lastTest);
             views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
+            // ADDED 21 Oct 2026 - the ROUTINE row. The owner pointed out that
+            // the card said WHEN the next test is due but not WHAT KIND it is:
+            // "Retest due: 23 Dec" reads the same whether the 23 Dec is the
+            // routine interval or an extra test for treatment, and the two are
+            // not the same thing to act on.
+            //
+            // The app already knows: the date came from its own routine-retest
+            // suggestion, and the JS says so in one field. So the row is filled
+            // ONLY when that is true - it can never claim "routine" for a date
+            // that came from somewhere else - and it is hidden otherwise.
+            if (routine) {
+                views.setTextViewText(R.id.widget_routine, "Routine retest");
+                views.setViewVisibility(R.id.widget_routine, android.view.View.VISIBLE);
+            } else {
+                views.setTextViewText(R.id.widget_routine, "");
+                views.setViewVisibility(R.id.widget_routine, android.view.View.GONE);
+            }
             // CHANGED 20 Oct 2026 - there is NO provider-side row move here any
             // more, and there used to be one.
             //
@@ -150,7 +182,7 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
             // autoSizeTextType ceiling on that view was stopping the oversize from
             // shipping, which is exactly why the mismatch survived every green
             // build: nothing asserted maxSp, only maxLines.
-            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 14f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 24f, 1);
             WidgetTextFit.fit(views, context, R.id.widget_retest_due, "Retest due: " + retestDue, wDp, 12f, 2);
 
         // Click opens Healthcare > Testing tab
@@ -159,7 +191,7 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
     }
 
     public static void updateTest(Context context, String lastTest, String retestDue,
-                                   String redactedText) {
+                                   boolean routine, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -172,6 +204,7 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
         prefs.edit()
             .putString(KEY_LAST_TEST, lastTest)
             .putString(KEY_RETEST_DUE, retestDue)
+            .putBoolean(KEY_ROUTINE, routine)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 

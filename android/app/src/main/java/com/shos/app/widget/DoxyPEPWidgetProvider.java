@@ -347,9 +347,23 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
                     || "No active window".equals(status)) ? "no\nwindow" : status;
             views.setProgressBar(R.id.widget_doxy_ring, 100, 0, false);
             views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
-            views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
-            // The ring is EMPTY in this state - the owner's "empty ring/outline"
-            // - so there is no word in it either.
+            // The countdown is RESET BUT NOT STARTED, so the ring shows the
+            // full window it would run: "72:00".
+            //
+            // The owner asked for it (21 Oct) - an empty ring with nothing in it
+            // reads as a card that failed to load, while a ring carrying the
+            // window it is ready to run reads as a card that knows there is no
+            // window. The format has no %s in it, so the platform renders it
+            // literally: a Chronometer with a literal format is a static string
+            // (the same trick the expired state uses for "Take within 72h").
+            //
+            // The word in the ring's centre is for the EXPIRED state, which has no
+            // countdown to show, so it is hidden here.
+            views.setChronometer(R.id.widget_doxy_countdown, 0L, "72:00", false);
+            views.setChronometerCountDown(R.id.widget_doxy_countdown, false);
+            views.setTextColor(R.id.widget_doxy_countdown,
+                    colour(context, R.color.widget_text_muted));
+            views.setViewVisibility(R.id.widget_doxy_countdown, View.VISIBLE);
             views.setViewVisibility(R.id.widget_doxy_ring_label, View.GONE);
             views.setTextColor(R.id.widget_doxy_status,
                     colour(context, R.color.widget_text_muted));

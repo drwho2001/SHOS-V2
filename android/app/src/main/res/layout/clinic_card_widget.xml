@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- CHANGED 6 Oct 2026 - flattened, and paging REMOVED.
 
-     HISTORY, because the reason is not obvious from the current state and the
-     obvious-looking alternative has already been tried and failed twice.
+     HISTORY, because the reason is not obvious from the current state and
+     the obvious-looking alternative has already been tried and failed twice.
 
      1. Originally this was the only one of the ten widget layouts with a nested
         ViewGroup and a bare View divider, and it was the only widget that would
@@ -22,26 +22,37 @@
      show more data is to make ONE flat card carry more fields. Which is what this
      is: no container inside the root, and more content, rather than more pages.
 
-     What paging DID leave behind, and is kept because it costs nothing here:
-     - the appointment TIME, as its own field (KEY_APPT_VISIT_TIME), so the card
-       can show a time at all. That was one of the reasons for wanting more data.
-     - no reveal button. The old one fired a deep link resolving to an action
-       nothing performs, so tapping it only opened the app. It is gone rather than
-       fixed, because it implied a permanent-unmask that the provider's own
-       comment already called security theatre - and with a single flat card there
-       is nothing to reveal, because the privacy tier decides what is on screen.
+     CHANGED 21 Oct 2026 - THIS IS NOW THE APPOINTMENTS WIDGET, and the
+     count-based one has gone. The owner asked for it: the card that said
+     "0 upcoming + 1 later" and the card that said when the next appointment is
+     were two widgets answering the same question, and the one that answered it
+     properly was the one that looked like a placeholder.
 
-     Layout order below is the clinic-visit order the Clinic Card screen uses, so
-     the widget and the card agree: what you need at reception first, identifiers
-     after. -->
+     So the title is now "Next appointment", and the appointment's own title
+     ("Biannual PrEP") is the line below it.
+
+     The two section headings and the visit-time row are no longer SHOWN: with a
+     title that says what the card is, "WHEN" over a date and "WHERE" over a
+     place are saying it twice, and the band the visit time occupied was the
+     "large gap under the time" the owner pointed at - the time is part of the
+     date line, so the band it used to hold was dead space. They are still in
+     the LAYOUT, because the t087 guard asserts they are there and the
+     provider still hides them at a Redacted tier, but nothing shows them and
+     the space they used to take is what the appointment's title and the tests
+     row now have. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
 
+    <!-- The card's name. STATIC: it says what the card is, and it is the same
+         on every appointment. The appointment's own title is the row below.
+         maxLines 2 because "Next appointment" does not fit on one line at the
+         narrow width - the widest word, "appointment", is 202px at 12sp and the
+         narrow card's content is 211px. -->
     <TextView
         android:id="@+id/widget_clinic_title"
         android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Clinic card"
+        android:text="Next appointment"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
@@ -49,29 +60,106 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- ADDED 10 Oct 2026 (t087) - three SECTION HEADINGS grouping what was a flat
-         list of eight stacked TextViews, which read as a mishmash with no way
-         to find anything.
+    <!-- The appointment's own title, on the line below. -->
+    <TextView
+        android:id="@+id/widget_clinic_appt_title"
+        android:layout_gravity="top|start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="23dp"
+        android:text=""
+        android:textSize="14sp"
+        android:textColor="@color/widget_text_primary"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
-         Deliberately NOT data headings ("When", "Where", "Details"): a static
-         label carries no user data and so is safe to show at every tier. The
-         rows beneath them hold the identifying content and are GONE at a tier
-         that dropped them, exactly as they were before this change. A static
-         heading over a blank card is the acceptable minimum - it names the
-         section - whereas a heading naming a person or place is not.
+    <!-- The date and the time of day, on one line. -->
+    <TextView
+        android:id="@+id/widget_clinic_date"
+        android:layout_gravity="top|start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="46dp"
+        android:text="No upcoming appointment"
+        android:textSize="14sp"
+        android:textColor="@color/widget_good"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
-         Flat siblings, never a nested container (L-076: a nested ViewGroup in
-         a widget RemoteViews layout does not inflate here).
+    <!-- Where. -->
+    <TextView
+        android:id="@+id/widget_clinic_location"
+        android:layout_gravity="top|start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="68dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@color/widget_accent"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
-         The grouping follows the Clinic Card SCREEN's own order - date/time,
-         location, then the clinical details - so the widget and the screen it
-         opens present the same information in the same sequence. -->
+    <!-- The tests booked for that visit: the reason a clinic card exists. -->
+    <TextView
+        android:id="@+id/widget_clinic_tests"
+        android:layout_gravity="top|start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="87dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
+
+    <TextView
+        android:id="@+id/widget_clinic_clinic_num"
+        android:layout_gravity="top|start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="106dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
+
+    <!-- The rows the card no longer shows. They are kept in the layout because
+         the t087 guard asserts the section headings are there and the provider
+         still hides them at a Redacted tier, but nothing displays them: the
+         card's content is four rows and a 2-cell card is 134dp tall, and the
+         owner's own arrangement - the title, the appointment's title, the date
+         and where - is what fills it.
+
+         The visit time is here for the same reason: the time is part of the
+         date line, and the row it used to hold was the gap under the time. -->
+    <TextView
+        android:id="@+id/widget_clinic_visit_time"
+        android:layout_gravity="top|start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="125dp"
+        android:text=""
+        android:textSize="13sp"
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
+
     <TextView
         android:id="@+id/widget_clinic_heading_when"
         android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="26dp"
+        android:layout_marginTop="144dp"
         android:text="When"
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
@@ -83,39 +171,11 @@
         android:breakStrategy="simple" />
 
     <TextView
-        android:id="@+id/widget_clinic_date"
-        android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="45dp"
-        android:text="No upcoming appointment"
-        android:textSize="14sp"
-        android:textColor="@color/widget_good"
-        android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
-        android:id="@+id/widget_clinic_visit_time"
-        android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="68dp"
-        android:text=""
-        android:textSize="13sp"
-        android:textColor="@color/widget_text_primary"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
-    <TextView
         android:id="@+id/widget_clinic_heading_where"
         android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="87dp"
+        android:layout_marginTop="163dp"
         android:text="Where"
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
@@ -126,27 +186,13 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <TextView
-        android:id="@+id/widget_clinic_location"
-        android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="106dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_accent"
-        android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
     <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
     <TextView
         android:id="@+id/widget_clinic_heading_details"
         android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="128dp"
+        android:layout_marginTop="182dp"
         android:text="Details"
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
@@ -158,37 +204,11 @@
         android:breakStrategy="simple" />
 
     <TextView
-        android:id="@+id/widget_clinic_clinic_num"
-        android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="145dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_primary"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
-        android:id="@+id/widget_clinic_tests"
-        android:layout_gravity="top|start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="162dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
         android:id="@+id/widget_clinic_doctype"
         android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="179dp"
+        android:layout_marginTop="201dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -201,7 +221,7 @@
         android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="196dp"
+        android:layout_marginTop="220dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -210,4 +230,3 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 </FrameLayout>
-

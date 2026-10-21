@@ -56,7 +56,6 @@
 export const DATA_WIDGETS = [
   "nextDose",
   "refillDue",
-  "nextAppointment",
   "lastTest",
   "doxyPepWindow",
   "cycle",
@@ -84,7 +83,6 @@ export const TIERS = ["full", "redacted", "off"];
 export const DEFAULT_TIERS = {
   nextDose: "full",
   refillDue: "redacted",
-  nextAppointment: "redacted",
   lastTest: "redacted",
   doxyPepWindow: "full",
   cycle: "redacted",
@@ -116,7 +114,6 @@ export const ALLOWED_AT_REDACTED = {
   // goes stale on its own.
   nextDose: ["category", "state", "countdownAt"],
   refillDue: ["category", "count"],
-  nextAppointment: ["category", "count"],
   lastTest: ["category", "state"],
   doxyPepWindow: ["category", "state", "countdownAt"],
   cycle: ["category", "state"],
@@ -127,7 +124,6 @@ export const ALLOWED_AT_REDACTED = {
 export const REDACTED_COPY = {
   nextDose: "Medication",
   refillDue: "Refills",
-  nextAppointment: "Appointments",
   lastTest: "Testing",
   doxyPepWindow: "DoxyPEP",
   cycle: "Tracking",
@@ -248,10 +244,6 @@ export const OPTIONAL_ELEMENTS = {
     { key: "showClinicNum", label: "Clinic number" },
     { key: "showTests", label: "Tests" },
     { key: "showDocType", label: "Clinician" },
-  ],
-  nextAppointment: [
-    { key: "showApptTime", label: "Appointment time" },
-    { key: "showApptLocation", label: "Location" },
   ],
 };
 

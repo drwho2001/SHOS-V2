@@ -1,38 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quick Add: Medication.
+<!-- Quick Add: Pill.
 
      THE ICON IS THE APP'S OWN PHOSPHOR "Pill" GLYPH, in white on the
-     Medication module's disc - the owner asked for the phosphor icons and for
-     the mark to clearly read as a pill, and this is the real path out of
-     @phosphor-icons/react 2.1.10, regular weight (the module's own mark in
-     the bottom nav): a capsule, split diagonally.
+     module's disc - the owner asked for the phosphor icons (21 Oct). The path is
+     the real one out of @phosphor-icons/react 2.1.10, regular weight: the
+     module's own mark in the bottom nav.
 
-     THE ADD BADGE IS SEPARATE, WHITE, AND TO THE LEFT of the disc (the
-     owner's instruction, 20 Oct: the plus was "compacted over" the module icon;
-     decompact it, put it to the left, and make it white). White because it
-     sits on the CARD's teal background rather than on the disc.
+     THE GLYPH IS SCALED TO FIT AND CENTRED IN THE DISC, and that is the part
+     that had to be measured rather than assumed. A phosphor icon is drawn on a
+     256-unit grid and its mark is NOT centred in that grid - "Users" is a wide
+     pair of people whose ink sits 13 units right of centre and 26 below it, so
+     centring the GRID puts the people half outside the disc.
 
-     The pair - plus, then disc - is centred as a unit by the layout, and the
-     plus and the disc share a centre line. -->
+     So the scale and the offset come from the glyph's own measured bounding
+     box: the path is walked (arcs sampled, because an arc's endpoints do not
+     bound it) and the mark is scaled to fit inside the disc with a margin, then
+     moved so the middle of the INK lands on the middle of the disc.
+
+     THE ADD BADGE IS SEPARATE, WHITE, AND TO THE LEFT of the disc (the owner's
+     instruction, 20 Oct: the plus was "compacted over" the module icon;
+     decompact it, put it to the left, and make it white). White because it sits
+     on the CARD's teal background rather than on the disc. It is on the disc's
+     centre line, so the pair is level.
+
+     The pair - plus, then disc - is centred as a unit by the layout. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="35dp"
+    android:width="33dp"
     android:height="22dp"
     android:viewportWidth="256"
-    android:viewportHeight="160">
+    android:viewportHeight="170">
     <!-- The add badge, in white. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M40,72h16V56h16v16h16v16H72v16H56V88H40z" />
-    <!-- The Medication module disc. -->
+        android:pathData="M33,67H55V78H62V92H55V103H33V92H26V78H33Z" />
+    <!-- The module disc. -->
     <path
         android:fillColor="#2E7D32"
-        android:pathData="M168,16A64,64 0,1 0,168 144A64,64 0,1 0,168 16Z" />
-    <!-- Phosphor "Pill", regular weight, in white. -->
+        android:pathData="M160,15A70,70 0,1 0,160,155A70,70 0,1 0,160,15Z" />
+    <!-- Phosphor "Pill", regular weight, in white, scaled to fit the disc
+         and centred on the ink's own middle. -->
     <group
-        android:scaleX="0.45"
-        android:scaleY="0.45"
-        android:translateX="110.4"
-        android:translateY="70.4">
+        android:scaleX="0.5821"
+        android:scaleY="0.5821"
+        android:translateX="80.95"
+        android:translateY="10.49">
         <path
             android:fillColor="#FFFFFF"
             android:pathData="M216.42,39.6a53.26,53.26,0,0,0-75.32,0L39.6,141.09a53.26,53.26,0,0,0,75.32,75.31h0L216.43,114.91A53.31,53.31,0,0,0,216.42,39.6ZM103.61,205.09h0a37.26,37.26,0,0,1-52.7-52.69L96,107.31,148.7,160ZM205.11,103.6,160,148.69,107.32,96l45.1-45.09a37.26,37.26,0,0,1,52.69,52.69ZM189.68,82.34a8,8,0,0,1,0,11.32l-24,24a8,8,0,1,1-11.31-11.32l24-24A8,8,0,0,1,189.68,82.34Z" />

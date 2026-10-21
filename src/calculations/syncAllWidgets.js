@@ -43,7 +43,7 @@ import { updateTestWidget } from "./testingReminderSync";
 // the one registered here; using the other would leave the Next Dose widget with
 // no caller at all, which is the state it was in before this change.
 import { updateRefillWidget } from "./medicationReminderSync";
-import { updateAppointmentWidget, updateClinicCardWidget } from "./clinicVisitReminderSync";
+import { updateClinicCardWidget } from "./clinicVisitReminderSync";
 import { updateDoxyPEPWidget } from "./doxyPepSync";
 // Moved out of SHOS_MenstrualHealth_Prototype.jsx on 4 Oct 2026 precisely so this
 // file could reach it - a pusher trapped inside a React module can only be called
@@ -58,7 +58,6 @@ const PUSHERS = [
   // One call covers two widgets: this pusher sends refillDue AND nextDose.
   ["refill + nextDose", updateRefillWidget],
   ["lastTest", updateTestWidget],
-  ["nextAppointment", updateAppointmentWidget],
   ["clinicCard", updateClinicCardWidget],
   ["doxyPepWindow", updateDoxyPEPWidget],
   ["cycle", updateCycleWidget],

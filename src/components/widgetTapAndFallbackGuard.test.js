@@ -32,8 +32,8 @@ const dataProviders = providers.filter((f) => !f.startsWith("QuickAdd"));
 
 describe("widget taps reach the app (device bug: every tap landed on the dashboard)", () => {
   it("found the providers - otherwise every check below is vacuous", () => {
-    expect(providers.length, "no widget providers discovered").toBe(10);
-    expect(dataProviders.length, "no data-bearing providers discovered").toBe(7);
+    expect(providers.length, "no widget providers discovered").toBe(9);
+    expect(dataProviders.length, "no data-bearing providers discovered").toBe(6);
   });
 
   it("every provider sets FLAG_ACTIVITY_SINGLE_TOP", () => {
@@ -581,7 +581,6 @@ describe("widget pushes are decoupled from reminder scheduling", () => {
     // covered by construction - the same reasoning as the bridge-method test above,
     // which reads the plugin instead of listing widgets.
     const DATA_PROVIDERS = [
-      "Appointment",
       "ClinicCard",
       "Cycle",
       "DoxyPEP",

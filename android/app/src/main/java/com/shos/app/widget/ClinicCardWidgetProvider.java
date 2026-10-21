@@ -79,19 +79,29 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
     // each provider overwrite the previous one's line.
     private static final String KEY_REDACTED_TEXT = "redacted_text_clinic";
 
+    // ADDED 21 Oct 2026 - how far DOWN the location row moves on the narrow card,
+    // where the date is two lines. 18dp is one line of 14sp text (17dp) plus the
+    // gap that used to hold the visit-time row.
+    private static final float NARROW_LOCATION_OFFSET_DP = 18f;
+
 
 
     /**
-     * How far up the location row moves when the section headings are hidden.
+     * How far DOWN the location row moves on the narrow card.
      *
-     * ADDED 20 Oct 2026. In PIXELS, because setTranslationY takes pixels and
-     * the layout's margins are in dp - converting here rather than at the call
-     * site is what keeps the two from being confused, and the density is the
-     * display's, so it is right on a device whose font size or display size
-     * has been changed.
+     * ADDED 21 Oct 2026. In PIXELS, because setTranslationY takes pixels and the
+     * layout's margins are in dp - converting here rather than at the call site
+     * is what keeps the two from being confused, and the density is the
+     * display's, so it is right on a device whose font size or display size has
+     * been changed.
+     *
+     * The narrow card's date is TWO lines ("Thu 18 Mar · 16:00" does not fit
+     * 211px on one line), so the location has to move down past it rather than
+     * up into the space the section headings used to hold: one line of 14sp text
+     * plus the gap that used to hold the visit-time row.
      */
-    private static float headingBandOffset(Context context) {
-        return -HEADING_BAND_DP * context.getResources().getDisplayMetrics().density;
+    private static float narrowLocationOffset(Context context) {
+        return NARROW_LOCATION_OFFSET_DP * context.getResources().getDisplayMetrics().density;
     }
 
     /**
@@ -216,6 +226,7 @@ private static RemoteViews unavailableViews(Context context) {
             // STATIC proof and cannot follow control flow, and a named
             // setViewVisibility is the only thing it can actually see.
             views.setTextViewText(R.id.widget_clinic_title, redactedText);
+            views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
@@ -249,19 +260,31 @@ private static RemoteViews unavailableViews(Context context) {
             // widget_clinic_nhs_num is NOT in this list, and that is deliberate: it
             // is hidden at every tier by design (the bridge never carries it and
             // there is no reveal affordance), so restoring it would be a leak.
+            // ADDED 21 Oct 2026 - this card is the APPOINTMENTS widget now, and
+            // the arrangement is the owner's: the card's own name on top, the
+            // appointment's title on the line below it, then when, then where.
+            //
+            // The title is set back to "Next appointment" here rather than
+            // left alone, because the Redacted branch above puts the redacted
+            // line in it - and a RemoteViews update applies only the actions it
+            // carries, so a card that switched tiers would keep saying the
+            // redacted thing. Setting a property in one branch obliges you to
+            // set it in the others.
+            views.setTextViewText(R.id.widget_clinic_title, "Next appointment");
+            views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
-             views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.VISIBLE);
-             views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
-             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
-             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
-             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-            views.setTextViewText(R.id.widget_clinic_title, title);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+            // The rows the card no longer shows. The section headings say what
+            // the title already says, the visit time is part of the date line, and
+            // the clinician's name is the one detail that did not fit.
+            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
+            views.setTextViewText(R.id.widget_clinic_appt_title, title);
              views.setTextViewText(R.id.widget_clinic_date,
                      visitTime == null || visitTime.isEmpty() ? date : date + " · " + visitTime);
              views.setTextViewText(R.id.widget_clinic_visit_time, "");
@@ -272,7 +295,8 @@ private static RemoteViews unavailableViews(Context context) {
             // Measured on the device: the Clinic Card title was clipped by the
             // card's own top edge and the WHOLE card overflowed, so every field
             // is fitted rather than only the headline.
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, title, wDp, 16f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, "Next appointment", wDp, 16f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_appt_title, title, wDp, 14f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_date, date, wDp, 14f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_location, location, wDp, 12f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, "Tests: " + tests, wDp, 12f);
@@ -293,6 +317,12 @@ private static RemoteViews unavailableViews(Context context) {
                  views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+                 // The appointment's title does not fit at this width: the
+                 // card's own title is two lines here ("Next appointment" is
+                 // 300px at 16sp and the narrow card's content is 211px), and
+                 // the appointment's title is two lines as well. So it goes,
+                 // and what is left is when and where.
+                 views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.GONE);
                  // CHANGED 20 Oct 2026 - the narrow card loses the section
                  // headings, and the row the last one labelled moves up into
                  // the space it occupied.
@@ -313,7 +343,20 @@ private static RemoteViews unavailableViews(Context context) {
                  // been on View since API 11.
                  views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
-                 views.setFloat(R.id.widget_clinic_location, "setTranslationY", headingBandOffset(context));
+                  // The appointment's title does not fit at this width: the
+                  // card's own title is two lines here ("Next appointment" is
+                  // 300px at 16sp and the narrow card's content is 211px), and
+                  // the appointment's title is two lines as well. So it goes,
+                  // and what is left is when and where.
+                  views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.GONE);
+                  // The date is TWO lines at this width, so the location moves
+                  // DOWN past it rather than up into the space the headings
+                  // used to hold. The offset is a pixel value on the view:
+                  // setViewLayoutMargin is API 31+, and a RemoteViews action
+                  // naming a method the launcher's API level does not have
+                  // throws at reapply, where the host turns it into "Can't load
+                  // widget". setTranslationY has been on View since API 11.
+                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", narrowLocationOffset(context));
              } else {
                  // AND the offset is CLEARED on the wide card. A RemoteViews
                  // update applies only the actions it carries, and the launcher
@@ -337,19 +380,21 @@ private static RemoteViews unavailableViews(Context context) {
             // widget_clinic_nhs_num is NOT in this list, and that is deliberate: it
             // is hidden at every tier by design (the bridge never carries it and
             // there is no reveal affordance), so restoring it would be a leak.
+            views.setTextViewText(R.id.widget_clinic_title, "Next appointment");
+            views.setTextViewText(R.id.widget_clinic_appt_title, "");
+            views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_tests, android.view.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.GONE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.GONE);
              views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-             views.setTextViewText(R.id.widget_clinic_title, "Clinic card");
              views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
             views.setTextViewText(R.id.widget_clinic_visit_time, "");
             views.setTextViewText(R.id.widget_clinic_location, "");
@@ -366,7 +411,7 @@ private static RemoteViews unavailableViews(Context context) {
                   // and it has the same headings eating the same space.
                   views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
                   views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
-                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", headingBandOffset(context));
+                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", narrowLocationOffset(context));
               } else {
                   views.setFloat(R.id.widget_clinic_location, "setTranslationY", 0f);
               }

@@ -114,7 +114,6 @@ describe("widget picker (t056)", () => {
   const widgets = [
     "next_dose",
     "refill",
-    "appointment",
     "test",
     "cycle",
     "doxy_pep",
@@ -124,7 +123,7 @@ describe("widget picker (t056)", () => {
     "clinic_card",
   ];
 
-  it("finds all ten widget_info files, so the checks below are not vacuous", () => {
+  it("finds every widget_info file, so the checks below are not vacuous", () => {
     for (const w of widgets) {
       expect(fs.existsSync(`${RES}/xml/${w}_widget_info.xml`), `missing ${w}_widget_info.xml`).toBe(true);
     }
@@ -286,7 +285,7 @@ it("every widget layout uses the shared background, not a hardcoded colour", () 
 
   describe("widget picker grouping and sizing", () => {
     const widgets = [
-      "next_dose", "refill", "appointment", "test", "cycle", "doxy_pep",
+      "next_dose", "refill", "test", "cycle", "doxy_pep",
       "quick_add_contact", "quick_add_encounter", "quick_add_medication", "clinic_card",
     ];
     const labelOf = (w) =>

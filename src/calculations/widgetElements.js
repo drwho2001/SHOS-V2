@@ -43,10 +43,6 @@ export const ELEMENT_BRIDGE_FIELDS = {
     showTests: "tests",
     showDocType: "docType",
   },
-  nextAppointment: {
-    showApptTime: "apptTime",
-    showApptLocation: "apptLocation",
-  },
 };
 
 registerElementBridgeFields(ELEMENT_BRIDGE_FIELDS);
