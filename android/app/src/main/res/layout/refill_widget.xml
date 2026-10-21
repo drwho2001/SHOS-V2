@@ -50,7 +50,12 @@
         android:maxLines="1"
         android:breakStrategy="simple" />
 
-    <!-- The per-medication lines: name, what is left, and when to request. -->
+    <!-- The per-medication lines: name, what is left, and what has happened.
+         FIVE lines, not four: "Sertraline · 14 left · requested" is 29
+         characters and wraps onto three at this width, and the medication below
+         it needs two more - so with four lines the last medication's line was
+         cut off, and a card that silently drops a medication is worse than one
+         that is a line taller. -->
     <TextView
         android:id="@+id/widget_next_refill"
         android:layout_width="match_parent"
@@ -60,6 +65,6 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
-         android:maxLines="4"
+         android:maxLines="5"
         android:breakStrategy="simple" />
 </FrameLayout>
