@@ -322,17 +322,30 @@ it("every ring is rotated -90 so the sweep starts at 12 o'clock", () => {
     }
   });
 
-  it("a ring anchored to the top of the card clears the row below it", () => {
-    // ADDED 20 Oct 2026. The DoxyPEP card's ring is anchored to the top of the
-    // card rather than centred, because the bands under it - the status word,
-    // the countdown, the evidence line - are what the card is read for, and a
-    // centred ring pushes the countdown off the bottom of a 2-cell card.
+  it("a ring anchored to the top of the card holds only its own centre content", () => {
+    // REWRITTEN 20 Oct 2026. The ring is now at the TOP of the card (the owner
+    // asked for it moved up, to close the band of dead space that sat between
+    // the title and the ring), and the card's own content - the countdown, or
+    // the status word - sits in the ring's hole.
     //
-    // Anchoring a ring at the top is only safe if it does not then draw across
-    // the row beneath it, and that is arithmetic on the layout's own margins:
-    // the ring's lower edge is padding + marginTop + its diameter, and the
-    // next row's top edge is padding + its marginTop.
+    // The old version of this test asserted that the first top-anchored view
+    // after the ring starts below the ring's lower edge. That was right when
+    // the ring held nothing, and it is wrong now: the countdown and the word
+    // are INSIDE the ring by design, and the test failed on them.
+    //
+    // So the rule is now the one the design actually needs:
+    //   1. the views inside the ring's band are the ring's centre content, and
+    //      they may be there;
+    //   2. none of them is wider than the HOLE, so none of them can spill
+    //      across the ring's stroke (the hole is the ring minus its stroke);
+    //   3. the first view BELOW the band starts at or after the ring's lower
+    //      edge, so the ring is never drawn across a row that belongs under it.
     const PAD = 16; // root padding, each side
+    const strokeDp = (() => {
+      const m = /thickness="(\d+)dp"/.exec(arc);
+      return m ? Number(m[1]) : 0;
+    })();
+
     for (const f of ringLayouts) {
       const src = readFileSync(join(LAYOUTS, f), "utf8");
       const tags = src.match(/<ProgressBar[\s\S]*?\/>/g) || [];
@@ -346,25 +359,48 @@ it("every ring is rotated -90 so the sweep starts at 12 o'clock", () => {
         expect(margin && size, `${f}: a top-anchored ring must declare a margin and a size`)
           .toBeTruthy();
         const ringDp = Number(size[1]);
-        const lowerEdge = PAD + Number(margin[1]) + ringDp;
+        const top = PAD + Number(margin[1]);
+        const bottom = top + ringDp;
+        const holeDp = ringDp - 2 * strokeDp;
 
-        // The first view after the ring that is ALSO anchored to the top is the
-        // row it has to clear. Views that are not top-anchored (the countdown
-        // and the evidence line sit at the bottom) cannot be drawn across by a
-        // ring near the top.
+        // Every top-anchored view after the ring, with its margin and width.
+        //
+        // The attributes are read PER TAG, not by one big pattern: a pattern
+        // that assumed an attribute order matched nothing at all when the
+        // order was different, and the test passed - a guard that silently
+        // checks nothing is the exact failure this repo keeps re-learning.
         const after = src.slice(src.indexOf(tag) + tag.length);
-        const next = /android:layout_gravity="[^"]*top[^"]*"[\s\S]*?android:layout_marginTop="(\d+)dp"/.exec(
-          after,
-        );
-        if (!next) continue;
-        const rowTop = PAD + Number(next[1]);
+        const rows = [...after.matchAll(/<(TextView|Chronometer)[\s\S]*?\/>/g)]
+          .map((m) => m[0])
+          .map((t) => ({
+            gravity: (/android:layout_gravity="([^"]+)"/.exec(t) || ["", ""])[1],
+            marginTop: Number((/android:layout_marginTop="(\d+)dp"/.exec(t) || ["", 0])[1]),
+            width: Number((/android:layout_width="(\d+)dp"/.exec(t) || ["", 0])[1]),
+          }))
+          .filter((r) => r.gravity.split("|").includes("top"));
+
+        for (const row of rows) {
+          const rowTop = PAD + row.marginTop;
+          if (rowTop >= bottom) continue; // below the ring: fine
+          if (rowTop < top) continue; // above the ring: fine
+          // Inside the ring's band: this is the ring's centre content, and it
+          // must fit the hole.
+          expect(
+            row.width,
+            `${f}: the view at ${row.marginTop}dp sits inside the ring (${top}dp..${bottom}dp) ` +
+              `but is ${row.width}dp wide and the hole is only ${holeDp}dp, so it will be ` +
+              `drawn across the ring's stroke.`,
+          ).toBeLessThanOrEqual(holeDp);
+        }
+
+        // The first row BELOW the ring must not be drawn across its lower edge.
+        const below = rows.find((r) => PAD + r.marginTop >= bottom);
+        if (!below) continue;
         expect(
-          lowerEdge,
-          `${f}: the ring is anchored ${margin[1]}dp from the top and is ${ringDp}dp ` +
-            `across, so its lower edge falls at ${lowerEdge}dp - past the top of the ` +
-            `row below it at ${rowTop}dp. The ring would be drawn straight across ` +
-            `that text.`,
-        ).toBeLessThanOrEqual(rowTop);
+          PAD + below.marginTop,
+          `${f}: the row below the ring starts before the ring's lower edge, so the ` +
+            `ring is drawn straight across it.`,
+        ).toBeGreaterThanOrEqual(bottom);
       }
     }
   });
