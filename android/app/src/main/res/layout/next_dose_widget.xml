@@ -51,45 +51,67 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- 44dp, not 52dp. The owner said the ring was oversized on 20 Oct, and
-         the guard's own ceiling is 52dp - a ring that big on a 109dp card is
-         nearly half the width. 44dp keeps it clearly a badge rather than a
-         second headline.
+    <!-- 46dp, not 52dp. The owner called the 52dp ring oversized on 20 Oct,
+         and the stroke is the other half of the problem: the ring's centre now
+         carries the COUNTDOWN (the owner's instruction: the countdown that
+         belongs to the ring goes in the ring, and the fixed time goes below
+         it), and the platform's countdown format - "6:18:35" - measures 100px
+         at 12sp on this device. It does not fit an 88px hole.
 
-         The ring's drawable is innerRadius 16dp + thickness 6dp, so the hole in
-         the middle is 32dp - which is exactly the width of the label below, and
-         is what the wall-clock time has to fit into. -->
+         The drawable is innerRadius 19dp + thickness 4dp, so the hole is 38dp
+         (104px) and the countdown fits at its full 12sp. -->
     <ProgressBar
         android:id="@+id/widget_ring"
         style="@style/ShosWidgetRing"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
         android:layout_gravity="center"
         android:rotation="-90"
         android:max="100" />
 
-    <!-- THE COUNTDOWN IS NOT INSIDE THE RING, and that is a measured change from
-         the design it started as. The platform's whole-duration format is
-         "4:12:30" (about 129px at 12sp) or "2d 23:59:59" (about 182px), and the
-         hole in a 44dp ring is 88px - so the number cannot sit inside it at any
-         legible size.
+    <!-- THE COUNTDOWN IS IN THE RING, and the fixed time is below it. That is
+         the owner's instruction (20 Oct): the ring is the live thing - its
+         sweep AND its number change every second - and the time it is
+         counting down to is a fixed fact that belongs lower down, where it
+         reads as the answer to "when?".
 
-         So the ring's centre carries the WALL-CLOCK DUE TIME ("04:00") and the
-         live countdown gets its own line beneath it, where the whole 77dp of
-         content width is available. The number is still the thing that changes
-         every second; it is just no longer pretending to be inside a circle it
-         does not fit. The Chronometer stays, and it still ticks in the launcher
-         process with no app running.
+         It is a real Chronometer, so it ticks in the launcher process with no
+         app running, no alarm and no wake lock. The platform's format is the
+         whole duration - "6:18:35" - because RemoteViews.setChronometer's
+         format argument is a single-string template with one %s and the
+         components cannot be selected; the owner said seconds are the least
+         important part, which is what makes a seven-character number
+         acceptable in a 38dp hole.
 
-         The label is FIXED WIDTH rather than wrap_content, and that is
-         load-bearing: autoSize measures the view's own width, so a wrap_content
-         view measures its text and can never shrink it. At 32dp the label is
-         exactly the ring's hole, and the framework steps the type down until
-         the time fits - so the time is never ellipsized and never overlaps the
-         ring's stroke. -->
+         The width is FIXED and equal to the ring's hole, which is what makes
+         the autosize work: autoSize measures the view's own width, so a
+         wrap_content view would measure its own text and could never shrink
+         it. -->
+    <Chronometer
+        android:id="@+id/widget_countdown"
+        android:layout_width="38dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMaxTextSize="12sp"
+        android:autoSizeMinTextSize="9sp"
+        android:autoSizeStepGranularity="1sp"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <!-- The status word, also in the ring's centre, for the two states where
+         there is no countdown to show: DUE (a dose is due now) and OVERDUE.
+         A Chronometer can render a static string - a format with no %s in it
+         is used literally - but the two are different view types, so the
+         provider shows one and hides the other. -->
     <TextView
         android:id="@+id/widget_ring_label"
-        android:layout_width="32dp"
+        android:layout_width="38dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
@@ -102,38 +124,16 @@
         android:autoSizeMinTextSize="9sp"
         android:autoSizeStepGranularity="1sp" />
 
-    <!-- The live countdown, its own line. It used to sit inside the ring and
-         could not fit there - see widget_ring_label's comment for the
-         measurement. Still a real Chronometer, so it still ticks in the
-         launcher process with no app running, no alarm and no wake lock.
-         clickable/focusable false for the reason every other
-         tap-target-adjacent view on this card states.
-
-         13sp, not 14: the platform's format for a dose more than a day away is
-         "2d 21:35:00" - eleven characters, about 197px at 13sp, which fits the
-         211px this card has at its narrowest placement. At 14sp it does not. -->
-    <Chronometer
-        android:id="@+id/widget_countdown"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="20dp"
-        android:textSize="13sp"
-        android:textColor="@color/widget_text_primary"
-        android:clickable="false"
-        android:focusable="false" />
-
-    <!-- The state line, used only when a dose is DUE (the ring then carries the
-         word DUE and there is no countdown to show). In the scheduled state it
-         is hidden rather than blank: the ring's centre already carries the due
-         time, so a second "Next at 04:00" under it would say the same thing
-         twice. -->
+    <!-- The FIXED TIME, under the ring: "04:00" is when the dose is due, and
+         it does not change, so it is the caption under the ring rather than
+         the number inside it. In the DUE and OVERDUE states this line carries
+         the state instead ("Due now"). -->
     <TextView
         android:id="@+id/widget_next_dose"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="20dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="93dp"
         android:text="--:--"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"

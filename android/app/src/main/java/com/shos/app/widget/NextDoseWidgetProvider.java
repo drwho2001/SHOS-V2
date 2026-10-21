@@ -49,35 +49,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
     }
 
     /**
-     * The wall-clock time of an instant, as "HH:mm", in the device's own zone.
-     *
-     * ADDED 20 Oct 2026 - the ring's centre carries the time the next dose is
-     * due, and it is formatted from the SAME epoch the countdown runs to, so the
-     * two can never describe different instants.
-     *
-     * "HH:mm" rather than DateFormat.getTimeInstance(SHORT): that one follows
-     * the device's 12/24-hour setting and drops the leading zero, so the same
-     * dose would read "4:00 AM" on one phone and "04:00" on another. This
-     * widget is 24-hour throughout - the medication time it shows elsewhere
-     * ("Next at 04:00") is 24-hour too - so the format is fixed here rather
-     * than inherited.
-     *
-     * A new formatter per call, because SimpleDateFormat is not thread-safe and
-     * this runs in the launcher process.
-     */
-    private static String clockOf(long epochMs) {
-        try {
-            return new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US)
-                    .format(new java.util.Date(epochMs));
-        } catch (RuntimeException e) {
-            // A formatter that cannot be built must not take the widget down -
-            // the caller falls back to a short word, which is a smaller lie than
-            // a crashed provider.
-            return "";
-        }
-    }
-
-    /**
      * The "no data available" RemoteViews. Contains no user data at all, so
      * pushing it can neither write to the plaintext sink nor disclose anything
      * to the launcher process. See res/layout/widget_unavailable.xml.
@@ -289,29 +260,21 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             views.setChronometerCountDown(R.id.widget_countdown, true);
             views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
 
-            // The ring's centre carries the WALL-CLOCK DUE TIME, which is what the
-            // owner asked for: the number that answers "when do I take it".
-            //
-            // It is formatted from the same epoch the countdown is running to, so
-            // the two can never describe different instants - and it is formatted
-            // HERE, in the widget's own process, rather than being sent as a
-            // pre-formatted string, so there is one value (the epoch) rather than
-            // two that have to agree.
-            //
-            // "HH:mm" rather than the platform's short time format, because that
-            // one drops the leading zero and follows the device's 12/24-hour
-            // setting; this widget is 24-hour throughout, and the medication
-            // times it shows elsewhere ("Next at 04:00") are 24-hour too.
-            String dueClock = clockOf(target);
-            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_text_primary));
-            views.setTextViewText(R.id.widget_ring_label, dueClock.isEmpty() ? "SOON" : dueClock);
-            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+            // The status word is hidden: this state has a countdown, and the two
+            // share the ring's centre. Setting one GONE obliges setting the other
+            // VISIBLE in the other branch.
+            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
 
-            // The separate time line is HIDDEN, not blank: the ring's centre is
-            // carrying the time now, so a second "Next at 04:00" under it would
-            // say the same thing twice.
-            views.setTextViewText(R.id.widget_next_dose, "");
-            views.setViewVisibility(R.id.widget_next_dose, View.GONE);
+            // The FIXED TIME goes UNDER the ring, and the ring's centre carries
+            // the countdown - the owner's arrangement (20 Oct): the ring is the
+            // live thing, and the time it counts down to is a fixed fact.
+            //
+            // "Next at " is dropped: the eyebrow above already says what the
+            // widget is, and the prefix measured as a third of the line's width.
+            String dueClock = nextDoseTime == null ? "" : nextDoseTime.replace("Next at ", "");
+            views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_text_muted));
+            views.setTextViewText(R.id.widget_next_dose, dueClock);
+            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         } else if (target > 0) {
             // OVERDUE. The ring is FULL rather than hidden or empty: the dose is
             // now past, and a depleted ring would read as "nothing pending" - the

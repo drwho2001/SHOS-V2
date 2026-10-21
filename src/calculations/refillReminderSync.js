@@ -66,11 +66,9 @@ export async function getRefillDueMedications() {
  * non-answer - and on this device it was literally false, because the only
  * tracked medication was one day from its reorder point.
  *
- * The horizon is a PRODUCT decision, not a clinical one, and it is named here
- * so there is exactly one place to change it. A week is the conventional
- * reorder horizon and is long enough that "soon" means "this week" rather than
- * "in an hour", and short enough that a medication due in a fortnight does not
- * crowd the card.
+ * THREE DAYS, which is the owner's number (20 Oct 2026: "soon is 3 days") -
+ * a refill three days out is the soonest thing that is still a plan rather
+ * than a problem, and anything further out is not yet a decision.
  *
  * What it is NOT: a claim about how long a pharmacy takes. Nothing here knows
  * that, and guessing it is the mistake this file already documents in
@@ -78,7 +76,7 @@ export async function getRefillDueMedications() {
  * measurement. The number is about the USER's own reorder point, which is the
  * app's own `refillThreshold` and therefore the user's own buffer.
  */
-const REFILL_SOON_DAYS = 7;
+const REFILL_SOON_DAYS = 3;
 
 export async function getRefillWidgetSummary() {
   const meds = await Promise.all(

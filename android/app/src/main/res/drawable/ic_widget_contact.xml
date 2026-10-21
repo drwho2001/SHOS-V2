@@ -1,7 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Quick Add: Contact icon.
+
+     THE ADD BADGE IS SEPARATE AND WHITE, TO THE LEFT of the module disc
+     (the owner's instruction, 20 Oct: the plus was "compacted over" the module
+     icon; decompact it, put it to the left, and make it white).
+
+     White, because it now sits on the CARD's teal background rather than on
+     the disc - and a white mark is the only version of a plus that reads
+     against it. It is a separate path, not a badge on the disc, so the two
+     never touch: the gap between them is 6 viewport units, about 2.75dp.
+
+     The disc is the app's OWN module mark - a coloured circle with a white
+     person glyph in the Contacts module colour - the same artwork the bottom
+     nav draws for Contacts, which is what the owner asked for.
+
+     The viewport is 72 wide because the pair is one unit: the plus on the
+     left, the disc on the right, and the layout centres the PAIR (the disc
+     therefore sits a few dp right of the card's centre, which is what a badge
+     beside an icon looks like). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
-    <path android:fillColor="#00796B" android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
-    <path android:fillColor="#FFFFFF" android:pathData="M24,11A7,7 0,1 0,24 25A7,7 0,1 0,24 11M12,38C13,30 17,27 24,27C31,27 35,30 36,38Z" />
-    <path android:fillColor="#00796B" android:pathData="M38,29H42V33H38V37H34V33H30V29H34V25H38Z" />
+    android:width="33dp"
+    android:height="22dp"
+    android:viewportWidth="72"
+    android:viewportHeight="48">
+    <!-- The plus, in white. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,16h6v-6h4v6h6v4h-6v6h-4v-6h-6z" />
+    <!-- The module disc, moved right to make room for the plus. -->
+    <group
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="24">
+        <path
+            android:fillColor="#00796B"
+            android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M24,11A7,7 0,1 0,24 25A7,7 0,1 0,24 11M12,38C13,30 17,27 24,27C31,27 35,30 36,38Z" />
+    </group>
 </vector>

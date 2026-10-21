@@ -19,8 +19,12 @@
     android:padding="8dp"
     android:background="@drawable/widget_background">
 
+    <!-- The icon is a PAIR: a white plus on the left and the Encounters module
+         disc on the right, drawn as one vector (ic_widget_encounter.xml) so the
+         two can never overlap and the pair centres as a unit whatever the
+         card's width. -->
     <ImageView
-        android:layout_width="22dp"
+        android:layout_width="33dp"
         android:layout_height="22dp"
         android:layout_gravity="top|center_horizontal"
         android:contentDescription="@null"

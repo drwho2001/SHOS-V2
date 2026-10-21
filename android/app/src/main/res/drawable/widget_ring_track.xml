@@ -27,24 +27,23 @@
      The ARC keeps useLevel="true", because setProgressBar has to move its
      sweep - that is the whole point of the layer.
 
-     Geometry: innerRadius 16dp + thickness 6dp = 22dp outer radius, so a 44dp
+     Geometry: innerRadius 19dp + thickness 4dp = 23dp outer radius, so a 46dp
      view contains it exactly. Explicit dp rather than innerRadiusRatio/
      thicknessRatio because those ratios are fractions of whatever bounds the
      drawable is given, which the launcher rather than this app decides - and a
-     ring drawn at 52dp inside a 44dp view is CLIPPED, not scaled.
-
-     CHANGED 20 Oct 2026 from innerRadius 18dp + thickness 8dp (a 52dp ring).
-     The owner called the Next Dose ring oversized, and the stroke was the other
-     half of the problem: at 8dp the hole in a 44dp ring would be 28dp, which
-     is narrower than the "04:00" the ring's centre has to carry. At 6dp the
-     hole is 32dp, which is exactly the width of that label.
+     ring drawn at 52dp inside a 46dp view is CLIPPED, not scaled.
+     CHANGED 20 Oct 2026 from thickness 6dp to 4dp, which makes the hole
+     38dp instead of 32dp. That is the room the ring's centre needs: the
+     owner's instruction is that the COUNTDOWN goes in the ring and the fixed
+     time goes below it, and the platform's countdown format ("6:18:35")
+     measures 100px at 12sp on this device - it does not fit an 88px hole.
 
      MUST match widget_ring_arc.xml exactly - a mismatch draws two concentric
      rings of different diameters rather than one arc over one track. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="ring"
-    android:innerRadius="16dp"
-    android:thickness="6dp"
+    android:innerRadius="19dp"
+    android:thickness="4dp"
     android:useLevel="false">
     <solid android:color="@color/widget_ring_track" />
 </shape>

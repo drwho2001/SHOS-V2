@@ -1,7 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Quick Add: Encounter icon.
+
+     THE ADD BADGE IS SEPARATE AND WHITE, TO THE LEFT of the module disc
+     (the owner's instruction, 20 Oct: the plus was "compacted over" the module
+     icon; decompact it, put it to the left, and make it white).
+
+     White, because it now sits on the CARD's teal background rather than on
+     the disc. The disc is the Encounters module's own mark - a coloured circle
+     with a white pulse trace in the module colour - the same artwork the
+     bottom nav draws for Encounters.
+
+     The viewport is 72 wide because the pair is one unit: the plus on the
+     left, the disc on the right, and the layout centres the PAIR. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
-    <path android:fillColor="#8D3B7A" android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
-    <path android:fillColor="#FFFFFF" android:pathData="M7,26H15L18,18L23,33L28,13L33,29L36,23H41V27H38L34,35L29,22L24,40L18,26L17,30H7Z" />
-    <path android:fillColor="#8D3B7A" android:pathData="M38,29H42V33H38V37H34V33H30V29H34V25H38Z" />
+    android:width="33dp"
+    android:height="22dp"
+    android:viewportWidth="72"
+    android:viewportHeight="48">
+    <!-- The plus, in white. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,16h6v-6h4v6h6v4h-6v6h-4v-6h-6z" />
+    <!-- The module disc, moved right to make room for the plus. -->
+    <group
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="24">
+        <path
+            android:fillColor="#8D3B7A"
+            android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M7,26H15L18,18L23,33L28,13L33,29L36,23H41V27H38L34,35L29,22L24,40L18,26L17,30H7Z" />
+    </group>
 </vector>
