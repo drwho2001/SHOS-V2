@@ -11,7 +11,8 @@ import { hasUnbackedChanges } from "../../storage/backupService";
 import { ErrorLogRepository } from "../../repositories/errorLogRepository";
 import { localStorageAdapter } from "../../storage/storageAdapter";
 import { resetAllData } from "../../repositories/resetAllData";
-import { countSampleData, clearSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
+import { countSampleData, clearSampleData, listSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
+import ClearSampleDataConfirm from "../../components/ClearSampleDataConfirm";
 import { findOrphanReferences } from "../../calculations/orphanReferenceCheck";
 import { findDataAnomalies, ANOMALY_KIND_LABELS } from "../../calculations/dataAnomalyScan";
 
@@ -369,11 +370,22 @@ export function DeveloperToolsScreen({ onClose }) {
     return onSampleDataChanged(refresh);
   }, []);
   const sampleDataCount = sampleCount;
+  // ADDED 20 Oct 2026 (t064) - the confirmation NAMES the records, and the
+  // same shared component Home's first-run banner uses. A count says how
+  // much; a list says WHAT, and "is any of this mine?" is the question a
+  // person can actually answer before tapping something destructive in a
+  // medical app.
+  const [sampleList, setSampleList] = useState(null);
+  const openSampleClearConfirm = async () => {
+    const list = await listSampleData();
+    setSampleList(list);
+  };
   const handleClearSample = async () => {
     setClearingSample(true);
     try {
       const result = await clearSampleData();
       setSampleResult(result);
+      setSampleList(null);
     } finally {
       setClearingSample(false);
     }
@@ -626,11 +638,24 @@ export function DeveloperToolsScreen({ onClose }) {
                   SHOS starts with made-up example data so you can look around before adding
                   anything. Removing it keeps every record you have added yourself.
                 </div>
-                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClearSample(); } }} onClick={handleClearSample}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
                   aria-label="Clear the sample data"
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
                   {clearingSample ? "Clearing…" : "Clear sample data"}
                 </div>
+                {sampleList && (
+                  <div style={{ marginTop: 10 }}>
+                    <ClearSampleDataConfirm
+                      T={darkMode ? DARK : NEUTRAL}
+                      groups={sampleList.byCollection}
+                      total={sampleList.total}
+                      busy={clearingSample}
+                      onCancel={() => setSampleList(null)}
+                      onConfirm={handleClearSample}
+                      margin="0px"
+                    />
+                  </div>
+                )}
               </div>
             )}
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setResetStage("confirming")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>

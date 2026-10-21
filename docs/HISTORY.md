@@ -16,6 +16,77 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - clearing the sample data is confirmed, and the confirmation names the records (t064)
+
+"Clear sample data" was **one tap**, in a medical app, over records the user
+may never have looked at closely - and the only thing on screen was a COUNT.
+There was no confirmation at all, on either surface that offers it (Home's
+first-run banner and Settings -> Support -> Developer tools).
+
+**A COUNT SAYS HOW MUCH; A LIST SAYS WHAT.** "Is any of this mine?" is the
+question a person can actually answer, and it is the question the previous
+screen could not be asked. The confirmation now lists every record it is
+about to remove, grouped by what it is.
+
+**THE LIST AND THE CLEAR SHARE ONE PREDICATE** (`isRemovableSampleRecord`),
+so the list can never name a record the clear would keep, and the count can
+never disagree with the number of names shown. That matters more than it
+sounds: a seed record that real records depend on is KEPT with its history
+(the 1 Oct 2026 data-loss incident), so it is not in the list either - and a
+list that named it would be asking the user to confirm removing something
+that does not go. A test asserts the strongest version of this: **the number
+of records the clear removes equals the number the list named.**
+
+**THE LABELS LIVE IN THE `SAMPLE_REPOSITORIES` ROW, NOT IN A SEPARATE LOOKUP
+TABLE.** A map keyed by the collection's display name can drift from the
+table, and a renamed collection would then silently fall back to a generic
+label - which is the hand-maintained-inventory failure this repo keeps paying
+for. In the row, a collection cannot have a name without having a label. The
+labels read fields the record shape actually defines, read out of the
+repositories' own `DEFAULT_` constants rather than guessed: contacts have
+`name`, encounters and tests and symptom entries and episodes have `title`,
+measurements have `type`, contraception has `method`, pregnancy entries have
+`testResult`, locations have `name`, and a medication log is named by the
+medication it belongs to (which is why that one label needs the medication
+names the caller passes in).
+
+**ONE SHARED COMPONENT, BOTH SURFACES** (`ClearSampleDataConfirm`), and it
+reuses the app's ONE shared delete-confirmation component
+(`ConfirmDeleteCard`) - so the confirmation's semantics are the same as
+everywhere else in the app: `role="alertdialog"`, focus moved to Cancel on
+open, and Escape maps to cancel and never to the destructive action. The list
+scrolls, because there are around a hundred demo records on a fresh install
+and a list that pushed the Cancel button off the screen would be a
+confirmation nobody could cancel.
+
+The smoke flow now asserts three things about that confirmation: it names the
+demo records, it groups them, and it does **not** name the user's own record
+- because the promise the banner makes ("anything you have added yourself is
+always kept") has to be visibly true in the list that precedes the clear.
+
+**AND THE FILE'S HEAVIEST TEST'S BUDGET WAS RAISED, WITH A MEASUREMENT.**
+Under a loaded machine this file took 34.9s and the first test - five
+repositories' `getAll()` plus a set comparison per record - exceeded its
+30s budget, while taking 795ms on its own. A budget a starved worker can
+blow through is a limit rather than a defect, and the file's own rule says
+to raise it only with a measurement.
+
+**A SIBLING GUARD HAD A FALSE POSITIVE, AND ITS OWN COMMENT SAID SO.** The
+JSX binding guard (which exists to catch a component that is rendered but
+never imported - a render-time `ReferenceError` that lint does not catch)
+reported `<T>` as an unbound component in two files. The reason: an
+attribute's NAME is a `JSXIdentifier` too, and the guard's comment has
+always said "Skip attribute names - `label="x"` is not a component
+reference" - **but the code never did it**. It went unnoticed because every
+file that passed a capitalised prop (`T={T}`) also had that name in scope;
+it only fired where a file passed `T={somethingElse}` with no local `T`
+binding. The guard now skips attribute names, and a mutation - removing the
+import of a component that IS rendered - still turns it red, so the fix did
+not blunt it. A guard that cries wolf over a correct prop is a guard that
+gets deleted rather than trusted.
+
+---
+
 ## 20 Oct 2026 - the dose-timing advisory is dismissible (t106)
 
 The advisory that appears on a medication card when a dose was logged early

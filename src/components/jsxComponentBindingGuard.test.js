@@ -138,6 +138,16 @@ function collect(code) {
         // deleted rather than fixed.
         if (parent && parent.type === "JSXMemberExpression") break;
         // Skip attribute names - `label="x"` is not a component reference.
+        //
+        // THE COMMENT ABOVE THIS CASE ALWAYS SAID SO, AND THE CODE DID NOT DO
+        // IT. An attribute's name is a JSXIdentifier too, so a PROP whose name
+        // starts with a capital letter was reported as an unbound component.
+        // It went unnoticed for weeks because every file that passed a
+        // capitalised prop (`T={T}`) also had that name in scope - the app
+        // passes its theme as `T` everywhere - and it only fired where a file
+        // passed `T={somethingElse}` with no local `T` binding. A guard that
+        // cries wolf over a correct prop is a guard that gets deleted.
+        if (parent && parent.type === "JSXAttribute") break;
         used.set(node.name, addLine(node));
         break;
       }

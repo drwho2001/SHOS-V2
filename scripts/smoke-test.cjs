@@ -2402,6 +2402,25 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.getByText("This app starts with sample data", { exact: false }).first()
       .waitFor({ state: "visible", timeout: 15000 });
     await page.getByRole("button", { name: "Clear the sample data" }).first().click({ timeout: 5000 });
+    // ADDED 20 Oct 2026 (t064) - clearing the sample data is now CONFIRMED,
+    // and the confirmation NAMES the records rather than counting them. All
+    // three of these assertions matter:
+    //   - the names are there at all (a count says how much, a list says what,
+    //     and "is any of this mine?" is the question a person can answer);
+    //   - they are the DEMO records, not the user's own;
+    //   - and the user's own record is NOT among them, because the promise
+    //     the banner makes - "anything you have added yourself is always kept"
+    //     - has to be visibly true in the list that precedes the clear.
+    const confirmCard = page.locator('[role="alertdialog"]');
+    await confirmCard.first().waitFor({ state: "visible", timeout: 8000 });
+    const confirmText = await confirmCard.first().innerText();
+    assert(confirmText.includes("Vitamin D3"),
+      "the confirmation NAMES the demo records it is about to remove - a count says how much, a list says what");
+    assert(/Contacts \(\d+\)/.test(confirmText),
+      "the confirmation groups the records it will remove by what they are");
+    assert(!confirmText.includes("ZZZ Smoke Real Contact"),
+      "the confirmation does NOT list the user's own record - it is kept, and naming it here would be a lie");
+    await page.getByRole("button", { name: /^Remove these \d+ records$/ }).first().click({ timeout: 5000 });
     // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(2500) followed by a
     // NEGATIVE assertion. Bounded, and it waits for the banner's own state to
     // become hidden rather than guessing how long a clear takes. A negative

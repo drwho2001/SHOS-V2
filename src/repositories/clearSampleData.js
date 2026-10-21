@@ -71,24 +71,49 @@ import {
   stampDivergedRecords,
 } from "../calculations/seedDivergence.js";
 
-// Each entry: the repository to filter, and the ids that are sample data.
+// Each entry: the repository to filter, the ids that are sample data, and the
+// function that NAMES a record of that kind.
+//
+// WHY THE LABEL IS PART OF THE ROW AND NOT A SEPARATE LOOKUP TABLE. A map
+// keyed by the collection's display name can drift from this table, and a
+// renamed collection would then silently fall back to a generic label - which
+// is exactly the hand-maintained-inventory failure this repo keeps paying for
+// (CLAUDE.md: "Hand-maintained inventories are the failure mode of this repo").
+// In the row, a collection cannot have a name without having a label.
+//
+// The label reads fields the record shape actually defines. The shapes were
+// read out of the repositories' own DEFAULT_ constants, not guessed: contacts
+// have `name`, encounters/clinic visits/tests/symptom entries/episodes have
+// `title`, measurements have `type`, contraception has `method`, pregnancy
+// entries have `testResult`/`status`, locations have `name`, medication logs
+// have `medicationId` and `type` (and are named by the medication they point
+// at, which is why the label function takes a context), and medications have
+// `name`.
+//
 // Order follows resetAllData.js's own ordering (Contacts, Encounters, then
 // Healthcare) so the two read as siblings.
 const SAMPLE_REPOSITORIES = [
-  ["Contacts", ContactRepository, SEED_CONTACT_IDS],
-  ["Encounters", EncounterRepository, SEED_ENCOUNTER_IDS],
-  ["Clinic visits", ClinicVisitsRepository, SEED_CLINIC_VISIT_IDS],
-  ["Tests", TestingRepository, SEED_TEST_IDS],
-  ["Vaccinations", VaccinationRepository, SEED_VACCINATION_IDS],
-  ["Measurements", MeasurementRepository, SEED_MEASUREMENT_IDS],
-  ["Menstrual cycles", MenstrualCycleRepository, SEED_MENSTRUAL_CYCLE_IDS],
-  ["Contraception", ContraceptionRepository, SEED_CONTRACEPTION_IDS],
-  ["Pregnancy entries", PregnancyRepository, SEED_PREGNANCY_IDS],
-  ["Symptom log entries", SymptomLogRepository, SEED_SYMPTOM_LOG_IDS],
-  ["Locations", LocationsRepository, SEED_LOCATION_IDS],
-  ["Episodes", EpisodeRepository, SEED_EPISODE_IDS],
-  ["Medication logs", LogRepository, SEED_MEDICATION_LOG_IDS],
-  ["Medications", MedicationRepository, SEED_MEDICATION_IDS],
+  ["Contacts", ContactRepository, SEED_CONTACT_IDS, (r) => r.name || r.nickname || "Unnamed contact"],
+  ["Encounters", EncounterRepository, SEED_ENCOUNTER_IDS, (r) => r.title || "Untitled encounter"],
+  ["Clinic visits", ClinicVisitsRepository, SEED_CLINIC_VISIT_IDS, (r) => r.title || "Untitled clinic visit"],
+  ["Tests", TestingRepository, SEED_TEST_IDS, (r) => r.title || "Untitled test"],
+  ["Vaccinations", VaccinationRepository, SEED_VACCINATION_IDS, (r) => r.title || r.vaccine || "Vaccination"],
+  ["Measurements", MeasurementRepository, SEED_MEASUREMENT_IDS, (r) => r.type || "Measurement"],
+  ["Menstrual cycles", MenstrualCycleRepository, SEED_MENSTRUAL_CYCLE_IDS, (r) => (r.startDate ? `Cycle starting ${r.startDate}` : "Cycle")],
+  ["Contraception", ContraceptionRepository, SEED_CONTRACEPTION_IDS, (r) => r.method || "Contraception"],
+  ["Pregnancy entries", PregnancyRepository, SEED_PREGNANCY_IDS, (r) => r.testResult || r.status || "Pregnancy entry"],
+  ["Symptom log entries", SymptomLogRepository, SEED_SYMPTOM_LOG_IDS, (r) => r.title || "Symptom entry"],
+  ["Locations", LocationsRepository, SEED_LOCATION_IDS, (r) => r.name || "Location"],
+  ["Episodes", EpisodeRepository, SEED_EPISODE_IDS, (r) => r.title || "Episode"],
+  // A medication log has no name of its own - it is a dose or a refill
+  // AGAINST a medication, so it is named by that medication, which is why
+  // this label needs the medication names the caller passes in.
+  ["Medication logs", LogRepository, SEED_MEDICATION_LOG_IDS, (r, ctx) => {
+    const kind = r.type === "refill" ? "Refill" : r.type === "waste" ? "Waste" : "Dose";
+    const medName = ctx?.medicationNames?.get(r.medicationId);
+    return medName ? `${kind} — ${medName}` : kind;
+  }],
+  ["Medications", MedicationRepository, SEED_MEDICATION_IDS, (r) => r.name || "Medication"],
 ];
 
 /**
@@ -207,12 +232,29 @@ function referencedSeedIds(collections) {
 // would simply be skipped and the caller would be told the clear succeeded
 // without ever having looked at it. The failure is captured and reported
 // instead, which is what the "never throws, reports it instead" test asserts.
+/**
+ * THE ONE definition of "this record is sample data that a clear will remove".
+ *
+ * Three things read it - the count, the list of names, and the clear itself -
+ * and they must agree. A list that named a record the clear would keep (or
+ * the reverse) would be worse than no list at all: the user would be asked to
+ * confirm removing something that survives, or would not be warned about
+ * something that does not.
+ *
+ * `referenced` is the set of seed ids that REAL records point at, and a
+ * referenced seed record is kept with its history - see the note on
+ * referencedSeedIds below for the incident that rule came from.
+ */
+function isRemovableSampleRecord(record, seedIds, referenced) {
+  return isSampleRecord(record, seedIds) && !referenced.has(record.id);
+}
+
 async function loadSampleCollections() {
   const collections = [];
   const failures = [];
-  for (const [name, repo, seedIds] of SAMPLE_REPOSITORIES) {
+  for (const [name, repo, seedIds, label] of SAMPLE_REPOSITORIES) {
     try {
-      collections.push({ name, repo, seedIds, records: await repo.getAll() });
+      collections.push({ name, repo, seedIds, label, records: await repo.getAll() });
     } catch (e) {
       failures.push({ name, error: e?.message || String(e) });
     }
@@ -238,9 +280,52 @@ export async function countSampleData() {
   // keep the export screen warning about data that is actually the user's.
   const referenced = referencedSeedIds(collections);
   for (const { name, records, seedIds } of collections) {
-    const count = records.filter((r) => isSampleRecord(r, seedIds) && !referenced.has(r.id)).length;
+    const count = records.filter((r) => isRemovableSampleRecord(r, seedIds, referenced)).length;
     if (count > 0) byCollection.push({ name, count });
     total += count;
+  }
+  return { total, byCollection };
+}
+
+/**
+ * The sample records still present, NAMED, without changing anything.
+ *
+ * WHY THIS EXISTS. "Clear sample data" is one tap, in a medical app, over
+ * data the user may not have looked at closely - and the only thing the
+ * screen said was a COUNT. A count says how much; a list says WHAT, which is
+ * the thing a person can actually check: "is anything in here mine?".
+ *
+ * THE LIST AND THE COUNT COME FROM THE SAME PREDICATE
+ * (isRemovableSampleRecord), so the list can never name a record the clear
+ * would keep, and the count can never disagree with the number of names
+ * shown. A referenced seed record - one that real records point at, which the
+ * clear keeps with its history - is not in the list either, because it is not
+ * in the clear.
+ *
+ * @returns {Promise<{total: number, byCollection: {name: string, count: number, records: {id: string, label: string}[]}[]}>}
+ */
+export async function listSampleData() {
+  const { collections } = await loadSampleCollections();
+  const referenced = referencedSeedIds(collections);
+  // Medication logs are named by the medication they belong to, so the names
+  // are gathered once from the medications in the same load.
+  const medicationNames = new Map();
+  for (const { name, records } of collections) {
+    if (name !== "Medications") continue;
+    for (const r of records) if (r?.id) medicationNames.set(r.id, r.name || "");
+  }
+  const ctx = { medicationNames };
+  const byCollection = [];
+  let total = 0;
+  for (const { name, records, seedIds, label } of collections) {
+    const removable = records.filter((r) => isRemovableSampleRecord(r, seedIds, referenced));
+    if (!removable.length) continue;
+    byCollection.push({
+      name,
+      count: removable.length,
+      records: removable.map((r) => ({ id: r.id, label: label(r, ctx) })),
+    });
+    total += removable.length;
   }
   return { total, byCollection };
 }
@@ -322,7 +407,9 @@ export async function clearSampleData() {
       // THE FIX: a seed record something real points at is kept, with its
       // history. See the long note above for the incident and for why this is
       // a referential check rather than a "has the user edited it" guess.
-      const real = records.filter((r) => !isSampleRecord(r, seedIds) || referenced.has(r.id));
+      // The predicate is the shared one, so the count, the list of names and
+      // this clear cannot disagree about what "sample data" means.
+      const real = records.filter((r) => !isRemovableSampleRecord(r, seedIds, referenced));
       const dropped = records.length - real.length;
       if (dropped === 0) {
         // Nothing to remove, but a flagless record that DIVERGED from the frozen

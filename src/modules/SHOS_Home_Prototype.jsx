@@ -7,6 +7,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // the shared theme objects rather than a hand-built local literal that would
 // go stale against designTokens.js.
 import { JargonNote } from "../components/JargonNote";
+import ClearSampleDataConfirm from "../components/ClearSampleDataConfirm";
 // SHOS_Home_Prototype.jsx
 //
 // ADDED — real architecture extraction, same reasoning as the
@@ -54,7 +55,7 @@ import { getTestingFrequencyStats, getOverallAdherence, getOverallContainerAdher
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
-import { countSampleData, clearSampleData } from "../repositories/clearSampleData";
+import { countSampleData, clearSampleData, listSampleData } from "../repositories/clearSampleData";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
@@ -286,11 +287,24 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [sampleData, setSampleData] = useLoadedState(() => countSampleData(), [], { total: 0, byCollection: [] });
   const [clearingSample, setClearingSample] = useState(false);
   const [sampleDataHidden, setSampleDataHidden] = useState(false);
+  // ADDED 20 Oct 2026 (t064) - clearing the sample data is now CONFIRMED, and
+  // the confirmation NAMES the records rather than counting them. A count
+  // says how much; a list says WHAT, and "is any of this mine?" is the
+  // question a person can actually answer. The list comes from
+  // listSampleData(), which uses the same predicate as the count and the
+  // clear, so it can never name a record that would survive.
+  const [sampleList, setSampleList] = useState(null);
+  const openSampleClearConfirm = async () => {
+    const list = await listSampleData();
+    setSampleList(list);
+  };
+  const closeSampleClearConfirm = () => setSampleList(null);
   const clearSample = async () => {
     setClearingSample(true);
     try {
       await clearSampleData();
       setSampleData({ total: 0, byCollection: [] });
+      setSampleList(null);
     } finally {
       setClearingSample(false);
     }
@@ -1262,17 +1276,32 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             data, not yours. Clear it to start with a blank app, or keep it for now to look
             around first.
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clearSample(); } }} onClick={clearSample}
-              aria-label="Clear the sample data"
-              style={{ fontSize: 12, fontWeight: 600, color: homeColorText, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
-              {clearingSample ? "Clearing…" : "Clear sample data"}
+          {sampleList ? (
+            /* ADDED 20 Oct 2026 (t064) - the confirmation. It replaces the
+               button row rather than sitting under it, so there is one
+               thing to read and one thing to press. */
+            <ClearSampleDataConfirm
+              T={darkMode ? DARK : NEUTRAL}
+              groups={sampleList.byCollection}
+              total={sampleList.total}
+              busy={clearingSample}
+              onCancel={closeSampleClearConfirm}
+              onConfirm={clearSample}
+              margin="0px"
+            />
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
+                aria-label="Clear the sample data"
+                style={{ fontSize: 12, fontWeight: 600, color: homeColorText, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
+                {clearingSample ? "Clearing…" : "Clear sample data"}
+              </div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSampleDataHidden(true); } }} onClick={() => setSampleDataHidden(true)}
+                style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>
+                Keep it for now
+              </div>
             </div>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSampleDataHidden(true); } }} onClick={() => setSampleDataHidden(true)}
-              style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>
-              Keep it for now
-            </div>
-          </div>
+          )}
           <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 8, lineHeight: 1.4 }}>
             Clearing removes only the example records. Anything you have added yourself is always
             kept — and you can do the same from Settings → Support → Developer tools.

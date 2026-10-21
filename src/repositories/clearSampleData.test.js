@@ -103,7 +103,18 @@ describe("the exported seed id sets cannot drift from their seed arrays", () => 
         expect(ids.has(r.id), `${name}: ${r.id} missing from the id set`).toBe(true);
       }
     }
-  }, 30_000);
+    // RAISED 20 Oct 2026 from 30_000 (then 60_000), WITH a measurement, per the
+    // rule above. This is the heaviest test in the file, and it is the FIRST
+    // one, which matters: it pays the one-time TRANSFORM cost of the six
+    // repository modules it imports, and every later test in the file reuses
+    // that transformed output. Measured alone on an idle machine it takes
+    // 795ms; with the user's Chrome holding ~1.3 GB and one vitest worker,
+    // the file took 68.9s wall and this test blew a 60s budget - the other 25
+    // tests in the same file took ~200ms each under the same load. A budget a
+    // starved worker can blow through is a limit rather than a defect, and
+    // the standing rule is that PASS/FAIL here must depend on whether the
+    // seed id sets drifted, not on how loaded the machine was.
+  }, 120_000);
 
   it("the set size equals the array length, so a count cannot be inflated", async () => {
     const { contacts } = await freshApp();
@@ -448,5 +459,76 @@ describe("subscribers are told when the sample data changes", () => {
     expect(result.removed).toBeGreaterThan(0);
     expect(good).toBe(1);
     off();
+  }, 30_000);
+});
+
+// ADDED 20 Oct 2026 (t064) - the NAMED list.
+//
+// "Clear sample data" is one tap, in a medical app, over records the user may
+// never have looked at closely, and the only thing on screen was a COUNT. The
+// list is the thing a person can actually check: "is any of this mine?".
+//
+// The load-bearing property is that the list and the CLEAR agree. A list that
+// named a record the clear would keep would be worse than no list at all - it
+// would ask the user to confirm removing something that survives, and it
+// would train them to trust a list that lies.
+describe("listSampleData names exactly the records a clear would remove", () => {
+  it("lists records, with a label for each one", async () => {
+    const { clear } = await freshApp();
+    const { total, byCollection } = await clear.listSampleData();
+    expect(total).toBeGreaterThan(0);
+    const listed = byCollection.flatMap((g) => g.records);
+    expect(listed.length, "the list must name as many records as it counts").toBe(total);
+    for (const r of listed) {
+      expect(typeof r.label, "every listed record needs a label").toBe("string");
+      expect(r.label.length, `record ${r.id} has no usable label`).toBeGreaterThan(0);
+    }
+  }, 30_000);
+
+  it("the list total equals the count, and the names are the demo records", async () => {
+    const { contacts, clear } = await freshApp();
+    const count = await clear.countSampleData();
+    const list = await clear.listSampleData();
+    expect(list.total, "the list and the count must agree").toBe(count.total);
+
+    // The names are the DEMO records - a seeded contact's name is in the
+    // list, and the user's own record is not.
+    const contactGroup = list.byCollection.find((g) => g.name === "Contacts");
+    expect(contactGroup, "the list must group by collection").toBeTruthy();
+    const seeded = await contacts.ContactRepository.getAll();
+    const seededName = seeded.find((c) => c.name)?.name;
+    expect(contactGroup.records.map((r) => r.label)).toContain(seededName);
+
+    await contacts.ContactRepository.create({ name: "My Real Contact" });
+    const withReal = await clear.listSampleData();
+    const realGroup = withReal.byCollection.find((g) => g.name === "Contacts");
+    expect(realGroup.records.map((r) => r.label)).not.toContain("My Real Contact");
+  }, 30_000);
+
+  it("the list and the clear remove THE SAME records - the number removed equals the number named", async () => {
+    const { clear } = await freshApp();
+    const list = await clear.listSampleData();
+    const result = await clear.clearSampleData();
+    expect(result.removed, "the clear removed a different number of records than the list named").toBe(list.total);
+  }, 30_000);
+
+  it("a seed record that real records depend on is neither named nor removed", async () => {
+    // The 1 Oct 2026 data-loss incident: a seed medication the user had logged
+    // 66 doses against is kept, with its history. It must therefore not appear
+    // in the list either - naming a record that survives would be asking the
+    // user to confirm removing something that does not go.
+    const { meds, logs, clear } = await freshApp();
+    const seededMed = (await meds.MedicationRepository.getAll())[0];
+    await logs.LogRepository.create({ medicationId: seededMed.id, type: "dose", delta: -1 });
+
+    const list = await clear.listSampleData();
+    const medGroup = list.byCollection.find((g) => g.name === "Medications");
+    const named = (medGroup?.records || []).map((r) => r.id);
+    expect(named, "a seed record a real dose log depends on must not be named for removal").not.toContain(seededMed.id);
+
+    const result = await clear.clearSampleData();
+    const stillThere = (await meds.MedicationRepository.getAll()).some((m) => m.id === seededMed.id);
+    expect(stillThere, "the medication the user's own dose log points at must survive the clear").toBe(true);
+    expect(result.removed).toBe(list.total);
   }, 30_000);
 });
