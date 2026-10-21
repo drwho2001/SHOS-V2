@@ -84,7 +84,16 @@ export async function getDailyMedsState() {
       upcoming.push({ med, unlockAt });
     }
   }
-  return { due, upcoming };
+  // SORTED BY WHEN EACH DOSE UNLOCKS, so the first entry is the soonest.
+  //
+  // CHANGED 21 Oct 2026. This array was in the REPOSITORY'S order, and
+  // `upcoming[0]` - the medication the widget counts down to, and the one it
+  // names - was therefore whichever medication the repository happened to list
+  // first, not the one whose dose comes next. The card could count down to
+  // the wrong medication's time. Sorting here fixes the countdown and the
+  // name list with one rule, and the reminder scheduler and the in-app banner
+  // read the same state and do not care about its order.
+  return { due, upcoming: upcoming.sort((a, b) => a.unlockAt - b.unlockAt) };
 }
 
 export async function syncMedicationReminders() {
@@ -238,34 +247,31 @@ export async function updateRefillWidget() {
         // qualify. The defect was purely that one of them displayed the first
         // entry and dropped the others.
         //
-        // Grouped by unlockAt rather than listing all of them flat: two
-        // medications due at the same time are one thing to act on, and the
-        // widget already cannot fit every name - its text overflows at 2 columns
-        // (see the text-scaling work). So the soonest slot is shown in full, and
-        // anything after it is counted rather than named.
-        const sameSlot = state.upcoming.filter(
-          (u) => u.unlockAt === nextUnlock,
-        );
-        const laterCount = state.upcoming.length - sameSlot.length;
-        const names = state.due.length
-          ? state.due.map((u) => u.name)
-          : sameSlot.map((u) => u.med?.name);
-        // The name of the soonest medication, and a COUNT of everything else.
+        // EVERY MEDICATION WITH A DOSE PENDING, BY NAME, on the owner's
+        // instruction (21 Oct 2026): "next dose, if space list all meds not
+        // just +2".
         //
-        // CHANGED 20 Oct 2026. This used to join every name in the slot
-        // ("PrEP, Sertraline") and append "  +2 more" - 30 characters, about
-        // 420px, against the 211px the Next Dose card has at its narrowest
-        // placement. It ellipsized to "Sertraline ..." on the device, which is
-        // the one thing the owner asked not to see.
+        // The card used to name the soonest medication and COUNT the rest
+        // ("Sertraline +2"). That was a space-saving compromise, and it cost
+        // the thing that mattered: a count says how many medications are
+        // pending and not WHICH ones, and the owner's own rule is that
+        // anything which will alert must be visible on this widget.
         //
-        // The count is not a loss of information: the owner's own invariant is
-        // that anything which will alert must be visible on this widget, and a
-        // count says how many without spending the width that naming them all
-        // would. One name and a count is also the shape the rest of the card
-        // uses - one key value, one caption.
-        const firstName = names[0] || "";
-        const otherCount = Math.max(0, names.length - 1) + laterCount;
-        const medLabel = firstName + (otherCount > 0 ? ` +${otherCount}` : "");
+        // The names are in TIME ORDER - getDailyMedsState now sorts the
+        // upcoming doses by when they unlock - and the doses already due come
+        // first, because a dose that is due now is more urgent than any
+        // future one.
+        //
+        // What this gives up: the number of doses each medication still has.
+        // "Sertraline +2" said there were two more; "Sertraline" does not. The
+        // line is autosized between 14sp and 11sp, so three names fit at the
+        // width the card has; a fourth is where the space runs out.
+        const medLabel = [
+          ...state.due.map((m) => m.name),
+          ...state.upcoming.map((u) => u.med?.name),
+        ]
+          .filter(Boolean)
+          .join(", ");
         // The countdown TARGET, as EPOCH MILLISECONDS.
         //
         // FIXED 20 Oct 2026, found on the device: this was `nextUnlock || null`,
