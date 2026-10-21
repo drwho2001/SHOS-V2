@@ -16,6 +16,51 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the Dashboard's "Schedule routine retest" opens the New test form (t128)
+
+The Dashboard shortcut used to **navigate** to the Testing list and write
+nothing, on the reasoning that a scheduled retest is a real persisted record
+and a one-tap shortcut should not write one the user never saw - including
+which test it follows. The owner overruled it, and the reason is the whole
+design now: **"currently users will be using the new test form and inputting
+a future date"**. That IS how a retest gets scheduled in this app, and with
+t127's rule that a future-dated test is a planned test, the New test form is
+the right place for it. A separate scheduling sheet would have been a third
+way to say the same thing.
+
+**IT IS PRE-FILLED, ON THE APP'S OWN RULE**: the core panel, and the date
+three months after the most recent **completed negative core-panel** test -
+`testingCalculations.js`'s own `suggestedRoutineRetestDate`, the same one
+the Testing screen suggests. A starting value, not a decision: the user can
+change the date, and the form says plainly what a future date means.
+
+**AND THE FORM NOW SAYS WHAT A FUTURE DATE MEANS, AND REFUSES THE ONE
+COMBINATION THAT WOULD BE A LIE.** A test dated in the future is a
+scheduled test, not a result, and it does not count as a completed test -
+which used to be invisible. So the form says so under the date field, and it
+**will not save a future-dated test that also carries a result**: a result
+for a test that has not happened is a record of something that never
+occurred, and it is exactly the kind of thing that used to reach a
+clinician's document. The rule is a pure function in the calculations layer
+(`hasResultForPlannedDate`), because a rule that only exists inside a
+component is a rule that breaks unseen.
+
+**THE GUARD THAT PROTECTED THE OLD BEHAVIOUR WAS REWRITTEN, NOT DELETED.**
+`quickAddRouting.test.js` existed to assert that the shortcut navigated and
+did not write. The owner's decision reversed its premise, and a guard that
+keeps protecting a rejected premise is worse than no guard - it pushes the
+next session to undo the thing the owner just asked for. It now asserts the
+new properties (it opens the form, it is pre-filled, it does not also
+navigate somewhere else) and still pins the owner's "Log vaccination" label
+decision from t082.
+
+The smoke suite's routine-retest flow now also drives the Dashboard button
+and asserts the form opens with the panel selected and a future date filled
+in - because a form that opened BLANK would still look like a working
+button to a click-and-look check.
+
+---
+
 ## 20 Oct 2026 - a future-dated test is a PLANNED test, and there is one rule for that (t127)
 
 **THE OWNER'S OWN WORKFLOW, MADE EXPLICIT.** "Currently users will be using

@@ -1889,6 +1889,33 @@ async function testRoutineRetestScheduling(browser) {
     assert(/Keep it as planned/i.test(promptText), "no keep option offered");
     console.log("  ok - an early test asks, and says so in plain words");
 
+    // ---- the DASHBOARD shortcut opens the same thing (t128) ----
+    // The owner's own workflow: a retest is scheduled by entering a future
+    // date in the New test form. So the Dashboard's "Schedule routine
+    // retest" button opens THAT form, pre-filled, rather than navigating to
+    // the Testing list and writing nothing - which is what it used to do,
+    // and what the owner called wrong.
+    //
+    // Asserted on the three things the pre-fill is: the form opens, the core
+    // panel is selected, and the date is in the future. A form that opened
+    // BLANK would still look like a working button to a click-and-look
+    // check, which is why the pre-fill itself is what is asserted.
+    await nav(page, "Home");
+    await page.getByText("Schedule routine retest", { exact: false }).first()
+      .click({ timeout: 8000 });
+    await waitForText(page, "New test");
+    for (const infection of PANEL) {
+      const chip = page.getByRole("button", { name: infection, exact: true }).first();
+      const pressed = await chip.getAttribute("aria-pressed");
+      assert(pressed === "true",
+        `the retest shortcut did not pre-select "${infection}" in the form`);
+    }
+    const prefillDate = await page.locator('input[aria-label="Date"]').first().inputValue();
+    const todayKey = new Date().toISOString().slice(0, 10);
+    assert(prefillDate && prefillDate > todayKey,
+      `the retest shortcut did not pre-fill a future date (got "${prefillDate}", today is ${todayKey})`);
+    console.log("  ok - the dashboard's retest shortcut opens a pre-filled New test form");
+
     if (errors.length > 0) throw new Error("Page errors during the routine-retest run:\n" + errors.join("\n"));
   } finally {
     await context.close();

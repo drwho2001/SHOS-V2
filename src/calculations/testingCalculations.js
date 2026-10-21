@@ -171,6 +171,20 @@ export function isCompletedTestRecordOn(test, todayIsoDay) {
 }
 
 /**
+ * Does this record carry a RESULT for a test dated in the future?
+ *
+ * ADDED 21 Oct 2026 (t128). The New test form uses it to refuse a save
+ * that would record a result for a test that has not happened: a scheduled
+ * retest is a plan, and a plan has no result. Extracted as a pure function
+ * so it can be tested - the rule is one line inside a large React component
+ * otherwise, and a rule that only exists inside a component is a rule that
+ * breaks unseen.
+ */
+export function hasResultForPlannedDate(test) {
+  return isPlannedTest(test) && (test?.resultIds || []).length > 0;
+}
+
+/**
  * Is this a test that ACTUALLY HAPPENED? (today = the real today.)
  *
  * The one definition, now that a planned test has one shape as far as every

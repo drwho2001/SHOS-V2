@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isPlannedTest, isPlannedTestOn, isCompletedTestRecord, isCompletedTestRecordOn } from "./testingCalculations";
+import { isPlannedTest, isPlannedTestOn, isCompletedTestRecord, isCompletedTestRecordOn, hasResultForPlannedDate } from "./testingCalculations";
 import { deriveHivStatus } from "./hivStatusCalculations";
 
 /**
@@ -74,6 +74,24 @@ describe("isPlannedTest: a future-dated test is an intention, not a fact", () =>
     // not be passed to .filter() anywhere in the app.
     expect(isPlannedTest(future("2099-01-01T09:00:00.000Z"))).toBe(true);
     expect(isPlannedTest(past("2020-01-01T09:00:00.000Z"))).toBe(false);
+  });
+});
+
+describe("a scheduled test may not carry a result", () => {
+  it("a future-dated test WITH a result is refused", () => {
+    // A result for a test that has not happened is a record of something
+    // that never occurred - and it is exactly the kind of thing that used
+    // to reach a clinician's document.
+    expect(hasResultForPlannedDate({ id: "t1", date: "2099-01-01T09:00:00.000Z", resultIds: ["r1"] })).toBe(true);
+  });
+
+  it("a future-dated test with NO result is fine - that is a scheduled test", () => {
+    expect(hasResultForPlannedDate({ id: "t1", date: "2099-01-01T09:00:00.000Z", resultIds: [] })).toBe(false);
+    expect(hasResultForPlannedDate({ id: "t1", date: "2099-01-01T09:00:00.000Z" })).toBe(false);
+  });
+
+  it("a real test with a result is fine", () => {
+    expect(hasResultForPlannedDate({ id: "t1", date: "2020-01-01T09:00:00.000Z", resultIds: ["r1"] })).toBe(false);
   });
 });
 

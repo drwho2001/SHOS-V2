@@ -52,7 +52,8 @@ import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } fr
 // means each ring stays a plain fact about one thing, not a computed
 // judgment blending several into one number.
 import { getTestingFrequencyStats, getOverallAdherence, getOverallContainerAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
-import { isCompletedTestRecord } from "../calculations/testingCalculations";
+import { isCompletedTestRecord, isRoutineRetestEligible, suggestedRoutineRetestDate, ROUTINE_RETEST_PANEL } from "../calculations/testingCalculations";
+import { ResultsRegistry } from "../registries/resultsRegistry";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { countSampleData, clearSampleData, listSampleData } from "../repositories/clearSampleData";
@@ -211,6 +212,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [lastEncounter, setLastEncounter] = useState(null);
   const [lastDose, setLastDose] = useState(null);
   const [lastTest, setLastTest] = useState(null);
+  // ADDED 21 Oct 2026 (t128) - the suggested date for the "Schedule routine
+  // retest" shortcut, computed on the app's own rule (see the effect below).
+  const [retestSuggestionDay, setRetestSuggestionDay] = useState(null);
   // ADDED — status-ring data, computed from the same real repository
   // reads already happening in the mount effect below (tests/meds),
   // not a second separate fetch.
@@ -559,6 +563,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
       setLastTest(sortedTests[0] || null);
       setTestingStats(getTestingFrequencyStats(tests));
+      // ADDED 21 Oct 2026 (t128) - the suggested retest date for the
+      // Dashboard's "Schedule routine retest" shortcut, on the app's OWN
+      // rule: three months after the most recent completed NEGATIVE
+      // core-panel test. sortedTests is newest-first, so the first eligible
+      // one IS the most recent. A starting value for the form, not a
+      // decision - and null when there is nothing to suggest, in which case
+      // the form opens with just the panel and no date.
+      const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
+      const source = sortedTests.find((t) => isRoutineRetestEligible(t, resultNameById));
+      setRetestSuggestionDay(source ? suggestedRoutineRetestDate(source, resultNameById) : null);
     })();
 
     // CHANGED — real bug from the user's own testing ("Next clinic visit
@@ -1200,19 +1214,32 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             choice of the two examples they gave (the vaccine one was declined as
             a label, since "first vaccine dose" is wrong for a booster).
 
-            IT NAVIGATES AND DOES NOT WRITE, which is the whole point of this
-            being a shortcut rather than a second "add" action. A scheduled retest
-            is a real record in its own right (testingRepository.js's
-            isRoutineRetestPlan), and creating one from here with a single tap
-            would mean writing a persistent plan the user never saw or confirmed -
-            including which test it follows. The action itself deliberately lives
-            on the test's own detail screen for that reason, and this button takes
-            you to where those actions are.
+            REVERSED 21 Oct 2026 (t128), at the owner's instruction: it used to
+            NAVIGATE to the Testing list and write nothing, on the reasoning
+            that a scheduled retest is a real record and a one-tap shortcut
+            should not write one the user never saw. The owner's answer was
+            that this is not what they do - "currently users will be using the
+            new test form and inputting a future date" - so the button now
+            opens the New test FORM, pre-filled, which is where a scheduled
+            retest is actually made in this app.
 
-            Plain navigation, so it reuses onNavigateToRecord rather than the
-            quick-add mechanism, exactly as the "Log medication" button above
-            does for the same reason. */}
-        <QuickAddButton icon={Calendar} label="Schedule routine retest" color={healthcareColor} onClick={() => onNavigateToRecord("healthcare", null, "testing")} />
+            The pre-fill is the app's own rule rather than a guess: the core
+            panel, and the date three months after the most recent COMPLETED
+            NEGATIVE core-panel test (testingCalculations.js's own
+            suggestedRoutineRetestDate, the same one the Testing screen
+            suggests). It is a starting value, not a decision - the user can
+            change the date, and the form says plainly what a future date
+            means now that the app treats it as a scheduled test. */}
+        <QuickAddButton
+          icon={Calendar}
+          label="Schedule routine retest"
+          color={healthcareColor}
+          onClick={() => onQuickAddWithPrefill("healthcare", "testing", {
+            title: "Routine retest",
+            testingFor: [...ROUTINE_RETEST_PANEL],
+            ...(retestSuggestionDay ? { date: `${retestSuggestionDay}T12:00:00.000Z` } : {}),
+          })}
+        />
         {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
             only when the feature is enabled — same gating as the
             SummaryRows above and the Healthcare sub-tab itself. */}

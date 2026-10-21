@@ -13,7 +13,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
-import { nowAsDateString, nowAsStoredDateTime, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, nowAsStoredDateTime, formatStoredDate, formatInstantDate, localDayKey } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
   SETTING_OPTIONS, TESTING_FOR_OPTIONS,
@@ -46,7 +46,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 // gets a real linked Measurement, never a duplicate field here.
 import { MeasurementRepository } from "../repositories/measurementRepository";
 import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
-import { findAffectedRoutineRetestPlans, isCompletedTestRecord, isPlannedTest, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
+import { findAffectedRoutineRetestPlans, isCompletedTestRecord, isPlannedTest, hasResultForPlannedDate, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
 // ADDED — real ask: proactive "due for retest" notification, built on
 // top of suggestedRoutineRetestDate's already-real calculation above.
 import { syncTestingReminder } from "../calculations/testingReminderSync";
@@ -734,7 +734,19 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
   const set = (key) => (v) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: v })); };
-  const canSave = form.title.trim().length > 0 || form.testingFor.length > 0;
+  // A test dated in the future is a PLANNED test - that is how a retest is
+  // scheduled in this app (t127), and the app now treats it as one
+  // everywhere. So the form says so, and it refuses to save a future-dated
+  // test that also carries a RESULT: a result for a test that has not
+  // happened is a record of something that never occurred, and it is exactly
+  // the kind of thing that used to reach a clinician's document.
+  const plannedDay = form.date ? String(form.date).slice(0, 10) : null;
+  const isFutureDated = Boolean(plannedDay && plannedDay > localDayKey());
+  const hasResult = (form.resultIds || []).length > 0;
+  // The rule itself is a pure function in the calculations layer, so it can
+  // be tested - it is one line inside a large component otherwise.
+  const futureDatedWithResult = hasResultForPlannedDate(form);
+  const canSave = !futureDatedWithResult && (form.title.trim().length > 0 || form.testingFor.length > 0);
 
   const save = async () => {
     clearDraft(draftKey);
@@ -780,6 +792,19 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
         <SectionCard title="Overview" T={T}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Routine 3-month screen" />
           <TextField label="Date" value={form.date ? form.date.slice(0, 10) : ""} onChange={(v) => set("date")(v ? new Date(v).toISOString() : null)} T={T} type="date" />
+          {/* ADDED 20 Oct 2026 (t128) - the form says what a future date
+              MEANS, because the app now treats it as a plan: a test dated in
+              the future is a scheduled test, not a result, and it does not
+              count as one. Without this line the behaviour is invisible - the
+              record saves, looks identical in the list, and quietly stops
+              counting as a completed test. */}
+          {isFutureDated && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -4, marginBottom: 8, lineHeight: 1.4 }}>
+              A date in the future is a <strong>scheduled</strong> test, not a result. It will be
+              shown as planned, and it will not count as a completed test.
+              {futureDatedWithResult && " Remove the result below to save it as a scheduled test."}
+            </div>
+          )}
           {/* ADDED 19 Aug 2026 — real feedback batch: Result Date,
               separate from the specimen date above — can lag behind
               it depending on sample/lab turnaround. */}
