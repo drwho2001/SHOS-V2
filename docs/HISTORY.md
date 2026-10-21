@@ -51,6 +51,30 @@ the status bar, and root padding with an offset header opens the gap. Both
 halves are now asserted, and two mutations (one screen's offset, one root's
 padding) are red.
 
+**AND THEN THE OWNER FOUND THE SECOND HALF OF IT: "there is still a small
+gap, I still see the page contents scrolling in a small gap, and a solid
+block allows for the device notch to be seen."** The offset fix had put the
+header in the right PLACE, but the strip between the top of the screen and
+the header is the scroll container's own padding, and content scrolls
+through it - so the notch sat on a moving page, not on a solid colour.
+
+Every sub-screen header now carries a **notch band**: a child element, sized
+by the same `env(safe-area-inset-top)` the root's padding uses, sitting
+directly above the header (`bottom: 100%`) and painted with the **header's
+own background expression**, so the two cannot drift apart. It moves with
+the header, and the title and back button do not move at all - measured on
+the device: the header stays at 35px and the title at 52px, before and
+after, while the band covers 0-35px.
+
+The prototype was applied to the live page first and measured before any
+file was touched - including the one thing that could have gone wrong: the
+sticky offset and the negative margin variants of this fix move the TITLE,
+which the owner said was fine as it was. The band does not, because it is a
+child rather than a change to the header's own box.
+
+The guard now requires the band too - its height, its position, and that it
+is the same colour as the header it sits on. Two more mutations, both red.
+
 ---
 
 ## 21 Oct 2026 - every nested overlay is in the back chain (t129)

@@ -132,6 +132,7 @@ export default function ClinicalEvidenceScreen({ onClose }) {
           borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border),
         }}
       >
+        <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <ChevronLeft
           size={22}
           color={T.textPrimary}

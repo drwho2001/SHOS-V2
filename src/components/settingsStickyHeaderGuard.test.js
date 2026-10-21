@@ -86,6 +86,43 @@ describe("Settings sub-screen sticky headers", () => {
     ).toEqual([]);
   });
 
+  it("every one of them carries a NOTCH BAND, so the area above the header is a solid colour", () => {
+    // The owner's report, after the offset fix: "there is still a small gap,
+    // I still see the page contents scrolling in a small gap, and a solid
+    // block allows for the device notch to be seen."
+    //
+    // The band's height is the safe-area inset (so it is exactly the notch),
+    // it sits above the header (bottom: 100%), and it is painted with the
+    // HEADER'S OWN background expression - so the two cannot drift apart.
+    const bad = [];
+    for (const f of files) {
+      const src = readFileSync(path.join(dir, f), "utf8");
+      if (!src.includes('position: "sticky"')) continue;
+      if (!src.includes('data-notch-band')) { bad.push(`${f}: no notch band`); continue; }
+      const band = /data-notch-band="1"[^>]*style=\{\{([^}]*)\}\}/.exec(src);
+      if (!band) { bad.push(`${f}: the band has no style`); continue; }
+      const style = band[1];
+      if (!/height:\s*"env\(safe-area-inset-top\)"/.test(style)) bad.push(`${f}: the band is not the safe-area height`);
+      if (!/bottom:\s*"100%"/.test(style)) bad.push(`${f}: the band does not sit above the header`);
+      if (!/position:\s*"absolute"/.test(style)) bad.push(`${f}: the band is not positioned`);
+    }
+    expect(bad, "the notch band is missing or wrong").toEqual([]);
+  });
+
+  it("the band is painted with the header's own background, so they cannot drift", () => {
+    for (const f of files) {
+      const src = readFileSync(path.join(dir, f), "utf8");
+      if (!src.includes('position: "sticky"')) continue;
+      const headerBg = /position: "sticky"[\s\S]{0,400}?background:\s*([^,}\n]+)/.exec(src);
+      const bandBg = /data-notch-band="1"[\s\S]{0,400}?background:\s*([^,}\n]+)/.exec(src);
+      if (!headerBg || !bandBg) { expect(`${f}: could not read both backgrounds`).not.toBe(""); continue; }
+      expect(
+        bandBg[1].trim(),
+        `${f}: the band is a different colour from the header it sits on`,
+      ).toBe(headerBg[1].trim());
+    }
+  });
+
   it("the removed offset token is no longer exported, and nothing still uses it", () => {
     const tokens = readFileSync(
       path.join(process.cwd(), "src", "calculations", "designTokens.js"), "utf8");
