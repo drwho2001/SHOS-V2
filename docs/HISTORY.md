@@ -16,6 +16,53 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the DoxyPEP question is gone from the encounter form (t138)
+
+The owner, thinking it through: "doxy is retroactive, prep is proactive, so
+prep would be taken before event - so maybe just a prep coverage toggle, idk,
+think about it."
+
+**THAT REASONING IS RIGHT, AND IT HAS A CONSEQUENCE THE FORM HAD TO RESPECT.**
+DoxyPEP is judged *after* the event: a dose within 72 hours of the encounter.
+So at the moment an encounter is created, the only answers that EXIST are
+"not indicated" and "not yet taken" - "missed window" only becomes true 72
+hours later - and a stored answer is a snapshot of a moment that goes stale.
+A dose logged tomorrow leaves the encounter saying "not yet taken" for ever.
+PrEP coverage is judged *before* the event, so it is knowable at creation,
+stable afterwards, and already inferred from the medication log (t137). So
+PrEP coverage stays on the form, and the DoxyPEP select is gone.
+
+**WHAT SHIPPED:**
+
+- The form no longer asks for the DoxyPEP status, and no longer stores one.
+  It shows the DERIVED answer as a line with its source, so the information
+  is there at the moment it is useful without freezing it.
+- The encounter's read view derives the status against that encounter's own
+  date, with the present as the clock - so "not yet taken" becomes "missed
+  window" on its own, and a dose logged later turns the row into "taken"
+  without anyone editing the record.
+- A record created before this change still shows what the user recorded at
+  the time, and where the log disagrees with it, BOTH are shown: the stored
+  answer is the headline (it is the user's own record, and the log may be
+  incomplete - a dose taken and never logged) and the log's current answer
+  is the note beside it.
+- The pure rule lives in `resolveDoxyPepDisplay()`
+  (`src/calculations/encounterProtectionContext.js`) so a test can reach it,
+  and `src/components/encounterDoxyPepFieldGuard.test.js` guards the form
+  against asking for the field again.
+
+**A GUARD THAT MATCHED A NAME RATHER THAN A CALL - AGAIN.** The first version
+of that guard asserted the read view *mentioned* `resolveDoxyPepDisplay`. A
+mutation that pointed the row back at the stored value left the mention in
+place, and the guard stayed green - which is the same trap that let the
+sticky-header guard pass a build that had unwired the whole back handler. It
+is now asserted on the ROW: the DoxyPEP row must show the resolved value and
+must not show the stored field. All three mutations it claims to catch
+(the select returns, the snapshot write returns, the row reverts to the
+stored value) are proven red.
+
+---
+
 ## 21 Oct 2026 - the encounter form infers its DoxyPEP and PrEP fields (owner report)
 
 The owner: "the doxypep tracking options on new encounter form feels

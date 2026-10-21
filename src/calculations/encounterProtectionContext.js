@@ -152,6 +152,40 @@ export function inferPrepCoverage({ doseLogs = [], hasPrEPMedication = false, at
 }
 
 /**
+ * What the encounter's READ view should say about DoxyPEP.
+ *
+ * The field is no longer asked on the form (t138). It is derived, because
+ * DoxyPEP is RETROACTIVE: at the moment an encounter is created the only
+ * answers that exist are "not indicated" and "not yet taken" - "missed
+ * window" only becomes true 72 hours later - and a stored snapshot says
+ * "not yet taken" for ever even after the dose is logged.
+ *
+ * A record created before that change still carries the stored answer, and
+ * it is not thrown away: it is what the user recorded at the time, and the
+ * log may simply be incomplete (a dose taken and never logged). So both are
+ * shown when they disagree, rather than one silently overwriting the other.
+ *
+ * @param {{stored?: string, derived?: {value: string, reason: string} | null}} input
+ * @returns {{value: string, note: string}}
+ */
+export function resolveDoxyPepDisplay({ stored = "", derived = null } = {}) {
+  const storedValue = (stored || "").trim();
+  const derivedValue = derived && derived.value ? derived.value : "";
+  if (!storedValue) {
+    return derivedValue
+      ? { value: derivedValue, note: `From your medication log: ${derived.reason}.` }
+      : { value: "", note: "" };
+  }
+  if (derivedValue && derivedValue !== storedValue) {
+    return {
+      value: storedValue,
+      note: `Your medication log now suggests “${derivedValue}” — ${derived.reason}.`,
+    };
+  }
+  return { value: storedValue, note: "" };
+}
+
+/**
  * Both suggestions at once, for the caller that wants them.
  */
 export function inferProtectionContext(input = {}) {

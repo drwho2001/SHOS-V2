@@ -4,6 +4,7 @@ import {
   inferPrepCoverage,
   findPrEPMedication,
   inferProtectionContext,
+  resolveDoxyPepDisplay,
 } from "./encounterProtectionContext";
 import { DOXYPEP_STATUS_OPTIONS, PREP_COVERAGE_OPTIONS } from "../repositories/encounterRepository";
 
@@ -190,5 +191,62 @@ describe("finding the PrEP medication", () => {
   it("ignores an archived medication", () => {
     const meds = [{ id: "m1", name: "PrEP", isArchived: true }];
     expect(findPrEPMedication(meds)).toBeNull();
+  });
+});
+
+// t138: what the encounter's READ view shows for DoxyPEP.
+//
+// The field is no longer asked on the form, because DoxyPEP is retroactive
+// and a stored answer goes stale. These cases are the whole reason the
+// stored answer is not simply thrown away: a record created before the form
+// stopped asking still carries what the user recorded, and the log may be
+// incomplete (a dose taken and never logged).
+describe("what the encounter's read view shows for DoxyPEP", () => {
+  it("shows the derived answer when the record carries none", () => {
+    const r = resolveDoxyPepDisplay({
+      stored: "",
+      derived: { value: "Indicated - not yet taken", reason: "the 72h window is still open" },
+    });
+    expect(r.value).toBe("Indicated - not yet taken");
+    expect(r.note).toMatch(/medication log/);
+  });
+
+  it("shows an older record's own answer, without a note, when the log agrees", () => {
+    const r = resolveDoxyPepDisplay({
+      stored: "Indicated - taken",
+      derived: { value: "Indicated - taken", reason: "a dose is logged within 72h" },
+    });
+    expect(r.value).toBe("Indicated - taken");
+    expect(r.note).toBe("");
+  });
+
+  it("shows BOTH when the log and an older record disagree", () => {
+    // The stored answer stays the headline - it is what the user recorded at
+    // the time - and the log's current answer is shown beside it, because a
+    // dose logged afterwards is new information, not a correction.
+    const r = resolveDoxyPepDisplay({
+      stored: "Indicated - not yet taken",
+      derived: { value: "Indicated - taken", reason: "a dose is logged within 72h" },
+    });
+    expect(r.value).toBe("Indicated - not yet taken");
+    expect(r.note).toContain("Indicated - taken");
+    expect(r.note).toContain("a dose is logged within 72h");
+  });
+
+  it("keeps an older record's answer when the log can say nothing at all", () => {
+    // No position recorded, so there is nothing to derive - the record's own
+    // answer is all there is.
+    const r = resolveDoxyPepDisplay({
+      stored: "Not indicated",
+      derived: null,
+    });
+    expect(r.value).toBe("Not indicated");
+    expect(r.note).toBe("");
+  });
+
+  it("says nothing when there is neither a record nor a derivation", () => {
+    const r = resolveDoxyPepDisplay({});
+    expect(r.value).toBe("");
+    expect(r.note).toBe("");
   });
 });

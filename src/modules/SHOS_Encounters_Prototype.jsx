@@ -35,12 +35,12 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import {
   EncounterRepository, DEFAULT_ENCOUNTER,
   ENCOUNTER_TYPE_OPTIONS, MY_POSITION_OPTIONS, CUM_LOCATION_OPTIONS, MY_ROLE_OPTIONS,
-  PREP_COVERAGE_OPTIONS, DOXYPEP_STATUS_OPTIONS, WOULD_MEET_AGAIN_OPTIONS,
+  PREP_COVERAGE_OPTIONS, WOULD_MEET_AGAIN_OPTIONS,
 } from "../repositories/encounterRepository";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { timeOfDay, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
-import { inferProtectionContext, findPrEPMedication } from "../calculations/encounterProtectionContext";
+import { inferProtectionContext, findPrEPMedication, resolveDoxyPepDisplay } from "../calculations/encounterProtectionContext";
 import { findDoxyPepMedication } from "../calculations/doxyPepCalculations";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
@@ -1410,6 +1410,30 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   const protectionNameById = useLoadedMemo(async () => new Map((await ProtectionRegistry.getAll()).map((p) => [p.id, p.name])), [], new Map());
   const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
+  // ADDED 21 Oct 2026 (t138) - the encounter's DoxyPEP status is DERIVED
+  // here rather than read off the record, because DoxyPEP is retroactive: a
+  // stored snapshot goes stale the moment the dose is logged, and a record
+  // created before the form stopped asking has no snapshot at all. The
+  // derivation is judged against THIS encounter's own date, and the clock is
+  // the present, so "not yet taken" becomes "missed window" on its own.
+  const derivedDoxyPep = useLoadedMemo(async () => {
+    if (!encounter) return null;
+    const medications = await MedicationRepository.getAll();
+    const doxyMed = findDoxyPepMedication(medications);
+    const doseLogs = doxyMed ? await LogRepository.getForMedication(doxyMed.id) : [];
+    return inferProtectionContext({
+      myPosition: encounter.myPosition,
+      date: encounter.date,
+      doseLogs,
+      hasPrEPMedication: false,
+      at: encounter.date,
+      now: new Date(),
+    }).doxyPepStatus;
+  }, [encounter?.id, encounter?.date, encounter?.myPosition], null);
+  const doxyPepDisplay = resolveDoxyPepDisplay({
+    stored: encounter?.myDoxyPepStatus,
+    derived: derivedDoxyPep,
+  });
   if (!encounter) return null;
 
   // Resolves an array of registry IDs to their display names — used
@@ -1544,7 +1568,14 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
         <SectionCard title="Protection & medication context" T={T}>
           <ReadRow label="Protection used" value={resolveNames(protectionNameById, encounter.protectionUsed)} T={T} />
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
-          <ReadRow label="My DoxyPEP status" value={encounter.myDoxyPepStatus} T={T} />
+          <ReadRow label="My DoxyPEP status" value={doxyPepDisplay.value} T={T} />
+          {/* CHANGED 21 Oct 2026 (t138) - where the answer came from, and
+              where the log and an older record disagree. */}
+          {doxyPepDisplay.note && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -2, marginBottom: 8, lineHeight: 1.4 }}>
+              {doxyPepDisplay.note}
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard title="Health" T={T}>
@@ -1684,13 +1715,17 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       // Fill ONLY the fields the user has not chosen. setForm directly, not
       // set(), because set() marks the form dirty - and an inferred value is
       // not an edit the user made.
+      //
+      // CHANGED 21 Oct 2026 (t138) - DoxyPEP is NOT filled in here, and no
+      // longer asked on the form. It is RETROACTIVE: the only answers that
+      // exist when the encounter is created are "not indicated" and "not yet
+      // taken" ("missed window" only becomes true 72h later), and a stored
+      // snapshot keeps saying "not yet taken" even after the dose is logged.
+      // The status is derived wherever it is shown instead - see
+      // resolveDoxyPepDisplay() and the read view.
       setForm((f) => {
         const next = { ...f };
         let changed = false;
-        if (suggested.doxyPepStatus && !next.myDoxyPepStatus) {
-          next.myDoxyPepStatus = suggested.doxyPepStatus.value;
-          changed = true;
-        }
         if (suggested.prepCoverage && !next.myPrepCoverage) {
           next.myPrepCoverage = suggested.prepCoverage.value;
           changed = true;
@@ -1699,7 +1734,9 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       });
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // The deps are complete since the DoxyPEP snapshot write went (t138) -
+    // the effect used to read form.myDoxyPepStatus, which is why this
+    // directive was here.
   }, [form.myPosition, form.date]);
   useEffect(() => {
     if (isNew || loadDraft(draftKey)) return;
@@ -1873,13 +1910,15 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
               regimen name has no way to tell that schedule from "Adequate -
               daily" by looking at it. */}
           <JargonNote theme={T} noteKey="prep-2-1-1" label="2-1-1" onOpen={onOpenGlossary} />
-          <SelectField label="My DoxyPEP status" value={form.myDoxyPepStatus} onChange={set("myDoxyPepStatus")} options={DOXYPEP_STATUS_OPTIONS} T={T} />
-          {/* ADDED 21 Oct 2026 (t137) - where the value came from. */}
+          {/* CHANGED 21 Oct 2026 (t138) - the DoxyPEP SELECT is gone.
+              DoxyPEP is retroactive, so the answer that is true when the
+              encounter is created is not the answer that is true a week
+              later; storing it froze "not yet taken" for ever. It is shown
+              here as the DERIVED answer, with its source, and the real
+              value lives in the read view (resolveDoxyPepDisplay). */}
           {protectionHints.doxyPep && (
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -2, marginBottom: 8, lineHeight: 1.4 }}>
-              {form.myDoxyPepStatus === protectionHints.doxyPep.value
-                ? `Set from your medication log: ${protectionHints.doxyPep.value} — ${protectionHints.doxyPep.reason}.`
-                : `Your logs suggest “${protectionHints.doxyPep.value}” — ${protectionHints.doxyPep.reason}.`}
+              DoxyPEP, from your medication log: {protectionHints.doxyPep.value} — {protectionHints.doxyPep.reason}. It is worked out from your dose log rather than asked, so it stays right as you log doses.
             </div>
           )}
         </SectionCard>
