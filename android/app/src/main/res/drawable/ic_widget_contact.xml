@@ -29,10 +29,17 @@
     android:height="22dp"
     android:viewportWidth="256"
     android:viewportHeight="170">
-    <!-- The add badge, in white. -->
+    <!-- The add badge, in white.
+
+         THIN STICKS, not a block: the owner said the plus was "too bulky"
+         (21 Oct 2026). The old path was a 16-unit stem with a 28-unit bar,
+         which is 2.1dp of vertical arm and 3.6dp of horizontal arm - and
+         not even square. This is a symmetric cross: 44 units across, 8-unit
+         arms, about 1dp, on the same centre (44, 85) so the pair of
+         badge-and-disc still lines up. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M36,63H52V71H66V99H52V107H36V99H22V71H36Z" />
+        android:pathData="M40,63H48V81H66V89H48V107H40V89H22V81H40Z" />
     <!-- The module disc. -->
     <path
         android:fillColor="#00796B"
