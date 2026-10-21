@@ -17,17 +17,17 @@
      level, and a shape that ignores the level would draw a full circle no
      matter what progress says.
 
-     Geometry MUST match widget_ring_track.xml exactly - innerRadius 19dp +
-     thickness 4dp, a 46dp ring whose hole is 38dp - because a mismatch draws
+     Geometry MUST match widget_ring_track.xml exactly - innerRadius 21dp +
+     thickness 4dp, a 50dp ring whose hole is 42dp - because a mismatch draws
      two concentric rings of different diameters rather than one arc over one
      track. Both were changed together on 20 Oct 2026, when the ring shrank
-     from 52dp: a 52dp ring inside a 46dp view is CLIPPED, not scaled, so
+     from 52dp: a 52dp ring inside a 50dp view is CLIPPED, not scaled, so
      leaving the drawable alone would have cut the ring's edge off. The stroke
      was then thinned from 6dp to 4dp, to give the ring's centre room for the
      countdown the owner asked to be in it. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="ring"
-    android:innerRadius="19dp"
+    android:innerRadius="21dp"
     android:thickness="4dp"
     android:useLevel="true">
     <solid android:color="@color/widget_good" />

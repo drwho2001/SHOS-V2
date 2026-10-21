@@ -49,6 +49,30 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
     }
 
     /**
+     * The wall-clock due time, as "4:00am".
+     *
+     * ADDED 20 Oct 2026 - the owner's format ("4:00am", not "04:00"). The
+     * twelve-hour form with a lower-case suffix is what they asked to read.
+     *
+     * It is formatted from the SAME epoch the countdown runs to, so the two
+     * can never describe different instants, and it is formatted HERE rather
+     * than taken from the payload's pre-formatted string - one value, one
+     * format, one place.
+     */
+    private static String clockOf(long epochMs) {
+        try {
+            java.util.Date when = new java.util.Date(epochMs);
+            String time = new java.text.SimpleDateFormat("h:mm", java.util.Locale.US).format(when);
+            String suffix = new java.text.SimpleDateFormat("a", java.util.Locale.US)
+                    .format(when).toLowerCase(java.util.Locale.US);
+            return time + suffix;
+        } catch (RuntimeException e) {
+            // A formatter that cannot be built must not take the widget down.
+            return "";
+        }
+    }
+
+    /**
      * The "no data available" RemoteViews. Contains no user data at all, so
      * pushing it can neither write to the plaintext sink nor disclose anything
      * to the launcher process. See res/layout/widget_unavailable.xml.
@@ -269,9 +293,9 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // the countdown - the owner's arrangement (20 Oct): the ring is the
             // live thing, and the time it counts down to is a fixed fact.
             //
-            // "Next at " is dropped: the eyebrow above already says what the
-            // widget is, and the prefix measured as a third of the line's width.
-            String dueClock = nextDoseTime == null ? "" : nextDoseTime.replace("Next at ", "");
+            // It is formatted from the same epoch the countdown runs to, so
+            // the two can never describe different instants.
+            String dueClock = clockOf(target);
             views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_text_muted));
             views.setTextViewText(R.id.widget_next_dose, dueClock);
             views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);

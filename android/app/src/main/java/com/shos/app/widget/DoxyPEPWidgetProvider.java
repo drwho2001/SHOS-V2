@@ -181,6 +181,10 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
             views.setViewVisibility(R.id.widget_doxy_status, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
+            // The word that sits in the ring's centre goes with the ring:
+            // leaving it visible with the ring hidden would float a word in the
+            // middle of the card.
+            views.setViewVisibility(R.id.widget_doxy_ring_label, View.GONE);
             // ADDED 17 Oct 2026 - the RING is hidden at the Redacted tier too, and
             // not as a styling preference. The arc is a fraction of the 72-hour
             // window that remains, so drawing it puts elapsed-time-within-an-
@@ -272,6 +276,12 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
                 // on every level this app supports. Do not "upgrade" this.
                 views.setTextColor(R.id.widget_doxy_status, colour(context, urgency));
                 views.setTextViewText(R.id.widget_doxy_status, "Active");
+                // The ring's centre carries the COUNTDOWN (the owner's
+                // instruction, 20 Oct), so the word in the ring is only for the
+                // state with no countdown to show. Hiding it here and showing
+                // it in the EXPIRED branch is the pair: setting one GONE
+                // obliges setting the other VISIBLE.
+                views.setViewVisibility(R.id.widget_doxy_ring_label, View.GONE);
 
                 // A real Chronometer, so the countdown is live every second in the
                 // LAUNCHER process - no app process, no alarm, no wake lock. It used
@@ -300,16 +310,20 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
                 // to the whole drawable, BOTH layers swept 0, and the ring vanished.
                 views.setProgressBar(R.id.widget_doxy_ring, 100, 0, false);
                 views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
-                views.setTextColor(R.id.widget_doxy_status,
+                // EXPIRED goes IN the ring: a countdown past zero is a negative
+                // duration, which is the one thing a Chronometer cannot
+                // render, so the ring's centre carries the word instead.
+                views.setTextColor(R.id.widget_doxy_ring_label,
                         colour(context, R.color.widget_urgent));
-                views.setTextViewText(R.id.widget_doxy_status, "Expired");
-                // The guidance copy, not a number: a countdown past zero is the one
-                // thing a Chronometer cannot render, and an expired PEP window is
-                // exactly when that instruction is worth reading.
-                views.setChronometer(R.id.widget_doxy_countdown,
-                        SystemClock.elapsedRealtime(), "Take within 72h", false);
-                views.setChronometerCountDown(R.id.widget_doxy_countdown, false);
-                views.setViewVisibility(R.id.widget_doxy_countdown, View.VISIBLE);
+                views.setTextViewText(R.id.widget_doxy_ring_label, "EXPIRED");
+                views.setViewVisibility(R.id.widget_doxy_ring_label, View.VISIBLE);
+                views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
+                // The guidance copy, not a number: an expired PEP window is
+                // exactly when that instruction is worth reading, and it goes
+                // on the line under the ring, where it has the card's width.
+                views.setTextColor(R.id.widget_doxy_status,
+                        colour(context, R.color.widget_text_muted));
+                views.setTextViewText(R.id.widget_doxy_status, "Take within 72h");
             }
         } else {
             // No window open. The ring is SHOWN but EMPTY (progress 0), so the card
@@ -334,6 +348,9 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
             views.setProgressBar(R.id.widget_doxy_ring, 100, 0, false);
             views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
+            // The ring is EMPTY in this state - the owner's "empty ring/outline"
+            // - so there is no word in it either.
+            views.setViewVisibility(R.id.widget_doxy_ring_label, View.GONE);
             views.setTextColor(R.id.widget_doxy_status,
                     colour(context, R.color.widget_text_muted));
             views.setTextViewText(R.id.widget_doxy_status, label);

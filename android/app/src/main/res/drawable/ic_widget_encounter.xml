@@ -1,36 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quick Add: Encounter icon.
+<!-- Quick Add: Encounter.
 
-     THE ADD BADGE IS SEPARATE AND WHITE, TO THE LEFT of the module disc
-     (the owner's instruction, 20 Oct: the plus was "compacted over" the module
-     icon; decompact it, put it to the left, and make it white).
+     THE ICON IS THE APP'S OWN PHOSPHOR "Pulse" GLYPH, in white on the
+     Encounters module's disc - the owner asked for the phosphor icons, and this
+     is the real path out of @phosphor-icons/react 2.1.10, regular weight
+     (the module's own mark in the bottom nav).
 
-     White, because it now sits on the CARD's teal background rather than on
-     the disc. The disc is the Encounters module's own mark - a coloured circle
-     with a white pulse trace in the module colour - the same artwork the
-     bottom nav draws for Encounters.
+     THE ADD BADGE IS SEPARATE, WHITE, AND TO THE LEFT of the disc (the
+     owner's instruction, 20 Oct: the plus was "compacted over" the module icon;
+     decompact it, put it to the left, and make it white). White because it
+     sits on the CARD's teal background rather than on the disc.
 
-     The viewport is 72 wide because the pair is one unit: the plus on the
-     left, the disc on the right, and the layout centres the PAIR. -->
+     The pair - plus, then disc - is centred as a unit by the layout, and the
+     plus and the disc share a centre line. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="34dp"
+    android:width="35dp"
     android:height="22dp"
-    android:viewportWidth="74"
-    android:viewportHeight="48">
-    <!-- The plus, in white. -->
+    android:viewportWidth="256"
+    android:viewportHeight="160">
+    <!-- The add badge, in white. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,16H16V20H22V24H16V32H12V24H6V20H12Z" />
-    <!-- The module disc, moved right to make room for the plus. -->
+        android:pathData="M40,72h16V56h16v16h16v16H72v16H56V88H40z" />
+    <!-- The Encounters module disc. -->
+    <path
+        android:fillColor="#8D3B7A"
+        android:pathData="M168,16A64,64 0,1 0,168 144A64,64 0,1 0,168 16Z" />
+    <!-- Phosphor "Pulse", regular weight, in white. -->
     <group
-        android:scaleX="1"
-        android:scaleY="1"
-        android:translateX="26">
-        <path
-            android:fillColor="#8D3B7A"
-            android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
+        android:scaleX="0.45"
+        android:scaleY="0.45"
+        android:translateX="110.4"
+        android:translateY="70.4">
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M7,26H15L18,18L23,33L28,13L33,29L36,23H41V27H38L34,35L29,22L24,40L18,26L17,30H7Z" />
+            android:pathData="M240,128a8,8,0,0,1-8,8H204.94l-37.78,75.58A8,8,0,0,1,160,216h-.4a8,8,0,0,1-7.08-5.14L95.35,60.76,63.28,131.31A8,8,0,0,1,56,136H24a8,8,0,0,1,0-16H50.85L88.72,36.69a8,8,0,0,1,14.76.46l57.51,151,31.85-63.71A8,8,0,0,1,200,120h32A8,8,0,0,1,240,128Z" />
     </group>
 </vector>

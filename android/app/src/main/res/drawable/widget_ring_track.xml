@@ -27,11 +27,11 @@
      The ARC keeps useLevel="true", because setProgressBar has to move its
      sweep - that is the whole point of the layer.
 
-     Geometry: innerRadius 19dp + thickness 4dp = 23dp outer radius, so a 46dp
+     Geometry: innerRadius 21dp + thickness 4dp = 25dp outer radius, so a 50dp
      view contains it exactly. Explicit dp rather than innerRadiusRatio/
      thicknessRatio because those ratios are fractions of whatever bounds the
      drawable is given, which the launcher rather than this app decides - and a
-     ring drawn at 52dp inside a 46dp view is CLIPPED, not scaled.
+     ring drawn at 52dp inside a 50dp view is CLIPPED, not scaled.
      CHANGED 20 Oct 2026 from thickness 6dp to 4dp, which makes the hole
      38dp instead of 32dp. That is the room the ring's centre needs: the
      owner's instruction is that the COUNTDOWN goes in the ring and the fixed
@@ -42,7 +42,7 @@
      rings of different diameters rather than one arc over one track. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="ring"
-    android:innerRadius="19dp"
+    android:innerRadius="21dp"
     android:thickness="4dp"
     android:useLevel="false">
     <solid android:color="@color/widget_ring_track" />

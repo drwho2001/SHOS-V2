@@ -1,36 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quick Add: Medication icon.
+<!-- Quick Add: Medication.
 
-     THE ADD BADGE IS SEPARATE AND WHITE, TO THE LEFT of the module disc
-     (the owner's instruction, 20 Oct: the plus was "compacted over" the module
-     icon; decompact it, put it to the left, and make it white).
+     THE ICON IS THE APP'S OWN PHOSPHOR "Pill" GLYPH, in white on the
+     Medication module's disc - the owner asked for the phosphor icons and for
+     the mark to clearly read as a pill, and this is the real path out of
+     @phosphor-icons/react 2.1.10, regular weight (the module's own mark in
+     the bottom nav): a capsule, split diagonally.
 
-     White, because it now sits on the CARD's teal background rather than on
-     the disc. The disc is the Medication module's own mark - a coloured circle
-     with a white pill in the module colour - the same artwork the bottom nav
-     draws for Medication.
+     THE ADD BADGE IS SEPARATE, WHITE, AND TO THE LEFT of the disc (the
+     owner's instruction, 20 Oct: the plus was "compacted over" the module icon;
+     decompact it, put it to the left, and make it white). White because it
+     sits on the CARD's teal background rather than on the disc.
 
-     The viewport is 72 wide because the pair is one unit: the plus on the
-     left, the disc on the right, and the layout centres the PAIR. -->
+     The pair - plus, then disc - is centred as a unit by the layout, and the
+     plus and the disc share a centre line. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="34dp"
+    android:width="35dp"
     android:height="22dp"
-    android:viewportWidth="74"
-    android:viewportHeight="48">
-    <!-- The plus, in white. -->
+    android:viewportWidth="256"
+    android:viewportHeight="160">
+    <!-- The add badge, in white. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,16H16V20H22V24H16V32H12V24H6V20H12Z" />
-    <!-- The module disc, moved right to make room for the plus. -->
+        android:pathData="M40,72h16V56h16v16h16v16H72v16H56V88H40z" />
+    <!-- The Medication module disc. -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M168,16A64,64 0,1 0,168 144A64,64 0,1 0,168 16Z" />
+    <!-- Phosphor "Pill", regular weight, in white. -->
     <group
-        android:scaleX="1"
-        android:scaleY="1"
-        android:translateX="26">
-        <path
-            android:fillColor="#2E7D32"
-            android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
+        android:scaleX="0.45"
+        android:scaleY="0.45"
+        android:translateX="110.4"
+        android:translateY="70.4">
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M17,12A7,7 0,0 1,27 12L36,21A7,7 0,0 1,26 31L17,22A7,7 0,0 1,17 12M19,15L33,29L30,32L16,18Z" />
+            android:pathData="M216.42,39.6a53.26,53.26,0,0,0-75.32,0L39.6,141.09a53.26,53.26,0,0,0,75.32,75.31h0L216.43,114.91A53.31,53.31,0,0,0,216.42,39.6ZM103.61,205.09h0a37.26,37.26,0,0,1-52.7-52.69L96,107.31,148.7,160ZM205.11,103.6,160,148.69,107.32,96l45.1-45.09a37.26,37.26,0,0,1,52.69,52.69ZM189.68,82.34a8,8,0,0,1,0,11.32l-24,24a8,8,0,1,1-11.31-11.32l24-24A8,8,0,0,1,189.68,82.34Z" />
     </group>
 </vector>

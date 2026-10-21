@@ -51,29 +51,32 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- 46dp, not 52dp. The owner called the 52dp ring oversized on 20 Oct,
-         and the stroke is the other half of the problem: the ring's centre now
-         carries the COUNTDOWN (the owner's instruction: the countdown that
-         belongs to the ring goes in the ring, and the fixed time goes below
-         it), and the platform's countdown format - "6:18:35" - measures 100px
-         at 12sp on this device. It does not fit an 88px hole.
+    <!-- 50dp, moved UP to 26dp from the top of the card.
+         The owner asked for both (20 Oct): the ring was "oversized" AND it
+         left a band of dead space between the title and the ring. Moving it up
+         closes that band, and growing it gives the countdown room - the
+         platform's format ("34:45", or "6:18:35" for a dose hours away)
+         measures 100px at 12sp on this device, which needs a 42dp hole
+         (115px) to sit in with air around it.
 
-         The drawable is innerRadius 19dp + thickness 4dp, so the hole is 38dp
-         (104px) and the countdown fits at its full 12sp. -->
+         The drawable is innerRadius 21dp + thickness 4dp, so the hole is
+         exactly 42dp and the drawable and the view are the same size - a
+         shape drawable is drawn at its own size and CLIPPED if it is bigger. -->
     <ProgressBar
         android:id="@+id/widget_ring"
         style="@style/ShosWidgetRing"
-        android:layout_width="46dp"
-        android:layout_height="46dp"
-        android:layout_gravity="center"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="26dp"
         android:rotation="-90"
         android:max="100" />
 
     <!-- THE COUNTDOWN IS IN THE RING, and the fixed time is below it. That is
          the owner's instruction (20 Oct): the ring is the live thing - its
-         sweep AND its number change every second - and the time it is
-         counting down to is a fixed fact that belongs lower down, where it
-         reads as the answer to "when?".
+         sweep AND its number change every second - and the time it counts
+         down to is a fixed fact that belongs lower down, where it reads as the
+         answer to "when?".
 
          It is a real Chronometer, so it ticks in the launcher process with no
          app running, no alarm and no wake lock. The platform's format is the
@@ -81,7 +84,7 @@
          format argument is a single-string template with one %s and the
          components cannot be selected; the owner said seconds are the least
          important part, which is what makes a seven-character number
-         acceptable in a 38dp hole.
+         acceptable in the hole.
 
          The width is FIXED and equal to the ring's hole, which is what makes
          the autosize work: autoSize measures the view's own width, so a
@@ -89,7 +92,7 @@
          it. -->
     <Chronometer
         android:id="@+id/widget_countdown"
-        android:layout_width="38dp"
+        android:layout_width="42dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
@@ -111,7 +114,7 @@
          provider shows one and hides the other. -->
     <TextView
         android:id="@+id/widget_ring_label"
-        android:layout_width="38dp"
+        android:layout_width="42dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
@@ -124,16 +127,16 @@
         android:autoSizeMinTextSize="9sp"
         android:autoSizeStepGranularity="1sp" />
 
-    <!-- The FIXED TIME, under the ring: "04:00" is when the dose is due, and
-         it does not change, so it is the caption under the ring rather than
-         the number inside it. In the DUE and OVERDUE states this line carries
-         the state instead ("Due now"). -->
+    <!-- The FIXED TIME, under the ring: "4:00am" is when the dose is due, and
+         it does not change, so it is the caption under the ring rather than the
+         number inside it. In the DUE and OVERDUE states this line carries the
+         state instead ("Due now"). -->
     <TextView
         android:id="@+id/widget_next_dose"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="93dp"
+        android:layout_marginTop="80dp"
         android:text="--:--"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -155,7 +158,8 @@
         android:id="@+id/widget_med_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="102dp"
         android:gravity="center"
         android:text="Medication"
         android:textSize="14sp"
