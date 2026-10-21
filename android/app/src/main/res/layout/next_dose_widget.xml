@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ADDED 17 Oct 2026 - Next Dose widget rebuilt around a countdown ring.
+<!-- Next dose.
 
      REWRITTEN 20 Oct 2026, and the header used to be wrong about the most
      important thing on the card. It said "HERE THE COUNTDOWN IS IN THE
@@ -10,13 +10,19 @@
 
      What the card shows now, and why:
 
-       - the ring's centre carries the WALL-CLOCK DUE TIME ("04:00"), which is
-         what the owner asked for and the only number that fits the 32dp hole
-         (about 88px);
-       - the live countdown is its own line beneath the ring, where the whole
-         77dp of content width is available - the platform's format for it is
-         "21:35:00" or "2d 21:35:00", and neither fits a hole this size;
-       - the medication name is the caption, at the bottom.
+       - the ring's centre carries the LIVE COUNTDOWN, ticking in the launcher
+         process with no app running ("6:18:35"), because the ring is the
+         live thing and the owner asked for the countdown to be in it;
+       - the MEDICATION NAME sits directly under the ring, because the name is
+         what the dose is FOR (the owner's order, 21 Oct);
+       - the FIXED TIME ("4:00am") sits under that, because the time it
+         counts down to does not change and reads as the answer to "when?";
+       - in the DUE and OVERDUE states the ring carries the word DUE and the
+         fixed-time line carries the state instead ("Due now").
+
+     The ring is 50dp with a 4dp stroke, so the hole is 42dp - which is what
+     the countdown needs: the platform's whole-duration format measures 100px
+     at 12sp on this device, and it does not fit an 88px hole.
 
      FrameLayout root, for the L-076 reason recorded in doxy_pep_widget.xml: one
      ViewGroup, children positioned with layout_gravity, no nesting. The bands
@@ -55,13 +61,12 @@
          The owner asked for both (20 Oct): the ring was "oversized" AND it
          left a band of dead space between the title and the ring. Moving it up
          closes that band, and growing it gives the countdown room - the
-         platform's format ("34:45", or "6:18:35" for a dose hours away)
-         measures 100px at 12sp on this device, which needs a 42dp hole
-         (115px) to sit in with air around it.
+         platform's format ("6:18:35") measures 100px at 12sp on this device,
+         which needs a 42dp hole to sit in with air around it.
 
          The drawable is innerRadius 21dp + thickness 4dp, so the hole is
-         exactly 42dp and the drawable and the view are the same size - a
-         shape drawable is drawn at its own size and CLIPPED if it is bigger. -->
+         exactly 42dp and the drawable and the view are the same size - a shape
+         drawable is drawn at its own size and CLIPPED if the view is smaller. -->
     <ProgressBar
         android:id="@+id/widget_ring"
         style="@style/ShosWidgetRing"
@@ -72,11 +77,7 @@
         android:rotation="-90"
         android:max="100" />
 
-    <!-- THE COUNTDOWN IS IN THE RING, and the fixed time is below it. That is
-         the owner's instruction (20 Oct): the ring is the live thing - its
-         sweep AND its number change every second - and the time it counts
-         down to is a fixed fact that belongs lower down, where it reads as the
-         answer to "when?".
+    <!-- THE COUNTDOWN IS IN THE RING.
 
          It is a real Chronometer, so it ticks in the launcher process with no
          app running, no alarm and no wake lock. The platform's format is the
@@ -89,7 +90,10 @@
          The width is FIXED and equal to the ring's hole, which is what makes
          the autosize work: autoSize measures the view's own width, so a
          wrap_content view would measure its own text and could never shrink
-         it. -->
+         it. The marginTop puts it in the RING, not in the middle of the
+         card: the ring sits 26dp from the top and is 50dp across, so its hole
+         is centred on 51dp, and 43dp is where a one-line 12sp number has to
+         start to sit on that centre. -->
     <Chronometer
         android:id="@+id/widget_countdown"
         android:layout_width="42dp"
@@ -129,39 +133,20 @@
         android:autoSizeMinTextSize="9sp"
         android:autoSizeStepGranularity="1sp" />
 
-    <!-- The FIXED TIME, under the ring: "4:00am" is when the dose is due, and
-         it does not change, so it is the caption under the ring rather than the
-         number inside it. In the DUE and OVERDUE states this line carries the
-         state instead ("Due now"). -->
-    <TextView
-        android:id="@+id/widget_next_dose"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="80dp"
-        android:text="--:--"
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
+    <!-- The medication the time belongs to, directly under the ring: the name
+         is what the dose is FOR, and the time is when.
 
-    <!-- The medication the time belongs to. Replaces the old 18sp hero: at 109dp
-         an 18sp medication name is what produced "Sertralin e" broken mid-word,
-         and a 2-cell box has room for one size of text, not two competing ones.
-
-         The name is at 12sp with autosize down to 11sp, and the JS sends it as
-         "Sertraline +2" rather than "Sertraline +2 more" - the full phrase is
-         271px against the 211px this card has, so it ellipsized on the device.
-         The count of the later doses is still on the card, which is what the
-         owner's invariant asks for: anything that will alert must be visible
-         here. -->
+         The JS sends it as "Sertraline +2" rather than "Sertraline +2 more" -
+         the full phrase is 271px against the 211px this card has, so it
+         ellipsized on the device. The count of the later doses is still on the
+         card, which is what the owner's invariant asks for: anything that will
+         alert must be visible here. -->
     <TextView
         android:id="@+id/widget_med_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="102dp"
+        android:layout_marginTop="80dp"
         android:gravity="center"
         android:text="Medication"
         android:textSize="14sp"
@@ -174,4 +159,21 @@
         android:autoSizeMaxTextSize="14sp"
         android:autoSizeMinTextSize="11sp"
         android:autoSizeStepGranularity="1sp" />
+
+    <!-- The FIXED TIME, under the name: "4:00am" is when the dose is due, and
+         it does not change, so it is the caption under the ring rather than the
+         number inside it. In the DUE and OVERDUE states this line carries the
+         state instead ("Due now"). -->
+    <TextView
+        android:id="@+id/widget_next_dose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="102dp"
+        android:text="--:--"
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </FrameLayout>

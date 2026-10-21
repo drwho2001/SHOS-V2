@@ -165,7 +165,11 @@ export async function updateClinicCardWidget(visit) {  try {
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateClinicCard) {
       const tests = visit?.linkedTestIds?.length || 0;
-      const testsStr = tests > 0 ? `${tests} test${tests > 1 ? "s" : ""}` : "None";
+      // ADDED 21 Oct 2026 - no tests means the row is ABSENT, not a row that says
+    // "None". The owner read "Tests: None" as a wrong fact, and it was: the
+    // appointment simply has no tests linked, so the card should say nothing
+    // about tests. An empty string is what the provider hides the row on.
+    const testsStr = tests > 0 ? `${tests}` : "";
       const docType = visit?.visitType || "";
       const clinicNum = visit?.clinicNumber || "";
       const nhsNum = visit?.nhsNumber || "";

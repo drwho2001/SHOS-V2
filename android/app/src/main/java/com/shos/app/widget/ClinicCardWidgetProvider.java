@@ -290,7 +290,14 @@ private static RemoteViews unavailableViews(Context context) {
              views.setTextViewText(R.id.widget_clinic_visit_time, "");
             views.setTextViewText(R.id.widget_clinic_location, location);
             views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
-            views.setTextViewText(R.id.widget_clinic_tests, "Tests: " + tests);
+            // A row that says "Tests: None" is a wrong fact, not a missing
+            // one: the appointment has no tests linked, so the card says
+            // nothing about tests. The row is hidden rather than left blank,
+            // because a blank line under a real one reads as a rendering fault.
+            String testsText = (tests == null || tests.isEmpty()) ? "" : "Tests: " + tests;
+            views.setTextViewText(R.id.widget_clinic_tests, testsText);
+            views.setViewVisibility(R.id.widget_clinic_tests,
+                    testsText.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_clinic_doctype, docType);
             // Measured on the device: the Clinic Card title was clipped by the
             // card's own top edge and the WHOLE card overflowed, so every field

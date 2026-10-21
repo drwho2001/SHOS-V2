@@ -135,7 +135,11 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_last_test, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_retest_due, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_last_test, lastTest);
-            views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
+            // "Retest due: 23 Dec" is 19 characters, about 285px, and the
+            // narrow card's content is 211px - so it wrapped onto two lines
+            // and the card read as broken. "Retest 23 Dec" is the same
+            // information in twelve.
+            views.setTextViewText(R.id.widget_retest_due, "Retest " + retestDue);
             // ADDED 21 Oct 2026 - the ROUTINE row. The owner pointed out that
             // the card said WHEN the next test is due but not WHAT KIND it is:
             // "Retest due: 23 Dec" reads the same whether the 23 Dec is the
@@ -147,7 +151,7 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
             // ONLY when that is true - it can never claim "routine" for a date
             // that came from somewhere else - and it is hidden otherwise.
             if (routine) {
-                views.setTextViewText(R.id.widget_routine, "Routine retest");
+                views.setTextViewText(R.id.widget_routine, "Routine");
                 views.setViewVisibility(R.id.widget_routine, android.view.View.VISIBLE);
             } else {
                 views.setTextViewText(R.id.widget_routine, "");

@@ -32,7 +32,7 @@
     <!-- The add badge, in white. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M33,67H55V78H62V92H55V103H33V92H26V78H33Z" />
+        android:pathData="M36,63H52V71H66V99H52V107H36V99H22V71H36Z" />
     <!-- The module disc. -->
     <path
         android:fillColor="#8D3B7A"
