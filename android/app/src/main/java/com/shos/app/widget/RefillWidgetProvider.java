@@ -151,7 +151,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         // for this view - widgetTextFitMaxLinesGuard checks BOTH axes, so a
         // stale number here fails the build instead of silently rendering larger
         // than the design allows.
-        WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 24f, 1);
+        WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 20f, 1);
         WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 11f, 6);
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.

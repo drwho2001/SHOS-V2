@@ -48,10 +48,34 @@ the same number now feeds the Redacted line.
 
 The app had no "soon" concept — only "at or below the refill threshold", which
 is why the card could say "All stocked" while a medication sat one day from
-its reorder point. The headline now uses a seven-day horizon
+its reorder point. The headline now uses a three-day horizon
 (`REFILL_SOON_DAYS`, `src/calculations/refillReminderSync.js`), derived from
 the user's own `refillThreshold` projection and not from any guess about a
 pharmacy's lead time. It is the owner's call, and it is one line to change.
+
+### 0.4 The Refills card is counted in LINES, not in medications
+
+The card is 76.7dp of text width inside its padding — about thirteen
+characters a line at 11sp — and 131dp tall inside a two-cell placement. The
+text used to be one string per medication ("Sertraline · 14 left ·
+requested", twenty-nine characters), so it wrapped across three lines, broke
+mid-phrase, and pushed the second medication off the bottom of the card.
+
+Each fact is now its own line, and the number of lines is the card's real
+capacity:
+
+- the name, the stock ("14 left") and what has happened with the refill
+  ("requested" / "request now" / "due in 179d" / "no schedule") are three
+  lines a medication, and every one of them is short enough to fit the
+  narrowest card;
+- the stock line is the one that goes when the card is full — three
+  medications fit without it, and a medication is never dropped silently: the
+  last line says "+N more";
+- `REFILL_CARD_LINES` in the JS and `android:maxLines` in the layout are the
+  same number, and `src/components/widgetRefillCardBudgetGuard.test.js`
+  asserts it — plus that the layout's bands fit the card and do not overlap
+  each other, which is the check the other widget guards could not make.
+
 
 ## 1. What the device actually shows (screenshot `wb1.png`, 1080x2400, 440dpi)
 

@@ -36,15 +36,21 @@
 
     <!-- The headline: "Soon" or "None". The provider recolours it - amber when
          something is due, green when nothing is - so the state is carried by the
-         word AND by its colour, never by colour alone. -->
+         word AND by its colour, never by colour alone.
+
+         20sp, not 24sp, and that is arithmetic rather than taste. The body
+         under it needs six lines of 11sp - 80dp - and the title above it takes
+         19dp, so the three bands together are 124dp of a 131dp card. A 24sp
+         headline would need 29dp of that, leaving nothing for the gaps, and the
+         gaps are what stop the bands reading as one block of text. -->
     <TextView
         android:id="@+id/widget_refill_count"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="26dp"
+        android:layout_marginTop="22dp"
         android:text="None"
-        android:textSize="24sp"
+        android:textSize="20sp"
         android:textColor="@color/widget_good"
         android:textStyle="bold"
         android:maxLines="1"
@@ -53,18 +59,24 @@
     <!-- The per-medication lines: name, what is left, and what has happened.
 
          SIX lines at 11sp, and the reason is the width: this card is 76.7dp
-         across, which is about 13 characters a line at 12sp. "Sertraline - 14
+         across, which is about 13 characters a line at 11sp. "Sertraline - 14
          left - requested" is 29 characters, so it wraps onto three lines - and
-         the medication below it needs three more. At 11sp the same six lines
-         fit the card (52dp to 134dp, which is all the content there is), and
-         nothing is silently dropped: a card that quietly loses a medication is
-         worse than one that is a line taller. -->
+         the medication below it needs three more. The JS now sends one fact per
+         line, so each medication spends exactly three lines and two
+         medications fill the card.
+
+         The body starts at 48dp because the headline above it ends at 46dp: the
+         card is 131dp tall inside its padding, and six lines of 11sp are 80dp,
+         so 48 + 80 = 128 leaves three dp of slack. That slack is what stops
+         the last line being clipped - the card was measured with its last line
+         cut off, and the fix was to spend the space the headline was wasting,
+         not to shorten the text. -->
     <TextView
         android:id="@+id/widget_next_refill"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="52dp"
+        android:layout_marginTop="48dp"
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"

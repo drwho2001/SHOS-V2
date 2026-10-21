@@ -78,6 +78,74 @@ export async function getRefillDueMedications() {
  */
 const REFILL_SOON_DAYS = 3;
 
+/**
+ * The Refills card's capacity, in LINES.
+ *
+ * ADDED 21 Oct 2026. The card is 76.7dp of text width inside its padding,
+ * which at 11sp is about thirteen characters a line, and it is 134dp tall
+ * inside a two-cell placement. So what the card can show is a number of
+ * LINES, and the text has to be built to that number rather than discovered
+ * against it.
+ *
+ * This is a hard coupling with the widget layout's `android:maxLines` on
+ * `widget_next_refill`, and `widgetRefillCardBudgetGuard.test.js` asserts the
+ * two agree - the layout is the thing that actually clips, so a number that
+ * lives only in the JS is a number that can drift.
+ */
+export const REFILL_CARD_LINES = 6;
+
+/**
+ * How many characters fit on one line of the NARROWEST card, measured on the
+ * device (76.7dp of text width at 11sp). Used for one thing only: guessing
+ * whether a medication's NAME wraps onto a second line, so that the line
+ * budget below knows what it is spending.
+ */
+export const REFILL_CARD_CHARS_PER_LINE = 13;
+
+/**
+ * The card's lines, built from the medications' facts.
+ *
+ * PURE, and exported for that reason: the card's text is the thing that has
+ * been wrong three times in a row - it wrapped mid-phrase, it pushed the
+ * second medication off the bottom of the card, and it had no idea how many
+ * lines it had. Asserting on a copy of this logic in a test would prove
+ * nothing, so the logic lives here and the test calls it.
+ *
+ * Each medication spends two lines - its name and what has happened with its
+ * refill - and a third for how much is left in the container, but that third
+ * line is a luxury: it is added only when every medication still fits. When
+ * even the two lines do not fit, the medications that will not fit are left
+ * off the card and the last line says how many, because a card that quietly
+ * drops a medication is worse than one that is a line taller.
+ *
+ * @param {{name: string, count: string, timing: string}[]} entries
+ * @param {number} capacity lines the card can show
+ * @returns {string[]} the lines, top to bottom
+ */
+export function buildRefillCardLines(entries, capacity = REFILL_CARD_LINES) {
+  const nameLines = (name) => (name.length > REFILL_CARD_CHARS_PER_LINE ? 2 : 1);
+  const baseLines = (n) =>
+    entries.slice(0, n).reduce((total, e) => total + nameLines(e.name) + 1, 0);
+
+  let shown = entries.length;
+  const includeCount = baseLines(shown) + shown <= capacity;
+  if (!includeCount && baseLines(shown) > capacity) {
+    // Not even two lines each fit. Leave the last line for the count of what
+    // is not shown, and take medications off the card until the rest fits.
+    shown -= 1;
+    while (shown > 1 && baseLines(shown) > capacity - 1) shown -= 1;
+  }
+
+  const lines = [];
+  for (const entry of entries.slice(0, shown)) {
+    lines.push(entry.name);
+    if (includeCount) lines.push(entry.count);
+    lines.push(entry.timing);
+  }
+  if (entries.length > shown) lines.push(`+${entries.length - shown} more`);
+  return lines;
+}
+
 export async function getRefillWidgetSummary() {
   const meds = await Promise.all(
     (await MedicationRepository.getAll())
@@ -100,7 +168,7 @@ export async function getRefillWidgetSummary() {
   });
   const due = rows.filter(({ stock }) => stock.needsAction);
   const ordered = [...due, ...rows.filter(({ stock }) => !stock.needsAction)];
-  const lines = ordered.map(({ med, stock, days }) => {
+  const blocks = ordered.map(({ med, stock, days }) => {
     // ADDED 21 Oct 2026 - the line says what has HAPPENED, not what the reader
     // should do.
     //
@@ -119,9 +187,26 @@ export async function getRefillWidgetSummary() {
       : stock.needsAction
         ? "request now"
         : days !== null && Number.isFinite(days)
-          ? `request in ${formatRemaining(days).replace(" remaining", "")}`
+          ? `due in ${formatRemaining(days).replace(" remaining", "")}`
           : "no schedule";
-    return `${med.name} · ${Math.max(0, stock.currentStock)} left · ${timing}`;
+    // EACH FACT IS ITS OWN LINE, and that is the change of 21 Oct 2026. The card
+    // is 76.7dp of text width, about thirteen characters a line at 11sp, so
+    // "Sertraline - 14 left - requested" (thirty characters) used to wrap
+    // across three lines, break mid-phrase, and push the SECOND medication off
+    // the bottom of the card entirely. Every fact here is short enough to sit
+    // on one line of the narrowest card:
+    //
+    //   "Sertraline"   the name
+    //   "14 left"      what is in the container
+    //   "requested"    what has happened with the refill
+    //
+    // "due in 179d" rather than "request in 179d": thirteen characters is what
+    // fits, and the card's own title ("Refills due") says what is due when.
+    return {
+      name: med.name,
+      count: `${Math.max(0, stock.currentStock)} left`,
+      timing,
+    };
   });
   // The HEADLINE: "Soon" or "None".
   //
@@ -133,7 +218,9 @@ export async function getRefillWidgetSummary() {
   );
   return {
     count: due.length,
-    nextRefill: lines.length ? lines.slice(0, 4).join("\n") : "No medications tracked",
+    nextRefill: blocks.length
+      ? buildRefillCardLines(blocks).join("\n")
+      : "No medications tracked",
     headline: soon ? "Soon" : "None",
   };
 }
