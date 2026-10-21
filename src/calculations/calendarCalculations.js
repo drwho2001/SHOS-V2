@@ -1,4 +1,5 @@
 import { getVaccinationDoseEntries } from "./vaccinationCalculations";
+import { getPlannedCalendarEvents } from "./plannedCalendarEvents";
 import { isPlannedTest } from "./testingCalculations";
 // calendarCalculations.js
 //
@@ -87,6 +88,24 @@ export function getCalendarEvents({ encounters, tests, clinicVisits, vaccination
         });
       }
     });
+
+  // CHANGED 21 Oct 2026 (t139) - the PLANNED vaccination doses, from the
+  // same derivation the phone's real calendar writes, so the two calendars
+  // show the same set. This screen previously showed doses that had been
+  // GIVEN and nothing about what was coming, while the phone's calendar got
+  // the same past doses - so the future was in the app and nowhere else.
+  // The planned TESTS are already shown above (t127), by the same rule the
+  // derivation uses, so the two screens agree about them too.
+  getPlannedCalendarEvents({ vaccinations }).forEach((e) => {
+    events.push({
+      date: e.date,
+      moduleKey: "vaccinations",
+      id: e.id,
+      key: e.key,
+      title: `${e.title} (due)`,
+      planned: true,
+    });
+  });
 
   symptomEntries.filter((e) => !e.isArchived && e.dateStarted).forEach((e) => {
     events.push({ date: e.dateStarted, moduleKey: "symptomLog", id: e.id, title: e.title || "Symptom entry" });

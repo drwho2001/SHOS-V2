@@ -48,6 +48,12 @@ export const DEFAULT_APP_PREFERENCES = {
   // they have their own generic-title behaviour, because a vaccine name
   // and a clinic name are the same class of disclosure.
   calendarSyncVaccinations: false,
+  // ADDED 21 Oct 2026 (t139) - the PLANNED family's own opt-in: a scheduled
+  // retest, and a vaccination's outstanding next dose. Separate again, for
+  // the same reason: a planned event is health data with a date on it, and
+  // "Test due" on a lock screen is the user's health even without a test
+  // name on it. Off by default.
+  calendarSyncPlanned: false,
   // ADDED — real follow-up ask: "I still want to have the option to
   // share with a calendar" — null/empty means the private SHOS
   // calendar (the safe default); a real value is the exact name of an

@@ -53,6 +53,11 @@ import { syncTestingReminder } from "../calculations/testingReminderSync";
 // ADDED 19 Aug 2026 — draft autosave, same pattern as every other
 // edit sheet this round. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
+// ADDED 21 Oct 2026 (t139) - a scheduled retest is a PLANNED event, and the
+// planned events reach the phone's real calendar. Self-gated inside the
+// service (both preferences have to be on), so these calls are safe to make
+// unconditionally.
+import { syncPlannedEventsToCalendar } from "../storage/calendarSyncService";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -755,7 +760,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
       const created = await TestingRepository.create(form);
       onSaved(created.id);
     } else {
-      // ADDED 19 Aug 2026 — real undo/redo extension.
+      // ADDED — real undo/redo extension.
       // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
       // and now TestingRepository itself (Phase 2 encryption
       // groundwork), are all async — every step here awaited.
@@ -764,6 +769,10 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
       await onAfterEdit?.(testId);
       onSaved(testId);
     }
+    // ADDED 21 Oct 2026 (t139) - a test's date decides whether it is a
+    // PLAN, so saving one can create a plan, move one, or turn one into
+    // something that happened. The calendar has to hear about all three.
+    await syncPlannedEventsToCalendar();
   };
 
   return (
@@ -1207,6 +1216,10 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
                 });
                 refresh?.();
                 onDataChanged?.();
+                // ADDED 21 Oct 2026 (t139) - this is the owner's own
+                // "Schedule routine retest" flow, and a scheduled retest is
+                // exactly the kind of thing that belongs on a calendar.
+                await syncPlannedEventsToCalendar();
                 // Straight to the new plan's own detail screen, so the thing just
                 // created is the thing on screen. Navigating out to the module
                 // instead would leave the user guessing whether it saved.
@@ -1425,7 +1438,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
                 record, enabled only when exactly one is selected. */}
             <span role="button" tabIndex={0} aria-label="Export test" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("testing", await TestingRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span role="button" tabIndex={0} aria-label="Archive tests" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span role="button" tabIndex={0} aria-label="Archive tests" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); await syncPlannedEventsToCalendar(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span role="button" tabIndex={0} aria-label="Delete tests" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
@@ -1609,6 +1622,9 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
+    // ADDED 21 Oct 2026 (t139) - and undoing the delete puts the plan back,
+    // so its calendar event has to come back with it.
+    await syncPlannedEventsToCalendar();
   };
   const redoDelete = async () => {
     if (!deleteToast) return;
@@ -1617,6 +1633,9 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
+    // ADDED 21 Oct 2026 (t139) - a deleted plan must lose its calendar
+    // event, and the cleanup pass that removes it only runs on a sync.
+    await syncPlannedEventsToCalendar();
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("testing", records);
@@ -1624,6 +1643,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
+    await syncPlannedEventsToCalendar();
   };
   // ADDED 19 Aug 2026 — real undo/redo extension, same shared
   // mechanism as Encounters/Contacts/Medication.
@@ -1737,6 +1757,9 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     setSupersededPlans(null);
     refresh();
     syncTestingReminder();
+    // ADDED 21 Oct 2026 (t139) - these plans' dates just moved, so their
+    // calendar events have to move with them.
+    await syncPlannedEventsToCalendar();
   };
 
   let screenContent = null;

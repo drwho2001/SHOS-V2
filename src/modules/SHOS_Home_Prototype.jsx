@@ -93,7 +93,7 @@ import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { syncAllWidgets } from "../calculations/syncAllWidgets";
 import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
-import { syncClinicVisitsToCalendar, syncVaccinationsToCalendar } from "../storage/calendarSyncService";
+import { syncClinicVisitsToCalendar, syncVaccinationsToCalendar, syncPlannedEventsToCalendar } from "../storage/calendarSyncService";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
@@ -497,6 +497,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // BOTH preferences, so it does nothing unless the owner has asked for it.
   useEffect(() => {
     (async () => syncVaccinationsToCalendar(await VaccinationRepository.getAll()))();
+  }, []);
+
+  // ADDED 21 Oct 2026 (t139) - the planned events' own catch-up on mount, for
+  // the same reason: a retest scheduled while the app was closed, or a dose
+  // that became due, would otherwise not reach the phone's calendar until
+  // the next save. Self-gated inside the service on BOTH preferences, so it
+  // does nothing unless the owner has asked for it.
+  useEffect(() => {
+    (async () => syncPlannedEventsToCalendar())();
   }, []);
 
   useEffect(() => {

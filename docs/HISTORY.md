@@ -16,6 +16,68 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the future is on the calendar now (t139)
+
+The owner: "retest to phone calendar - include planned events on calendar."
+
+**UNTOW NOW THE PHONE'S CALENDAR ONLY EVER RECEIVED THE PAST.** It got
+booked appointments (t039) and vaccination doses - dated the day they were
+GIVEN (t130). The app knew perfectly well what was COMING: a scheduled
+retest has a date on the record, and a vaccination's outstanding next dose
+has a next-due date on the series. That future was in the app and nowhere
+else, and the app's own Calendar screen showed planned tests but not planned
+doses.
+
+**WHAT SHIPPED, AND WHY IT IS ONE NEW FAMILY RATHER THAN A THIRD SWITCH ON
+EVERYTHING.** There are now three families on the phone's calendar, each
+with its own marker namespace and its own opt-in:
+
+| Family | Marker | What it writes |
+|---|---|---|
+| Appointments | `[shos:<id>]` | a booked clinic visit |
+| Doses | `[shosvax:<id>:<doseKey>]` | one event per dose, dated when it was given |
+| Planned | `[shosplan:<kind>:<key>]` | a scheduled retest, and a dose still due |
+
+**THE NAMESPACE IS THE POINT, AND IT IS NOT COSMETIC.** Each family's
+cleanup pass deletes events whose marker matches its own shape and that are
+not in its current set. A planned event marked `[shos:...]` would therefore
+be DELETED by every clinic sync and recreated by the next one - silently, on
+every sync, for ever. So the planned family gets `[shosplan:...]`, which
+the clinic regex (`^\[shos:`) and the vaccination regex (`^\[shosvax:`) can
+neither match. And the other direction: the sheet promises that turning the
+feature off "removes everything this app put there", so the planned prefix
+had to join the prefix test that does that removal - a family added to the
+sync and forgotten in the removal would leave events behind in a calendar
+the user had stopped using.
+
+**ONE DERIVATION, TWO CALENDARS - THE RULE THIS BATCH EXISTS TO KEEP.** This
+app has two calendars, and they have disagreed before, twice, in both
+directions (t034 wrote one event per vaccination RECORD while the phone
+wrote one per DOSE; t130 made them one per dose). So the planned events are
+derived ONCE, in `src/calculations/plannedCalendarEvents.js`, and both
+calendars read that: the phone's calendar writes what it finds there, and
+the app's own Calendar screen shows the same set. The test that matters is
+the one that compares the two against the same derivation.
+
+**A PLAN'S KEY IS ITS IDENTITY, NOT ITS DATE - AND THE TWO KINDS DIFFER ON
+PURPOSE.** A retest that is rescheduled is the SAME plan, so its marker
+holds the test's id and its event MOVES when the date moves. A
+vaccination's outstanding dose is keyed by the vaccination AND the date,
+because a course can have two outstanding dates and each is its own plan.
+
+**WHAT IS NOT A PLAN.** A next-due date in the past is OVERDUE, not
+planned - the reminder already nags about it, and putting a stale date on
+a calendar would say it is still coming. And a test dated in the past is a
+record of something that happened (t127), so it is not a plan either.
+
+**EVERYTHING IS OPT-IN, AGAIN.** The planned family has its own switch, off
+by default, like the doses. A planned event is health data with a date on
+it, and "Test due" on a lock screen says something even without a test
+name on it. The switch is the app's own calendar-sync sheet, and turning it
+off removes the planned events and only those.
+
+---
+
 ## 21 Oct 2026 - the DoxyPEP question is gone from the encounter form (t138)
 
 The owner, thinking it through: "doxy is retroactive, prep is proactive, so

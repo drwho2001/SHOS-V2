@@ -9,7 +9,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
-import { syncVaccinationsToCalendar } from "../storage/calendarSyncService";
+import { syncVaccinationsToCalendar, syncPlannedEventsToCalendar } from "../storage/calendarSyncService";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -1070,6 +1070,10 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   // Clinic Visits module uses.
   const syncCalendar = async () => {
     await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+    // The planned events too (t139): giving a dose REMOVES the plan for the
+    // next one, and changing a course changes its date - so the plans have
+    // to follow the doses, not only the doses the user has given.
+    await syncPlannedEventsToCalendar();
   };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference

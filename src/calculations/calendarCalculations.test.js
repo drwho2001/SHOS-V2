@@ -1,8 +1,52 @@
 import { describe, it, expect } from 'vitest';
 import { getCalendarEvents, groupEventsByDay } from './calendarCalculations';
+import { getPlannedCalendarEvents } from './plannedCalendarEvents';
 
 describe('calendarCalculations', () => {
   describe('getCalendarEvents', () => {
+    // ADDED 21 Oct 2026 (t139) - THE TWO CALENDARS MUST SHOW THE SAME
+    // PLANNED EVENTS. This app has two calendars - its own screen and the
+    // phone's real one - and they have disagreed before, twice, in both
+    // directions. So this asserts the agreement itself, against the SAME
+    // derivation the phone's calendar writes: for every planned event, this
+    // screen has a matching event, on the same day.
+    it('shows exactly the planned events the phone calendar writes', () => {
+      const vaccinations = [
+        {
+          id: 'vac1', vaccine: 'Hepatitis B', title: 'Hepatitis B', isArchived: false,
+          doses: [{ doseNumber: 1, date: '2026-09-01', time: '11:00', nextDue: '2099-11-10' }],
+        },
+      ];
+      const mockData = {
+        encounters: [], tests: [], clinicVisits: [], symptomEntries: [], medications: [],
+        vaccinations,
+      };
+      const planned = getPlannedCalendarEvents({ vaccinations });
+      expect(planned).toHaveLength(1);
+      const events = getCalendarEvents(mockData);
+      planned.forEach((p) => {
+        const match = events.find((e) => e.key === p.key);
+        expect(match, `no event for planned ${p.key}`).toBeTruthy();
+        expect(match.date).toBe(p.date);
+        expect(match.planned).toBe(true);
+      });
+    });
+
+    // ADDED 21 Oct 2026 (t139) - and a PLANNED TEST is shown too, on the
+    // same rule the derivation uses (a future-dated test is a plan), so the
+    // two screens agree about those as well.
+    it('shows a scheduled retest, and labels it', () => {
+      const mockData = {
+        encounters: [], clinicVisits: [], symptomEntries: [], medications: [], vaccinations: [],
+        tests: [{ id: 't1', date: '2099-12-23T10:00:00.000Z', title: 'Routine screen', isArchived: false }],
+      };
+      const events = getCalendarEvents(mockData);
+      const match = events.find((e) => e.id === 't1');
+      expect(match).toBeTruthy();
+      expect(match.planned).toBe(true);
+      expect(match.title).toMatch(/scheduled/i);
+    });
+
     it('returns events for all modules', () => {
       const mockData = {
         encounters: [

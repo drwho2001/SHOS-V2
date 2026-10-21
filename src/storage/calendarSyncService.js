@@ -54,6 +54,9 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 // offset. See realTimestampFromStored's own header for the full explanation.
 import { realTimestampFromStored } from "../calculations/dateInputHelpers.js";
 import { getVaccinationDoseEntries, getVaccinationDoseDate } from "../calculations/vaccinationCalculations.js";
+import { getPlannedCalendarEvents } from "../calculations/plannedCalendarEvents.js";
+import { TestingRepository } from "../repositories/testingRepository.js";
+import { VaccinationRepository } from "../repositories/vaccinationRepository.js";
 
 let Calendar = null;
 let pluginLoadAttempted = false;
@@ -123,8 +126,9 @@ function vaccinationMarkerFor(vaccinationId, doseKey) {
 // calendar cannot drift apart on them. See getVaccinationDoseKey() and
 // getVaccinationDoseDate() there.
 
-// THE PLUGIN'S DEFAULT WINDOW IS A TRAP FOR THIS FAMILY, AND IT IS THE
-// SINGLE BIGGEST DIFFERENCE BETWEEN IT AND THE CLINIC ONE.
+// THE PLUGIN'S DEFAULT WINDOW IS A TRAP FOR THE FAMILIES THAT OWN EVENTS
+// WHICH ARE NOT ALL IN THE NEAR FUTURE (the doses, and the planned events),
+// AND IT IS THE SINGLE BIGGEST DIFFERENCE BETWEEN THEM AND THE CLINIC ONE.
 //
 // @capacitor/calendar's findEvents() (and modifyEvent's filter, and
 // deleteEvent's filter) default to a window of NOW MINUS 182 DAYS to NOW
@@ -138,17 +142,21 @@ function vaccinationMarkerFor(vaccinationId, doseKey) {
 // The duplicate is invisible until the dose ages past six months, and then
 // it happens on every single sync. So every read and every filter in this
 // family passes an explicit window wide enough to hold any real dose.
-function vaccinationWindow() {
+function wideEventWindow() {
   return {
     startDate: 0, // the epoch: every event that could exist
     endDate: Date.now() + 10 * 365 * 24 * 60 * 60 * 1000,
   };
 }
 
-// Whether an event's notes are one of OURS, in either family.
+// Whether an event's notes are one of OURS, in any family.
 function isOurMarker(notes) {
   const text = notes || "";
-  return text.startsWith(MARKER_PREFIX) || text.startsWith(VACCINATION_MARKER_PREFIX);
+  return (
+    text.startsWith(MARKER_PREFIX) ||
+    text.startsWith(VACCINATION_MARKER_PREFIX) ||
+    text.startsWith(PLANNED_MARKER_PREFIX)
+  );
 }
 
 // Real device/permission check happens here at toggle-on time — never
@@ -363,11 +371,11 @@ async function syncOneDose(plugin, calendar, vaccination, dose, marker) {
   const { events } = await plugin.findEvents({
     notes: marker,
     calendarName: calendar.name,
-    ...vaccinationWindow(),
+    ...wideEventWindow(),
   });
   if (events[0]?.id) {
     await plugin.modifyEvent({
-      filter: { notes: marker, calendarName: calendar.name, ...vaccinationWindow() },
+      filter: { notes: marker, calendarName: calendar.name, ...wideEventWindow() },
       newEvent: eventOptions,
     });
   } else {
@@ -415,7 +423,7 @@ export async function syncVaccinationsToCalendar(vaccinations) {
   // up even after the record is deleted.
   const { events } = await plugin.findEvents({
     calendarName: calendar.name,
-    ...vaccinationWindow(),
+    ...wideEventWindow(),
   });
   for (const event of events) {
     const match = /^\[shosvax:(.+):([^\]]+)\]$/.exec(event.notes || "");
@@ -441,9 +449,149 @@ export async function removeSyncedVaccinationEvents(calendarName) {
   if (!plugin) return;
   const { calendars } = await plugin.listCalendars();
   if (!calendars.some((c) => c.name === calendarName)) return;
-  const { events } = await plugin.findEvents({ calendarName, ...vaccinationWindow() });
+  const { events } = await plugin.findEvents({ calendarName, ...wideEventWindow() });
   for (const event of events) {
     if ((event.notes || "").startsWith(VACCINATION_MARKER_PREFIX)) {
+      await plugin.deleteEvent({ id: event.id });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// THE PLANNED FAMILY - the things that are going to happen (t139).
+// ---------------------------------------------------------------------------
+//
+// WHY A THIRD NAMESPACE, AND THE TRAP IT AVOIDS. The clinic family's
+// cleanup deletes any event whose notes match /^\[shos:(.+)\]$/ when that id
+// is not in the current set, and the vaccination family's cleanup deletes
+// any event matching /^\[shosvax:.../. A planned marker written as
+// "[shos:...]" or "[shosvax:...]" would therefore be DELETED by the other
+// family's cleanup pass - silently, on every sync - and then recreated by
+// the next one, forever. So planned events get their own namespace,
+// "[shosplan:...]", which neither of the other two regexes can match: the
+// clinic one needs a colon straight after "shos", and the vaccination one
+// needs "shosvax:".
+//
+// The other direction matters just as much: removeSyncedEventsFrom() -
+// the sheet's promise that "turning this off removes everything this app
+// put there" - deletes by prefix, so the planned prefix has to be in
+// isOurMarker() as well, or planned events would be LEFT BEHIND in a
+// calendar the user has stopped using.
+//
+// A THIRD SWITCH, AND WHY IT IS NOT THE MASTER ONE. Every privacy-
+// adjacent feature in this app is opt-in and off by default, and a planned
+// event is health data with a date on it ("Test due" is a little less
+// revealing than "HIV screen", but it is still the user's health). So the
+// planned family has its own switch, exactly as the doses got one.
+const PLANNED_MARKER_PREFIX = "[shosplan:";
+
+function plannedMarkerFor(kind, key) {
+  return `${PLANNED_MARKER_PREFIX}${kind}:${key}]`;
+}
+
+// Creates or updates the one calendar event for one planned thing.
+// Idempotent through the marker, like every other family here.
+async function syncOnePlannedEvent(plugin, calendar, planned, marker) {
+  const start = realTimestampFromStored(planned.date);
+  if (!Number.isFinite(start)) return false;
+  const prefs = await AppPreferencesRepository.getPreferences();
+  const useGenericTitle = prefs.calendarSyncGenericTitle;
+  const eventOptions = {
+    // A planned event has no location, and none is invented: there is no
+    // clinic and no provider for a plan.
+    title: useGenericTitle ? planned.genericTitle : planned.title,
+    location: "",
+    // THE NOTES ARE THE MARKER, AND ONLY THE MARKER - the plugin appends a
+    // URL to them on Android, so anything else here would be disclosed to
+    // whoever can see the event.
+    notes: marker,
+    startDate: start,
+    // The same one-hour default the other families use: a plan is a moment,
+    // not a window, and 3600000ms is elapsed time rather than a calendar
+    // day, so DST does not apply to it.
+    endDate: start + 3600000,
+    calendarId: calendar.id,
+  };
+  const { events } = await plugin.findEvents({
+    notes: marker,
+    calendarName: calendar.name,
+    ...wideEventWindow(),
+  });
+  if (events[0]?.id) {
+    await plugin.modifyEvent({
+      filter: { notes: marker, calendarName: calendar.name, ...wideEventWindow() },
+      newEvent: eventOptions,
+    });
+  } else {
+    await plugin.createEvent(eventOptions);
+  }
+  return true;
+}
+
+/**
+ * Brings the target calendar in line with every PLANNED event - a scheduled
+ * retest, and a vaccination's outstanding next dose.
+ *
+ * The gate is BOTH preferences, like the vaccination family: the master
+ * "sync to my phone's calendar" switch, and this family's own opt-in.
+ *
+ * The data is loaded HERE rather than passed in, because a plan can come
+ * from two different modules and every caller of this function would
+ * otherwise have to know about both. The derivation itself is
+ * getPlannedCalendarEvents()'s - the same one the app's own Calendar
+ * screen reads - so the two calendars cannot disagree about what is
+ * planned.
+ */
+export async function syncPlannedEventsToCalendar() {
+  const prefs = await AppPreferencesRepository.getPreferences();
+  if (!prefs.calendarSyncEnabled) return { synced: false };
+  if (!prefs.calendarSyncPlanned) return { synced: false };
+  const { plugin } = await getPlugin();
+  if (!plugin) return { synced: false };
+  const calendar = await resolveTargetCalendar(plugin);
+
+  const planned = getPlannedCalendarEvents({
+    tests: await TestingRepository.getAll(),
+    vaccinations: await VaccinationRepository.getAll(),
+  });
+
+  const wanted = new Set();
+  let count = 0;
+  for (const item of planned) {
+    const marker = plannedMarkerFor(item.kind, item.key);
+    wanted.add(`${item.kind}:${item.key}`);
+    if (await syncOnePlannedEvent(plugin, calendar, item, marker)) count += 1;
+  }
+
+  // The cleanup, with the WIDE window: a plan that was moved, or that has
+  // been given, leaves an event behind that the default window might not
+  // even see.
+  const { events } = await plugin.findEvents({
+    calendarName: calendar.name,
+    ...wideEventWindow(),
+  });
+  for (const event of events) {
+    const match = /^\[shosplan:(.+)\]$/.exec(event.notes || "");
+    if (match && !wanted.has(match[1])) {
+      await plugin.deleteEvent({ id: event.id });
+    }
+  }
+  return { synced: true, count };
+}
+
+// Removes ONLY the planned-family events from a calendar.
+//
+// Its own switch means turning it off must not take the appointments or
+// the doses with it, and turning THOSE off must not take the plans with
+// them. The WIDE window, for the same reason as everywhere else here.
+export async function removeSyncedPlannedEvents(calendarName) {
+  const { plugin } = await getPlugin();
+  if (!plugin) return;
+  const { calendars } = await plugin.listCalendars();
+  if (!calendars.some((c) => c.name === calendarName)) return;
+  const { events } = await plugin.findEvents({ calendarName, ...wideEventWindow() });
+  for (const event of events) {
+    if ((event.notes || "").startsWith(PLANNED_MARKER_PREFIX)) {
       await plugin.deleteEvent({ id: event.id });
     }
   }
@@ -464,6 +612,9 @@ export async function removeSyncedVaccinationEvents(calendarName) {
 // carries its own namespace - would have been LEFT BEHIND in a calendar the
 // user has stopped using, breaking the promise this sheet makes in those
 // words.
+//
+// CHANGED 21 Oct 2026 (t139): and now the planned family too, for the
+// same reason.
 export async function removeSyncedEventsFrom(calendarName) {
   const { plugin } = await getPlugin();
   if (!plugin) return;

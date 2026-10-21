@@ -16,7 +16,7 @@ import { SymptomLogRepository } from "../../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../../repositories/vaccinationRepository";
 import { MODULE_LABELS as TRASH_MODULE_LABELS } from "../../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../../calculations/calendarCalculations";
-import { checkCalendarAvailable, syncClinicVisitsToCalendar, syncVaccinationsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, removeSyncedVaccinationEvents, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../../storage/calendarSyncService";
+import { checkCalendarAvailable, syncClinicVisitsToCalendar, syncVaccinationsToCalendar, syncPlannedEventsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, removeSyncedVaccinationEvents, removeSyncedPlannedEvents, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../../storage/calendarSyncService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
 
@@ -135,6 +135,10 @@ function CalendarSyncSheet({ onClose }) {
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     // The doses live in the same target calendar, so they move with it.
     await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+    // And so do the planned events (t139) - they are in the same calendar,
+    // and leaving them behind would put the app's plans in the calendar the
+    // user just stopped using.
+    await syncPlannedEventsToCalendar();
     setShowCalendarPicker(false);
     setCalendarSyncing(false);
   };
@@ -159,6 +163,44 @@ function CalendarSyncSheet({ onClose }) {
     // here too - otherwise turning the setting on would leave every dose
     // event with the old title until the next dose was saved.
     await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+    // The planned events have their own titles too (t139), so they are
+    // re-synced here as well - otherwise turning the setting on would leave
+    // every plan with the old title until the next save.
+    await syncPlannedEventsToCalendar();
+    setCalendarSyncing(false);
+  };
+
+  // ADDED 21 Oct 2026 (t139) - the PLANNED family's own switch: a scheduled
+  // retest, and a vaccination's outstanding next dose.
+  //
+  // Turning it ON turns the master switch on too, because a plan has
+  // nowhere to go otherwise, and it does the real device/permission check
+  // first - the same "never just flip a stored flag and hope" rule the
+  // other two switches follow. Turning it OFF removes the planned events
+  // this app put in the calendar, and ONLY those: the appointments and the
+  // doses are separate opt-ins, and turning one off must not take another
+  // with it.
+  const togglePlannedSync = async () => {
+    setCalendarSyncError("");
+    setCalendarSyncing(true);
+    const turningOn = !appPrefs.calendarSyncPlanned;
+    if (turningOn && !appPrefs.calendarSyncEnabled) {
+      const result = await checkCalendarAvailable();
+      if (!result.available) {
+        setCalendarSyncError(result.reason || "Calendar access isn't available on this device.");
+        setCalendarSyncing(false);
+        return;
+      }
+      await AppPreferencesRepository.update({ calendarSyncEnabled: true });
+    }
+    await AppPreferencesRepository.update({ calendarSyncPlanned: turningOn });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
+    if (turningOn) {
+      await syncPlannedEventsToCalendar();
+    } else {
+      const targetName = appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME;
+      await removeSyncedPlannedEvents(targetName);
+    }
     setCalendarSyncing(false);
   };
 
@@ -202,6 +244,7 @@ function CalendarSyncSheet({ onClose }) {
     setCalendarSyncing(true);
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+    await syncPlannedEventsToCalendar();
     setCalendarSyncing(false);
   };
 
@@ -245,6 +288,24 @@ function CalendarSyncSheet({ onClose }) {
           </div>
           <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncVaccinations ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
             <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncVaccinations ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+          </div>
+        </div>
+
+        {/* ADDED 21 Oct 2026 (t139) - the PLANNED family's OWN switch, and
+            separate again for the same reason as the two above: a plan is
+            health data with a date on it, and "Test due" on a lock screen
+            says something even without a test name. */}
+        <div onClick={calendarSyncing ? undefined : togglePlannedSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncPlanned} aria-label="Sync planned events to phone calendar"
+          onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlannedSync(); } }}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
+          <div style={{ flex: 1, paddingRight: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also sync planned events</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
+              A scheduled retest, and a vaccination dose that is still due — each as an event on the day it is planned for. Off by default. Turning it off removes the planned events this app put there.
+            </div>
+          </div>
+          <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncPlanned ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+            <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncPlanned ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
           </div>
         </div>
 
