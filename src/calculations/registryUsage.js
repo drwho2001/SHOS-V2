@@ -21,6 +21,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository.js";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository.js";
 import { TestingRepository } from "../repositories/testingRepository.js";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository.js";
+import { isCompletedTestRecord } from "./testingCalculations.js";
 
 function hasKinkSelection(list, id) {
   return (list || []).some((sel) => sel?.kinkId === id);
@@ -66,13 +67,23 @@ export async function computeSymptomsUsage(id) {
 
 export async function computeOrganismUsage(id) {
   let count = 0;
-  (await TestingRepository.getAll()).forEach((t) => { if ((t.organismIds || []).includes(id)) count += 1; });
+  // CHANGED 20 Oct 2026 (t127): a PLANNED test does not count as a use. A
+  // scheduled retest has not produced an organism yet, and counting it would
+  // tell the registry screen that an organism has been seen N times when it
+  // has been seen none.
+  (await TestingRepository.getAll())
+    .filter(isCompletedTestRecord)
+    .forEach((t) => { if ((t.organismIds || []).includes(id)) count += 1; });
   return count;
 }
 
 export async function computeResultsUsage(id) {
   let count = 0;
-  (await TestingRepository.getAll()).forEach((t) => { if ((t.resultIds || []).includes(id)) count += 1; });
+  // CHANGED 20 Oct 2026 (t127): same reason as above - a planned test has
+  // no result to have been seen.
+  (await TestingRepository.getAll())
+    .filter(isCompletedTestRecord)
+    .forEach((t) => { if ((t.resultIds || []).includes(id)) count += 1; });
   (await ClinicVisitsRepository.getAll()).forEach((v) => { if ((v.resultIds || []).includes(id)) count += 1; });
   return count;
 }

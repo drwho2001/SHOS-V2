@@ -36,6 +36,7 @@ import { MeasurementRepository } from "../repositories/measurementRepository.js"
 import { LogRepository } from "../repositories/logRepository.js";
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
 import { storedDayKey, calendarDaysBetween } from "./dateInputHelpers.js";
+import { isPlannedTest } from "./testingCalculations.js";
 
 // A same-day-ish window. The real case this exists for is "logged at 3am, forgot
 // I had, logged it again at 11am" - 8 hours. The window is comfortably wider
@@ -101,8 +102,17 @@ async function findFutureDates(todayKey) {
   };
 
   for (const t of await TestingRepository.getAll()) {
-    future("Test", t.title, t.id, "sample date", t.date);
-    future("Test", t.title, t.id, "result date", t.resultDate);
+    // CHANGED 20 Oct 2026 (t127): a test dated in the future is a PLANNED
+    // test - a scheduled retest - and not a data error. This scanner used to
+    // tell the user that their own scheduling was broken ("it records
+    // something that has already happened"), which is exactly wrong for the
+    // one kind of future-dated record that is perfectly legitimate. The other
+    // record kinds keep the check: a future-dated vaccination, measurement or
+    // symptom entry has no planned meaning and is still worth a look.
+    if (!isPlannedTest(t)) {
+      future("Test", t.title, t.id, "sample date", t.date);
+      future("Test", t.title, t.id, "result date", t.resultDate);
+    }
   }
   for (const v of await VaccinationRepository.getAll()) {
     future("Vaccination", v.title || v.vaccine, v.id, "date", v.date);

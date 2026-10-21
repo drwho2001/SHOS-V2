@@ -46,7 +46,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 // gets a real linked Measurement, never a duplicate field here.
 import { MeasurementRepository } from "../repositories/measurementRepository";
 import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
-import { findAffectedRoutineRetestPlans, isCompletedTestRecord, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
+import { findAffectedRoutineRetestPlans, isCompletedTestRecord, isPlannedTest, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
 // ADDED — real ask: proactive "due for retest" notification, built on
 // top of suggestedRoutineRetestDate's already-real calculation above.
 import { syncTestingReminder } from "../calculations/testingReminderSync";
@@ -1011,9 +1011,19 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
   const isOlder = !isRecentTest(test, allTests || [test]);
   const isPlan = Boolean(test.isRoutineRetestPlan);
+  // CHANGED 20 Oct 2026 (t127): a test DATED IN THE FUTURE is planned too -
+  // that is how a scheduled retest is actually made in this app. So the
+  // banner below is shown for it, with the same words, because the same
+  // thing is true of it: nothing here counts as a completed test.
+  //
+  // "Mark as done" stays for the explicit plan shape only, because it
+  // converts a plan record into a completed one - and a plain future-dated
+  // test is not a plan record. For that shape, the way to complete it is to
+  // edit its date to today, which is what the owner would do anyway.
+  const isPlanned = isPlannedTest(test);
   const plannedDay = test.plannedForDate || test.date?.slice(0, 10) || null;
-  const planIsOverdue = isPlan && plannedDay && plannedDay <= nowAsDateString();
-  const canScheduleRetest = !isPlan && isRoutineRetestEligible(test, resultNameById);
+  const planIsOverdue = isPlanned && plannedDay && plannedDay <= nowAsDateString();
+  const canScheduleRetest = !isPlanned && isRoutineRetestEligible(test, resultNameById);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -1043,7 +1053,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
             the same false-assurance shape mostRecentTest.js exists to prevent.
             `overdue` here means the planned day has passed with the plan still
             marked pending, which is the state worth flagging. */}
-        {isPlan && (
+        {isPlanned && (
           <div role="status" style={{ display: "flex", flexDirection: "column", gap: 8, background: planIsOverdue ? `${T.goldText}18` : `${T.healthcareBlue}12`, border: `1px solid ${planIsOverdue ? T.goldText : T.healthcareBlue}`, borderRadius: radius.md, padding: 12, marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: planIsOverdue ? T.goldText : T.healthcareBlue }}>
               {planIsOverdue ? "Scheduled — date has passed" : "Scheduled — not yet done"}
@@ -1054,17 +1064,19 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
             <div style={{ fontSize: 12, color: T.textSecondary }}>
               This is a plan, not a result. Nothing here counts as a completed test.
             </div>
-            <div role="button" tabIndex={0} aria-label="Mark this scheduled test as done" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => {
-              // The EXPLICIT transition. It converts the plan into a real
-              // completed record dated today and then opens the edit sheet, so
-              // the result is recorded immediately - a plan marked done with no
-              // result would sit in the records as "completed, result unknown",
-              // which is a worse record than either state on its own.
-              const done = await TestingRepository.markRoutineRetestPerformed(testId, { date: nowAsStoredDateTime() });
-              if (done) onEdit(testId);
-            }} style={{ alignSelf: "flex-start", fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "6px 0" }}>
-              Mark as done
-            </div>
+            {isPlan && (
+              <div role="button" tabIndex={0} aria-label="Mark this scheduled test as done" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => {
+                // The EXPLICIT transition. It converts the plan into a real
+                // completed record dated today and then opens the edit sheet, so
+                // the result is recorded immediately - a plan marked done with no
+                // result would sit in the records as "completed, result unknown",
+                // which is a worse record than either state on its own.
+                const done = await TestingRepository.markRoutineRetestPerformed(testId, { date: nowAsStoredDateTime() });
+                if (done) onEdit(testId);
+              }} style={{ alignSelf: "flex-start", fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "6px 0" }}>
+                Mark as done
+              </div>
+            )}
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -1532,7 +1544,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
         {/* A plan must never read as a result from a glance at the list either.
             Without this it sorts among completed tests, shows its future date,
             and looks like a test already taken. */}
-        {t.isRoutineRetestPlan && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>Scheduled</span>}
+        {isPlannedTest(t) && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>Scheduled</span>}
       </div>
       <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
       {t.setting && (

@@ -60,10 +60,12 @@ function seedVaultMeta(extra = {}) {
 
 async function fresh() {
   vi.resetModules();
-  const [repo, crypto] = await Promise.all([
-    import("./privacySettingsRepository"),
-    import("../storage/cryptoService"),
-  ]);
+  // SEQUENTIAL, NOT Promise.all - see the note in clearSampleData.test.js's
+  // own freshApp(): several dynamic imports in flight at once after
+  // vi.resetModules() deadlock the vitest module runner, and the same
+  // pattern here was hanging this file too. Sequentially, it takes 1.5s.
+  const repo = await import("./privacySettingsRepository");
+  const crypto = await import("../storage/cryptoService");
   return { repo, crypto };
 }
 

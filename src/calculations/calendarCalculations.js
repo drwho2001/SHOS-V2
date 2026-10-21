@@ -1,4 +1,5 @@
 import { getVaccinationDate } from "./vaccinationCalculations";
+import { isPlannedTest } from "./testingCalculations";
 // calendarCalculations.js
 //
 // PLAIN-LANGUAGE PURPOSE
@@ -25,8 +26,22 @@ export function getCalendarEvents({ encounters, tests, clinicVisits, vaccination
     events.push({ date: e.date, moduleKey: "encounters", id: e.id, title: e.title || e.encounterType || "Encounter" });
   });
 
+  // CHANGED 20 Oct 2026 (t127): a PLANNED test - dated in the future - is
+  // shown, and LABELLED, because a scheduled retest is exactly the kind of
+  // thing a calendar should show. It is labelled rather than dropped
+  // because the same record shape is also what the Testing list shows with
+  // its "Scheduled" badge, and the calendar must not quietly disagree with
+  // it. Its title is not the "what" the user reads, though - the label
+  // carries that.
   tests.filter((t) => !t.isArchived && t.date).forEach((t) => {
-    events.push({ date: t.date, moduleKey: "testing", id: t.id, title: t.title || (t.testingFor || []).join("/") || "Test" });
+    const title = t.title || (t.testingFor || []).join("/") || "Test";
+    events.push({
+      date: t.date,
+      moduleKey: "testing",
+      id: t.id,
+      title: isPlannedTest(t) ? `${title} (scheduled)` : title,
+      planned: isPlannedTest(t),
+    });
   });
 
   clinicVisits.filter((v) => !v.isArchived && v.date).forEach((v) => {

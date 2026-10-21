@@ -142,7 +142,14 @@ describe("plans a test the user already did has a bearing on", () => {
     // An early test in December overtakes the January plan but not the
     // September one, so both buckets are populated at once.
     const midTest = { ...earlyTest, date: "2026-12-01T10:00:00.000Z" };
-    const r = findAffectedRoutineRetestPlans([plan, futurePlan], midTest);
+    // CHANGED 20 Oct 2026 (t127): the "now" is EXPLICIT, and it has to be.
+    // A test dated in the future is a PLANNED test, not a completed one - so
+    // with the real calendar's today, this December fixture would be "a plan
+    // you have not done yet" and the function would correctly report
+    // nothing. The test's INTENT is a world where December has already
+    // happened, and a fixture that only works while the wall clock sits in a
+    // particular month is a fixture that fails on a Tuesday for no reason.
+    const r = findAffectedRoutineRetestPlans([plan, futurePlan], midTest, "2026-12-05");
     expect(ids(r.early)).toEqual(["plan-2"]);
     expect(ids(r.onTime)).toEqual(["plan-1"]);
   });

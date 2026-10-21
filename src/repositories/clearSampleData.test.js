@@ -44,14 +44,27 @@ vi.mock("../storage/storageAdapter.js", () => ({
 /** Fresh repositories + a fresh cache, with the sample data present. */
 async function freshApp() {
   vi.resetModules();
-  const [contacts, encounters, testing, meds, logs, clear] = await Promise.all([
-    import("./contactRepository"),
-    import("./encounterRepository"),
-    import("./testingRepository"),
-    import("./medicationRepository"),
-    import("./logRepository"),
-    import("./clearSampleData"),
-  ]);
+  // SEQUENTIAL, NOT Promise.all. This is a real deadlock, not a style
+  // preference, and it was measured rather than guessed:
+  //
+  //   concurrent (Promise.all of the six dynamic imports): HANGS. The test
+  //     never finishes - 120s budget, then the next one, and 26 tests took
+  //     871 seconds of pure timeout.
+  //   sequential (await each import in turn): 1.5 seconds for all six.
+  //
+  // The vitest module runner deadlocks when several dynamic imports are in
+  // flight at once after vi.resetModules() - and the module graph here has
+  // grown edges over time (clearSampleData imports every repository, and
+  // those import the calculations layer), so the same helper went from
+  // "a bit slow" to "never finishes" without a single line of it changing.
+  // A suite that hangs is worse than a suite that fails, because a failure
+  // at least says something.
+  const contacts = await import("./contactRepository");
+  const encounters = await import("./encounterRepository");
+  const testing = await import("./testingRepository");
+  const meds = await import("./medicationRepository");
+  const logs = await import("./logRepository");
+  const clear = await import("./clearSampleData");
   return { contacts, encounters, testing, meds, logs, clear };
 }
 

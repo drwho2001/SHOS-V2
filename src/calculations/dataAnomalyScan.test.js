@@ -75,16 +75,33 @@ beforeEach(() => {
 });
 
 describe("records that cannot be in the future", () => {
-  it("flags a test dated after today", async () => {
+it("does NOT flag a test dated after today, because that is a PLANNED test", async () => {
+    // INVERTED 20 Oct 2026 (t127). This used to assert the opposite, and the
+    // opposite was right then: a test dated in the future was a data error.
+    // It is not any more. A future-dated test is how a scheduled retest is
+    // made in this app - the owner enters a future date in the New test form
+    // - so the scanner was telling the user their own scheduling was broken
+    // ("it records something that has already happened"), which is exactly
+    // wrong for the one kind of future-dated record that is legitimate.
+    //
+    // The other record kinds have no planned meaning, so they are still
+    // flagged - the very next test covers one.
     tests = [{ id: "test_1", title: "Screen", date: "2026-11-01T09:00:00.000Z", resultDate: null }];
+    expect(ofKind(await run(), "futureDate")).toHaveLength(0);
+  });
+
+  it("still flags a future-dated record of a kind that has no planned meaning", async () => {
+    // A measurement cannot be scheduled - it either happened or it did not.
+    measurements = [{ id: "m_1", type: "Weight", date: "2026-11-01T09:00:00.000Z", value: 70 }];
     const found = ofKind(await run(), "futureDate");
-    expect(found).toHaveLength(1);
-    expect(found[0].recordType).toBe("Test");
-    expect(found[0].why).toMatch(/25 days in the future/);
+    expect(found.length).toBeGreaterThan(0);
+    expect(found.some((f) => f.recordType === "Measurement")).toBe(true);
   });
 
   it("says tomorrow rather than saying 1 day", async () => {
-    tests = [{ id: "test_1", title: "Screen", date: "2026-10-08T09:00:00.000Z", resultDate: null }];
+    // A MEASUREMENT, not a test - a future-dated test is a planned test now
+    // (t127) and is not flagged at all.
+    measurements = [{ id: "m_1", type: "Weight", date: "2026-10-08T09:00:00.000Z" }];
     expect(ofKind(await run(), "futureDate")[0].why).toMatch(/tomorrow/);
   });
 
@@ -288,7 +305,9 @@ describe("encounters that look logged twice", () => {
 
 describe("the scan as a whole", () => {
   it("reports counts per kind and a total", async () => {
-    tests = [{ id: "test_1", title: "Screen", date: "2026-11-01T09:00:00.000Z", resultDate: null }];
+    // A MEASUREMENT, not a test - a future-dated test is a planned test now
+    // (t127) and is not flagged at all.
+    measurements = [{ id: "m_1", type: "Weight", date: "2026-11-01T09:00:00.000Z" }];
     const r = await run();
     expect(r.total).toBe(r.findings.length);
     expect(r.byKind.futureDate).toBe(1);
@@ -314,7 +333,9 @@ describe("the scan as a whole", () => {
     // `fixableByEditingTheRecord` means a human edits the record's own date. It
     // is the opposite of an automatic action, which is why the field is named
     // for WHO fixes it rather than being a bare boolean.
-    tests = [{ id: "test_1", title: "Screen", date: "2026-11-01T09:00:00.000Z", resultDate: null }];
+    // A MEASUREMENT, not a test - a future-dated test is a planned test now
+    // (t127) and is not flagged at all.
+    measurements = [{ id: "m_1", type: "Weight", date: "2026-11-01T09:00:00.000Z" }];
     const f = ofKind(await run(), "futureDate")[0];
     expect(f.fixableByEditingTheRecord).toBe(true);
   });

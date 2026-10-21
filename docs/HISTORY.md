@@ -16,6 +16,71 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - a future-dated test is a PLANNED test, and there is one rule for that (t127)
+
+**THE OWNER'S OWN WORKFLOW, MADE EXPLICIT.** "Currently users will be using
+the new test form and inputting a future date" - that is how a retest is
+scheduled in this app. So a test dated in the future is a **plan**, exactly
+as a record flagged `isRoutineRetestPlan` is, and there is now **one**
+predicate that says so: `isPlannedTest`.
+
+**BEFORE THIS, THE SAME RECORD MEANT TWO THINGS, AND THE DIFFERENCE WAS NOT
+VISIBLE ANYWHERE.** Every *derivation* - the last-test date, the Last Test
+widget, the three-month retest reminder, every Stats figure, the Clinic Card
+on screen, Encounters' "since last test" - excluded future-dated tests,
+because each of those filtered on the DATE. Every *record-level* consumer
+included them. The worst of them was the **derived HIV status**: it took the
+newest HIV test with no date filter at all, so a future-dated HIV test WON,
+and My Profile could read **"HIV status: untested, tested 20 Jan 2027"** - or
+"negative as of 20 Jan 2027" for a test that has not happened. The Clinic
+Card PDF had no date filter either, so a future-dated positive result could
+appear on a **clinician's document** as current treatment; "tests this
+year" counted them; and saving one fired the false "Scheduled retest
+already done" dialog.
+
+**ONE PREDICATE, FIFTEEN CONSUMERS.** `isCompletedTestRecord` - the
+function that already meant "a test that actually happened" - now asks
+`isPlannedTest` as well, so every one of those consumers is fixed at once,
+rather than each spelling the rule out again. The comparison is by
+**calendar day**, the rule the rest of the app already used ("a test logged
+for later today is included").
+
+**A TRAP THAT CAUGHT THIS CHANGE AS IT WAS BEING WRITTEN, AND IT IS NOW A
+TEST.** `Array.prototype.filter` calls its predicate with `(element, INDEX,
+array)`, so a two-argument predicate handed straight to `.filter()` silently
+receives the index as its second argument. With "today" in that slot, the
+comparison `day > 0` is false for every record (a string compared with a
+number is NaN), every test looked COMPLETED, and the future-dated HIV test
+won the race exactly as it had before. The one-argument form is now the one
+that can be handed to `.filter()`, the two-argument form is named
+`...On` and has to be called explicitly, and a test pins the trap.
+
+**AND THE FIXTURES THAT WERE TIME BOMBS ARE NOW EXPLICIT.** Two tests dated
+their records in December and January 2026 on the assumption that "now" was
+in September 2026. They passed, and they would have started failing on a
+Tuesday for no reason. The "now" is now a parameter, and the tests say what
+it is.
+
+Nine new tests, including the one that matters most: a future-dated HIV
+test does not become the latest HIV test, and a plan that screens for HIV is
+not a test of it. Two mutations, all red: dropping the planned-test rule, and
+dropping the filter in the HIV derivation.
+
+**AND THIS WORK FOUND A LATENT DEADLOCK IN THE TEST SUITE, WHICH IT MADE
+FATAL.** The clearSampleData test file's helper imported its six
+repositories with `Promise.all` of dynamic imports, after `vi.resetModules()`.
+That **deadlocks the vitest module runner**: the file's 26 tests took 871
+seconds and every one of them timed out at its own budget. The same six
+imports awaited one at a time take 1.5 seconds. A temporary probe proved the
+imports themselves are fast and that only the CONCURRENT form hangs. The
+module graph grows edges over time - this change added one, from the testing
+calculations to the date helpers - so a helper that was merely slow became a
+hang without a single line of it changing. Two files had the pattern, and
+both now import sequentially. A suite that hangs is worse than a suite that
+fails, because a failure at least says something.
+
+---
+
 ## 20 Oct 2026 - the duress PIN is a verifier, and the settings object stops carrying secrets (t126, narrow half)
 
 Two changes to the App Lock area, and a third that is deliberately NOT made

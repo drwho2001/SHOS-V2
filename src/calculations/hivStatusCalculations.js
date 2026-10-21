@@ -19,6 +19,7 @@
 // parameters, per the repository/calculation split this project follows
 // throughout (see testingCalculations.js's own header for the same convention).
 import { realTimestampFromStored } from "./dateInputHelpers.js";
+import { isCompletedTestRecord } from "./testingCalculations.js";
 
 /**
  * The four states, exactly as the owner specified them.
@@ -77,6 +78,15 @@ function isHivTest(test) {
 export function deriveHivStatus(tests, resultNameById, measurements = []) {
   const hivTests = (tests || [])
     .filter(isHivTest)
+    // CHANGED 20 Oct 2026 (t127): ONLY completed tests count. This list
+    // arrives UNFILTERED - it is the whole repository read - so before this
+    // a test dated in the future could WIN the "latest HIV test" race and
+    // the profile would then read "HIV status: untested, tested 20 Jan
+    // 2027", or "negative as of 20 Jan 2027" for a test that has not
+    // happened. A scheduled retest is an intention; it is not evidence
+    // about anybody's status, and the one derived fact in this app that
+    // makes a clinical claim must not be derived from one.
+    .filter(isCompletedTestRecord)
     .filter((t) => t.date)
     .sort((a, b) => realTimestampFromStored(b.date) - realTimestampFromStored(a.date));
 

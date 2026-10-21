@@ -27,6 +27,12 @@
 // calculation split. Callers resolve the map once via useLoadedMemo
 // (or build it inline from an already-loaded TestingRepository read).
 
+// ADDED 20 Oct 2026 (t127) - the two date helpers the planned-test
+// predicate reads. Both are the app's canonical day-frame helpers, so the
+// predicate compares in the same frame as everything else that talks about
+// a calendar day.
+import { storedDayKey, localDayKey } from "./dateInputHelpers";
+
 // A routine retest is offered only after a completed negative core STI
 // screen. A single negative result for one infection is not evidence that
 // the full routine panel was done; positive tests belong to treatment/TOC.
@@ -94,12 +100,90 @@ export function routineRetestPrefill(sourceTest) {
   };
 }
 
-export function isCompletedTestRecord(test) {
-  return Boolean(test && !test.isArchived && !test.isRoutineRetestPlan);
+/**
+ * Is this record a PLANNED test - a record of an intention rather than
+ * something that happened?
+ *
+ * ADDED 20 Oct 2026 (t127). Two shapes count, and the second one is the
+ * reason this function exists:
+ *
+ *   1. A record explicitly flagged as a routine retest plan
+ *      (`isRoutineRetestPlan`).
+ *   2. A record DATED IN THE FUTURE. This is how people actually schedule a
+ *      retest in this app: the owner said so plainly - "currently users will
+ *      be using the new test form and inputting a future date" - and the
+ *      alternative (a separate scheduling flow) would have been a third way
+ *      to say the same thing.
+ *
+ * WHY IT MATTERS SO MUCH. Before this, the two shapes were treated
+ * DIFFERENTLY by different parts of the app, and the difference was not
+ * visible anywhere. Every DERIVATION - the last-test date, the Last Test
+ * widget, the three-month retest reminder, every Stats figure, the Clinic
+ * Card on screen - excluded future-dated tests, because each of those
+ * filtered on the DATE. But every RECORD-level consumer included them:
+ * the derived HIV status took the newest HIV test with no date filter at
+ * all, so a future-dated HIV test WON and the profile could read "HIV
+ * status: untested, tested 20 Jan 2027"; the Clinic Card PDF had no date
+ * filter either, so a future-dated positive result could appear on a
+ * clinician's document as current treatment; and "tests this year" counted
+ * them. One record, two truths, and the wrong one was the clinical one.
+ *
+ * THE COMPARISON IS BY CALENDAR DAY, not by instant, which is the same rule
+ * the rest of the app already used ("a test logged for later today is
+ * included") - see mostRecentTestDefinition.test.js, whose sweep pins the
+ * three call sites that still spell the rule out for themselves.
+ */
+export function isPlannedTestOn(test, todayIsoDay) {
+  if (!test) return false;
+  if (test.isRoutineRetestPlan) return true;
+  if (!test.date) return false;
+  const day = storedDayKey(test.date);
+  if (!day) return false;
+  return day > todayIsoDay;
 }
 
-export function isRoutineRetestEligible(test, resultNameById, todayIsoDay = new Date().toISOString().slice(0, 10)) {
-  if (!isCompletedTestRecord(test) || !test.date || test.date.slice(0, 10) > todayIsoDay) return false;
+/**
+ * Is this a PLANNED test - a record of an intention rather than something
+ * that happened? (today = the real today.)
+ */
+export function isPlannedTest(test) {
+  return isPlannedTestOn(test, localDayKey());
+}
+
+/**
+ * Is this a test that ACTUALLY HAPPENED, as of a given day?
+ *
+ * The `...On` suffix is deliberate, and it exists because of a trap that
+ * caught this change as it was being written. `Array.prototype.filter` calls
+ * its predicate with THREE arguments - the element, the INDEX and the array
+ * - so a two-argument predicate passed straight to `.filter()` silently
+ * receives the index as its second argument. With "today" as that second
+ * argument, the comparison `day > 0` is false for every record (a string
+ * compared with a number is NaN), every test looked COMPLETED, and the
+ * future-dated HIV test won the "latest test" race exactly as it had before.
+ * The test that caught it was the one asserting the clinical outcome.
+ *
+ * So the one-argument form is the one that can be handed to `.filter()`, and
+ * the two-argument form has to be called explicitly.
+ */
+export function isCompletedTestRecordOn(test, todayIsoDay) {
+  return Boolean(test && !test.isArchived && !isPlannedTestOn(test, todayIsoDay));
+}
+
+/**
+ * Is this a test that ACTUALLY HAPPENED? (today = the real today.)
+ *
+ * The one definition, now that a planned test has one shape as far as every
+ * consumer is concerned. Fifteen call sites read this, and they all mean
+ * the same thing by it: a test that has happened, is not archived, and is
+ * not a plan for one.
+ */
+export function isCompletedTestRecord(test) {
+  return isCompletedTestRecordOn(test, localDayKey());
+}
+
+export function isRoutineRetestEligible(test, resultNameById, todayIsoDay = localDayKey()) {
+  if (!isCompletedTestRecordOn(test, todayIsoDay) || !test.date || test.date.slice(0, 10) > todayIsoDay) return false;
   const resultNames = (test.resultIds || []).map((id) => resultNameById?.get(id)).filter(Boolean);
   const isPositive = resultNames.some((n) => n.toLowerCase() === "positive");
   const isNegative = resultNames.some((n) => n.toLowerCase() === "negative");
@@ -178,8 +262,12 @@ export function recordsShareInfections(a, b) {
  * @param {object} completedTest the just-saved completed test
  * @returns {{ onTime: object[], early: object[] }} each sorted oldest planned day first
  */
-export function findAffectedRoutineRetestPlans(tests, completedTest) {
-  if (!isCompletedTestRecord(completedTest) || !completedTest?.date) {
+export function findAffectedRoutineRetestPlans(tests, completedTest, todayIsoDay = localDayKey()) {
+  // The `todayIsoDay` parameter exists so the caller (and its tests) can say
+  // what "now" is. A test dated in the future is a PLAN, not a completed
+  // test, so the default - the real today - is what stops a saved future
+  // record from being reported as "you have already done this retest".
+  if (!isCompletedTestRecordOn(completedTest, todayIsoDay) || !completedTest?.date) {
     return { onTime: [], early: [] };
   }
   const completedDay = completedTest.date.slice(0, 10);
