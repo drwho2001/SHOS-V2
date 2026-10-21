@@ -13,19 +13,19 @@
      The viewport is 72 wide because the pair is one unit: the plus on the
      left, the disc on the right, and the layout centres the PAIR. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="33dp"
+    android:width="34dp"
     android:height="22dp"
-    android:viewportWidth="72"
+    android:viewportWidth="74"
     android:viewportHeight="48">
     <!-- The plus, in white. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M10,16h6v-6h4v6h6v4h-6v6h-4v-6h-6z" />
+        android:pathData="M12,16H16V20H22V24H16V32H12V24H6V20H12Z" />
     <!-- The module disc, moved right to make room for the plus. -->
     <group
         android:scaleX="1"
         android:scaleY="1"
-        android:translateX="24">
+        android:translateX="26">
         <path
             android:fillColor="#2E7D32"
             android:pathData="M24,2A22,22 0,1 0,24 46A22,22 0,1 0,24 2" />
