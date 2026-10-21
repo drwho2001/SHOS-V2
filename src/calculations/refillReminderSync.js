@@ -101,11 +101,26 @@ export async function getRefillWidgetSummary() {
   const due = rows.filter(({ stock }) => stock.needsAction);
   const ordered = [...due, ...rows.filter(({ stock }) => !stock.needsAction)];
   const lines = ordered.map(({ med, stock, days }) => {
-    const timing = stock.needsAction
-      ? "request now"
-      : days !== null && Number.isFinite(days)
-        ? `request in ${formatRemaining(days).replace(" remaining", "")}`
-        : "no schedule";
+    // ADDED 21 Oct 2026 - the line says what has HAPPENED, not what the reader
+    // should do.
+    //
+    // The owner had already marked the refill as requested in the app, and the
+    // card was still telling them to request it: "request now" reads as an
+    // instruction, and it is the wrong instruction for something already done.
+    // The app knows - refillRequestedAt is the fact, and it is not a second
+    // stored flag (the repo's own rule: store facts, derive state) - so the line
+    // says "requested" when it has been requested and asks for it when it has
+    // not.
+    //
+    // A cancelled request is not a request: the user took it back, so the card
+    // asks again.
+    const timing = med.refillRequestedAt && !med.refillCancelledAt
+      ? "requested"
+      : stock.needsAction
+        ? "request now"
+        : days !== null && Number.isFinite(days)
+          ? `request in ${formatRemaining(days).replace(" remaining", "")}`
+          : "no schedule";
     return `${med.name} · ${Math.max(0, stock.currentStock)} left · ${timing}`;
   });
   // The HEADLINE: "Soon" or "None".
