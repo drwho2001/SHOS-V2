@@ -16,6 +16,43 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the Settings sub-screen headers sit flush under the status bar (owner report)
+
+**THE REPORT**: "developer tools header needs sticky at top, has gap" - and to
+check the other Settings sub-pages as well.
+
+**MEASURED, not assumed** (on the device, through the WebView rather than by
+tapping):
+
+| Screen | Sticky offset | Measured header top |
+|---|---|---|
+| Settings (its own header) | `top: 0` | **35px** - flush under the status bar |
+| Every Settings sub-screen | `top: calc(env(safe-area-inset-top) + 8px)` | **78px** - 43px lower |
+
+**THE INSET WAS COUNTED TWICE.** Every sub-screen root already carries
+`paddingTop: env(safe-area-inset-top)`, so the sticky header's offset
+resolves against the app's own drawing edge - and adding the inset to the
+offset as well pushed the header down by a second inset's worth. The result
+was a 43px band above every sub-screen header with the page's own content
+scrolling through it, under the status bar. That is the gap.
+
+**THE FIX**: all twenty sub-screen headers now use `top: 0`, the same as the
+Settings screen's own header, and the `STICKY_SCREEN_HEADER_TOP` token is
+gone. The header sticks at the app's own drawing edge; the root's padding is
+the only thing between it and the status bar.
+
+**THE GUARD NOW ASSERTS THE PAIRING, NOT A NUMBER.** The old guard asserted
+that a sub-screen header must NOT stick at `top: 0` - which was right when
+t075 reported the headers sitting under the status bar, and which then pinned
+the fix that opened the gap. The invariant was never the offset; it is the
+pairing: a root with the safe-area padding AND a header that sticks at zero.
+Either half alone is wrong - a header at 0 with no root padding goes under
+the status bar, and root padding with an offset header opens the gap. Both
+halves are now asserted, and two mutations (one screen's offset, one root's
+padding) are red.
+
+---
+
 ## 21 Oct 2026 - every nested overlay is in the back chain (t129)
 
 The hardware back button now closes what is on top of the screen, and every

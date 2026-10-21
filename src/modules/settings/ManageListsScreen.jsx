@@ -1,7 +1,7 @@
 // ManageListsScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useRef, useEffect } from "react";
-import { NEUTRAL_DARK as DARK, STICKY_SCREEN_HEADER_TOP } from "../../calculations/designTokens";
+import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ListChecksIcon as ClipboardCheck, FireIcon as Flame, MicroscopeIcon as Microscope, PillIcon as Pill, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MapPinIcon as MapPin } from "@phosphor-icons/react";
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -22,10 +22,16 @@ import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } fr
 
 function LocationExtraFields({ entry, refresh, T, color }) {
   const [address, setAddress] = useState(entry.address || "");
+  // ADDED 21 Oct 2026 - the postcode, as its own field rather than part of
+  // the address string. The clinic visit's widget shows the place's name and
+  // its postcode together, and its Maps link searches for the full address,
+  // so the postcode has to be readable on its own.
+  const [postcode, setPostcode] = useState(entry.postcode || "");
   const [notes, setNotes] = useState(entry.notes || "");
   const contacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived)), [], []);
   const setType = async (type) => { await LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
   const commitAddress = async () => { await LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
+  const commitPostcode = async () => { await LocationsRepository.update(entry.id, { postcode: postcode.trim() }); refresh(); };
   const commitNotes = async () => { await LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
   const setRelatedContact = async (id) => { await LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
   const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", marginBottom: 8 };
@@ -41,7 +47,9 @@ function LocationExtraFields({ entry, refresh, T, color }) {
         ))}
       </div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Address</div>
-      <input value={address} onChange={(e) => setAddress(e.target.value)} onBlur={commitAddress} placeholder="Optional" style={inputStyle} />
+      <input value={address} onChange={(e) => setAddress(e.target.value)} onBlur={commitAddress} placeholder="e.g. 56 Dean Street" style={inputStyle} />
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Postcode</div>
+      <input value={postcode} onChange={(e) => setPostcode(e.target.value)} onBlur={commitPostcode} placeholder="e.g. HU1 1AA" style={inputStyle} />
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Related contact</div>
       <select value={entry.relatedContactId || ""} onChange={(e) => setRelatedContact(e.target.value)} style={inputStyle}>
         <option value="">None</option>
@@ -93,7 +101,7 @@ export function ManageListsScreen({ onClose }) {
 
   return (
     <div ref={dialogRef} role="dialog" aria-label="Manage lists" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: STICKY_SCREEN_HEADER_TOP, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Manage lists</h1>
       </div>

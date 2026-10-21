@@ -495,24 +495,30 @@ export const FONT_FAMILY_MONO = "'JetBrains Mono', monospace";
  */
 export const STICKY_SUBHEADING_TOP = "calc(env(safe-area-inset-top) + 58px)";
 
-/**
- * Stick position for a screen's OWN top bar - the Settings sub-screen headers and
- * anything else that is the topmost element on its screen with nothing above it.
- *
- * WHY NOT STICKY_SUBHEADING_TOP. That constant is the Healthcare screen-title
- * banner's height (58px), which is correct only for bars that sit directly beneath
- * that specific banner. A Settings sub-screen header has nothing above it, so
- * reusing it would leave a 58px band of dead space between the header and the top
- * of the screen. That is the same mistake as borrowing a sourced clinical
- * constant out of the context that sourced it: the number is right somewhere else.
- *
- * WHY + 8px. The status-bar inset alone would butt the header straight against
- * the system bar. This matches the offset the four real screen-title banners were
- * given on 16 Sep 2026, so a header that scrolls under the status bar has the same
- * deliberate breathing room every other top bar in this app has.
- *
- * The safe-area term resolves to 0px in a desktop browser and on an emulator
- * without a notch, which is why this cannot be confirmed by opening the app on a
- * development machine - see CLAUDE.md's standing note on that.
- */
-export const STICKY_SCREEN_HEADER_TOP = "calc(env(safe-area-inset-top) + 8px)";
+// REMOVED 21 Oct 2026: STICKY_SCREEN_HEADER_TOP.
+//
+// It was "calc(env(safe-area-inset-top) + 8px)" and every Settings sub-screen
+// header used it. MEASURED on the device, that was wrong twice over:
+//
+//   - the Settings screen's OWN header - which uses the literal `top: 0` -
+//     sat at 35px from the top of the screen, flush under the status bar;
+//   - every sub-screen header sat at 78px, 43px lower, with the content
+//     scrolling through the band above it - visible under the status bar, and
+//     what the owner reported as "the header needs sticky at top, has gap".
+//
+// THE INSET WAS COUNTED TWICE. The sub-screen roots already carry
+// `paddingTop: env(safe-area-inset-top)`, so the sticky header's offset
+// resolves against the app's own drawing edge, and adding the inset to the
+// offset as well pushed it down by a second inset's worth.
+//
+// So the sub-screen headers now use `top: 0`, the same as the Settings
+// screen's own header, and the root's padding is the only thing between the
+// header and the status bar. The pairing - a root with the safe-area
+// padding AND a header that sticks at 0 - is what
+// src/components/settingsStickyHeaderGuard.test.js now asserts, because the
+// pairing is the invariant and the offset was only ever a way of
+// approximating it.
+//
+// The safe-area term resolves to 0px in a desktop browser and on an emulator
+// without a notch, which is why this cannot be confirmed by opening the app
+// on a development machine - see CLAUDE.md's standing note on that.
