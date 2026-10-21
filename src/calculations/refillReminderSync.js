@@ -267,7 +267,10 @@ export async function getRefillWidgetSummary() {
     // "due in 179d" rather than "request in 179d": thirteen characters is what
     // fits, and the card's own title ("Refills due") says what is due when.
     return {
-      name: med.name,
+      // TRIMMED, for the same reason as the Next Dose card's names: a
+      // medication whose name was typed with a trailing space came out as
+      // "PrEP ," on the card, and the card is the wrong place to discover it.
+      name: (med.name || "").trim(),
       timing,
     };
   });

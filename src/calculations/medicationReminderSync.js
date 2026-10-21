@@ -273,9 +273,14 @@ export async function updateRefillWidget() {
         // "Sertraline +2" said there were two more; "Sertraline" does not. The
         // line is autosized between 14sp and 11sp, so three names fit at the
         // width the card has; a fourth is where the space runs out.
+        //
+        // The names are TRIMMED, because a medication whose name was typed
+        // with a trailing space came out as "Sertraline, PrEP , Vitamin D" -
+        // the space came with the name, and the card is the wrong place to
+        // discover it.
         const medLabel = [
-          ...state.due.map((m) => m.name),
-          ...state.upcoming.map((u) => u.med?.name),
+          ...state.due.map((m) => (m.name || "").trim()),
+          ...state.upcoming.map((u) => (u.med?.name || "").trim()),
         ]
           .filter(Boolean)
           .join(", ");
