@@ -1901,6 +1901,18 @@ async function testRoutineRetestScheduling(browser) {
     assert(/Keep it as planned/i.test(promptText), "no keep option offered");
     console.log("  ok - an early test asks, and says so in plain words");
 
+    // The "Scheduled retest already done" prompt is still open at this point,
+    // and it does NOT close on Escape - it is one of the back/Escape gaps
+    // t129 is about, and this flow hit it in the wild: Escape left it open,
+    // the next navigation's overlay sweep pressed Escape six more times, and
+    // the sweep failed with "a dialog was still open". So it is dismissed by
+    // its own button here.
+    const keepPlan = page.getByRole("button", { name: "Keep the scheduled retest as it is" }).first();
+    if (await keepPlan.count()) {
+      await keepPlan.click({ timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(600);
+    }
+
     // ---- the DASHBOARD shortcut opens the same thing (t128) ----
     // The owner's own workflow: a retest is scheduled by entering a future
     // date in the New test form. So the Dashboard's "Schedule routine
