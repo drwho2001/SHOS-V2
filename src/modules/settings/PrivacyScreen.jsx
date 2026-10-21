@@ -90,12 +90,15 @@ const [disclosureLevel, setDisclosureLevel] = useState(
   // isn't just a stored string anymore — it's the real key material
   // wrapping the vault's Data Key. Real re-wrap via cryptoService's own
   // verify-before-commit changePin() (see that file's header) using
-  // `settings.anonymisePin` as the OLD PIN — already known here without
-  // asking the user to retype it, same "already inside Settings, which
-  // the lock screen itself already gated" trust model as turning App
-  // Lock off below. If App Lock is OFF, there's no vault PIN slot to
-  // re-wrap yet (first-ever PIN, or a PIN changed while unused) — just
-  // the stored string, exactly as before this change.
+  // `PrivacySettingsRepository.getAppLockPin()` as the OLD PIN — already
+  // known here without asking the user to retype it, same "already inside
+  // Settings, which the lock screen itself already gated" trust model as
+  // turning App Lock off below. If App Lock is OFF, there's no vault PIN
+  // slot to re-wrap yet (first-ever PIN, or a PIN changed while unused) —
+  // just the stored string, exactly as before this change.
+  // CHANGED 20 Oct 2026 (t126): the settings object no longer carries the
+  // raw PIN at all — it says whether one is set — so the raw value is
+  // fetched through getAppLockPin() where it is actually needed.
   const savePin = async () => {
     const trimmed = newPin.trim();
     if (trimmed.length < 4) { setPinError("PIN should be at least 4 digits."); return; }
@@ -103,7 +106,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
     if (trimmed !== confirmPin.trim()) { setPinError("PINs don't match — check both and try again."); return; }
     try {
       if (settings.appLockEnabled) {
-        await changePin(settings.anonymisePin, trimmed, settings.appLockGraceMinutes);
+        await changePin(await PrivacySettingsRepository.getAppLockPin(), trimmed, settings.appLockGraceMinutes);
       }
       await PrivacySettingsRepository.update({ anonymisePin: trimmed });
       setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
@@ -148,7 +151,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
     if (trimmed.length < 6) { setRecoveryError("Recovery string should be at least 6 characters."); return; }
     if (trimmed !== recoveryStringConfirm.trim()) { setRecoveryError("Recovery strings don't match — check both and try again."); return; }
     try {
-      await setRecoveryStringVault(settings.anonymisePin, trimmed);
+      await setRecoveryStringVault(await PrivacySettingsRepository.getAppLockPin(), trimmed);
       setRecoveryStringInput(""); setRecoveryStringConfirm(""); setSettingRecovery(false); setRecoveryError("");
       // hasRecoveryString() reads the vault's own metadata directly, not
       // `settings` — nothing here would otherwise trigger a re-render to
@@ -182,20 +185,20 @@ const [disclosureLevel, setDisclosureLevel] = useState(
   // leaves both the vault AND the stored flag exactly as they were,
   // never a mismatched pair.
   const toggleAppLock = async () => {
-    if (!settings.appLockEnabled && !settings.anonymisePin) {
+    if (!settings.appLockEnabled && !settings.hasAppLockPin) {
       setPinError("Set a PIN below first, then App Lock can use it.");
       return;
     }
     try {
       if (settings.appLockEnabled) {
-        await disablePinProtectionWithPin(settings.anonymisePin);
+        await disablePinProtectionWithPin(await PrivacySettingsRepository.getAppLockPin());
         // CHANGED — real ask: turning App Lock back OFF should also
         // turn off biometric unlock with it — biometric is only ever
         // meaningful as an add-on to App Lock, leaving it silently "on"
         // underneath would just be stale, unreachable state.
         await PrivacySettingsRepository.update({ appLockEnabled: false, biometricUnlockEnabled: false });
       } else {
-        await enablePinProtection(settings.anonymisePin, settings.appLockGraceMinutes);
+        await enablePinProtection(await PrivacySettingsRepository.getAppLockPin(), settings.appLockGraceMinutes);
         await PrivacySettingsRepository.update({ appLockEnabled: true });
       }
       refresh();
@@ -234,7 +237,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
       return;
     }
     try {
-      await enableBiometricSlot(settings.anonymisePin);
+      await enableBiometricSlot(await PrivacySettingsRepository.getAppLockPin());
     } catch (err) {
       setBiometricError(err.message || "Couldn't enable biometric unlock — nothing was changed.");
       return;
@@ -361,9 +364,9 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         {settings.anonymiseModeActive && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
-              {settings.anonymisePin ? "Enter your PIN to turn it back off" : "Turn it back off"}
+              {settings.hasAppLockPin ? "Enter your PIN to turn it back off" : "Turn it back off"}
             </div>
-            {settings.anonymisePin && (
+            {settings.hasAppLockPin && (
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={pinEntry} onChange={(e) => { setPinEntry(e.target.value); setPinError(""); }} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="PIN"
                   style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
@@ -505,7 +508,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Revert PIN</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
-            {settings.anonymisePin ? "A PIN is set — used for both Anonymise mode's revert and App Lock above." : "No PIN set yet — anyone can turn Anonymise mode back off right now, and App Lock can't be turned on. Set one so both actually protect you."}
+            {settings.hasAppLockPin ? "A PIN is set — used for both Anonymise mode's revert and App Lock above." : "No PIN set yet — anyone can turn Anonymise mode back off right now, and App Lock can't be turned on. Set one so both actually protect you."}
           </div>
           {settingPin ? (
             <>
@@ -531,7 +534,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             </>
           ) : (
             <button onClick={() => setSettingPin(true)} style={{ width: "100%", padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
-              {settings.anonymisePin ? "Change PIN" : "Set a PIN"}
+              {settings.hasAppLockPin ? "Change PIN" : "Set a PIN"}
             </button>
           )}
         </div>
@@ -544,7 +547,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Duress PIN (optional)</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
-              {settings.duressPin
+              {settings.hasDuressPin
                 ? "Set. Entering this PIN on the App Lock screen — instead of your real one — opens a convincing but empty, fake version of the app. Your real data stays completely untouched, just not shown. There's no way back to real data from inside a decoy session — close and reopen the app, then enter your REAL PIN."
                 : "A second PIN, different from your real one, for a \"someone is making me unlock my phone\" situation. Entering it opens a fake, empty-looking app instead of your real data — nothing is deleted or changed, it just isn't shown."}
             </div>
@@ -596,9 +599,9 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setSettingDuressPin(true)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
-                  {settings.duressPin ? "Change duress PIN" : "Set a duress PIN"}
+                  {settings.hasDuressPin ? "Change duress PIN" : "Set a duress PIN"}
                 </button>
-                {settings.duressPin && (
+                {settings.hasDuressPin && (
                   <button onClick={clearDuressPin} style={{ padding: "10px 16px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
                     Remove
                   </button>

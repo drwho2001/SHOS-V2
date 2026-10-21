@@ -16,6 +16,64 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - the duress PIN is a verifier, and the settings object stops carrying secrets (t126, narrow half)
+
+Two changes to the App Lock area, and a third that is deliberately NOT made
+here.
+
+**THE DURESS PIN WAS THE ONE SECRET IN THIS APP THAT SAT IN PLAINTEXT AT
+REST.** The vault's own metadata is deliberately unencrypted - it has to be
+readable before the vault unlocks, which is how the App Lock screen can
+recognise a duress PIN and route to the decoy home without attempting (and
+failing) a real unlock. The duress PIN was written into that metadata
+verbatim: readable by anything with localStorage access, with no unlock and
+no key, and against a threat model the duress PIN specifically exists to
+survive - it is the PIN you type when someone is making you.
+
+It is now a **verifier**: PBKDF2-SHA-256 over the PIN, with its own random
+salt, at the PIN's own 100,000 iterations, compared with the file's existing
+constant-time `bytesEqual`. A profile that set a duress PIN before this
+change is **converted on first read** - the legacy plaintext is compared
+once, turned into a verifier, and deleted.
+
+**THE SETTINGS OBJECT NO LONGER CARRIES THE RAW SECRETS.** `getSettings()`
+is read by the Privacy screen, the App Lock prompt, the boot check and the
+backup exporter, and it used to hand every one of them the raw App Lock PIN
+and the raw duress PIN in cleartext, whether or not that reader had any use
+for it. It now says *whether* a PIN is set, and the raw value is fetched
+through one explicitly named call (`getAppLockPin()`) by the only place that
+genuinely needs it as key material: the five privileged vault actions in the
+Privacy screen.
+
+**THE APP LOCK PIN ITSELF IS NOT YET A VERIFIER, AND THAT IS DELIBERATE.**
+Replacing it means the raw value would no longer exist, so turning App Lock
+off, changing the PIN, setting the recovery string and enabling biometrics
+would each have to ask for the PIN to be re-typed - a real UX change, and
+one that can lock the owner out of their own data if it goes wrong. That is
+an owner decision, so it is staged as its own task rather than smuggled in
+here. The same goes for the encrypted-backup path, which keeps the real
+values on purpose (its own comment says a full-device restore should bring
+App Lock back exactly as it was) and for `deactivate()`'s string comparison.
+
+**AND THIS AREA HAD NO TESTS AT ALL.** A sweep of all 150 test files for
+"deactivate", "anonymisePin", "duressPin" and "unlockWithPin" found no test
+that imported or exercised the privacy settings repository at all - which is
+how the plaintext duress PIN and the raw-PIN-in-every-settings-read went
+unnoticed. There are now twelve, including the two that matter most: the
+metadata holds no plaintext duress PIN, and the settings object holds no raw
+App Lock PIN. Three mutations, all red: restoring the plaintext, removing
+the redaction, and removing the legacy conversion.
+
+**ONE CONSTRAINT THE IMPLEMENTATION HAD TO RESPECT, AND IT IS NOT
+OBVIOUS.** The duress mirror does not create a vault metadata blob when
+there is none, because `bootUnlock()` reads that blob to decide how to
+unlock, and a blob with no device slot and no PIN slot takes its "App Lock
+off" branch - where it tries to unwrap an undefined device key and the app
+cannot boot at all. The mirror therefore writes only into a vault that
+already exists, which is every real profile.
+
+---
+
 ## 20 Oct 2026 - clearing the sample data is confirmed, and the confirmation names the records (t064)
 
 "Clear sample data" was **one tap**, in a medical app, over records the user

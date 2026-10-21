@@ -44,7 +44,7 @@
 // kinks-involved. My Profile and other modules remain untouched — no
 // real ask for those yet.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
-import { getDuressPin, setDuressPinMirror, getGraceMinutesPref, setGraceMinutesPref } from "../storage/cryptoService.js";
+import { getDuressVerifier, setDuressPinMirror, getGraceMinutesPref, setGraceMinutesPref } from "../storage/cryptoService.js";
 
 const STORAGE_KEY = "shos_privacy_settings";
 
@@ -141,6 +141,30 @@ export const DEFAULT_PRIVACY_SETTINGS = {
   allowScreenshots: false,
 };
 
+/**
+ * The shape the settings object is handed out in.
+ *
+ * ADDED 20 Oct 2026 (t126). getSettings() and update() both return this
+ * instead of the stored object, and the difference is the two raw secrets:
+ * the App Lock PIN and the duress PIN. A screen that only needs to know
+ * WHETHER a PIN is set now gets a boolean; the raw values are fetched
+ * through getAppLockPin() by the one place that needs them as key material.
+ *
+ * This is not a cosmetic change to a return type. The settings object is
+ * read all over the app - the Privacy screen, the App Lock prompt, the boot
+ * check, the backup exporter - and every one of those reads was a read of
+ * the PIN in cleartext, whether or not that reader had any use for it.
+ */
+function redactPins(settings) {
+  if (!settings || typeof settings !== "object") return settings;
+  const { anonymisePin, duressPin, ...rest } = settings;
+  return {
+    ...rest,
+    hasAppLockPin: Boolean(anonymisePin),
+    hasDuressPin: Boolean(duressPin),
+  };
+}
+
 export const PrivacySettingsRepository = {
   // CHANGED — Phase 2 encryption groundwork (Sep 2026): every method
   // below is now `async`, `await`ing storage.load()/save() even though
@@ -173,18 +197,37 @@ export const PrivacySettingsRepository = {
   async getSettings() {
     const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
     const merged = { ...DEFAULT_PRIVACY_SETTINGS, ...stored };
-    if (!getDuressPin() && merged.duressPin) setDuressPinMirror(merged.duressPin);
+    // CHANGED 20 Oct 2026 (t126): the mirror now holds a VERIFIER rather
+    // than the PIN itself, and writing it is asynchronous (it derives).
+    if (!getDuressVerifier() && merged.duressPin) await setDuressPinMirror(merged.duressPin);
     if (!getGraceMinutesPref() && merged.appLockGraceMinutes) setGraceMinutesPref(merged.appLockGraceMinutes);
-    return { ...merged, duressPin: getDuressPin() };
+    return redactPins(merged);
+  },
+
+  /**
+   * The raw App Lock PIN.
+   *
+   * WHY THIS IS A SEPARATE CALL AND NOT A FIELD ON THE SETTINGS OBJECT.
+   * getSettings() is read by screens all over the app - the Privacy screen,
+   * the App Lock prompt, the boot check - and it used to hand every one of
+   * them the raw PIN in cleartext, whether or not that screen had any use
+   * for it. The settings object now says WHETHER a PIN is set, and the raw
+   * value is fetched here, by the one place that genuinely needs it as key
+   * material: the five privileged vault actions in PrivacyScreen (turn App
+   * Lock off, change the PIN, set the recovery string, enable biometrics).
+   */
+  async getAppLockPin() {
+    const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
+    return stored?.anonymisePin || "";
   },
 
   async update(changes) {
-    if (changes.duressPin !== undefined) setDuressPinMirror(changes.duressPin);
+    if (changes.duressPin !== undefined) await setDuressPinMirror(changes.duressPin);
     if (changes.appLockGraceMinutes !== undefined) setGraceMinutesPref(changes.appLockGraceMinutes);
     const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
     const updated = { ...DEFAULT_PRIVACY_SETTINGS, ...stored, ...changes };
     await storage.save(STORAGE_KEY, updated);
-    return { ...updated, duressPin: getDuressPin() };
+    return redactPins(updated);
   },
 
   // Called the moment App Lock is actually passed (PIN or biometric) —
@@ -218,8 +261,13 @@ export const PrivacySettingsRepository = {
   // set one so this gate is actually meaningful going forward.
   async deactivate(enteredPin) {
     const settings = await this.getSettings();
-    if (settings.anonymisePin && enteredPin !== settings.anonymisePin) {
-      return { ok: false, error: "Incorrect PIN." };
+    if (settings.hasAppLockPin) {
+      // The raw PIN is fetched here rather than read off the settings object,
+      // because the settings object no longer carries it.
+      const storedPin = await this.getAppLockPin();
+      if (enteredPin !== storedPin) {
+        return { ok: false, error: "Incorrect PIN." };
+      }
     }
     await this.update({ anonymiseModeActive: false });
     return { ok: true };
@@ -230,7 +278,7 @@ export const PrivacySettingsRepository = {
   // gone now that nothing can call them before the vault is unlocked
   // (they read this repository's own encrypted data) — App.jsx's
   // AppLockScreen now checks the duress PIN via
-  // cryptoService.getDuressPin() directly (pre-unlock-safe, see that
+  // cryptoService.isDuressPin() directly (pre-unlock-safe, see that
   // file's header) and treats a successful cryptoService.unlockWithPin()
   // call itself as "the real PIN" — a wrong PIN fails AES-GCM's own
   // authentication rather than a separate string comparison. See
@@ -239,17 +287,17 @@ export const PrivacySettingsRepository = {
   // Real validation, not just "non-empty": a duress PIN identical to
   // the real one would make the whole feature a no-op (every unlock
   // would be treated as the real PIN), and an empty string would mean
-  // cryptoService.getDuressPin()'s own `if (pin && ...)` guard (see
-  // App.jsx's AppLockScreen) never matches it at all — effectively
-  // silently not-set even if this were allowed to save. Returns
-  // { ok, error } rather than throwing, matching
+  // cryptoService.isDuressPin()'s own `if (!pin)` guard never matches it
+  // at all — effectively silently not-set even if this were allowed to
+  // save. Returns { ok, error } rather than throwing, matching
   // deactivate()'s own pattern above, so the Settings UI can show
   // exactly why a save was rejected.
   async setDuressPin(newPin) {
     const settings = await this.getSettings();
-    if (!settings.anonymisePin) return { ok: false, error: "Set your real PIN first." };
+    if (!settings.hasAppLockPin) return { ok: false, error: "Set your real PIN first." };
     if (!newPin || !newPin.trim()) return { ok: false, error: "Enter a PIN." };
-    if (newPin === settings.anonymisePin) return { ok: false, error: "Must be different from your real PIN." };
+    const storedPin = await this.getAppLockPin();
+    if (newPin === storedPin) return { ok: false, error: "Must be different from your real PIN." };
     await this.update({ duressPin: newPin });
     return { ok: true };
   },

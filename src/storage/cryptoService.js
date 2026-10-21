@@ -352,6 +352,64 @@ export async function unlockWithPin(pin) {
   }
 }
 
+// --- PIN verifiers (added 20 Oct 2026, t126) ---
+//
+// A "verifier" is what gets STORED instead of a secret: PBKDF2-SHA-256 over
+// the secret, with its own random salt, at the PIN's own 100,000 iterations,
+// reduced to 32 bytes. Comparing two verifiers proves the secrets match
+// without the secret ever being written down.
+//
+// WHY IT MATTERS HERE, and what it does NOT change. The duress PIN was the
+// only secret in this app that sat in PLAINTEXT at rest: this file's own
+// vault metadata is deliberately unencrypted (see the file header), and the
+// duress PIN was written into it verbatim - readable by anything with
+// access to localStorage, with no unlock and no key, and by a threat model
+// the duress PIN is specifically meant to survive (it exists to be entered
+// under coercion). It is now a verifier.
+//
+// THE APP LOCK PIN IS A SEPARATE MATTER, and deliberately not changed here.
+// It already lives inside the encrypted settings blob, and replacing it with
+// a verifier means the Privacy screen's five privileged actions - turning
+// App Lock off, changing the PIN, setting the recovery string, enabling
+// biometrics - would each have to ask for the PIN to be re-typed, because
+// the raw value would no longer exist to hand to the vault. That is a real
+// UX change and an owner decision, so it is staged separately rather than
+// smuggled in here. The cost of leaving it is bounded: the raw PIN is
+// encrypted at rest, and the string comparison it feeds is on the anonymise
+// toggle rather than on the vault.
+export async function derivePinVerifier(pin, saltBytes, iterations) {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pin),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: saltBytes, iterations, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  return new Uint8Array(bits);
+}
+
+export async function createPinVerifier(pin) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await derivePinVerifier(pin, salt, PIN_KDF_ITERATIONS);
+  return { salt: bytesToBase64(salt), iterations: PIN_KDF_ITERATIONS, hash: bytesToBase64(hash) };
+}
+
+export async function verifyPinVerifier(pin, verifier) {
+  if (!pin || !verifier || !verifier.salt || !verifier.hash) return false;
+  const derived = await derivePinVerifier(
+    pin,
+    base64ToBytes(verifier.salt),
+    verifier.iterations || PIN_KDF_ITERATIONS
+  );
+  // Constant-time compare - bytesEqual is already here for exactly this.
+  return bytesEqual(derived, base64ToBytes(verifier.hash));
+}
+
 // --- Duress PIN + grace-minutes preference: two small, deliberately
 // UNENCRYPTED mirrors of facts that otherwise live inside
 // PrivacySettingsRepository's own encrypted storage. Both need to be
@@ -362,26 +420,69 @@ export async function unlockWithPin(pin) {
 // (see unlockWithPin() above) rather than waiting on encrypted
 // settings that don't exist yet at that point. Same category of
 // necessary exception as `shos_vault_key_slots` itself — see this
-// file's own header. Real, honest trade-off, same shape as this file's
-// other accepted ones: a determined attacker with raw storage access
-// could read the duress PIN (already true before this change — see
-// privacySettingsRepository.js's own header on why that PIN was never
-// meant to resist that threat model) and could see the grace-period
-// duration in minutes (not sensitive on its own).
-// PrivacySettingsRepository.getSettings() self-heals these mirrors
-// from its own (now-decrypted) stored values the first time it's read
-// after this code ships, for a profile that had already set either
-// value before this mirror existed — see that file's own comment.
-export function getDuressPin() {
-  return readVaultMeta()?.duressPin || "";
+// file's own header.
+//
+// CHANGED 20 Oct 2026 (t126): THE DURESS PIN IS NOW A VERIFIER, NOT A
+// STRING. The mirror is unencrypted, so the PIN used to be readable at rest
+// by anything with localStorage access - the one secret in this app that
+// was. What is stored now is a PBKDF2 verifier, and the comparison is a
+// derived-value compare.
+//
+// The grace-minutes mirror is unchanged, and it is not sensitive on its own:
+// it is a duration in minutes.
+export function getDuressVerifier() {
+  return readVaultMeta()?.duressPinVerifier || null;
 }
-export function setDuressPinMirror(pin) {
+
+/**
+ * Writes the duress PIN's verifier into the vault metadata.
+ *
+ * A legacy profile - one that set a duress PIN before this change - has the
+ * PLAINTEXT in that metadata. Writing the verifier removes it, so the
+ * plaintext stops being readable at rest the first time the app runs.
+ */
+export async function setDuressPinMirror(pin) {
   const meta = readVaultMeta();
+  // WHY IT DOES NOT CREATE A METADATA BLOB WHEN THERE IS NONE. bootUnlock()
+  // reads this blob to decide HOW to unlock, and a blob with no device slot
+  // and no PIN slot takes its "App Lock off" branch - where it tries to
+  // unwrap an undefined device key and the app cannot boot at all. The
+  // mirror only ever writes into a vault that already exists, which is every
+  // real profile: initializeFreshVault() runs on the first boot.
   if (!meta) return;
-  meta.duressPin = pin || "";
+  if (!pin) {
+    delete meta.duressPinVerifier;
+    delete meta.duressPin;
+    writeVaultMeta(meta);
+    return;
+  }
+  meta.duressPinVerifier = await createPinVerifier(pin);
+  delete meta.duressPin; // the plaintext copy is gone for good
   writeVaultMeta(meta);
 }
-export function getGraceMinutesPref() {
+
+/**
+ * Is this the duress PIN? Readable BEFORE the vault unlocks, which is the
+ * whole point of the mirror existing.
+ *
+ * MIGRATION, on first read of a legacy profile: the metadata still holds
+ * the old plaintext, so it is compared directly once, converted into a
+ * verifier (which deletes the plaintext), and from then on only the verifier
+ * is used. The comparison result for that first attempt is against the
+ * legacy value, which is what the user typed against.
+ */
+export async function isDuressPin(pin) {
+  if (!pin) return false;
+  const meta = readVaultMeta();
+  if (!meta) return false;
+  if (meta.duressPin && !meta.duressPinVerifier) {
+    const matches = pin === meta.duressPin;
+    await setDuressPinMirror(meta.duressPin);
+    return matches;
+  }
+  if (!meta.duressPinVerifier) return false;
+  return verifyPinVerifier(pin, meta.duressPinVerifier);
+}export function getGraceMinutesPref() {
   return readVaultMeta()?.graceMinutesPref || 0;
 }
 export function setGraceMinutesPref(minutes) {

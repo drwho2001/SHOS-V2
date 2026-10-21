@@ -17,7 +17,7 @@ import { setScreenshotsAllowed } from "./storage/screenSecurityService";
 // this file's own new cold-boot gate (replacing shouldRelock() there —
 // shouldRelock() still runs fine for the resume-from-background relock
 // check further down, since the vault is already unlocked by then).
-import { bootUnlock, unlockWithPin, unlockWithBiometric, getDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString } from "./storage/cryptoService";
+import { bootUnlock, unlockWithPin, unlockWithBiometric, isDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString } from "./storage/cryptoService";
 // ADDED — Phase 4 (Sep 2026): real, pre-existing bug found while
 // verifying this boot gate live — these three used to be self-invoking
 // IIFEs at module load, which ran (and tried to storage.save()) BEFORE
@@ -332,12 +332,17 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   // meant this could no longer ask PrivacySettingsRepository which PIN
   // was typed (its own data is encrypted by the vault this screen
   // exists to unlock). The duress PIN is checked directly against
-  // cryptoService's own pre-unlock-safe mirror (`getDuressPin()`) —
+  // cryptoService's own pre-unlock-safe mirror (`isDuressPin()`) —
   // checked FIRST and returns early, so a duress-PIN entry never
   // attempts (and never fails) a real vault unlock. Anything else is
   // handed straight to cryptoService.unlockWithPin() — a wrong PIN
   // fails there for real (AES-GCM's own authentication tag), not via a
   // separate classification step.
+  // CHANGED 20 Oct 2026 (t126): the duress PIN is no longer a STRING held in
+  // the vault's unencrypted metadata - it is a PBKDF2 verifier, and this
+  // compares a derived value against it. The check is still FIRST and still
+  // returns early, so a duress-PIN entry never attempts (and never fails) a
+  // real vault unlock.
   const attempt = async () => {
     const now = Date.now();
     if (now < lockedUntil) {
@@ -345,7 +350,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
       setError(`Too many attempts. Try again in ${waitSec}s.`);
       return;
     }
-    if (pin && pin === getDuressPin()) {
+    if (pin && (await isDuressPin(pin))) {
       onUnlockDecoy();
       return;
     }
