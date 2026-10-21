@@ -47,10 +47,16 @@ inventories alone is not a reviewable change - it is a broken build. The
 removal can be redone as one commit that updates the manifest, the
 provider, the layout, the bridge and every inventory together.
 
-**THE LESSON, recorded as L-134:** in a shared tree the staged set can
-change between the check and the commit, so the check has to happen
-*immediately* before the commit - and if the index holds anything that is
-not yours, `git commit -- <your paths>` commits only yours.
+**THE LESSON, RECORDED AS L-134 — AND THEN LEARNED THE HARD WAY, TWICE.** In
+a shared tree the staged set can change between the check and the commit, so
+the check has to happen *immediately* before the commit — and if the index
+holds anything that is not yours, `git commit -- <your paths>` commits only
+yours. The first occurrence of this was caught and fixed in `0daca0b`; the
+second was the very next commit, made with the evidence in plain sight —
+`git diff --cached --name-only` had printed four of another session's
+staged deletions alongside my one file, and the commit took them anyway.
+This entry is the second restore, and the commit that carries it uses the
+path-limited form.
 
 ---
 
