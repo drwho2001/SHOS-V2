@@ -263,7 +263,13 @@ function withinDateRange(records, field, dateRange) {
 // bring App Lock back exactly as it was.
 function sanitizePrivacySettingsForPlainExport(settings) {
   if (!settings || typeof settings !== "object") return settings;
-  const { anonymisePin, duressPin, appLockEnabled, biometricUnlockEnabled, ...rest } = settings;
+  // CHANGED 21 Oct 2026 (t131) - the App Lock PIN's VERIFIER is omitted
+  // here too. It is not in the object today (getSettings() strips it along
+  // with the raw PIN), but the point of naming it is that a verifier is a
+  // credential equivalent: if it is ever handed out in the settings object,
+  // it must not reach a plain export file, and the person who adds that
+  // field to the redacted object should not have to remember this line.
+  const { anonymisePin, anonymisePinVerifier, duressPin, appLockEnabled, biometricUnlockEnabled, ...rest } = settings;
   return rest;
 }
 
@@ -876,8 +882,23 @@ async function deriveHmacKey(password, saltBytes) {
 export async function buildEncryptedBackup(password, includeKeys = null, dateRange = null) {
   // redactSecrets: false — see sanitizePrivacySettingsForPlainExport's
   // own comment above buildBackup(). This whole envelope is already
-  // password-gated, so the real App Lock PIN can safely travel through
-  // here and come back intact on restore, unlike the plain path.
+  // password-gated, so anything in the settings that must not travel
+  // through the plain path can safely travel through here.
+  //
+  // CHANGED 21 Oct 2026 (t131) - AND THE COMMENT ABOVE THIS ONE WAS
+  // STALE, SINCE t126. It said "the real App Lock PIN can safely travel
+  // through here and come back intact on restore" - but the settings
+  // object stopped carrying the raw PIN in t126 (redactPins() strips it),
+  // so it had not been travelling since then, and the App Lock PIN does
+  // NOT come back on a restore. The App Lock PIN is now a VERIFIER rather
+  // than a string (t131), and it is stripped in the same place, so the
+  // encrypted backup still carries no App Lock PIN material at all.
+  //
+  // Whether a full-device restore should bring App Lock back is an OWNER
+  // CALL, not an implementation detail - it was flagged as one in t131 and
+  // deliberately left alone here. What a restored device does with a
+  // restored `appLockEnabled: true` and no PIN is a separate question, and
+  // the honest answer today is that the PIN has to be set again.
   const backup = await buildBackup(includeKeys, dateRange, { redactSecrets: false });
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));

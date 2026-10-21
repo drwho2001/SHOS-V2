@@ -37,6 +37,10 @@ vi.mock("../storage/storageAdapter.js", () => ({
 }));
 
 const VAULT_KEY = "shos_vault_key_slots";
+// ADDED 21 Oct 2026 (t131) - the settings blob's own storage key, so a
+// test can look at what is ACTUALLY at rest (the raw PIN must not be
+// there; a verifier must be).
+const SETTINGS_KEY = "shos_privacy_settings";
 
 /**
  * A realistic vault metadata blob.
@@ -95,10 +99,29 @@ describe("the settings object does not carry the raw secrets", () => {
     expect(updated.hasAppLockPin).toBe(true);
   });
 
-  it("the raw PIN is still reachable, but only through the one call that needs it", async () => {
+  it("the raw PIN is NOT reachable any more - it is a verifier, not a string", async () => {
+    // CHANGED 21 Oct 2026 (t131). The previous version of this test
+    // asserted that the raw PIN was still reachable through
+    // getAppLockPin(), "but only through the one call that needs it".
+    // There is no longer a call that needs it: the vault's actions take
+    // the PIN the USER types, and the check that the typed PIN is right
+    // is verifyAppLockPin()'s.
     const { repo } = await fresh();
     await repo.PrivacySettingsRepository.update({ anonymisePin: "2468" });
-    expect(await repo.PrivacySettingsRepository.getAppLockPin()).toBe("2468");
+    expect(repo.PrivacySettingsRepository.getAppLockPin).toBeUndefined();
+    const stored = JSON.parse(JSON.stringify(mockStore.get(SETTINGS_KEY) || {}));
+    expect(stored.anonymisePin, "the raw PIN must not be at rest").toBe("");
+    expect(stored.anonymisePinVerifier, "a verifier must be stored instead").toBeTruthy();
+  });
+
+  it("the verifier is not handed out in the settings object either", async () => {
+    // A verifier is a credential equivalent - it proves a PIN to whoever
+    // holds it - so it is stripped exactly like the raw PIN was.
+    const { repo } = await fresh();
+    await repo.PrivacySettingsRepository.update({ anonymisePin: "2468" });
+    const settings = await repo.PrivacySettingsRepository.getSettings();
+    expect(settings.anonymisePinVerifier).toBeUndefined();
+    expect(settings.hasAppLockPin).toBe(true);
   });
 
   it("no PIN set reads as false, not as an empty secret", async () => {
@@ -106,6 +129,51 @@ describe("the settings object does not carry the raw secrets", () => {
     const settings = await repo.PrivacySettingsRepository.getSettings();
     expect(settings.hasAppLockPin).toBe(false);
     expect(settings.hasDuressPin).toBe(false);
+  });
+});
+
+describe("the App Lock PIN is a verifier, and the checks that used to compare strings", () => {
+  it("verifyAppLockPin() accepts the right PIN and rejects the wrong one", async () => {
+    const { repo } = await fresh();
+    await repo.PrivacySettingsRepository.update({ anonymisePin: "2468" });
+    expect(await repo.PrivacySettingsRepository.verifyAppLockPin("2468")).toBe(true);
+    expect(await repo.PrivacySettingsRepository.verifyAppLockPin("2467")).toBe(false);
+    expect(await repo.PrivacySettingsRepository.verifyAppLockPin("")).toBe(false);
+  });
+
+  it("deactivate() accepts the right PIN and refuses the wrong one", async () => {
+    const { repo } = await fresh();
+    await repo.PrivacySettingsRepository.update({ anonymisePin: "2468", anonymiseModeActive: true });
+    const wrong = await repo.PrivacySettingsRepository.deactivate("1111");
+    expect(wrong.ok).toBe(false);
+    expect(wrong.error).toMatch(/incorrect/i);
+    const right = await repo.PrivacySettingsRepository.deactivate("2468");
+    expect(right.ok).toBe(true);
+  });
+
+  it("a duress PIN cannot be the real PIN - and the check is not a string compare", async () => {
+    const { repo } = await fresh();
+    await repo.PrivacySettingsRepository.update({ anonymisePin: "2468" });
+    const result = await repo.PrivacySettingsRepository.setDuressPin("2468");
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/different/i);
+    const other = await repo.PrivacySettingsRepository.setDuressPin("1357");
+    expect(other.ok).toBe(true);
+  });
+
+  it("a profile that had the raw PIN is MIGRATED on first read, and the raw value goes", async () => {
+    // The one-time migration: an app updated from a version that stored the
+    // PIN as a string converts it to a verifier the first time the settings
+    // are read, and the raw value stops being readable at rest.
+    const { repo } = await fresh();
+    mockStore.set(SETTINGS_KEY, { anonymisePin: "2468" });
+    const settings = await repo.PrivacySettingsRepository.getSettings();
+    expect(settings.hasAppLockPin).toBe(true);
+    const stored = JSON.parse(JSON.stringify(mockStore.get(SETTINGS_KEY) || {}));
+    expect(stored.anonymisePin).toBe("");
+    expect(stored.anonymisePinVerifier).toBeTruthy();
+    // And the migrated profile can still unlock with its own PIN.
+    expect(await repo.PrivacySettingsRepository.verifyAppLockPin("2468")).toBe(true);
   });
 });
 

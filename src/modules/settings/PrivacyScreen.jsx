@@ -37,6 +37,11 @@ export function PrivacyScreen({ onClose }) {
   // to catch typos (a wrong PIN saved silently would lock the user out of
   // his own Anonymise-revert/App-Lock later, with no way back in).
   const [confirmPin, setConfirmPin] = useState("");
+  // ADDED 21 Oct 2026 (t131) - the CURRENT PIN, needed to change the PIN
+  // while App Lock is on: changing it re-wraps the vault's Data Key, which
+  // takes the current PIN as key material, and the raw PIN is no longer
+  // stored anywhere (t131).
+  const [currentPinInput, setCurrentPinInput] = useState("");
   // ADDED — real ask: eye-icon show/hide toggle on PIN entry, matching
   // the pattern used elsewhere on the web. Shared across every PIN
   // field on this screen.
@@ -74,6 +79,61 @@ const [disclosureLevel, setDisclosureLevel] = useState(
 );
 
   const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
+
+  // ADDED 21 Oct 2026 (t131) - THE PIN IS RE-TYPED TO CONFIRM A PRIVILEGED
+  // VAULT ACTION, because the raw PIN is no longer stored anywhere: the
+  // vault's actions need it as key material to re-wrap the Data Key, and
+  // all the app keeps now is a verifier - which can PROVE a PIN but cannot
+  // re-wrap anything.
+  //
+  // This is a security property as much as a cost. The App Lock grace
+  // window means the app can be open without anyone having typed the PIN
+  // for a while, and a biometric unlock does not involve the PIN at all;
+  // asking again is the confirmation that the person at the keyboard knows
+  // the PIN, and is not simply the person who was holding the phone
+  // earlier.
+  //
+  // One prompt, used by all four actions, so the flow is the same
+  // everywhere: tap the thing, type the PIN, confirm.
+  const [pinPrompt, setPinPrompt] = useState(null); // { action, error }
+  const [pinPromptValue, setPinPromptValue] = useState("");
+  const PIN_PROMPT_LABELS = {
+    appLockOn: "turn App Lock on",
+    appLockOff: "turn App Lock off",
+    biometric: "turn biometric unlock on",
+    recovery: "set the recovery string",
+  };
+  const askForPin = (action) => {
+    setPinPromptValue("");
+    setPinPrompt({ action, error: "" });
+  };
+  const cancelPinPrompt = () => {
+    setPinPrompt(null);
+    setPinPromptValue("");
+  };
+  const confirmPinPrompt = async () => {
+    const action = pinPrompt?.action;
+    const pin = pinPromptValue.trim();
+    if (!action) return;
+    if (!pin) {
+      setPinPrompt({ action, error: "Enter your PIN." });
+      return;
+    }
+    try {
+      if (action === "appLockOn") await enableAppLockWithPin(pin);
+      else if (action === "appLockOff") await disableAppLockWithPin(pin);
+      else if (action === "biometric") await enableBiometricWithPin(pin);
+      else if (action === "recovery") await setRecoveryStringWithPin(pin);
+      setPinPrompt(null);
+      setPinPromptValue("");
+    } catch (err) {
+      // The vault's own verify-before-commit rule means a wrong PIN throws
+      // before anything is written, so this message is accurate: nothing
+      // was changed.
+      setPinPrompt({ action, error: err.message || "That PIN wasn't right — nothing was changed." });
+    }
+  };
+
   const toggleScreenshots = async () => {
     setScreenshotsToggleError("");
     const nextAllowed = !settings.allowScreenshots;
@@ -104,12 +164,24 @@ const [disclosureLevel, setDisclosureLevel] = useState(
     if (trimmed.length < 4) { setPinError("PIN should be at least 4 digits."); return; }
     // CHANGED — real ask: force reconfirmation before accepting.
     if (trimmed !== confirmPin.trim()) { setPinError("PINs don't match — check both and try again."); return; }
+    // CHANGED 21 Oct 2026 (t131) - changing the PIN while App Lock is on
+    // re-wraps the vault's Data Key, which needs the CURRENT PIN as key
+    // material. The raw PIN is no longer stored anywhere (t131), so the
+    // user has to type it. With App Lock OFF there is no vault PIN slot to
+    // re-wrap, so there is nothing to ask for.
+    const currentPin = currentPinInput.trim();
+    if (settings.appLockEnabled && !currentPin) {
+      setPinError("Enter your current PIN to change it.");
+      return;
+    }
     try {
       if (settings.appLockEnabled) {
-        await changePin(await PrivacySettingsRepository.getAppLockPin(), trimmed, settings.appLockGraceMinutes);
+        await changePin(currentPin, trimmed, settings.appLockGraceMinutes);
       }
+      // The repository turns this into a VERIFIER before it is stored, so
+      // the raw PIN never reaches the disk (t131).
       await PrivacySettingsRepository.update({ anonymisePin: trimmed });
-      setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
+      setNewPin(""); setConfirmPin(""); setCurrentPinInput(""); setSettingPin(false); setPinError("");
       refresh();
     } catch (err) {
       setPinError(err.message || "Couldn't change the PIN — nothing was changed.");
@@ -150,19 +222,24 @@ const [disclosureLevel, setDisclosureLevel] = useState(
     const trimmed = recoveryStringInput.trim();
     if (trimmed.length < 6) { setRecoveryError("Recovery string should be at least 6 characters."); return; }
     if (trimmed !== recoveryStringConfirm.trim()) { setRecoveryError("Recovery strings don't match — check both and try again."); return; }
-    try {
-      await setRecoveryStringVault(await PrivacySettingsRepository.getAppLockPin(), trimmed);
-      setRecoveryStringInput(""); setRecoveryStringConfirm(""); setSettingRecovery(false); setRecoveryError("");
-      // hasRecoveryString() reads the vault's own metadata directly, not
-      // `settings` — nothing here would otherwise trigger a re-render to
-      // pick up the change. refresh() re-fetches settings (a no-op on
-      // the actual data) purely to force one, same real-but-indirect
-      // trick already used elsewhere in this app for a sync vault change
-      // that isn't itself part of PrivacySettingsRepository's own state.
-      refresh();
-    } catch (err) {
-      setRecoveryError(err.message || "Couldn't set the recovery string — nothing was changed.");
-    }
+    // CHANGED 21 Oct 2026 (t131) - the PIN is asked for, not fetched: the
+    // recovery slot is established by unwrapping the Data Key with it, and
+    // the raw PIN no longer exists in the app to fetch.
+    askForPin("recovery");
+  };
+
+  // The real work of setting the recovery string, called by the PIN prompt
+  // with the PIN the user typed.
+  const setRecoveryStringWithPin = async (pin) => {
+    await setRecoveryStringVault(pin, recoveryStringInput.trim());
+    setRecoveryStringInput(""); setRecoveryStringConfirm(""); setSettingRecovery(false); setRecoveryError("");
+    // hasRecoveryString() reads the vault's own metadata directly, not
+    // `settings` — nothing here would otherwise trigger a re-render to
+    // pick up the change. refresh() re-fetches settings (a no-op on the
+    // actual data) purely to force one, same real-but-indirect
+    // trick already used elsewhere in this app for a sync vault change
+    // that isn't itself part of PrivacySettingsRepository's own state.
+    refresh();
   };
   const clearRecovery = () => { clearRecoveryStringVault(); refresh(); };
 
@@ -189,22 +266,39 @@ const [disclosureLevel, setDisclosureLevel] = useState(
       setPinError("Set a PIN below first, then App Lock can use it.");
       return;
     }
-    try {
-      if (settings.appLockEnabled) {
-        await disablePinProtectionWithPin(await PrivacySettingsRepository.getAppLockPin());
-        // CHANGED — real ask: turning App Lock back OFF should also
-        // turn off biometric unlock with it — biometric is only ever
-        // meaningful as an add-on to App Lock, leaving it silently "on"
-        // underneath would just be stale, unreachable state.
-        await PrivacySettingsRepository.update({ appLockEnabled: false, biometricUnlockEnabled: false });
-      } else {
-        await enablePinProtection(await PrivacySettingsRepository.getAppLockPin(), settings.appLockGraceMinutes);
-        await PrivacySettingsRepository.update({ appLockEnabled: true });
-      }
-      refresh();
-    } catch (err) {
-      setPinError(err.message || "Couldn't change App Lock — nothing was changed.");
+    // CHANGED 21 Oct 2026 (t131) - the PIN is now asked for here rather
+    // than fetched, because there is no raw PIN left to fetch (t131).
+    askForPin(settings.appLockEnabled ? "appLockOff" : "appLockOn");
+  };
+
+  // CHANGED 21 Oct 2026 (t131) - these two are the App Lock toggle's real
+  // work, split out so the PIN prompt can call them with the PIN the user
+  // typed. Everything else about them is unchanged: the vault still
+  // unwraps, re-wraps, VERIFIES the new wrapping and only then commits -
+  // and a failure at any step leaves the vault exactly as it was.
+  const enableAppLockWithPin = async (pin) => {
+    // WHY THE PIN IS CHECKED AGAINST THE APP'S OWN PIN FIRST. Turning App
+    // Lock on creates the vault's PIN slot, and the vault's slot becomes
+    // the PIN the lock screen asks for. If the PIN typed here were
+    // allowed to be a different one from the PIN the app already knows,
+    // the two would quietly diverge - the app would open on one PIN and
+    // the anonymise-mode revert would want the other. So the typed PIN
+    // has to BE the app's PIN, and this says so plainly when it is not.
+    if (!(await PrivacySettingsRepository.verifyAppLockPin(pin))) {
+      throw new Error("That's not your PIN.");
     }
+    await enablePinProtection(pin, settings.appLockGraceMinutes);
+    await PrivacySettingsRepository.update({ appLockEnabled: true });
+    refresh();
+  };
+  const disableAppLockWithPin = async (pin) => {
+    await disablePinProtectionWithPin(pin);
+    // CHANGED — real ask: turning App Lock back OFF should also
+    // turn off biometric unlock with it — biometric is only ever
+    // meaningful as an add-on to App Lock, leaving it silently "on"
+    // underneath would just be stale, unreachable state.
+    await PrivacySettingsRepository.update({ appLockEnabled: false, biometricUnlockEnabled: false });
+    refresh();
   };
 
   // ADDED — real ask: biometric unlock, layered on top of App Lock's
@@ -236,12 +330,17 @@ const [disclosureLevel, setDisclosureLevel] = useState(
       setBiometricError(result.reason || "Biometrics aren't available on this device.");
       return;
     }
-    try {
-      await enableBiometricSlot(await PrivacySettingsRepository.getAppLockPin());
-    } catch (err) {
-      setBiometricError(err.message || "Couldn't enable biometric unlock — nothing was changed.");
-      return;
-    }
+    // CHANGED 21 Oct 2026 (t131) - the PIN is asked for, not fetched: the
+    // raw PIN no longer exists anywhere in the app (t131), and the vault's
+    // biometric slot can only be established by unwrapping the Data Key
+    // with it.
+    askForPin("biometric");
+  };
+
+  // The real work of turning biometric unlock on, called by the PIN
+  // prompt with the PIN the user typed.
+  const enableBiometricWithPin = async (pin) => {
+    await enableBiometricSlot(pin);
     await PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
     refresh();
   };
@@ -445,6 +544,30 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           {pinError && !settings.anonymiseModeActive && !settingPin && (
             <div style={{ fontSize: 12, color: ACTION.red, marginTop: 8 }}>{pinError}</div>
           )}
+          {/* ADDED 21 Oct 2026 (t131) - THE PIN PROMPT, shared by the four
+              privileged vault actions. It appears in the App Lock card
+              because every one of those actions is about App Lock. */}
+          {pinPrompt && (
+            <div style={{ marginTop: 12, padding: 12, borderRadius: RADIUS.md, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 2 }}>
+                Enter your PIN to {PIN_PROMPT_LABELS[pinPrompt.action]}
+              </div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
+                This one needs your PIN typed out again — it's what re-wraps the vault's key, and the app doesn't keep the PIN itself any more.
+              </div>
+              <div style={{ position: "relative", marginBottom: pinPrompt.error ? 8 : 0 }}>
+                <input value={pinPromptValue} onChange={(e) => setPinPromptValue(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Your PIN" aria-label="Your PIN"
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                {showPins ? <EyeOff role="button" tabIndex={0} aria-label="Hide PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye role="button" tabIndex={0} aria-label="Show PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+              </div>
+              {pinPrompt.error && <div style={{ fontSize: 12, color: ACTION.red, marginTop: 8, marginBottom: 8 }}>{pinPrompt.error}</div>}
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={cancelPinPrompt} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button onClick={confirmPinPrompt} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Confirm</button>
+              </div>
+            </div>
+          )}
           {/* ADDED — real ask: biometric unlock, via
               @aparajita/capacitor-biometric-auth. Only offered once App
               Lock (and therefore a PIN) is already on — biometric is a
@@ -512,6 +635,18 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           </div>
           {settingPin ? (
             <>
+              {/* ADDED 21 Oct 2026 (t131) - the CURRENT PIN, asked for only
+                  when App Lock is on, because changing the PIN then re-wraps
+                  the vault's Data Key and the raw PIN is no longer stored
+                  anywhere to fetch it from. */}
+              {settings.appLockEnabled && (
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input value={currentPinInput} onChange={(e) => setCurrentPinInput(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Current PIN"
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff role="button" tabIndex={0} aria-label="Hide PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye role="button" tabIndex={0} aria-label="Show PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                </div>
+              )}
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={newPin} onChange={(e) => setNewPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New PIN (4+ digits)"
                   style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
@@ -528,7 +663,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               </div>
               {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setCurrentPinInput(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                 <button onClick={savePin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
               </div>
             </>

@@ -44,13 +44,53 @@
 // kinks-involved. My Profile and other modules remain untouched — no
 // real ask for those yet.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
-import { getDuressVerifier, setDuressPinMirror, getGraceMinutesPref, setGraceMinutesPref } from "../storage/cryptoService.js";
+import {
+  getDuressVerifier,
+  setDuressPinMirror,
+  getGraceMinutesPref,
+  setGraceMinutesPref,
+  createPinVerifier,
+  verifyPinVerifier,
+} from "../storage/cryptoService.js";
 
 const STORAGE_KEY = "shos_privacy_settings";
 
 export const DEFAULT_PRIVACY_SETTINGS = {
     anonymiseModeActive: false,
+    // CHANGED 21 Oct 2026 (t131) - the App Lock PIN is now stored as a
+    // PBKDF2 VERIFIER, in `anonymisePinVerifier` below, and this field no
+    // longer holds a PIN. It is kept ONLY as the legacy field a migration
+    // reads once: a profile written before t131 has the raw PIN here, and
+    // the first read converts it to a verifier and clears it (see
+    // getSettings()). Keeping the key means an old record still loads; the
+    // value it holds is not written back.
     anonymisePin: "",
+    // CHANGED 21 Oct 2026 (t131) - THE APP LOCK PIN IS A VERIFIER NOW, NOT
+    // A STRING. Two things were fixed by it, and one thing was given up.
+    //
+    // FIXED: the string comparison it fed. deactivate() compared the typed
+    // PIN to the stored one with `enteredPin !== storedPin`, which is a
+    // FREE ORACLE for a four-digit PIN to anything that can call it in
+    // the page - ten thousand attempts, each a comparison, no PBKDF2 in
+    // the way. setDuressPin() had the same comparison, so it was a second
+    // oracle on the same secret.
+    //
+    // FIXED: the PIN AT REST. The settings blob is encrypted, so the raw
+    // PIN was not plaintext - but a PIN that is stored at all is a PIN
+    // that can be read out of a backup, a sync, a shared storage
+    // directory, or a decrypted settings object. A verifier proves a PIN
+    // without keeping it.
+    //
+    // GIVEN UP: the raw PIN no longer exists to hand to the vault, so the
+    // five privileged actions - turning App Lock off, changing the PIN,
+    // setting the recovery string, enabling biometrics - now ask for the
+    // PIN to be RE-TYPED. That is not only a cost. Those actions re-wrap
+    // the vault's Data Key, and the App Lock grace window means the app
+    // can be open without anyone having typed the PIN for a while; asking
+    // again is the confirmation that the person at the keyboard is the
+    // person who knows the PIN, and not just the person who was holding
+    // the phone earlier.
+    anonymisePinVerifier: null,
     hideFurtherEnabled: false,
     // ADDED 29 Sep 2026 - the owner's own ask, and deliberately NOT a
     // boolean: "levels of disclosure/sensitivity" on the surfaces OUTSIDE
@@ -147,8 +187,14 @@ export const DEFAULT_PRIVACY_SETTINGS = {
  * ADDED 20 Oct 2026 (t126). getSettings() and update() both return this
  * instead of the stored object, and the difference is the two raw secrets:
  * the App Lock PIN and the duress PIN. A screen that only needs to know
- * WHETHER a PIN is set now gets a boolean; the raw values are fetched
- * through getAppLockPin() by the one place that needs them as key material.
+ * WHETHER a PIN is set now gets a boolean.
+ *
+ * CHANGED 21 Oct 2026 (t131): there is no longer a "raw values are fetched
+ * through getAppLockPin() by the one place that needs them" - the App Lock
+ * PIN is a VERIFIER now, so there is no raw value left to fetch, and the
+ * verifier is stripped here too (a verifier is a credential equivalent).
+ * The duress PIN is still fetched as a raw value, by cryptoService's own
+ * mirror, which is the pre-unlock path the duress feature needs.
  *
  * This is not a cosmetic change to a return type. The settings object is
  * read all over the app - the Privacy screen, the App Lock prompt, the boot
@@ -157,10 +203,15 @@ export const DEFAULT_PRIVACY_SETTINGS = {
  */
 function redactPins(settings) {
   if (!settings || typeof settings !== "object") return settings;
-  const { anonymisePin, duressPin, ...rest } = settings;
+  const { anonymisePin, anonymisePinVerifier, duressPin, ...rest } = settings;
   return {
     ...rest,
-    hasAppLockPin: Boolean(anonymisePin),
+    // CHANGED 21 Oct 2026 (t131): the VERIFIER is stripped too, and it has
+    // to be - a verifier is a credential equivalent (it proves a PIN to
+    // whoever holds it), so handing it to every screen that reads the
+    // settings would be handing the PIN itself back out, just in a form
+    // that takes a few minutes to brute-force instead of no time at all.
+    hasAppLockPin: Boolean(anonymisePin || anonymisePinVerifier),
     hasDuressPin: Boolean(duressPin),
   };
 }
@@ -201,33 +252,86 @@ export const PrivacySettingsRepository = {
     // than the PIN itself, and writing it is asynchronous (it derives).
     if (!getDuressVerifier() && merged.duressPin) await setDuressPinMirror(merged.duressPin);
     if (!getGraceMinutesPref() && merged.appLockGraceMinutes) setGraceMinutesPref(merged.appLockGraceMinutes);
+    // CHANGED 21 Oct 2026 (t131) - THE APP LOCK PIN'S ONE-TIME MIGRATION.
+    // A profile written before t131 has the raw PIN in `anonymisePin`. It
+    // is converted to a verifier here and the raw value is CLEARED, so the
+    // PIN stops being readable at rest the first time the app runs after
+    // the update. Idempotent: once the verifier exists and the raw field
+    // is empty, this does nothing - and it never runs again, because
+    // update() below writes the verifier and an empty raw field together.
+    if (merged.anonymisePin && !merged.anonymisePinVerifier) {
+      const verifier = await createPinVerifier(merged.anonymisePin);
+      const migrated = { ...merged, anonymisePinVerifier: verifier, anonymisePin: "" };
+      await storage.save(STORAGE_KEY, migrated);
+      return redactPins(migrated);
+    }
     return redactPins(merged);
+  },
+
+  /**
+   * Is this the App Lock PIN?
+   *
+   * CHANGED 21 Oct 2026 (t131) - this replaces the raw-PIN getter, and it
+   * exists because of the ORACLE. The old comparison was
+   * `enteredPin !== storedPin`, which tells an in-page caller whether a
+   * guess was right in the time it takes to compare two strings - ten
+   * thousand candidates is nothing. A verifier comparison does a PBKDF2
+   * derivation per attempt, and the stored value never reveals the PIN.
+   *
+   * @param {string} pin
+   * @returns {Promise<boolean>}
+   */
+  async verifyAppLockPin(pin) {
+    if (!pin) return false;
+    // getSettings() is called first on purpose: it runs the one-time
+    // migration, so by the time the stored value is read there is a
+    // verifier and no raw PIN - including on a profile that has not been
+    // opened since the update.
+    const settings = await this.getSettings();
+    if (!settings.hasAppLockPin) return false;
+    const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
+    return verifyPinVerifier(pin, stored?.anonymisePinVerifier);
   },
 
   /**
    * The raw App Lock PIN.
    *
-   * WHY THIS IS A SEPARATE CALL AND NOT A FIELD ON THE SETTINGS OBJECT.
-   * getSettings() is read by screens all over the app - the Privacy screen,
-   * the App Lock prompt, the boot check - and it used to hand every one of
-   * them the raw PIN in cleartext, whether or not that screen had any use
-   * for it. The settings object now says WHETHER a PIN is set, and the raw
-   * value is fetched here, by the one place that genuinely needs it as key
-   * material: the five privileged vault actions in PrivacyScreen (turn App
-   * Lock off, change the PIN, set the recovery string, enable biometrics).
+   * REMOVED 21 Oct 2026 (t131). It existed so that the one place that
+   * genuinely needed the PIN as key material - the vault's re-wrapping -
+   * could fetch it, and it was a getter that handed a secret to whoever
+   * asked. The PIN is now a verifier, so there is nothing to hand over:
+   * the vault's actions take the PIN the USER types, and the check that
+   * the typed PIN is right is verifyAppLockPin()'s.
+   *
+   * The old method's own comment explained why it was a separate call
+   * rather than a field on the settings object, and that reasoning still
+   * holds - it is just that the value it returned no longer exists.
    */
-  async getAppLockPin() {
-    const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
-    return stored?.anonymisePin || "";
-  },
 
   async update(changes) {
     if (changes.duressPin !== undefined) await setDuressPinMirror(changes.duressPin);
     if (changes.appLockGraceMinutes !== undefined) setGraceMinutesPref(changes.appLockGraceMinutes);
     const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
-    const updated = { ...DEFAULT_PRIVACY_SETTINGS, ...stored, ...changes };
-    await storage.save(STORAGE_KEY, updated);
-    return redactPins(updated);
+    let next = { ...DEFAULT_PRIVACY_SETTINGS, ...stored, ...changes };
+    // CHANGED 21 Oct 2026 (t131) - A CALLER CANNOT STORE A RAW PIN ANY
+    // MORE. The PIN is written as `anonymisePin` by exactly one caller
+    // (the Settings screen's "set PIN" flow), and this turns it into a
+    // verifier before it reaches storage - so the raw value never lands on
+    // disk even for a moment, and a future caller passing a raw PIN by
+    // mistake cannot put one there either. The legacy field is emptied
+    // rather than deleted, so the record's shape does not change under the
+    // defensive-default merge.
+    if (changes.anonymisePin !== undefined) {
+      next = {
+        ...next,
+        anonymisePinVerifier: changes.anonymisePin
+          ? await createPinVerifier(changes.anonymisePin)
+          : next.anonymisePinVerifier,
+        anonymisePin: "",
+      };
+    }
+    await storage.save(STORAGE_KEY, next);
+    return redactPins(next);
   },
 
   // Called the moment App Lock is actually passed (PIN or biometric) —
@@ -262,10 +366,15 @@ export const PrivacySettingsRepository = {
   async deactivate(enteredPin) {
     const settings = await this.getSettings();
     if (settings.hasAppLockPin) {
-      // The raw PIN is fetched here rather than read off the settings object,
-      // because the settings object no longer carries it.
-      const storedPin = await this.getAppLockPin();
-      if (enteredPin !== storedPin) {
+      // CHANGED 21 Oct 2026 (t131) - this used to be
+      // `enteredPin !== storedPin`, a STRING COMPARISON against the stored
+      // PIN. That made this method a free oracle: anything able to call it
+      // in the page could try all ten thousand four-digit PINs, each one a
+      // comparison, and be told which was right. It now verifies against
+      // the PBKDF2 verifier instead - each attempt costs a derivation, and
+      // the stored value never reveals the PIN.
+      const ok = await this.verifyAppLockPin(enteredPin);
+      if (!ok) {
         return { ok: false, error: "Incorrect PIN." };
       }
     }
@@ -296,8 +405,11 @@ export const PrivacySettingsRepository = {
     const settings = await this.getSettings();
     if (!settings.hasAppLockPin) return { ok: false, error: "Set your real PIN first." };
     if (!newPin || !newPin.trim()) return { ok: false, error: "Enter a PIN." };
-    const storedPin = await this.getAppLockPin();
-    if (newPin === storedPin) return { ok: false, error: "Must be different from your real PIN." };
+    // CHANGED 21 Oct 2026 (t131) - this used to compare the new PIN with
+    // the stored one as STRINGS, which was the same oracle as deactivate()'s
+    // - a second door to the same secret. It now asks the verifier whether
+    // the new PIN IS the real PIN.
+    if (await this.verifyAppLockPin(newPin)) return { ok: false, error: "Must be different from your real PIN." };
     await this.update({ duressPin: newPin });
     return { ok: true };
   },

@@ -16,6 +16,68 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the App Lock PIN is a verifier, and the oracles are closed (t131)
+
+This is the part of t047 that t126 deliberately did NOT do, and it was
+flagged there as an owner call rather than an implementation detail:
+"the five privileged vault actions would each have to ask for the PIN to be
+re-typed, because the raw value would no longer exist to hand to the
+vault."
+
+**WHAT CHANGED.** The App Lock PIN is stored as a PBKDF2 verifier (100,000
+iterations, its own random salt), not as a string. The raw PIN is never
+written to storage at all - not even encrypted - and the settings object
+hands out neither the PIN nor the verifier.
+
+**TWO ORACLES CLOSED, AND THEY WERE THE SAME ORACLE TWICE.**
+
+`deactivate()` compared the typed PIN to the stored one with
+`enteredPin !== storedPin`. That is a free oracle: anything able to call it
+in the page could try all ten thousand four-digit PINs, each one a string
+comparison, and be told which was right. `setDuressPin()` had the same
+comparison against the same secret - a second door. Both now verify against
+the verifier, so each attempt costs a PBKDF2 derivation and the stored value
+never reveals the PIN.
+
+**THE UX COST, AND WHY IT IS ALSO A SECURITY PROPERTY.** The vault's four
+privileged actions - turning App Lock off, turning it on, turning biometric
+unlock on, setting the recovery string - re-wrap the vault's Data Key, and
+a re-wrap needs the PIN as key material. A verifier cannot re-wrap
+anything, so the user now types the PIN for each of them, through one
+shared prompt on the Privacy screen. Changing the PIN also asks for the
+current one.
+
+That is not only a cost. The App Lock grace window means the app can be
+open without anyone having typed the PIN for a while, and a biometric
+unlock never involves the PIN at all; asking again is the confirmation
+that the person at the keyboard knows the PIN, and is not simply the person
+who was holding the phone earlier.
+
+**THE MIGRATION.** A profile written before this change has the raw PIN in
+the settings blob. The first read converts it to a verifier and clears the
+raw value, so the PIN stops being readable at rest the first time the app
+runs after the update. It is idempotent, and it runs once.
+
+**TURNING APP LOCK ON CHECKS THE TYPED PIN AGAINST THE APP'S OWN PIN.** The
+vault's PIN slot becomes the PIN the lock screen asks for, so allowing a
+different one to be typed here would let the vault's PIN and the app's own
+PIN quietly diverge - the app would open on one PIN and the anonymise-mode
+revert would want the other. So the typed PIN has to BE the app's PIN, and
+the screen says so when it is not.
+
+**A FINDING, AND IT IS NOT THIS CHANGE'S FAULT.** The encrypted backup's
+own comment claimed that "the real App Lock PIN can safely travel through
+here and come back intact on restore". It has not been able to since t126,
+which stripped the raw PIN from the settings object the backup builds from
+- so an encrypted restore has not brought the App Lock PIN back for some
+time, and the comment was stale. This change does not make that worse (the
+verifier is stripped in the same place), and the behaviour itself is an
+OWNER CALL that is deliberately left alone: whether a full-device restore
+should bring App Lock back, and what a restored device should do with a
+restored `appLockEnabled: true` and no PIN, are decisions, not details.
+
+---
+
 ## 21 Oct 2026 - the future is on the calendar now (t139)
 
 The owner: "retest to phone calendar - include planned events on calendar."
