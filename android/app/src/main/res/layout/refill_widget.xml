@@ -51,20 +51,23 @@
         android:breakStrategy="simple" />
 
     <!-- The per-medication lines: name, what is left, and what has happened.
-         FIVE lines, not four: "Sertraline · 14 left · requested" is 29
-         characters and wraps onto three at this width, and the medication below
-         it needs two more - so with four lines the last medication's line was
-         cut off, and a card that silently drops a medication is worse than one
-         that is a line taller. -->
+
+         SIX lines at 11sp, and the reason is the width: this card is 76.7dp
+         across, which is about 13 characters a line at 12sp. "Sertraline - 14
+         left - requested" is 29 characters, so it wraps onto three lines - and
+         the medication below it needs three more. At 11sp the same six lines
+         fit the card (52dp to 134dp, which is all the content there is), and
+         nothing is silently dropped: a card that quietly loses a medication is
+         worse than one that is a line taller. -->
     <TextView
         android:id="@+id/widget_next_refill"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="58dp"
+        android:layout_marginTop="52dp"
         android:text=""
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-         android:maxLines="5"
+         android:maxLines="6"
         android:breakStrategy="simple" />
 </FrameLayout>
