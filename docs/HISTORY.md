@@ -16,6 +16,59 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - the encounter form infers its DoxyPEP and PrEP fields (owner report)
+
+The owner: "the doxypep tracking options on new encounter form feels
+clunky.. can we infer this data rather than ask user to do it or make it
+clearer?"
+
+**THE ASK IS FAIR BECAUSE THE APP ALREADY KNEW MOST OF IT.** DoxyPEP doses
+live in the medication log - that is where the 72-hour countdown, the
+DoxyPEP widget and the notification all read them from (`doxyPepSync.js`).
+The encounter form was asking the user to re-state a fact the app had
+already logged, in a select whose options came from a different data model
+entirely.
+
+**WHAT IS NOW INFERRED, AND WHAT IS NOT:**
+
+| Field | Inferred | From |
+|---|---|---|
+| My DoxyPEP status | "Not indicated" | the encounter has no qualifying position |
+| | "Indicated - taken" | a DoxyPEP dose logged within 72h after the encounter |
+| | "Indicated - not yet taken" | the 72h window is still open |
+| | "Indicated - missed window" | the window closed with no dose |
+| | **"N/A"** | NOT inferable - left to the user |
+| My PrEP coverage | "Not on PrEP" | there is no PrEP medication |
+| | "Adequate - daily" | 4+ PrEP doses in the 7 days before the encounter |
+| | "Missed dose" | some doses, not 4 in a week |
+| | "Inadequate/recently started" | the PrEP medication is under 4 weeks old |
+| | **"Event-based (2-1-1)"** | NOT inferable - a regimen the user chooses, not a fact about their logs |
+
+**AN EMPTY POSITION FIELD IS MISSING INFORMATION, NOT A FINDING.** Saying
+"Not indicated" because the user has not filled the positions in yet would
+invent an answer and record it, so the inference says nothing at all in that
+case - and there is a mutation that proves it.
+
+**A SUGGESTION IS NEVER A SILENT OVERWRITE.** An empty field is filled in
+(that is the point - one less thing to decide), and a field the user has
+already chosen is LEFT ALONE, with the suggestion shown beside it as a
+nudge. The line under each field says which value came from the logs and
+why, because a derived value the user cannot see the source of is worse
+than a question.
+
+**THE RULES ARE ABOUT THE ENCOUNTER, NOT ABOUT NOW.** An encounter logged
+last week is judged against last week: the dose that counts is the one
+within 72 hours AFTER that encounter, and the PrEP window is the 7 days
+before it.
+
+Sixteen tests, and two mutations that had to be fixed before they counted:
+one that turned an empty position field into an answer, and one that shrank
+the 72-hour window to 24 and **survived** - because the test's dose was ten
+hours after the encounter, inside both windows. The fixture now sits 40 hours
+in, so it pins which window the app actually uses.
+
+---
+
 ## 21 Oct 2026 - the Settings sub-screen headers sit flush under the status bar (owner report)
 
 **THE REPORT**: "developer tools header needs sticky at top, has gap" - and to

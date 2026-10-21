@@ -40,6 +40,10 @@ import {
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { timeOfDay, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
+import { inferProtectionContext, findPrEPMedication } from "../calculations/encounterProtectionContext";
+import { findDoxyPepMedication } from "../calculations/doxyPepCalculations";
+import { MedicationRepository } from "../repositories/medicationRepository";
+import { LogRepository } from "../repositories/logRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -1640,6 +1644,63 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // a genuine user edit takes) is the one place that flips it, so the
   // autosave effect no longer has to guess.
   const isDirty = useRef(false);
+  // ADDED 21 Oct 2026 (t137) - the protection fields are INFERRED from the
+  // medication log the app already keeps, rather than asked for again.
+  //
+  // The owner: "the doxypep tracking options on new encounter form feels
+  // clunky.. can we infer this data rather than ask user to do it or make it
+  // clearer?" The app already knows: the DoxyPEP doses live in the medication
+  // log, which is where the 72-hour countdown, the widget and the
+  // notification all read them from.
+  //
+  // A suggestion is never a silent overwrite: an EMPTY field is filled in
+  // (that is the point - one less thing to decide), and a field the user has
+  // already chosen is LEFT ALONE, with the suggestion shown beside it as a
+  // nudge. The hint under each field says which value came from the logs and
+  // why, because a derived value the user cannot see the source of is worse
+  // than a question.
+  const [protectionHints, setProtectionHints] = useState({ doxyPep: null, prep: null });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const medications = await MedicationRepository.getAll();
+      const doxyMed = findDoxyPepMedication(medications);
+      const prepMed = findPrEPMedication(medications);
+      const doxyLogs = doxyMed ? await LogRepository.getForMedication(doxyMed.id) : [];
+      const prepLogs = prepMed ? await LogRepository.getForMedication(prepMed.id) : [];
+      if (cancelled) return;
+      const suggested = inferProtectionContext({
+        myPosition: form.myPosition,
+        date: form.date,
+        doseLogs: doxyLogs,
+        hasPrEPMedication: Boolean(prepMed),
+        // Judged as of the encounter's own date when there is one, so an
+        // encounter logged last week reflects last week's coverage.
+        at: form.date ? form.date : undefined,
+        now: new Date(),
+      });
+      if (cancelled) return;
+      setProtectionHints({ doxyPep: suggested.doxyPepStatus, prep: suggested.prepCoverage });
+      // Fill ONLY the fields the user has not chosen. setForm directly, not
+      // set(), because set() marks the form dirty - and an inferred value is
+      // not an edit the user made.
+      setForm((f) => {
+        const next = { ...f };
+        let changed = false;
+        if (suggested.doxyPepStatus && !next.myDoxyPepStatus) {
+          next.myDoxyPepStatus = suggested.doxyPepStatus.value;
+          changed = true;
+        }
+        if (suggested.prepCoverage && !next.myPrepCoverage) {
+          next.myPrepCoverage = suggested.prepCoverage.value;
+          changed = true;
+        }
+        return changed ? next : f;
+      });
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.myPosition, form.date]);
   useEffect(() => {
     if (isNew || loadDraft(draftKey)) return;
     // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
@@ -1799,12 +1860,28 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         <SectionCard title="Protection & medication context" T={T}>
           <RegistryTagPicker label="Protection used" value={form.protectionUsed} onChange={set("protectionUsed")} T={T} registry={ProtectionRegistry} />
           <SelectField label="My PrEP coverage" value={form.myPrepCoverage} onChange={set("myPrepCoverage")} options={PREP_COVERAGE_OPTIONS} T={T} />
+          {/* ADDED 21 Oct 2026 (t137) - where the value came from. */}
+          {protectionHints.prep && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -2, marginBottom: 8, lineHeight: 1.4 }}>
+              {form.myPrepCoverage === protectionHints.prep.value
+                ? `Set from your medication log: ${protectionHints.prep.value} — ${protectionHints.prep.reason}.`
+                : `Your logs suggest “${protectionHints.prep.value}” — ${protectionHints.prep.reason}.`}
+            </div>
+          )}
           {/* ADDED 9 Oct 2026 (t052) — one option here literally reads
               "Adequate - Event-based (2-1-1)". A reader who has not met the
               regimen name has no way to tell that schedule from "Adequate -
               daily" by looking at it. */}
           <JargonNote theme={T} noteKey="prep-2-1-1" label="2-1-1" onOpen={onOpenGlossary} />
           <SelectField label="My DoxyPEP status" value={form.myDoxyPepStatus} onChange={set("myDoxyPepStatus")} options={DOXYPEP_STATUS_OPTIONS} T={T} />
+          {/* ADDED 21 Oct 2026 (t137) - where the value came from. */}
+          {protectionHints.doxyPep && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -2, marginBottom: 8, lineHeight: 1.4 }}>
+              {form.myDoxyPepStatus === protectionHints.doxyPep.value
+                ? `Set from your medication log: ${protectionHints.doxyPep.value} — ${protectionHints.doxyPep.reason}.`
+                : `Your logs suggest “${protectionHints.doxyPep.value}” — ${protectionHints.doxyPep.reason}.`}
+            </div>
+          )}
         </SectionCard>
         </div>
 
