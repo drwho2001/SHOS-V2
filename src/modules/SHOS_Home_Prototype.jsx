@@ -93,7 +93,8 @@ import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { syncAllWidgets } from "../calculations/syncAllWidgets";
 import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
-import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
+import { syncClinicVisitsToCalendar, syncVaccinationsToCalendar } from "../storage/calendarSyncService";
+import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -487,6 +488,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // save.
   useEffect(() => {
     (async () => syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll()))();
+  }, []);
+
+  // ADDED 20 Oct 2026 (t130) - the vaccination doses' own catch-up on
+  // mount, for the same reason the appointments have one: a dose that was
+  // added or edited while the app was closed would otherwise not reach the
+  // phone's calendar until the next save. Self-gated inside the service on
+  // BOTH preferences, so it does nothing unless the owner has asked for it.
+  useEffect(() => {
+    (async () => syncVaccinationsToCalendar(await VaccinationRepository.getAll()))();
   }, []);
 
   useEffect(() => {

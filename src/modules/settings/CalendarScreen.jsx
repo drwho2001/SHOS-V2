@@ -15,7 +15,7 @@ import { SymptomLogRepository } from "../../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../../repositories/vaccinationRepository";
 import { MODULE_LABELS as TRASH_MODULE_LABELS } from "../../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../../calculations/calendarCalculations";
-import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../../storage/calendarSyncService";
+import { checkCalendarAvailable, syncClinicVisitsToCalendar, syncVaccinationsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, removeSyncedVaccinationEvents, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../../storage/calendarSyncService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
 
@@ -127,6 +127,8 @@ function CalendarSyncSheet({ onClose }) {
     await AppPreferencesRepository.update({ calendarSyncTargetName: name });
     setAppPrefs(await AppPreferencesRepository.getPreferences());
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
+    // The doses live in the same target calendar, so they move with it.
+    await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
     setShowCalendarPicker(false);
     setCalendarSyncing(false);
   };
@@ -146,6 +148,54 @@ function CalendarSyncSheet({ onClose }) {
     await AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
     setAppPrefs(await AppPreferencesRepository.getPreferences());
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
+    // The doses have their own generic behaviour too (a vaccine name and a
+    // clinic name are the same class of disclosure), so they are re-synced
+    // here too - otherwise turning the setting on would leave every dose
+    // event with the old title until the next dose was saved.
+    await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+    setCalendarSyncing(false);
+  };
+
+  // ADDED 20 Oct 2026 (t130) - the vaccination family's own switch.
+  //
+  // Turning it ON turns the master switch on too, because the doses have
+  // nowhere to go otherwise, and it does the real device/permission check
+  // first - the same "never just flip a stored flag and hope" rule the
+  // master switch follows. Turning it OFF removes the dose events this app
+  // put in the calendar, because the sheet promises that turning a thing
+  // off removes what it shared.
+  const toggleVaccinationSync = async () => {
+    setCalendarSyncError("");
+    setCalendarSyncing(true);
+    const turningOn = !appPrefs.calendarSyncVaccinations;
+    if (turningOn && !appPrefs.calendarSyncEnabled) {
+      const result = await checkCalendarAvailable();
+      if (!result.available) {
+        setCalendarSyncError(result.reason || "Calendar access isn't available on this device.");
+        setCalendarSyncing(false);
+        return;
+      }
+      await AppPreferencesRepository.update({ calendarSyncEnabled: true });
+    }
+    await AppPreferencesRepository.update({ calendarSyncVaccinations: turningOn });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
+    if (turningOn) {
+      await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+    } else {
+      const targetName = appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME;
+      await removeSyncedVaccinationEvents(targetName);
+    }
+    setCalendarSyncing(false);
+  };
+
+  // ADDED 20 Oct 2026 (t130) - a manual re-sync. There was no way to force
+  // one before: the only things that synced were a save, a delete, and
+  // mounting Home. After a permission grant, a target-calendar change on the
+  // phone, or a failed write, the user had no way to ask for it again.
+  const syncNow = async () => {
+    setCalendarSyncing(true);
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
+    await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
     setCalendarSyncing(false);
   };
 
@@ -157,11 +207,11 @@ function CalendarSyncSheet({ onClose }) {
           <X size={18} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close calendar sync settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
 
-        <div onClick={calendarSyncing ? undefined : toggleCalendarSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncEnabled} aria-label="Sync clinic appointments to phone calendar"
+        <div onClick={calendarSyncing ? undefined : toggleCalendarSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncEnabled} aria-label="Sync to phone calendar"
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCalendarSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Sync clinic appointments to phone calendar</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Sync to phone calendar</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               Booked appointments appear in your phone's real calendar app. Defaults to its own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes everything this app put there.
             </div>
@@ -169,6 +219,26 @@ function CalendarSyncSheet({ onClose }) {
           </div>
           <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
             <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+          </div>
+        </div>
+
+        {/* ADDED 20 Oct 2026 (t130) - the vaccination family's OWN switch,
+            and it is separate from the master switch above on purpose. Turning
+            on "sync my appointments" must not quietly start putting vaccine
+            names on the calendar: a dose is health data with a name on it, and
+            every privacy-adjacent feature in this app is opt-in and off by
+            default. */}
+        <div onClick={calendarSyncing ? undefined : toggleVaccinationSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncVaccinations} aria-label="Sync vaccination doses to phone calendar"
+          onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleVaccinationSync(); } }}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
+          <div style={{ flex: 1, paddingRight: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also sync vaccination doses</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
+              Each dose becomes its own event, dated the day it was given — so a four-week course is four events. Off by default. Turning it off removes the dose events this app put there.
+            </div>
+          </div>
+          <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncVaccinations ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+            <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncVaccinations ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
           </div>
         </div>
 
@@ -194,12 +264,22 @@ function CalendarSyncSheet({ onClose }) {
               <div style={{ flex: 1, paddingRight: 12 }}>
                 <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Use a generic event title</div>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
-                  "Clinic appointment" instead of this visit's own title — safer if reminders show on your lock screen.
+                  "Clinic appointment" and "Vaccination" instead of the real visit and vaccine names — safer if reminders show on your lock screen.
                 </div>
               </div>
               <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncGenericTitle ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
                 <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncGenericTitle ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
               </div>
+            </div>
+            {/* ADDED 20 Oct 2026 (t130) - a manual re-sync. There was no way
+                to force one before: only a save, a delete, or mounting Home
+                synced anything. After a permission grant, a calendar change
+                made on the phone, or a write that failed, the user had no
+                way to ask for it again. */}
+            <div onClick={calendarSyncing ? undefined : syncNow} role="button" tabIndex={0} aria-label="Sync now"
+              onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); syncNow(); } }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, padding: "8px 12px", borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: calendarSyncing ? "default" : "pointer", opacity: calendarSyncing ? 0.6 : 1 }}>
+              {calendarSyncing ? "Syncing…" : "Sync now"}
             </div>
             {/* Real ask: "not sure if this is something you can force,
                 if not allow sync with warning, maybe a link for how to

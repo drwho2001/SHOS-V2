@@ -123,19 +123,33 @@ describe("vaccination date is read through one derivation", () => {
       ).toBeNull();
     });
 
-    it(`${c.file} imports the derivation rather than shadowing the name`, () => {
-      // MUTATION-FOUND. The first version of this asserted only that the name
-      // `getVaccinationDate` appeared in the file, and replacing the import with
-      // `const getVaccinationDate = () => null;` satisfied it - a local stub that
-      // makes every consumer silently do nothing. Asserting a name is present is
-      // not the same as asserting where it came from.
-      const code = stripComments(readFileSync(c.file, "utf8"));
-      expect(
-        code,
-        `${c.file} must IMPORT getVaccinationDate, not define a local of that name`
-      ).toMatch(/import\s*\{[^}]*\bgetVaccinationDate\b[^}]*\}\s*from\s*"[^"]*vaccinationCalculations"/);
-      expect(code).not.toMatch(/(const|let|var|function)\s+getVaccinationDate\b/);
-    });
+  it(`${c.file} imports the derivation rather than shadowing the name`, () => {
+    // MUTATION-FOUND. The first version of this asserted only that the name
+    // `getVaccinationDate` appeared in the file, and replacing the import with
+    // `const getVaccinationDate = () => null;` satisfied it - a local stub that
+    // makes every consumer silently do nothing. Asserting a name is present is
+    // not the same as asserting where it came from.
+    const code = stripComments(readFileSync(c.file, "utf8"));
+    // CHANGED 20 Oct 2026 (t130): the calendar now reads the DOSE-level
+    // derivation, getVaccinationDoseEntries, because the app's own calendar
+    // shows one event per dose (so it matches the phone's calendar, which
+    // also writes one event per dose). It is the same derivation one level
+    // down - getVaccinationDoseEntries calls getVaccinationDate for a
+    // record with no dose series - so the property this guard protects (the
+    // consumer never reads the stale top-level field itself) still holds, and
+    // the banned patterns below are what actually enforce it.
+    // A COMBINED pattern, not `a || b` on two regexes: a regex object is
+    // always truthy, so `a || b` would silently have kept only the first -
+    // which is how the first version of this change failed against a file
+    // that was doing exactly the right thing.
+    const importsTheDerivation = /import\s*\{[^}]*\b(getVaccinationDate|getVaccinationDoseEntries)\b[^}]*\}\s*from\s*"[^"]*vaccinationCalculations"/;
+    expect(
+      code,
+      `${c.file} must IMPORT the vaccination date derivation, not define a local of that name`,
+    ).toMatch(importsTheDerivation);
+    expect(code).not.toMatch(/(const|let|var|function)\s+getVaccinationDate\b/);
+    expect(code).not.toMatch(/(const|let|var|function)\s+getVaccinationDoseEntries\b/);
+  });
   }
 
   it("the Clinic Card actually passes the derived date to the sort", () => {

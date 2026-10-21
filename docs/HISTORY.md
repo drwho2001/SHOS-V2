@@ -16,6 +16,69 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 21 Oct 2026 - vaccination doses reach the phone's own calendar (t130)
+
+A vaccination dose can now appear in the phone's real calendar app, not
+only in the app's own Calendar screen. **One event per DOSE** - a four-week
+course is four events, and two different vaccines on the same day (mpox and
+bexcero) are **two events**, because they are two different things that
+happened.
+
+**ITS OWN OPT-IN, NOT PART OF THE APPOINTMENTS SWITCH.** Turning on "sync my
+appointments" must not quietly start putting vaccine names on a home screen:
+a dose is health data with a name on it, and every privacy-adjacent feature
+in this app is opt-in and off by default. The doses have their own switch,
+and under the generic-title setting they show as "Vaccination" with **no
+location at all** - because the dose's provider is a *named clinic* ("56
+Dean Street"), which is the most identifying field of the three. (The clinic
+appointments still put their location in; that is a pre-existing gap, noted
+rather than silently inherited.)
+
+**THREE PLUGIN TRAPS, EACH OF WHICH WOULD HAVE FAILED SILENTLY.** The
+research behind this is in the session bus, and the three are worth writing
+down because none of them throws:
+
+1. **The plugin's default window is now MINUS 182 DAYS.** Clinic visits are
+   always in the future, so that window covers them. A dose is a PAST event:
+   one older than six months falls outside it, so the "do I already have
+   this event?" lookup answers "no" - and **every sync would create a
+   second event for the same dose**. Every read and every filter in this
+   family now passes an explicit window wide enough to hold any real dose.
+2. **The marker namespaces collide if they are not separate.** The clinic
+   cleanup deletes anything whose notes match `/^\[shos:(.+)\]$/` and whose
+   id is not in the current set, so a vaccination marker inside those
+   brackets would be deleted by every clinic sync and recreated by the next
+   one. The doses have their own namespace, and the "turn everything off"
+   helper now knows about **both** - the sheet promises that turning it off
+   removes everything this app put there, and a prefix test that only knew
+   the clinic namespace would have left the dose events behind.
+3. **A dose's date is a plain day key**, not one of the app's stored
+   datetimes, so it has to be turned into the stored frame before anything
+   reads it as a wall clock. That conversion now lives in ONE place
+   (`vaccinationCalculations.js`), because the phone's calendar and the
+   app's own calendar both need it and two copies would drift.
+
+**THE APP'S OWN CALENDAR NOW SHOWS THE SAME THING.** One event per dose
+there too, so the two calendars do not disagree about the user's own
+history - which is the exact class of bug t034 was closed for. And its day
+grouping was reading the day with the LOCAL getters, which re-applied the
+device's UTC offset: a dose with no recorded time (a local midnight) was
+filed under the **previous day** in every negative-offset zone, while the
+phone's calendar filed it correctly. The read is now in the stored frame,
+and the test that claimed to cover it - which asserted only that the result
+had at least one key - actually asserts the day now.
+
+There is also a **"Sync now"** button, because there was no way to force a
+sync at all: only a save, a delete, or mounting Home did anything, so after
+a permission grant or a calendar change made on the phone, the user had no
+way to ask for it again.
+
+Nineteen new tests, and four mutations, all red: the marker namespace, the
+explicit window, the naive date parse, and the location that the generic
+setting is supposed to blank.
+
+---
+
 ## 21 Oct 2026 - the Appointments widget files, restored (a commit that swept up another session's staged deletions)
 
 Commit `5d333a9` ("The Dashboard's 'Schedule routine retest' opens the New

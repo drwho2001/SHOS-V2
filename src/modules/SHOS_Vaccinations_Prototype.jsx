@@ -9,6 +9,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
+import { syncVaccinationsToCalendar } from "../storage/calendarSyncService";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -903,7 +904,10 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
                 record, enabled only when exactly one is selected. */}
             <span role="button" tabIndex={0} aria-label="Export vaccination" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span role="button" tabIndex={0} aria-label="Archive vaccinations" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            {/* ADDED 20 Oct 2026 (t130) - an archived vaccination's event has
+                to LEAVE the phone's calendar, or the archive is a lie on the
+                home screen. */}
+            <span role="button" tabIndex={0} aria-label="Archive vaccinations" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); await syncVaccinationsToCalendar(await VaccinationRepository.getAll()); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span role="button" tabIndex={0} aria-label="Delete vaccinations" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
@@ -1053,6 +1057,20 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   // VaccinationDetail.
   const [vaccinations, setVaccinations] = useLoadedState(() => VaccinationRepository.getAll().then((all) => all.filter((v) => !v.isArchived)), [], []);
   const refresh = () => { VaccinationRepository.getAll().then((all) => setVaccinations(all.filter((v) => !v.isArchived))); };
+  // ADDED 20 Oct 2026 (t130) - the phone-calendar sync, on every path that
+  // changes what a dose looks like: created, edited, archived, deleted,
+  // restored. Each one of those has to reach the calendar, and the one that
+  // matters most is the EDIT: the event has to MOVE to the dose's new date
+  // rather than a second event appearing at the old one. The sync service
+  // identifies its events by a marker that does NOT contain the date, which
+  // is what makes that possible.
+  //
+  // It is self-gated inside the service (both preferences have to be on), so
+  // these calls are safe to make unconditionally - the same pattern the
+  // Clinic Visits module uses.
+  const syncCalendar = async () => {
+    await syncVaccinationsToCalendar(await VaccinationRepository.getAll());
+  };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
@@ -1062,6 +1080,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     if (!deleteToast) return;
     for (const record of deleteToast.records) await VaccinationRepository.restore(record);
     refresh();
+    await syncCalendar();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -1071,12 +1090,14 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     await TrashRepository.add("vaccinations", deleteToast.records);
     for (const r of deleteToast.records) await VaccinationRepository.delete(r.id);
     refresh();
+    await syncCalendar();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("vaccinations", records);
     for (const r of records) await VaccinationRepository.delete(r.id);
+    await syncCalendar();
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -1123,7 +1144,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   // already defined and already wired to the delete paths; only the create and
   // update paths skipped it, so a saved vaccination did not appear on the
   // list the user returned to until a tab switch remounted the module.
-  const createVaccination = async (data) => { await VaccinationRepository.create(data); await refresh(); onDataChanged?.(); syncVaccinationReminders(); backToList(); };
+  const createVaccination = async (data) => { await VaccinationRepository.create(data); await refresh(); onDataChanged?.(); syncVaccinationReminders(); await syncCalendar(); backToList(); };
   const saveVaccination = async (data) => {
     // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
     // now VaccinationRepository itself (Phase 2 encryption groundwork),
@@ -1137,6 +1158,9 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     // saved nextDue change never re-synced the reminder, same as
     // Testing's own onSaved comment for syncTestingReminder.
     syncVaccinationReminders();
+    // ADDED 20 Oct 2026 (t130) - and the calendar, for the same reason and
+    // with the same shape: a dose whose date changed has to MOVE its event.
+    await syncCalendar();
     setScreen({ name: "detail", id: screen.id });
   };
 

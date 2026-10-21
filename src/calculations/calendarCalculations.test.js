@@ -38,6 +38,51 @@ describe('calendarCalculations', () => {
       });
     });
 
+    // ADDED 20 Oct 2026 (t130) - ONE EVENT PER DOSE, so this screen and the
+    // phone's real calendar show the same things. A vaccine course is a
+    // series (a four-week schedule is four dates), and two different vaccines
+    // on one day are two different things that happened - so they are two
+    // events, not one merged one.
+    it('shows one event per DOSE, not one per record', () => {
+      const mockData = {
+        encounters: [], tests: [], clinicVisits: [], symptomEntries: [], medications: [],
+        vaccinations: [
+          {
+            id: 'vac1', vaccine: 'Hepatitis B', isArchived: false,
+            doses: [
+              { doseNumber: 1, date: '2026-09-01', time: '11:00' },
+              { doseNumber: 2, date: '2026-09-29', time: '11:00' },
+              { doseNumber: 3, date: '2026-10-27', time: '11:00' },
+            ],
+          },
+        ],
+      };
+      const events = getCalendarEvents(mockData);
+      const vax = events.filter((e) => e.moduleKey === 'vaccinations');
+      expect(vax).toHaveLength(3);
+      expect(vax.map((e) => e.date.slice(0, 10))).toEqual(['2026-09-01', '2026-09-29', '2026-10-27']);
+      // Every event still carries the RECORD id, because that is what the
+      // calendar screen navigates to when an event is tapped.
+      expect(vax.every((e) => e.id === 'vac1')).toBe(true);
+      // And each event has its own key, so two doses of one record are two
+      // events rather than one event listed twice.
+      expect(new Set(vax.map((e) => e.key)).size).toBe(3);
+    });
+
+    it('two different vaccines on the same day are two events', () => {
+      const mockData = {
+        encounters: [], tests: [], clinicVisits: [], symptomEntries: [], medications: [],
+        vaccinations: [
+          { id: 'vax_mpox', vaccine: 'Mpox', isArchived: false, doses: [{ doseNumber: 1, date: '2026-09-01' }] },
+          { id: 'vax_bex', vaccine: 'Bexcero', isArchived: false, doses: [{ doseNumber: 1, date: '2026-09-01' }] },
+        ],
+      };
+      const vax = getCalendarEvents(mockData).filter((e) => e.moduleKey === 'vaccinations');
+      expect(vax).toHaveLength(2);
+      expect(vax.map((e) => e.title).sort()).toEqual(['Bexcero', 'Mpox']);
+      expect(vax.every((e) => e.date.slice(0, 10) === '2026-09-01')).toBe(true);
+    });
+
     it('filters out archived records', () => {
       const mockData = {
         encounters: [
@@ -122,18 +167,37 @@ describe('calendarCalculations', () => {
       expect(grouped).toEqual({});
     });
 
-    it('uses local date not UTC', () => {
-      // Events on the same local day but different UTC should group together
-      const events = [
-        { date: '2026-09-15T23:00:00.000Z', moduleKey: 'encounters' }, // Could be next day UTC
-        { date: '2026-09-16T01:00:00.000Z', moduleKey: 'testing' },   // Could be same day local
-      ];
+    it('groups by the STORED day, so a midnight dose is on the day it was given', () => {
+      // CHANGED 20 Oct 2026 (t130). The old version of this test asserted
+      // only that the result had at least one key - which passes whether the
+      // grouping is right or wrong, and so proved nothing. (The research
+      // behind the change says it plainly: the test "cannot catch it".)
+      //
+      // The property that matters: a stored datetime's digits are LITERAL
+      // LOCAL WALL-CLOCK TIME with a deliberate "Z" lie, so the day is read
+      // with the UTC getters. A dose with no recorded time is local midnight,
+      // and it must be filed under ITS OWN day - not the previous one, which
+      // is what reading it with the local getters does in every
+      // negative-offset zone, while the phone's calendar filed it correctly.
+      //
+      // Honest limit, and the same one calendarSyncOffset.test.js documents:
+      // in UTC the offset is 0, so the naive read and this one agree, and no
+      // test here can fail in UTC. That is a property of the bug, not a gap
+      // in the test.
+      const midnightDose = { date: '2026-09-15T00:00:00.000Z', moduleKey: 'vaccinations' };
+      const grouped = groupEventsByDay([midnightDose]);
+      expect(Object.keys(grouped)).toEqual(['2026-09-15']);
 
-      const grouped = groupEventsByDay(events);
-      // Both should be grouped by local date
-      // 23:00 UTC = 00:00 BST next day, 01:00 UTC = 02:00 BST
-      // Depends on timezone, but function uses local date
-      expect(Object.keys(grouped).length).toBeGreaterThan(0);
+      // And the grouping follows the stored digits, not a UTC conversion of
+      // them: two events on the same stored day group together whatever the
+      // clock says.
+      const sameDay = [
+        { date: '2026-09-15T23:00:00.000Z', moduleKey: 'encounters' },
+        { date: '2026-09-15T01:00:00.000Z', moduleKey: 'testing' },
+      ];
+      const groupedSameDay = groupEventsByDay(sameDay);
+      expect(Object.keys(groupedSameDay)).toEqual(['2026-09-15']);
+      expect(groupedSameDay['2026-09-15']).toHaveLength(2);
     });
   });
 });

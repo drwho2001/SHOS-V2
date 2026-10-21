@@ -564,6 +564,73 @@ function toStored(value, time) {
  * no usable date — the caller decides what to show, and `monthLabel` already
  * renders null as an honest "Undated" rather than dropping the record.
  */
+/**
+ * The stored frame of ONE dose: "YYYY-MM-DDTHH:mm:00.000Z", or null.
+ *
+ * ADDED 20 Oct 2026 (t130). A dose's date is a PLAIN DAY KEY ("2026-09-01")
+ * from a date input, with an optional "HH:mm" - it is NOT one of the app's
+ * stored datetimes. So a dose has to be turned into the stored frame before
+ * anything can read it as a wall clock, and a dose with no time is local
+ * midnight, which is honest: the user did not record a time.
+ *
+ * This is the ONE place that conversion lives. The phone's calendar sync
+ * and the app's own calendar both need it, and two copies of it would be
+ * exactly the kind of drift this file exists to prevent.
+ */
+export function getVaccinationDoseDate(dose) {
+  const day = String(dose?.date || "").slice(0, 10);
+  if (!day) return null;
+  const time = typeof dose?.time === "string" && /^\d{2}:\d{2}$/.test(dose.time) ? dose.time : "00:00";
+  return `${day}T${time}:00.000Z`;
+}
+
+/**
+ * The key that identifies one dose of one vaccination, across syncs.
+ *
+ * IT MUST NOT CONTAIN THE DATE, because the date is the thing that changes:
+ * the key's whole job is to find the EXISTING event so a changed date can
+ * be moved onto it. (An edit has to MOVE the event; a second event at the
+ * old date is how a calendar fills up with ghosts.)
+ *
+ * So the key is the dose NUMBER when the record has a unique one - it is
+ * the user-facing identity of a dose, "Dose 2" - and the dose's POSITION in
+ * the series when the numbers are missing or duplicated. Both trade-offs are
+ * deliberate and small: renumbering a dose re-keys it, and inserting one in
+ * the middle re-keys the doses after it. In each case the old event is
+ * cleaned up and the new one written.
+ */
+export function getVaccinationDoseKey(doses, index) {
+  const number = Number(doses?.[index]?.doseNumber);
+  if (Number.isInteger(number) && number > 0) {
+    const sameNumber = (doses || []).filter((d) => Number(d?.doseNumber) === number).length;
+    if (sameNumber === 1) return String(number);
+  }
+  return String(index);
+}
+
+/**
+ * Every dose of a vaccination, with its key and its date.
+ *
+ * A record with NO dose series - a legacy one that predates the dose
+ * editor - still has a date, and the app's own derivation knows it; it is
+ * listed as a single entry so that such a record is not silently absent
+ * from a calendar that every newer record appears on.
+ *
+ * @returns {{key: string, date: string | null, dose: object}[]}
+ */
+export function getVaccinationDoseEntries(vaccination) {
+  const doses = Array.isArray(vaccination?.doses) ? vaccination.doses : [];
+  if (doses.length === 0) {
+    const when = getVaccinationDate(vaccination);
+    return when ? [{ key: "0", date: when, dose: { date: when.slice(0, 10), time: when.slice(11, 16) } }] : [];
+  }
+  return doses.map((dose, index) => ({
+    key: getVaccinationDoseKey(doses, index),
+    date: getVaccinationDoseDate(dose),
+    dose,
+  }));
+}
+
 export function getVaccinationDate(vaccination) {
   if (!vaccination) return null;
 

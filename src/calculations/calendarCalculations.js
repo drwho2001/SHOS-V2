@@ -1,4 +1,4 @@
-import { getVaccinationDate } from "./vaccinationCalculations";
+import { getVaccinationDoseEntries } from "./vaccinationCalculations";
 import { isPlannedTest } from "./testingCalculations";
 // calendarCalculations.js
 //
@@ -61,11 +61,31 @@ export function getCalendarEvents({ encounters, tests, clinicVisits, vaccination
   // Mapped first so the derivation is called once per record rather than once in
   // the filter and again in the body, which is the shape that lets the two drift
   // apart again.
+  //
+  // CHANGED 20 Oct 2026 (t130) - ONE EVENT PER DOSE, so this screen and
+  // the phone's real calendar show the SAME things. A vaccine course is a
+  // series: a four-week schedule is four real dates, and two different
+  // vaccines on one day are two different things that happened. When this
+  // screen showed one event per RECORD while the phone showed one per DOSE,
+  // the two calendars disagreed about the user's own history - which is the
+  // exact class of thing t034 was closed for.
+  //
+  // The record id is still the event's `id`, because that is what the
+  // calendar screen navigates to; the per-dose `key` is what makes the event
+  // itself unique.
   vaccinations
-    .map((v) => ({ v, when: getVaccinationDate(v) }))
-    .filter(({ v, when }) => !v.isArchived && when)
-    .forEach(({ v, when }) => {
-      events.push({ date: when, moduleKey: "vaccinations", id: v.id, title: v.title || v.vaccine || "Vaccination" });
+    .filter((v) => !v.isArchived)
+    .forEach((v) => {
+      for (const entry of getVaccinationDoseEntries(v)) {
+        if (!entry.date) continue;
+        events.push({
+          date: entry.date,
+          moduleKey: "vaccinations",
+          id: v.id,
+          key: `${v.id}:${entry.key}`,
+          title: v.title || v.vaccine || "Vaccination",
+        });
+      }
     });
 
   symptomEntries.filter((e) => !e.isArchived && e.dateStarted).forEach((e) => {
@@ -82,14 +102,24 @@ export function getCalendarEvents({ encounters, tests, clinicVisits, vaccination
   return events;
 }
 
-// Groups a flat event list into a map keyed by "YYYY-MM-DD" (local
-// date, not UTC — matches this app's own standing timezone rule, no
-// shifting a typed/stored date via a UTC conversion).
+// Groups a flat event list into a map keyed by "YYYY-MM-DD".
+//
+// THE FRAME, and it is the app's standing rule rather than a choice: a
+// stored datetime's digits are LITERAL LOCAL WALL-CLOCK TIME with a
+// deliberate "Z" lie on the end, so the day is read with the UTC getters
+// (which undo the lie) and not with the local ones.
+//
+// CHANGED 20 Oct 2026 (t130): this read the day with the LOCAL getters,
+// which re-applied the device's UTC offset - so a dose with no recorded
+// time (a local midnight) was filed under the PREVIOUS DAY in every
+// negative-offset zone, while the phone's calendar filed it correctly. Two
+// calendars disagreeing about the same day is the exact bug this whole
+// feature was for, so the read is now in the stored frame.
 export function groupEventsByDay(events) {
   const map = {};
   events.forEach((ev) => {
     const d = new Date(ev.date);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     if (!map[key]) map[key] = [];
     map[key].push(ev);
   });

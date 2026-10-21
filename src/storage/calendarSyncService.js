@@ -53,6 +53,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 // comparing or writing the result as an epoch re-applies the device's UTC
 // offset. See realTimestampFromStored's own header for the full explanation.
 import { realTimestampFromStored } from "../calculations/dateInputHelpers.js";
+import { getVaccinationDoseEntries, getVaccinationDoseDate } from "../calculations/vaccinationCalculations.js";
 
 let Calendar = null;
 let pluginLoadAttempted = false;
@@ -81,6 +82,73 @@ const MARKER_PREFIX = "[shos:";
 
 function markerFor(visitId) {
   return `${MARKER_PREFIX}${visitId}]`;
+}
+
+// ---------------------------------------------------------------------------
+// THE VACCINATION FAMILY - one event per DOSE (t130).
+// ---------------------------------------------------------------------------
+//
+// WHY A SEPARATE MARKER NAMESPACE, AND WHY IT MATTERS BOTH WAYS. The
+// clinic-visit family marks its events with "[shos:<id>]" and its cleanup
+// pass deletes any event whose notes match /^\[shos:(.+)\]$/ when that id is
+// not in the current set. A vaccination marker of "[shos:<id>]" would
+// therefore be DELETED by every clinic sync - silently, on every sync, and
+// the event would be recreated on the next one. So vaccination events get
+// their own namespace, "[shosvax:...]:", which the clinic regex cannot
+// match (it needs the colon straight after "shos") and which the clinic
+// cleanup leaves alone.
+//
+// The other direction matters just as much: removeSyncedEventsFrom() below
+// deletes events whose notes START WITH the clinic prefix, so a vaccination
+// event in a different namespace would NOT be deleted when the user turns
+// the feature off or switches calendars - and the sheet promises that
+// "turning this off removes everything this app put there". Both helpers
+// now recognise both families.
+//
+// ONE EVENT PER DOSE, NOT PER RECORD. A vaccine course is a series: the
+// 4-week schedule is four real dates, and the owner's own case is two
+// DIFFERENT vaccines on the same day (mpox and bexcero), which are two
+// events because they are two different things that happened. The
+// app's own in-app calendar was changed to match, so the two calendars do
+// not disagree about what happened.
+const VACCINATION_MARKER_PREFIX = "[shosvax:";
+
+function vaccinationMarkerFor(vaccinationId, doseKey) {
+  return `${VACCINATION_MARKER_PREFIX}${vaccinationId}:${doseKey}]`;
+}
+
+// The key that identifies a dose across syncs, and the dose's stored date,
+// are owned by vaccinationCalculations.js - the app's one place for
+// vaccination date facts - so the phone's calendar and the app's own
+// calendar cannot drift apart on them. See getVaccinationDoseKey() and
+// getVaccinationDoseDate() there.
+
+// THE PLUGIN'S DEFAULT WINDOW IS A TRAP FOR THIS FAMILY, AND IT IS THE
+// SINGLE BIGGEST DIFFERENCE BETWEEN IT AND THE CLINIC ONE.
+//
+// @capacitor/calendar's findEvents() (and modifyEvent's filter, and
+// deleteEvent's filter) default to a window of NOW MINUS 182 DAYS to NOW
+// PLUS 2 YEARS. Clinic visits are always in the future, so that window
+// covers them. A vaccination dose is a PAST event, and a dose older than
+// six months falls outside the window entirely - which means:
+//
+//   1. the "do I already have this event?" lookup would answer "no", and
+//   2. every sync would CREATE A SECOND EVENT for the same dose.
+//
+// The duplicate is invisible until the dose ages past six months, and then
+// it happens on every single sync. So every read and every filter in this
+// family passes an explicit window wide enough to hold any real dose.
+function vaccinationWindow() {
+  return {
+    startDate: 0, // the epoch: every event that could exist
+    endDate: Date.now() + 10 * 365 * 24 * 60 * 60 * 1000,
+  };
+}
+
+// Whether an event's notes are one of OURS, in either family.
+function isOurMarker(notes) {
+  const text = notes || "";
+  return text.startsWith(MARKER_PREFIX) || text.startsWith(VACCINATION_MARKER_PREFIX);
 }
 
 // Real device/permission check happens here at toggle-on time — never
@@ -250,15 +318,152 @@ export async function syncClinicVisitsToCalendar(visits) {
   return { synced: true, count: booked.length };
 }
 
+// ---------------------------------------------------------------------------
+// THE VACCINATION FAMILY - one event per DOSE (t130).
+// ---------------------------------------------------------------------------
+
+// Creates or updates the one calendar event for one dose of one vaccination.
+// Idempotent through the marker, exactly like the clinic-visit path: a
+// repeated call on an unchanged dose re-updates the same real event rather
+// than duplicating it, and a call on a CHANGED dose MOVES it (the marker
+// does not contain the date, so the event is found and its start and end
+// are rewritten).
+async function syncOneDose(plugin, calendar, vaccination, dose, marker) {
+  const stored = getVaccinationDoseDate(dose);
+  if (!stored) return false;
+  const prefs = await AppPreferencesRepository.getPreferences();
+  const useGenericTitle = prefs.calendarSyncGenericTitle;
+  // THE TITLE AND THE LOCATION ARE BOTH HEALTH DATA, AND A VACCINE NAME IS
+  // MORE IDENTIFYING THAN A CLINIC VISIT'S TITLE. The option list's seeded
+  // values include "Gonorrhoea", "Mpox" and "Hepatitis A/B" - any of those
+  // on a lock screen, or in a synced calendar's own smart-features summary,
+  // is a materially bigger disclosure than a visit title. And the dose's
+  // PROVIDER is a named clinic ("56 Dean Street"), which is the most
+  // identifying field of the three.
+  //
+  // So the generic-title setting blanks BOTH here, where it only blanks the
+  // title for clinic visits - a clinic name and a vaccine name are the same
+  // class of disclosure.
+  const vaccineName = vaccination.title || vaccination.vaccine || "Vaccination";
+  const provider = dose?.provider || vaccination.provider || "";
+  const eventOptions = {
+    title: useGenericTitle ? "Vaccination" : vaccineName,
+    location: useGenericTitle ? "" : provider,
+    // THE NOTES ARE THE MARKER, AND ONLY THE MARKER. The plugin appends a
+    // URL to the notes on Android, so anything else in here would be
+    // disclosed to whoever can see the event.
+    notes: marker,
+    startDate: realTimestampFromStored(stored),
+    // The same one-hour default the clinic path uses: a dose is a moment,
+    // not a window, and 3600000ms is elapsed time rather than a calendar
+    // day, so DST does not apply to it.
+    endDate: realTimestampFromStored(stored) + 3600000,
+    calendarId: calendar.id,
+  };
+  const { events } = await plugin.findEvents({
+    notes: marker,
+    calendarName: calendar.name,
+    ...vaccinationWindow(),
+  });
+  if (events[0]?.id) {
+    await plugin.modifyEvent({
+      filter: { notes: marker, calendarName: calendar.name, ...vaccinationWindow() },
+      newEvent: eventOptions,
+    });
+  } else {
+    await plugin.createEvent(eventOptions);
+  }
+  return true;
+}
+
+/**
+ * Brings the target calendar in line with every vaccination DOSE.
+ *
+ * The gate is BOTH preferences: the master "sync to my phone's calendar"
+ * switch, and this family's own opt-in. A dose is health data with a
+ * vaccine name on it, and every privacy-adjacent feature in this app is
+ * opt-in and off by default - so the doses do not start appearing in the
+ * phone's calendar because the owner once turned on APPOINTMENT sync.
+ *
+ * The cleanup pass compares against what is REALLY in the calendar, not
+ * against the records list, so a dose that was deleted, archived, or had
+ * its last dose removed loses its event - the same reasoning as the clinic
+ * path's cleanup, for the same reason.
+ */
+export async function syncVaccinationsToCalendar(vaccinations) {
+  const prefs = await AppPreferencesRepository.getPreferences();
+  if (!prefs.calendarSyncEnabled) return { synced: false };
+  if (!prefs.calendarSyncVaccinations) return { synced: false };
+  const { plugin } = await getPlugin();
+  if (!plugin) return { synced: false };
+  const calendar = await resolveTargetCalendar(plugin);
+
+  const wanted = new Set();
+  let count = 0;
+  for (const vaccination of vaccinations || []) {
+    if (!vaccination || vaccination.isArchived) continue;
+    for (const entry of getVaccinationDoseEntries(vaccination)) {
+      if (!entry.date) continue;
+      const marker = vaccinationMarkerFor(vaccination.id, entry.key);
+      wanted.add(`${vaccination.id}:${entry.key}`);
+      if (await syncOneDose(plugin, calendar, vaccination, entry.dose, marker)) count += 1;
+    }
+  }
+
+  // The cleanup, with the WIDE window - a dose from two years ago is
+  // invisible to the plugin's default one, and would then never be cleaned
+  // up even after the record is deleted.
+  const { events } = await plugin.findEvents({
+    calendarName: calendar.name,
+    ...vaccinationWindow(),
+  });
+  for (const event of events) {
+    const match = /^\[shosvax:(.+):([^\]]+)\]$/.exec(event.notes || "");
+    if (match && !wanted.has(`${match[1]}:${match[2]}`)) {
+      await plugin.deleteEvent({ id: event.id });
+    }
+  }
+  return { synced: true, count };
+}
+
+// Removes ONLY the vaccination-family events from a calendar.
+//
+// CHANGED 20 Oct 2026 (t130): the vaccination family has its own switch, so
+// turning it off has to remove the DOSE events without touching the
+// appointments - the two families are separate opt-ins now, and turning
+// one off must not take the other with it.
+//
+// The WIDE window, for the same reason as everywhere else in this family: a
+// dose from two years ago is invisible to the plugin's default one, and
+// would then be left behind in a calendar the user has stopped using.
+export async function removeSyncedVaccinationEvents(calendarName) {
+  const { plugin } = await getPlugin();
+  if (!plugin) return;
+  const { calendars } = await plugin.listCalendars();
+  if (!calendars.some((c) => c.name === calendarName)) return;
+  const { events } = await plugin.findEvents({ calendarName, ...vaccinationWindow() });
+  for (const event of events) {
+    if ((event.notes || "").startsWith(VACCINATION_MARKER_PREFIX)) {
+      await plugin.deleteEvent({ id: event.id });
+    }
+  }
+}
+
 // Real ask's own "never accidentally shared unless deliberately
-// selected" — turning the feature back OFF (or switching which
+// selected" - turning the feature back OFF (or switching which
 // calendar it targets) should genuinely remove what was shared there,
 // not leave stale copies sitting in a real calendar forever. Removes
-// only THIS app's own synced events (matched by marker) — an external
+// only THIS app's own synced events (matched by marker) - an external
 // calendar the user picked is never deleted wholesale, only ever the
 // events this app itself put there; the private SHOS calendar IS
 // app-owned, so that one also gets deleted outright once it's empty,
 // rather than lingering as an empty calendar forever.
+//
+// CHANGED 20 Oct 2026 (t130): it now recognises BOTH marker families.
+// The prefix test only matched "[shos:", so a vaccination event - which
+// carries its own namespace - would have been LEFT BEHIND in a calendar the
+// user has stopped using, breaking the promise this sheet makes in those
+// words.
 export async function removeSyncedEventsFrom(calendarName) {
   const { plugin } = await getPlugin();
   if (!plugin) return;
@@ -266,7 +471,7 @@ export async function removeSyncedEventsFrom(calendarName) {
   if (!calendars.some((c) => c.name === calendarName)) return;
   const { events } = await plugin.findEvents({ calendarName });
   for (const event of events) {
-    if (MARKER_PREFIX && (event.notes || "").startsWith(MARKER_PREFIX)) {
+    if (isOurMarker(event.notes)) {
       await plugin.deleteEvent({ id: event.id });
     }
   }

@@ -39,6 +39,15 @@ export const DEFAULT_APP_PREFERENCES = {
   // happens at toggle-on time, and the honest local-only-calendar
   // guarantee behind "never accidentally shared".
   calendarSyncEnabled: false,
+  // ADDED 20 Oct 2026 (t130) - the vaccination family's own opt-in, and it
+  // is SEPARATE from the master switch above on purpose. Turning on
+  // "sync my appointments to the phone's calendar" must not silently start
+  // putting vaccine names on the home screen's calendar: a dose is health
+  // data with a name on it, and every privacy-adjacent feature in this app
+  // is opt-in and off by default. The doses have their own switch, and
+  // they have their own generic-title behaviour, because a vaccine name
+  // and a clinic name are the same class of disclosure.
+  calendarSyncVaccinations: false,
   // ADDED — real follow-up ask: "I still want to have the option to
   // share with a calendar" — null/empty means the private SHOS
   // calendar (the safe default); a real value is the exact name of an
