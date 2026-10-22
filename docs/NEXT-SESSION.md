@@ -24,6 +24,9 @@ handover's actionable claims were false when it was written.
 | `7526943` | **All 14 nested overlays are in the back chain** — the repo had no mechanism for this at all, so there is a stack now |
 | `a5d80ac` + `f6a4fa3` | **The Settings sub-screen headers sit flush under the status bar**, with a **notch band** so the notch sits on a solid colour |
 | `9802d0b` | The **encounter form infers its DoxyPEP and PrEP fields** from the medication log |
+| `53944c8` | **The DoxyPEP question is gone from the encounter form** - it is derived wherever it is shown, and PrEP coverage stays on the form where it is knowable and stable (t138) |
+| `c4ab7b2` | **The future is on the calendar now** - a scheduled retest and an outstanding dose each become an event, in their own marker namespace, behind their own switch, and both calendars read ONE derivation (t139) |
+| `9932f42` | **The App Lock PIN is a verifier** - never at rest, and the two string comparisons that made it a free oracle are closed (t131) |
 
 **Device-verified on 23124RA7EO** (the dose events, the retest shortcut's
 pre-fill, the sticky headers and the notch band, and the encounter form's
@@ -31,34 +34,28 @@ inferred PrEP coverage). The phone was left exactly as it was found.
 
 ## What is outstanding, in the order the owner asked for it
 
-1. **t138 — the encounter form's DoxyPEP field.** The owner's own reasoning:
-   DoxyPEP is **retroactive** and PrEP is **proactive**. At the moment an
-   encounter is created the only knowable DoxyPEP answers are "Not indicated"
-   and "not yet taken" — "missed window" is only true 72 hours later — and
-   the stored snapshot goes **stale**: a dose logged tomorrow leaves the
-   encounter saying "not yet taken" for ever. The app already owns the
-   authoritative DoxyPEP state (the medication log plus the 72-hour window,
-   which the widget and the notification already read), so the encounter's
-   stored copy is a second, staling source of truth. **The plan: drop the
-   DoxyPEP select from the form and show the DERIVED state in the encounter's
-   read view instead.** PrEP coverage stays on the form — proactive, knowable
-   at creation, stable afterwards, and already inferred.
-2. **t139 — planned events on the phone calendar.** Today it gets doses that
-   *happened*; what is missing is the future: a planned retest (a Testing
-   record with `isRoutineRetestPlan`, dated by `plannedForDate`) and a planned
-   next vaccine dose (a dose's `nextDue`). One new marker family, its own
-   cleanup, and **the app's own Calendar screen must show the same set** or
-   the two calendars disagree again.
-3. **t131 — the App Lock PIN as a verifier.** The raw PIN is encrypted at
-   rest today, so this is defence-in-depth, not an open hole. The cost is
-   real: turning App Lock off, changing the PIN, setting the recovery string
-   and enabling biometrics would each ask you to re-type the PIN. It also
-   closes `deactivate()`'s string comparison (a free 4-digit-PIN oracle for an
-   in-page script) and the PIN copy inside encrypted backups. **Ship it as its
-   own batch, with a device test of the recovery path first** — it is the one
-   change that could lock the owner out of their own data.
-4. **t062 — Quick Add from a warm app.** Device-only, and the WebView driver
+The three things the owner asked for at the end of the last session are
+**shipped** - see the table above. What is left of them is the part no unit
+test can do:
+
+1. **The device check for t139.** The planned events have to be seen on the
+   phone's REAL calendar (the plugin and the OS provider are the other half
+   of it), and the app's own Calendar screen has to show the same set. The
+   marker namespaces have to hold: a planned event must survive a clinic
+   sync, a dose sync and a planned sync, and must be gone when the switch
+   goes off.
+2. **The recovery path for t131, and this one goes FIRST.** It is the only
+   change in the batch that could lock the owner out of their own data:
+   set a PIN, turn App Lock on, unlock with it, change the PIN, turn App
+   Lock off - and check an existing profile too, because the migration
+   converts an old raw PIN on first read and a wrong conversion means the
+   owner cannot get back in.
+3. **t062 - Quick Add from a warm app.** Device-only, and the WebView driver
    below makes it quick.
+4. **An owner call, not a task.** The encrypted backup's comment claims the
+   App Lock PIN "comes back intact on restore"; it has not been able to
+   since t126, and t131 does not make it worse. Whether a restore SHOULD
+   bring App Lock back is a decision for the owner.
 
 **Session A's area**: `t113`, `t114`, `t115`, `t117`, and `t134` (still
 **proposed** — it needs the owner's approval). A's claims on six widget files
@@ -109,6 +106,22 @@ synthetic bubbling `MouseEvent` instead.
 - **A latent deadlock in the test suite**: `Promise.all` of dynamic imports
   after `vi.resetModules()` hangs the vitest runner. Sequential imports take
   1.5 seconds (L-133).
+- **A guard that matched a NAME rather than a CALL, for the third time.** The
+  t138 guard asserted the encounter's read view *mentioned* the resolver,
+  and a mutation that pointed the row back at the stored value left the
+  mention in place - green. It is now asserted on the ROW. The rule is
+  general: when a guard says "X is used here", assert the USE, not the
+  name, and prove it with a mutation that removes the use.
+- **A PIN checked by comparing strings is an oracle.** `deactivate()`
+  compared the typed PIN to the stored one with `!==` - ten thousand
+  four-digit candidates, each one free, each one answered. The same
+  comparison existed a second time in `setDuressPin()`. Anything that
+  decides "is this the secret?" has to compare DERIVED values.
+- **A marker namespace that another family's cleanup can match is a loop,
+  and a family added to a sync and forgotten in its REMOVAL leaves the
+  user's data behind in a calendar they stopped using.** Both are silent,
+  and both are now asserted against a mock phone calendar that keeps real
+  state.
 
 ## The recurring lesson from this session
 
