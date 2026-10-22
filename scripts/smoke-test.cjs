@@ -914,19 +914,49 @@ await waitWithPageState(
 // flip a stored flag — this is exactly the class of thing that could
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
+// ADDED 22 Oct 2026 (t131) — drives the Privacy screen's PIN PROMPT.
+//
+// WHY IT EXISTS. Since t131 the App Lock PIN is a PBKDF2 VERIFIER, not a
+// stored string, so the vault's privileged actions cannot be handed the
+// stored PIN: the USER has to type it, through a shared prompt on the
+// Privacy screen. Every flow that turns App Lock on or off, or sets the
+// recovery string, now has to drive that prompt — which is exactly what
+// these flows do, and they failed at the first attempt after t131 for
+// precisely this reason.
+//
+// It is driven through the prompt's ACCESSIBLE NAME ("Your PIN") and an
+// exact button name ("Confirm"), never through a placeholder or a
+// positional index, so a reworded label cannot silently break these
+// flows and a second numeric input elsewhere on the screen cannot be
+// filled in by mistake.
+async function confirmPinPrompt(page, pin) {
+  const input = page.locator('input[aria-label="Your PIN"]');
+  await input.waitFor({ state: "visible", timeout: 10000 });
+  await input.fill(pin);
+  await page.getByRole("button", { name: "Confirm", exact: true }).click({ timeout: 5000 });
+}
+
 async function testEncryptionAppLockGatesVault(page) {
   console.log("\n[12/27] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
   await page.waitForTimeout(200);
-  const pinInputs = page.locator('input[inputmode="numeric"]');
-  await pinInputs.nth(0).fill("2468");
-  await pinInputs.nth(1).fill("2468");
+  // CHANGED 22 Oct 2026 (t131) — by PLACEHOLDER, not by index. The sheet can
+  // now show a third numeric input (the current PIN, when App Lock is on),
+  // so a positional fill would put the PIN into the wrong field the moment
+  // the sheet grows.
+  await page.locator('input[placeholder^="New PIN"]').fill("2468");
+  await page.locator('input[placeholder="Confirm new PIN"]').fill("2468");
   await page.locator('button:has-text("Save PIN")').click({ timeout: 5000 });
   await page.waitForTimeout(400);
 
   await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
+  // CHANGED 22 Oct 2026 (t131) — turning App Lock on now asks for the PIN
+  // to be typed, because the vault's re-wrap needs the PIN as key material
+  // and the app no longer stores it (only a verifier, which cannot re-wrap
+  // anything). The prompt is part of the flow from here on, not an extra.
+  await confirmPinPrompt(page, "2468");
   // Bounded wait, NOT a fixed one. Turning App Lock on triggers a real
   // PBKDF2-100k vault re-wrap with verify-before-commit, which measures
   // around 1.1s on a healthy machine and considerably longer on a loaded
@@ -977,6 +1007,8 @@ async function testEncryptionAppLockGatesVault(page) {
   // deliberately: patching one and leaving the other would have left a
   // guaranteed future flake behind.
   await page.locator('[aria-label="App Lock"]').click({ timeout: 15000 });
+  // CHANGED 22 Oct 2026 (t131) — turning it back off asks for the PIN too.
+  await confirmPinPrompt(page, "2468");
   assert(await waitForAriaChecked(page, "App Lock", "false", 15000),
     "App Lock turns back off cleanly, reverting to the always-works device slot");
 }
@@ -1327,12 +1359,17 @@ async function testPinRecoveryFlow(page) {
   // state here, not just "Set a PIN".
   await page.locator('button:has-text("PIN")').first().click({ timeout: 5000 });
   await page.waitForTimeout(200);
-  const pinInputs = page.locator('input[inputmode="numeric"]');
-  await pinInputs.nth(0).fill("2468");
-  await pinInputs.nth(1).fill("2468");
+  // CHANGED 22 Oct 2026 (t131) — by PLACEHOLDER, not by index: the sheet can
+  // show a third numeric input (the current PIN) when App Lock is on, and a
+  // positional fill would then put the PIN into the wrong field.
+  await page.locator('input[placeholder^="New PIN"]').fill("2468");
+  await page.locator('input[placeholder="Confirm new PIN"]').fill("2468");
   await page.locator('button:has-text("Save PIN")').click({ timeout: 5000 });
   await page.waitForTimeout(400);
   await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
+  // CHANGED 22 Oct 2026 (t131) — the PIN prompt, because the PIN is a
+  // verifier now and the vault's re-wrap needs the PIN typed by the user.
+  await confirmPinPrompt(page, "2468");
 
   // Was a fixed 500ms wait then a single count() check with no retry —
   // turning App Lock on triggers a real vault re-wrap (PBKDF2), so 500ms
@@ -1351,6 +1388,10 @@ async function testPinRecoveryFlow(page) {
   await textInputs.nth(0).fill("correct-horse-battery");
   await textInputs.nth(1).fill("correct-horse-battery");
   await page.locator('button:has-text("Save")').click({ timeout: 5000 });
+  // CHANGED 22 Oct 2026 (t131) — setting the recovery string re-wraps the
+  // vault's Data Key, so it asks for the PIN like the other privileged
+  // actions do.
+  await confirmPinPrompt(page, "2468");
   await page.waitForTimeout(400);
   await page.waitForFunction(() => document.body.innerText.includes("Change recovery string"), null, { timeout: 15000 });
   assert(await page.locator("text=Change recovery string").count() > 0, "saving a recovery string switches the section to 'Change recovery string'");
@@ -1417,6 +1458,10 @@ async function testPinRecoveryFlow(page) {
   // 500ms and hoping. This is the same treatment already given to the
   // PBKDF2-bound waits in this flow.
   await page.locator('[aria-label="App Lock"]').click({ timeout: 15000 });
+  // CHANGED 22 Oct 2026 (t131) — the PIN prompt, and with the NEW PIN: the
+  // recovery reset replaced it, so the old one no longer opens the vault.
+  // Typing the old one here is itself a check that the reset really took.
+  await confirmPinPrompt(page, "9999");
   assert(await waitForAriaChecked(page, "App Lock", "false", 15000),
     "App Lock turns back off cleanly after a recovery-triggered PIN reset — the PrivacySettingsRepository mirror stayed in sync");
 }
