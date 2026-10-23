@@ -1574,7 +1574,7 @@ export default function App() {
         NotificationHistoryRepository.record({ id: notification?.id, title: notification?.title, body: notification?.body });
       });
     })();
-    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); };
   }, []);
 
   // ADDED 28 Sep 2026 (Phase 3, banner suppression) — see
@@ -2001,7 +2001,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         console.warn("[App] @capacitor/app not available — hardware back button uses default OS behaviour in this environment.");
       }
     })();
-    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); };
     // goBackOneLevel deliberately omitted — every real state its own
     // logic reads (showSettings/showSearch/active) is already listed
     // here, so this effect already re-registers the listener with a
@@ -2073,7 +2073,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         });
       }
     })();
-    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); };
   }, []);
 
   // ADDED — real ask: "opening back to last page" — keeps lastActiveTab
@@ -2156,7 +2156,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         else if (action.actionId === VACCINATION_ACTIONS.snooze) onVaccinationSnooze();
       });
     })();
-    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); };
     // Deliberately [] — registers the native listener once. Every
     // onX handler here (onDueMedsTake/Skip/Snooze, onRefillRequested/
     // Snooze, onTestingSnooze, onClinicVisitSnooze) is a thin dispatcher
