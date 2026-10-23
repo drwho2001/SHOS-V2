@@ -87,6 +87,64 @@ export function getNextPeriodDayKey(startDateStored, avgLengthDays) {
 }
 
 /**
+ * How many days until the predicted next period, or null if there is no
+ * prediction. Negative when the prediction has passed - that is not an
+ * error, it is the normal "overdue" state, and the caller decides how to
+ * word it. Zero means "today".
+ *
+ * WHY THIS EXISTS. The widget used to show only the DATE of the next
+ * period, which answers "when" but not "how long" - and "how long" is the
+ * question a person actually asks when they glance at a widget. A date
+ * alone requires the reader to do the subtraction themselves, on a screen
+ * they are looking at for two seconds.
+ *
+ * The prediction is an ESTIMATE, and this number is an estimate of an
+ * estimate. It must never be presented as a countdown to a certain event.
+ */
+export function getDaysUntilNextPeriod(startDateStored, avgLengthDays, now = new Date()) {
+  const nextKey = getNextPeriodDayKey(startDateStored, avgLengthDays);
+  if (!nextKey) return null;
+  const today = localDayKey(now);
+  return calendarDaysBetween(today, nextKey);
+}
+
+/**
+ * A plain-language summary of cycle regularity, or null when there is not
+ * enough history to say anything honest.
+ *
+ * Returns { min, max, average, count } so the caller can show a range
+ * ("26-30 days") rather than a single number that implies more precision
+ * than the data supports. A single average of 28 hides a range of 24-32,
+ * which is the difference between "regular" and "worth mentioning to a
+ * clinician."
+ *
+ * SAFETY. This is a DESCRIPTION of logged data, not a prediction and not
+ * a diagnosis. It says what happened; it does not say what will happen or
+ * what it means clinically. The app's standing rule applies: no automated
+ * clinical risk scoring, no diagnosis engine.
+ */
+export function getCycleRegularity(cycleStartDates) {
+  if (!Array.isArray(cycleStartDates) || cycleStartDates.length < 2) return null;
+  const sorted = [...cycleStartDates]
+    .map((d) => storedDayKey(d))
+    .filter(Boolean)
+    .sort();
+  if (sorted.length < 2) return null;
+  const gaps = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const days = calendarDaysBetween(sorted[i - 1], sorted[i]);
+    if (days > 0) gaps.push(days);
+  }
+  if (!gaps.length) return null;
+  return {
+    min: Math.min(...gaps),
+    max: Math.max(...gaps),
+    average: Math.round(gaps.reduce((s, d) => s + d, 0) / gaps.length),
+    count: gaps.length,
+  };
+}
+
+/**
  * Render a predicted day key for the widget.
  *
  * FIXED 29 Sep 2026: the original called `toLocaleDateString` with no

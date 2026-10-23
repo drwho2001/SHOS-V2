@@ -25,6 +25,8 @@ import {
   getCyclePhase,
   getNextPeriodDayKey,
   formatDayKeyForDisplay,
+  getDaysUntilNextPeriod,
+  getCycleRegularity,
 } from "./menstrualCalculations.js";
 // The day-key primitives moved to dateInputHelpers when this became the third
 // copy of them written in a day. Re-pointed here deliberately rather than
@@ -273,5 +275,101 @@ describe("localDayKey is the user's own day, which is a different frame", () => 
     expect(localDayKey(new Date(2026, 8, 10, 22, 0, 0))).toBe("2026-09-10");
     expect(localDayKey(new Date(2026, 8, 11, 0, 1, 0))).toBe("2026-09-11");
     expect(localDayKey(new Date())).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe("days until next period - the at-a-glance number", () => {
+  it("returns the number of days between today and the predicted date", () => {
+    // 2026-09-10 + 28 days = 2026-10-08. If "today" is 2026-09-20, that's 18 days.
+    const now = new Date(2026, 8, 20, 12, 0, 0);
+    expect(localDayKey(now)).toBe("2026-09-20");
+    expect(getDaysUntilNextPeriod("2026-09-10", 28, now)).toBe(18);
+  });
+
+  it("returns 0 when the prediction is today", () => {
+    const now = new Date(2026, 9, 8, 12, 0, 0);
+    expect(localDayKey(now)).toBe("2026-10-08");
+    expect(getDaysUntilNextPeriod("2026-09-10", 28, now)).toBe(0);
+  });
+
+  it("returns negative when the prediction has passed - overdue, not an error", () => {
+    const now = new Date(2026, 9, 15, 12, 0, 0);
+    expect(localDayKey(now)).toBe("2026-10-15");
+    const days = getDaysUntilNextPeriod("2026-09-10", 28, now);
+    expect(days).toBeLessThan(0);
+    expect(days).toBe(-7);
+  });
+
+  it("returns null when there is no prediction", () => {
+    const now = new Date(2026, 8, 20, 12, 0, 0);
+    expect(getDaysUntilNextPeriod("2026-09-10", null, now)).toBeNull();
+    expect(getDaysUntilNextPeriod("2026-09-10", 0, now)).toBeNull();
+    expect(getDaysUntilNextPeriod(null, 28, now)).toBeNull();
+  });
+
+  it("is an estimate of an estimate - never a certain countdown", () => {
+    // The function returns a number, not a promise. The LABEL (est.) is the
+    // caller's job, and the test pins that the number alone carries no
+    // certainty. This is a documentation assertion, not a behaviour one.
+    const now = new Date(2026, 8, 20, 12, 0, 0);
+    const days = getDaysUntilNextPeriod("2026-09-10", 28, now);
+    expect(typeof days).toBe("number");
+  });
+});
+
+describe("cycle regularity - a description, not a prediction", () => {
+  it("returns null with fewer than two cycles", () => {
+    expect(getCycleRegularity([])).toBeNull();
+    expect(getCycleRegularity(["2026-09-10"])).toBeNull();
+    expect(getCycleRegularity(null)).toBeNull();
+  });
+
+  it("returns min, max, average and count", () => {
+    const r = getCycleRegularity(["2026-09-10", "2026-10-08", "2026-11-05"]);
+    expect(r).not.toBeNull();
+    expect(r.min).toBe(28);
+    expect(r.max).toBe(28);
+    expect(r.average).toBe(28);
+    expect(r.count).toBe(2);
+  });
+
+  it("shows the range when cycles vary", () => {
+    const r = getCycleRegularity(["2026-09-10", "2026-10-05", "2026-11-08"]);
+    expect(r).not.toBeNull();
+    expect(r.min).toBe(25);
+    expect(r.max).toBe(34);
+    expect(r.average).toBe(30); // (25+34)/2 = 29.5, rounded to 30
+    // Actually 25+34=59, 59/2=29.5, Math.round=30
+    expect(r.average).toBe(30);
+    expect(r.count).toBe(2);
+  });
+
+  it("does not predict anything - it only describes what happened", () => {
+    // The function returns a description of logged data. It must not be
+    // used to predict future cycles or to make clinical claims. This is a
+    // documentation assertion.
+    const r = getCycleRegularity(["2026-09-10", "2026-10-08"]);
+    expect(r).toHaveProperty("min");
+    expect(r).toHaveProperty("max");
+    expect(r).toHaveProperty("average");
+    expect(r).toHaveProperty("count");
+    // No prediction fields
+    expect(r).not.toHaveProperty("nextPeriod");
+    expect(r).not.toHaveProperty("ovulation");
+    expect(r).not.toHaveProperty("fertile");
+  });
+
+  it("handles unsorted input", () => {
+    const r = getCycleRegularity(["2026-11-05", "2026-09-10", "2026-10-08"]);
+    expect(r).not.toBeNull();
+    expect(r.min).toBe(28);
+    expect(r.max).toBe(28);
+    expect(r.count).toBe(2);
+  });
+
+  it("filters out invalid dates", () => {
+    const r = getCycleRegularity(["2026-09-10", null, "", "2026-10-08"]);
+    expect(r).not.toBeNull();
+    expect(r.count).toBe(1);
   });
 });

@@ -19,5 +19,25 @@ import { createSimpleRegistry } from "./simpleRegistry.js";
 export const SymptomsRegistry = createSimpleRegistry({
   storageKey: "shos_symptoms_registry",
   idPrefix: "symptom_cat",
-  seedNames: ["Urethral discharge"],
+  seedNames: [
+    "Urethral discharge",
+    // Menstrual symptoms (UKMEC/NICE/RCOG-aligned vocabulary)
+    "Menstrual cramps (dysmenorrhea)",
+    "Heavy menstrual bleeding",
+    "Light menstrual bleeding",
+    "Spotting between periods",
+    "Irregular periods",
+    "Absent periods (amenorrhea)",
+    "Premenstrual syndrome (PMS)",
+    "Premenstrual dysphoric disorder (PMDD)",
+    "Period clots",
+    "Bloating",
+    "Breast tenderness",
+    "Mood changes",
+    "Fatigue",
+    "Headache",
+    "Nausea",
+    "Lower back pain",
+    "Pelvic pain",
+  ],
 });

@@ -33,6 +33,7 @@ import {
   getCyclePhase,
   getNextPeriodDayKey,
   formatDayKeyForDisplay,
+  getDaysUntilNextPeriod,
 } from "./menstrualCalculations";
 import { redactedWidgetLine } from "./widgetPrivacy";
 
@@ -60,16 +61,28 @@ export async function updateCycleWidget() {
         // No usable cycle data: leave whatever is on screen rather than blanking it.
         if (cycleDay === null) return;
         const phase = getCyclePhase(cycleDay);
-        const nextPeriod = formatDayKeyForDisplay(
-          getNextPeriodDayKey(latest.startDate, avgLength),
-        );
+        const nextPeriodKey = getNextPeriodDayKey(latest.startDate, avgLength);
+        const nextPeriod = formatDayKeyForDisplay(nextPeriodKey);
+        const daysUntil = getDaysUntilNextPeriod(latest.startDate, avgLength);
+        // Label the prediction as an estimate in the widget text, so the
+        // user is not told a date is certain when it is a projection from
+        // past cycles. "est." is short enough to fit the card.
+        const nextPeriodText = nextPeriod
+          ? (daysUntil === null
+              ? nextPeriod + " (est.)"
+              : daysUntil === 0
+                ? nextPeriod + " (est. today)"
+                : daysUntil > 0
+                  ? nextPeriod + " (est. in " + daysUntil + "d)"
+                  : nextPeriod + " (est. " + Math.abs(daysUntil) + "d ago)")
+          : null;
         // Routed through sendWidgetUpdate so a Redacted tier keeps only
         // category + state and the widget reads "Tracking - follicular" rather
         // than going blank.
         await sendWidgetUpdate(bridge, "cycle", "updateCycle", {
           day: cycleDay,
           phase,
-          nextPeriod: nextPeriod || null,
+          nextPeriod: nextPeriodText || null,
           category: "Tracking",
           state: phase,
         },
@@ -80,6 +93,7 @@ export async function updateCycleWidget() {
     console.debug("Cycle widget update skipped:", e);
   }
 }
+
 
 export default updateCycleWidget;
 

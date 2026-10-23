@@ -150,6 +150,40 @@ export const MenstrualCycleRepository = {
     return updated ? structuredClone({ ...DEFAULT_CYCLE, ...updated }) : null;
   },
 
+  async getCycleRegularity() {
+    const cycles = await this.getAll();
+    const starts = cycles.filter((c) => !c.isArchived && c.startDate).map((c) => c.startDate);
+    if (starts.length < 2) return null;
+    const sorted = [...starts].sort();
+    const gaps = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const days = Math.round((new Date(sorted[i]) - new Date(sorted[i - 1])) / 86400000);
+      if (days > 0) gaps.push(days);
+    }
+    if (!gaps.length) return null;
+    return {
+      min: Math.min(...gaps),
+      max: Math.max(...gaps),
+      average: Math.round(gaps.reduce((s, d) => s + d, 0) / gaps.length),
+      count: gaps.length,
+    };
+  },
+
+  // Average period length in days, or null when there are fewer than two
+  // completed cycles. An FYI average, not a prediction - "here is roughly
+  // your pattern" from whatever has actually been logged.
+  async getAveragePeriodLengthDays() {
+    const cycles = (await this.getAll()).filter((c) => !c.isArchived && c.startDate && c.endDate);
+    if (cycles.length < 2) return null;
+    const lengths = [];
+    for (const c of cycles) {
+      const days = Math.round((new Date(c.endDate) - new Date(c.startDate)) / 86400000) + 1;
+      if (days > 0 && days < 15) lengths.push(days);
+    }
+    if (!lengths.length) return null;
+    return Math.round(lengths.reduce((sum, d) => sum + d, 0) / lengths.length);
+  },
+
   async archive(id) {
     return this.update(id, { isArchived: true });
   },

@@ -43,6 +43,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
+import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay } from "../calculations/menstrualCalculations";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -462,6 +463,8 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
   const editUndo = useEditUndo(MenstrualCycleRepository, onDataChanged);
   const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
+  const regularity = useLoadedMemo(() => MenstrualCycleRepository.getCycleRegularity(), [cycles], null);
+  const avgPeriodLength = useLoadedMemo(() => MenstrualCycleRepository.getAveragePeriodLengthDays(), [cycles], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
   // async — resolved once here (component-level, since a hook can't be
@@ -514,8 +517,31 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
           Cycle tracking is paused while pregnant — you can still add an entry manually if you need to (e.g. spotting).
         </div>
       ) : avgLength ? (
-        <div style={{ margin: "12px 16px 0", fontSize: 12, color: T.textSecondary }}>Average cycle length so far: <strong style={{ color: T.textPrimary }}>{avgLength} days</strong></div>
+        <div style={{ margin: "12px 16px 0", fontSize: 12, color: T.textSecondary }}>Average cycle length so far: <strong style={{ color: T.textPrimary }}>{avgLength} days</strong>{regularity && regularity.min !== regularity.max ? <span style={{ color: T.textDisabled }}> (range {regularity.min}-{regularity.max} days over {regularity.count} cycles)</span> : null}</div>
       ) : null}
+      {avgPeriodLength ? <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Average period length: <strong style={{ color: T.textPrimary }}>{avgPeriodLength} day{avgPeriodLength === 1 ? "" : "s"}</strong></div> : null}
+      {cycles && cycles.length > 0 && (() => {
+        const latest = cycles[0];
+        const lastStart = new Date(latest.startDate);
+        const now = new Date();
+        const monthsSince = (now.getFullYear() - lastStart.getFullYear()) * 12 + (now.getMonth() - lastStart.getMonth());
+        if (monthsSince >= 12) {
+          return <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>No period logged in {monthsSince} months. If you are not pregnant, this may be worth discussing with a clinician - periods can stop for many reasons, including menopause, and a clinician can help work out which. <a href="https://www.nhs.uk/conditions/menopause/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcareBlue }}>NHS: menopause</a></div>;
+        }
+        if (regularity && regularity.min && regularity.max && (regularity.max - regularity.min) > 14) {
+          return <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>Your cycles have varied by more than 2 weeks ({regularity.min}-{regularity.max} days). Irregular cycles are common, but a change in pattern is worth mentioning to a clinician. <a href="https://www.nhs.uk/conditions/irregular-periods/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcareBlue }}>NHS: irregular periods</a></div>;
+        }
+        return null;
+      })()}
+      {cycles && cycles.length > 0 && (() => {
+        const latest = cycles[0];
+        const nextKey = getNextPeriodDayKey(latest.startDate, avgLength);
+        const nextDisplay = formatDayKeyForDisplay(nextKey);
+        const daysUntil = getDaysUntilNextPeriod(latest.startDate, avgLength);
+        if (!nextDisplay) return null;
+        const when = daysUntil === null ? "" : daysUntil === 0 ? " (est. today)" : daysUntil > 0 ? " (est. in " + daysUntil + " day" + (daysUntil === 1 ? "" : "s") + ")" : " (est. " + Math.abs(daysUntil) + " day" + (Math.abs(daysUntil) === 1 ? "" : "s") + " ago)";
+        return <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Next period (estimate): <strong style={{ color: T.textPrimary }}>{nextDisplay}{when}</strong></div>;
+      })()}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
         <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Log period" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />

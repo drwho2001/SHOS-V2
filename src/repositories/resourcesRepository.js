@@ -91,9 +91,15 @@ const SEED_ENTRIES = {
   // text — same sourcing standard as doxyPepCalculations.js.
   menstruationMenopause: [
     { name: "NHS — Women's health", link: "https://www.nhs.uk/womens-health/", notes: "" },
+    { name: "NICE — Heavy menstrual bleeding", link: "https://www.nice.org.uk/guidance/ng88", notes: "Evidence-based guideline" },
+    { name: "NICE — Endometriosis", link: "https://www.nice.org.uk/guidance/ng73", notes: "Evidence-based guideline" },
+    { name: "RCOG — Patient information", link: "https://www.rcog.org.uk/for-the-public/", notes: "Royal College of Obstetricians and Gynaecologists" },
+    { name: "FSRH — Contraception guidelines", link: "https://www.fsrh.org/standards-and-guidance/", notes: "Faculty of Sexual & Reproductive Healthcare" },
+    { name: "UKMEC — Contraceptive eligibility", link: "https://www.cosrh.org/Public/Public/Standards-and-Guidance/uk-medical-eligibility-criteria-for-contraceptive-use-ukmec.aspx", notes: "UK Medical Eligibility Criteria" },
     { name: "The Menopause Charity", link: "https://themenopausecharity.org/", notes: "" },
     { name: "Wellbeing of Women", link: "https://www.wellbeingofwomen.org.uk/", notes: "" },
     { name: "Women's Health Concern (British Menopause Society)", link: "https://www.womens-health-concern.org/", notes: "" },
+    { name: "The Menopause Society", link: "https://www.thebms.org.uk/", notes: "British Menopause Society" },
   ],
   abortionPregnancyLoss: [
     { name: "NHS — Abortion", link: "https://www.nhs.uk/tests-and-treatments/abortion/", notes: "" },
