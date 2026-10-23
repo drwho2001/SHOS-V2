@@ -1217,7 +1217,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           while the title/icons stay safely below the notch. This
           outer wrapper's T.bg background is now effectively unused
           (zero height above the inner banner) but harmless to leave. */}
-      <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}>
+      <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
             with the module's own colour, same pattern applied across
             every module this pass. */}
@@ -1813,6 +1813,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           TYPE.sheetTitle token instead of a hand-typed duplicate of it
           (matching Testing/Clinic Visits' own sheet-title banners). */}
       <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
         <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? "Add Encounter" : "Edit Encounter"}</h1>
         <div onClick={() => canSave && save()}
