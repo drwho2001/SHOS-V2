@@ -1574,7 +1574,7 @@ export default function App() {
         NotificationHistoryRepository.record({ id: notification?.id, title: notification?.title, body: notification?.body });
       });
     })();
-    return () => { listenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
   }, []);
 
   // ADDED 28 Sep 2026 (Phase 3, banner suppression) — see
@@ -2001,7 +2001,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         console.warn("[App] @capacitor/app not available — hardware back button uses default OS behaviour in this environment.");
       }
     })();
-    return () => { listenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
     // goBackOneLevel deliberately omitted — every real state its own
     // logic reads (showSettings/showSearch/active) is already listed
     // here, so this effect already re-registers the listener with a
@@ -2073,7 +2073,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         });
       }
     })();
-    return () => { listenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
   }, []);
 
   // ADDED — real ask: "opening back to last page" — keeps lastActiveTab
@@ -2156,7 +2156,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         else if (action.actionId === VACCINATION_ACTIONS.snooze) onVaccinationSnooze();
       });
     })();
-    return () => { listenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
     // Deliberately [] — registers the native listener once. Every
     // onX handler here (onDueMedsTake/Skip/Snooze, onRefillRequested/
     // Snooze, onTestingSnooze, onClinicVisitSnooze) is a thin dispatcher
@@ -2352,18 +2352,43 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       }
     };
     let listenerHandle = null;
+    let stateListenerHandle = null;
     (async () => {
       try {
         const { App: CapacitorApp } = await import("@capacitor/app");
         const launch = await CapacitorApp.getLaunchUrl();
         if (launch?.url) routeShortcutUrl(launch.url);
         listenerHandle = await CapacitorApp.addListener("appUrlOpen", (event) => routeShortcutUrl(event.url));
+        // ADDED 23 Oct 2026 (t062) — belt-and-suspenders for the warm path.
+        // Capacitor's App plugin delivers onNewIntent as appUrlOpen, but on
+        // this device the boot-time listener registered above never fires for
+        // a warm intent, even though a listener registered later does. The
+        // most likely cause is that the listener is registered inside an async
+        // IIFE during the initial load, and onNewIntent events that arrive
+        // during that window are delivered to a listener list that does not
+        // yet include this one. The symptom is exactly the owner's report:
+        // tapping a Quick Add widget while the app is open resumes the last
+        // screen instead of opening the Add sheet.
+        //
+        // The fallback: when the app comes back to the foreground, re-read
+        // the launch URL. Capacitor updates the Activity's intent on
+        // onNewIntent, so getLaunchUrl() returns the warm-start URL even
+        // when appUrlOpen was missed. This is the same mechanism Global
+        // Search's navigation relies on, and it costs nothing when there is
+        // no URL (the common case).
+        stateListenerHandle = await CapacitorApp.addListener("appStateChange", async (state) => {
+          if (!state || !state.isActive) return;
+          try {
+            const fresh = await CapacitorApp.getLaunchUrl();
+            if (fresh?.url) routeShortcutUrl(fresh.url);
+          } catch { /* not available in this environment */ }
+        });
       } catch {
         // Not available in this environment — App Shortcuts only exist
         // on a real installed Android app anyway.
       }
     })();
-    return () => { listenerHandle?.remove(); };
+    return () => { listenerHandle?.remove(); stateListenerHandle?.remove(); };
   }, []);
 
   // ADDED 19 Aug 2026 — Global Search's navigation handler. Deliberately
