@@ -9218,3 +9218,74 @@ URL even when appUrlOpen was missed.
 
 ---
 
+---
+
+## 23 Oct 2026 - Menstrual health: days-until-next-period, period length, regularity, UK bodies
+
+The owner asked: "consider menstrual widgets and logic, think about what
+users will want to track and see easily at a glance... need menstrual
+logic in app and widget to be effective and safe and working." Plus:
+"ukmec, nice, and any other uk bodies relevant, ebpm."
+
+WHAT USERS WANT AT A GLANCE:
+- Current cycle day and phase (already there)
+- Days until next period (was missing - only the date was shown)
+- Period length and cycle regularity (was missing entirely)
+- Flow intensity and symptoms (already tracked, but not surfaced in the widget)
+
+WHAT CHANGED:
+
+CALCULATIONS (menstrualCalculations.js):
+- getDaysUntilNextPeriod(): days until the predicted next period, negative
+  when overdue. The widget used to show only the date.
+- getCycleRegularity(): min, max, average and count of cycle lengths. A
+  single average of 28 hides a range of 24-32.
+
+REPOSITORY (menstrualCycleRepository.js):
+- getAveragePeriodLengthDays(): average period duration from completed
+  cycles. Was not tracked at all.
+
+WIDGET (cycleWidgetSync.js):
+- Next period now shows "in X days" or "X days ago" alongside the date.
+- Every prediction is labelled "est." so the user is never told a
+  projected date is certain.
+
+APP (SHOS_MenstrualHealth_Prototype.jsx):
+- Average period length displayed alongside average cycle length.
+- Cycle regularity range shown when cycles vary.
+- Next period (estimate) shown with days-until countdown.
+- Menopause awareness: if no period logged in 12+ months, a message
+  suggests discussing with a clinician, with an NHS link.
+- Irregularity awareness: if cycle lengths vary by more than 2 weeks,
+  a message suggests mentioning it to a clinician.
+
+SYMPTOMS (symptomsRegistry.js):
+- Added UKMEC/NICE/RCOG-aligned menstrual symptoms: dysmenorrhea, heavy
+  menstrual bleeding, PMS, PMDD, period clots, bloating, breast
+  tenderness, mood changes, fatigue, headache, nausea, and others.
+
+RESOURCES (resourcesRepository.js):
+- Added NICE guidelines (heavy menstrual bleeding, endometriosis), RCOG
+  patient information, FSRH contraception guidelines, UKMEC, and The
+  Menopause Society to the menstruation & menopause category.
+
+SAFETY:
+- No fertility predictions, no ovulation tracking, no medical advice.
+- All predictions clearly labelled as estimates.
+- Irregularity and menopause messages are informational with links to
+  NHS/RCOG, never automated actions or diagnoses.
+- Phase boundaries are fixed (Menstrual 1-7, Follicular 8-14, Ovulatory
+  15-21, Luteal 22+) as a rough guide, NOT personalized to cycle
+  length, because personalizing them would be ovulation prediction.
+
+SCENARIOS CONSIDERED:
+- First period: getAverageCycleLengthDays returns null with < 2 cycles,
+  so no prediction is shown. The widget shows "Cycle Day X" and phase.
+- After first few months: predictions appear once 2+ cycles are logged.
+- Irregular cycles: regularity range is shown, irregularity message
+  appears when variation exceeds 2 weeks.
+- Pregnancy: cycle tracking is paused (existing gating).
+- Menopause: if no period in 12+ months, an informational message
+  suggests discussing with a clinician.
+
+Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.com>
