@@ -9195,3 +9195,26 @@ log caught up to match, after discovering it — not any prior coding
 session's own notes — had been the actual current project history all
 along.
 
+---
+
+## 23 Oct 2026 - Quick Add now opens from a warm app (t062)
+
+The owner reported that tapping a Quick Add widget while SHOS is already
+open just resumes the last screen instead of opening the Add sheet. Cold
+start worked; warm start did not.
+
+ROOT CAUSE: the boot-time appUrlOpen listener is registered inside an
+async IIFE (await import + await getLaunchUrl before addListener). On a
+warm start the onNewIntent event can arrive during that window, before
+the listener is in Capacitor's list, and is lost. A listener registered
+later (after the app is fully loaded) DOES receive the event - which is
+why a manual listener worked on the device while the boot-time one never
+fired.
+
+FIX: an appStateChange listener that, when the app returns to the
+foreground, re-reads getLaunchUrl() and routes it. Capacitor updates the
+Activity's intent on onNewIntent, so getLaunchUrl() returns the warm-start
+URL even when appUrlOpen was missed.
+
+---
+
