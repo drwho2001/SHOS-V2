@@ -107,7 +107,7 @@ export function WidgetsScreen({ onClose }) {
       await AppPreferencesRepository.update({ widgetPrivacy: newPrefs.widgetPrivacy });
       await syncAllWidgets();
     } catch (e) {
-      console.debug("Widget privacy save failed:", e);
+      console.warn("Widget privacy save failed:", e);
     }
   };
 

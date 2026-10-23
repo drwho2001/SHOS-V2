@@ -41,6 +41,7 @@ const STORAGE_KEY = "shos_symptom_log";
 export const SEVERITY_OPTIONS = ["Mild", "Moderate", "Severe"];
 
 export const DEFAULT_SYMPTOM_ENTRY = {
+  isDemo: false,
   title: "",
   // CHANGED 26 Aug 2026 — real ask, decided (was backlogged, now
   // built): support more than one symptom per entry (e.g. dysuria +
@@ -69,6 +70,7 @@ function daysAgo(n, hour = 8, minute = 0) {
 let seedEntries = [
   {
     ...DEFAULT_SYMPTOM_ENTRY,
+  isDemo: true,
     id: "seed_symlog_9001",
     title: "Discharge + discomfort",
     symptomIds: ["symptom_cat_001"],
@@ -88,6 +90,7 @@ let seedEntries = [
   // than reusing the Gonorrhoea episode's own seed_symlog_9001.
   {
     ...DEFAULT_SYMPTOM_ENTRY,
+  isDemo: true,
     id: "seed_symlog_9002",
     title: "Mild discharge",
     symptomIds: ["symptom_cat_001"],
@@ -101,6 +104,7 @@ let seedEntries = [
   },
   {
     ...DEFAULT_SYMPTOM_ENTRY,
+  isDemo: true,
     id: "seed_symlog_9003",
     title: "Ongoing mild irritation",
     symptomIds: ["symptom_cat_001"],
@@ -195,6 +199,7 @@ export const SymptomLogRepository = {
     const newEntry = {
       ...DEFAULT_SYMPTOM_ENTRY,
       ...data,
+      isDemo: false,
       id: generateEntryId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
@@ -211,7 +216,7 @@ export const SymptomLogRepository = {
       if (e.id !== id) return e;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updated = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updated = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: e.isDemo };
       return updated;
     });
     await persist();

@@ -2983,7 +2983,7 @@ function demoComparable(record, fallbackReference) {
   const createdAt = typeof record.createdAt === "string" ? record.createdAt.slice(0, 10) : null;
   const anchor = createdAt && STORED_DATE.test(createdAt) ? createdAt : fallbackReference;
   for (const k of Object.keys(record).sort()) {
-    if (k === "isSeed" || k === "createdAt" || k === "updatedAt") continue;
+    if (k === "isSeed" || k === "isDemo" || k === "createdAt" || k === "updatedAt") continue;
     if (k === "collection") continue;
     if (k === "id") {
       out[k] = normaliseLegacyId(record[k]);
@@ -3104,7 +3104,20 @@ export function legacyDefinitionFor(record) {
  */
 export function isDemoData(record) {
   if (!record || typeof record !== "object") return false;
+  // ADDED: isDemo flag is a strong signal, but only for unedited records.
   if (record.isSeed === false) return false;
+  if (record.isDemo === true) {
+    const definition = legacyDefinitionFor(record);
+    if (definition) {
+      const today = todayAsStoredDate();
+      return (
+        JSON.stringify(demoComparable(record, today)) ===
+        JSON.stringify(demoComparable(definition, SNAPSHOT_TAKEN_AT))
+      );
+    }
+    return true;
+  }
+  if (record.isDemo === false) return false;
   const definition = legacyDefinitionFor(record);
   if (!definition) return false;
   return (

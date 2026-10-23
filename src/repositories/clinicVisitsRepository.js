@@ -90,6 +90,7 @@ function normalizeClinician(visit) {
 }
 
 export const DEFAULT_CLINIC_VISIT = {
+  isDemo: false,
   title: "",
   date: null,
   location: "",
@@ -219,6 +220,7 @@ function daysAgo(n, hour = 14, minute = 0) {
 let seedVisits = [
   {
     ...DEFAULT_CLINIC_VISIT,
+  isDemo: true,
     id: "seed_visit_9001",
     title: "Treatment — Gonorrhoea",
     date: daysAgo(7),
@@ -238,6 +240,7 @@ let seedVisits = [
   // aftercare (see pregnancyRepository.js's own seed_pregnancy_9002).
   {
     ...DEFAULT_CLINIC_VISIT,
+  isDemo: true,
     id: "seed_visit_9002",
     title: "Early pregnancy scan",
     date: daysAgo(70),
@@ -249,6 +252,7 @@ let seedVisits = [
   },
   {
     ...DEFAULT_CLINIC_VISIT,
+  isDemo: true,
     id: "seed_visit_9003",
     title: "Miscarriage aftercare",
     date: daysAgo(50),
@@ -266,6 +270,7 @@ let seedVisits = [
   // nextReviewDate/followUpType are all unset on every existing visit).
   {
     ...DEFAULT_CLINIC_VISIT,
+  isDemo: true,
     id: "seed_visit_9004",
     title: "Treatment — Chlamydia",
     date: daysAgo(196),
@@ -281,6 +286,7 @@ let seedVisits = [
   },
   {
     ...DEFAULT_CLINIC_VISIT,
+  isDemo: true,
     id: "seed_visit_9005",
     title: "Routine annual screen",
     date: daysAgo(160),
@@ -312,6 +318,7 @@ let seedVisits = [
   // linkedTestIds).
   {
     ...DEFAULT_CLINIC_VISIT,
+  isDemo: true,
     id: "seed_visit_9006",
     title: "IUD insertion",
     date: daysAgo(75),
@@ -410,6 +417,7 @@ export const ClinicVisitsRepository = {
     const newVisit = normalizeClinician({
       ...DEFAULT_CLINIC_VISIT,
       ...data,
+      isDemo: false,
       id: generateVisitId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
@@ -426,7 +434,7 @@ export const ClinicVisitsRepository = {
       if (v.id !== id) return v;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updated = { ...v, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updated = { ...v, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: v.isDemo };
       return updated;
     });
     await persist();

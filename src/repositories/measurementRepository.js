@@ -211,6 +211,7 @@ function convertToCanonical(type, value, unit) {
 }
 
 export const DEFAULT_MEASUREMENT = {
+  isDemo: false,
   type: "",
   date: null,
   value: null,
@@ -250,6 +251,7 @@ function daysAgo(n, hour = 9, minute = 0) {
 let seedMeasurements = [
   {
     ...DEFAULT_MEASUREMENT,
+  isDemo: true,
     id: "seed_measurement_9001",
     type: "CD4 count",
     date: daysAgo(30),
@@ -262,6 +264,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
+  isDemo: true,
     id: "seed_measurement_9002",
     type: "Weight",
     date: daysAgo(14),
@@ -274,6 +277,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
+  isDemo: true,
     id: "seed_measurement_9003",
     type: BLOOD_PRESSURE_TYPE,
     date: daysAgo(14),
@@ -292,6 +296,7 @@ let seedMeasurements = [
   // to exercise the custom-type + typeKind flow end-to-end.
   {
     ...DEFAULT_MEASUREMENT,
+  isDemo: true,
     id: "seed_measurement_9004",
     type: "Weight",
     date: daysAgo(2),
@@ -304,6 +309,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
+  isDemo: true,
     id: "seed_measurement_9005",
     type: "CD4 count",
     date: daysAgo(120),
@@ -316,6 +322,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
+  isDemo: true,
     id: "seed_measurement_9006",
     type: "Blood glucose",
     date: daysAgo(5),
@@ -385,6 +392,7 @@ function shapeForCreate(data) {
     return {
       ...DEFAULT_MEASUREMENT,
       ...data,
+      isDemo: false,
       unit: BLOOD_PRESSURE_UNIT,
       value: null,
       enteredValue: null,
@@ -395,6 +403,7 @@ function shapeForCreate(data) {
   return {
     ...DEFAULT_MEASUREMENT,
     ...data,
+      isDemo: false,
     value: canonicalValue,
     unit: canonicalUnit,
     enteredValue: data.value,
@@ -455,7 +464,7 @@ export const MeasurementRepository = {
     let updated = null;
     measurements = measurements.map((m) => {
       if (m.id !== id) return m;
-      const merged = { ...DEFAULT_MEASUREMENT, ...m, ...changes };
+      const merged = { ...DEFAULT_MEASUREMENT, ...m, ...changes, isDemo: m.isDemo };
       updated = { ...shapeForCreate(merged), id: m.id, createdAt: m.createdAt, isArchived: m.isArchived, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });

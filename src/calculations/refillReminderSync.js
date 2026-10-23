@@ -425,7 +425,7 @@ export async function updateRefillWidget() {
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
-    console.debug("Widget update skipped:", e);
+    console.warn("Widget update skipped:", e);
   }
 }
 

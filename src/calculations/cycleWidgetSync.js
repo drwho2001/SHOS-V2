@@ -90,7 +90,7 @@ export async function updateCycleWidget() {
       }
     }
   } catch (e) {
-    console.debug("Cycle widget update skipped:", e);
+    console.warn("Cycle widget update skipped:", e);
   }
 }
 

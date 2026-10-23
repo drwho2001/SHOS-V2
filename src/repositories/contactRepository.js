@@ -166,6 +166,7 @@ export const RATING_OPTIONS = ["😍 Love", "😊 Happy", "😐 Meh", "😕 Reti
 // Add-contact form uses it too (imported from here, not re-typed) — one
 // shape, not several that can drift apart.
 export const DEFAULT_CONTACT = {
+  isDemo: false,
   name: "", nickname: "", pronouns: "",
   // ADDED — real ask: trans/hetero inclusivity, same field as My
   // Profile's own gender addition — see that repository's comment.
@@ -303,6 +304,7 @@ function daysAgo(n, hour = 9, minute = 0) {
 let seedContacts = [
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9001",
     name: "Alex",
     notes: "Met through mutual friends.",
@@ -311,6 +313,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9002",
     name: "Jordan",
     snapchat: "jordan_snap",
@@ -323,6 +326,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9003",
     name: "Sam",
     phone: "07700 900123",
@@ -334,6 +338,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9004",
     name: "Riley",
     createdAt: "2026-06-01T09:00:00.000Z",
@@ -348,6 +353,7 @@ let seedContacts = [
   // Mercury is the exposure contact for that scenario.
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9005",
     name: "F. Mercury",
     pronouns: "He/him",
@@ -362,6 +368,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9006",
     name: "Sylvie J.",
     pronouns: "She/her",
@@ -375,6 +382,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9007",
     name: "Grace J.",
     pronouns: "She/her",
@@ -392,6 +400,7 @@ let seedContacts = [
   // own relationshipContactIds).
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9008",
     name: "Morgan",
     pronouns: "She/her",
@@ -422,6 +431,7 @@ let seedContacts = [
   // there's no real id to safely reference yet.
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9009",
     name: "Priya",
     pronouns: "They/them",
@@ -444,6 +454,7 @@ let seedContacts = [
   // exact phone match directly regardless of name similarity.
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9010",
     name: "Sam T.",
     phone: "07700 900123",
@@ -454,6 +465,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9011",
     name: "Devon",
     pronouns: "He/him",
@@ -477,6 +489,7 @@ let seedContacts = [
   // this contact as if he were.
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9012",
     name: "Kai",
     pronouns: "He/they",
@@ -494,6 +507,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9013",
     name: "Ash",
     pronouns: "She/they",
@@ -514,6 +528,7 @@ let seedContacts = [
   // get flagged inactive.
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9014",
     name: "Anonymous — sauna",
     notes: "One-off, sauna encounter, no contact details exchanged.",
@@ -524,6 +539,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9015",
     name: "Jamie",
     pronouns: "He/him",
@@ -537,6 +553,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
+  isDemo: true,
     id: "seed_contact_9016",
     name: "Nat",
     pronouns: "She/her",
@@ -711,6 +728,7 @@ export const ContactRepository = {
     const newContact = {
       ...DEFAULT_CONTACT,
       ...data,
+      isDemo: false,
       id: generateContactId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
@@ -733,7 +751,7 @@ export const ContactRepository = {
       // profile isn't the same thing as a logged encounter, so it
       // shouldn't trigger the "you have unbacked-up changes" warning
       // the way a new Test or Activity genuinely should.
-      updatedContact = { ...c, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updatedContact = { ...c, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: c.isDemo };
       return updatedContact;
     });
     await persist();

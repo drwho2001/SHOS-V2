@@ -121,6 +121,7 @@ export const WOULD_MEET_AGAIN_OPTIONS = ["Fuck YES 💖", "Yes", "If he makes ef
 // ---------------------------------------------------------------------
 
 export const DEFAULT_ENCOUNTER = {
+  isDemo: false,
   title: "",
   date: "", dateEnd: "", isDateTime: false,
   encounterType: "",
@@ -179,6 +180,7 @@ function daysAgo(n, hour = 19, minute = 0) {
 let seedEncounters = [
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9001",
     title: "Alex — coffee then back to his",
     date: "2026-07-20T19:30:00.000Z",
@@ -194,6 +196,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9002",
     title: "Sauna trip",
     date: "2026-08-02T15:00:00.000Z",
@@ -214,6 +217,7 @@ let seedEncounters = [
   // reason the episode below still happens despite both.
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9003",
     title: "F. Mercury — his place",
     date: daysAgo(14, 22, 30),
@@ -232,6 +236,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9004",
     title: "Sylvie — drinks then hers",
     date: daysAgo(6, 21, 0),
@@ -249,6 +254,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9005",
     title: "Grace — first date",
     date: daysAgo(2, 19, 0),
@@ -267,6 +273,7 @@ let seedEncounters = [
   // clinicVisitsRepository.js, contraceptionRepository.js).
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9006",
     title: "Morgan — first date",
     date: daysAgo(111, 19, 30),
@@ -283,6 +290,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9007",
     title: "Morgan — hers, exclusive now",
     date: daysAgo(96, 20, 0),
@@ -299,6 +307,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9008",
     title: "Morgan — weekend away",
     date: daysAgo(82, 18, 0),
@@ -314,6 +323,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9009",
     title: "Morgan — hers",
     date: daysAgo(33, 20, 0),
@@ -330,6 +340,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9010",
     title: "Morgan — mine",
     date: daysAgo(11, 20, 30),
@@ -348,6 +359,7 @@ let seedEncounters = [
   // covered.
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9011",
     title: "Jordan — his place",
     date: daysAgo(70, 21, 0),
@@ -366,6 +378,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9012",
     title: "Sauna trip",
     date: daysAgo(45, 16, 0),
@@ -392,6 +405,7 @@ let seedEncounters = [
   // screen that branches on either value goes untested).
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9013",
     title: "Priya — birthday drinks then mine",
     date: daysAgo(5, 22, 0),
@@ -408,6 +422,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9014",
     title: "Devon — app hookup, his place",
     date: daysAgo(65, 20, 0),
@@ -427,6 +442,7 @@ let seedEncounters = [
   // positive would never get caught without this.
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9015",
     title: "Kai — his flat",
     date: daysAgo(195, 21, 0),
@@ -445,6 +461,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9016",
     title: "Ash — mine, regular thing",
     date: daysAgo(10, 20, 0),
@@ -460,6 +477,7 @@ let seedEncounters = [
   },
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9017",
     title: "Nat — coffee date",
     date: daysAgo(40, 15, 0),
@@ -476,6 +494,7 @@ let seedEncounters = [
   // a 3rd real attendee-name-resolution path for Anonymise-mode masking.
   {
     ...DEFAULT_ENCOUNTER,
+  isDemo: true,
     id: "seed_encounter_9018",
     title: "Birthday party afters",
     date: daysAgo(20, 23, 0),
@@ -620,6 +639,7 @@ export const EncounterRepository = {
     const newEncounter = {
       ...DEFAULT_ENCOUNTER,
       ...data,
+      isDemo: false,
       id: generateEncounterId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
@@ -636,7 +656,7 @@ export const EncounterRepository = {
       if (e.id !== id) return e;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updatedEncounter = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updatedEncounter = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: e.isDemo };
       return updatedEncounter;
     });
     await persist();

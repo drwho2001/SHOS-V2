@@ -59,6 +59,7 @@ export const SETTING_OPTIONS = ["🏥😎 Clinic - Routine", "🏥🤢 Clinic - 
 export const TESTING_FOR_OPTIONS = ["Gonorrhoea", "HIV", "Syphilis", "Chlamydia", "Hepatitis A", "Hepatitis B", "Hepatitis C", "Mpox", "MGen", "HPV", "Herpes (HSV)", "Trichomoniasis", "Bacterial vaginosis", "C&S (symptomatic/treatment)", "Pregnancy", "Other"];
 
 export const DEFAULT_TEST = {
+  isDemo: false,
   title: "",
   date: null,
   // ADDED 19 Aug 2026 — real feedback batch: Result Date, separate
@@ -145,6 +146,7 @@ function daysAgo(n, hour = 10, minute = 0) {
 let seedTests = [
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9001",
     title: "Symptomatic screen — Gonorrhoea positive",
     date: daysAgo(9),
@@ -162,6 +164,7 @@ let seedTests = [
   },
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9002",
     title: "Test of cure — Gonorrhoea",
     date: daysAgo(2),
@@ -184,6 +187,7 @@ let seedTests = [
   // with Morgan (see encounterRepository.js/contactRepository.js).
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9003",
     title: "Routine PrEP monitoring screen",
     date: daysAgo(100),
@@ -199,6 +203,7 @@ let seedTests = [
   },
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9004",
     title: "Pre-relationship screen",
     date: daysAgo(113),
@@ -225,6 +230,7 @@ let seedTests = [
   // was never exercised by demo data.
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9005",
     title: "Home kit STI screen",
     date: daysAgo(3),
@@ -243,6 +249,7 @@ let seedTests = [
   },
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9006",
     title: "Symptomatic screen — Chlamydia positive",
     date: daysAgo(196),
@@ -260,6 +267,7 @@ let seedTests = [
   },
   {
     ...DEFAULT_TEST,
+  isDemo: true,
     id: "seed_test_9007",
     title: "Routine annual screen",
     date: daysAgo(160),
@@ -366,6 +374,7 @@ export const TestingRepository = {
     const newTest = {
       ...DEFAULT_TEST,
       ...data,
+      isDemo: false,
       mostRecent: isFuture ? false : data.mostRecent,
       id: generateTestId(),
       createdAt: new Date().toISOString(),
@@ -460,7 +469,7 @@ async updateRoutineRetestPlan(id, { title, date }) {
       // to the user, deliberately NOT wired into any activity/backup-
       // check logic — per the user's own clarification, an edit isn't the
       // same thing as a logged encounter.
-      const merged = { ...t, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      const merged = { ...t, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: t.isDemo };
       // Same future-date guard as create().
       const isFuture = merged.date && new Date(merged.date) > new Date();
       updated = isFuture ? { ...merged, mostRecent: false } : merged;

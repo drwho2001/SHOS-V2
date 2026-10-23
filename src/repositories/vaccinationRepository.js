@@ -33,6 +33,7 @@ const STORAGE_KEY = "shos_vaccinations";
 // ask — stored there as "vaccine"/"vaccinationReason"/"injectionSite".)
 
 export const DEFAULT_VACCINATION = {
+  isDemo: false,
   title: "",
   vaccine: "",
   reason: [],
@@ -89,6 +90,7 @@ function dateOnly(n) {
 let seedVaccinations = [
   {
     ...DEFAULT_VACCINATION,
+  isDemo: true,
     id: "seed_vaccination_9001",
     title: "Gonorrhoea vaccine (4CMenB)",
     vaccine: "Gonorrhoea",
@@ -110,6 +112,7 @@ let seedVaccinations = [
   // 4-month window (routine), not connected to the STI episode.
   {
     ...DEFAULT_VACCINATION,
+  isDemo: true,
     id: "seed_vaccination_9002",
     title: "Meningitis B vaccine (4CMenB)",
     vaccine: "Meningitis B",
@@ -132,6 +135,7 @@ let seedVaccinations = [
   // covers.
   {
     ...DEFAULT_VACCINATION,
+  isDemo: true,
     id: "seed_vaccination_9003",
     title: "Hepatitis A/B vaccine (Twinrix), dose 1",
     vaccine: "Hepatitis A/B",
@@ -155,6 +159,7 @@ let seedVaccinations = [
   },
   {
     ...DEFAULT_VACCINATION,
+  isDemo: true,
     id: "seed_vaccination_9004",
     title: "Hepatitis A/B vaccine (Twinrix), dose 2",
     vaccine: "Hepatitis A/B",
@@ -292,6 +297,7 @@ export const VaccinationRepository = {
     const newVaccination = {
       ...DEFAULT_VACCINATION,
       ...data,
+      isDemo: false,
       id: generateId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
@@ -308,7 +314,7 @@ export const VaccinationRepository = {
       if (v.id !== id) return v;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updated = { ...v, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updated = { ...v, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: v.isDemo };
       return updated;
     });
     await persist();

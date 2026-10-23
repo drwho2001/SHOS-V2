@@ -223,7 +223,7 @@ export async function updateDoxyPEPWidget(status) {
         );
     }
   } catch (e) {
-    console.debug("DoxyPEP widget update skipped:", e);
+    console.warn("DoxyPEP widget update skipped:", e);
   }
 }
 

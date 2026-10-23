@@ -57,6 +57,7 @@ const SENSITIVE_BY_DEFAULT = ["Miscarriage", "Abortion", "Ectopic"];
 // directly one of OUTCOME_OPTIONS once resolved. No second field that
 // can drift out of sync with the first.
 export const DEFAULT_PREGNANCY = {
+  isDemo: false,
   testDate: null,
   testResult: "",
   estimatedDueDate: null,
@@ -86,7 +87,7 @@ function addDays(n, isoDate) {
 }
 const seedPositiveTestDate = daysAgo(75);
 let seedPregnancies = [
-  { ...DEFAULT_PREGNANCY, id: "seed_pregnancy_9001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
+  { ...DEFAULT_PREGNANCY, isDemo: true, id: "seed_pregnancy_9001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
   // ADDED — real ask: a full simulated pregnancy/miscarriage thread
   // (see seed_contact_9008/encounterRepository.js's Morgan encounters,
   // clinicVisitsRepository.js's scan + aftercare visits,
@@ -96,6 +97,7 @@ let seedPregnancies = [
   // shapeForSave() would have defaulted it to on a real save.
   {
     ...DEFAULT_PREGNANCY,
+  isDemo: true,
     id: "seed_pregnancy_9002",
     testDate: seedPositiveTestDate,
     testResult: "Positive",
@@ -163,7 +165,7 @@ async function persist() {
 // the merged form meant the default never fired on update(), only on
 // the rarer direct-creation-with-an-outcome path).
 function shapeForSave(existing, changes) {
-  const shaped = { ...DEFAULT_PREGNANCY, ...existing, ...changes };
+  const shaped = { ...DEFAULT_PREGNANCY, ...existing, ...changes, isDemo: existing.isDemo };
   if (shaped.testResult === "Positive" && !shaped.status) shaped.status = "Ongoing";
   if (shaped.testResult !== "Positive") { shaped.status = ""; shaped.outcomeDate = null; }
   // Real default, not a lock — see file-level comment. Only applies
@@ -197,7 +199,7 @@ export const PregnancyRepository = {
 
   async create(data) {
     await ensureLoaded();
-    const newEntry = { ...shapeForSave({}, data), id: generateId(), createdAt: new Date().toISOString(), isArchived: false };
+    const newEntry = { ...shapeForSave({}, data), isDemo: false, id: generateId(), createdAt: new Date().toISOString(), isArchived: false };
     pregnancies = [...pregnancies, newEntry];
     await persist();
     return newEntry;

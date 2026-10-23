@@ -224,7 +224,7 @@ export async function updateTestWidget() {
       }
     }
   } catch (e) {
-    console.debug("Test widget update skipped:", e);
+    console.warn("Test widget update skipped:", e);
   }
 }
 

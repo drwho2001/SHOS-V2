@@ -326,7 +326,7 @@ export async function updateClinicCardWidget(visit) {  try {
     );
     }
   } catch (e) {
-    console.debug("ClinicCard widget update skipped:", e);
+    console.warn("ClinicCard widget update skipped:", e);
   }
 }
 
