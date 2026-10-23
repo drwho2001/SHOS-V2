@@ -52,7 +52,7 @@
 // distinction is "never configured" versus "configured to something unreadable",
 // and collapsing the two would make this feature's first run destructive.
 
-/** The seven widgets that render real data, plus the three that render none. */
+/** The six widgets that render real data, plus the three that render none. */
 export const DATA_WIDGETS = [
   "nextDose",
   "refillDue",

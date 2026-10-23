@@ -1120,7 +1120,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           keeping the typed word exactly as-is are both one tap away,
           neither is forced. */}
       {pendingSuggestion && (
-        <div style={{ marginTop: 6, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${ACCENTS.healthcare}`, background: `${ACCENTS.healthcare}10` }}>
+        <div style={{ marginTop: 6, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${ACCENTS.contacts}`, background: `${ACCENTS.contacts}10` }}>
           {pendingSuggestion.type === "umbrella" ? (
             <>
               <div style={{ fontSize: 12, color: T.textPrimary, marginBottom: 6 }}>
@@ -1129,7 +1129,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {pendingSuggestion.specific.map((entry) => (
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name, pendingSuggestion.role); setPendingSuggestion(null); }}
-                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.healthcare, color: "#FFFFFF", cursor: "pointer" }}>
+                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.contacts, color: "#FFFFFF", cursor: "pointer" }}>
                     Use "{entry.name}"
                   </div>
                 ))}
@@ -1146,7 +1146,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion, pendingSuggestion.role); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.healthcare, color: "#FFFFFF", cursor: "pointer" }}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.contacts, color: "#FFFFFF", cursor: "pointer" }}>
                   Yes, use "{pendingSuggestion.suggestion}"
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}

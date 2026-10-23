@@ -11,12 +11,13 @@
 // straight back off themselves.
 //
 // SCOPE, stated plainly: this is NOT a security feature in the
-// cryptographic sense — the PIN is a plain stored string, not hashed,
-// because the actual threat model here is "someone briefly holding my
-// unlocked phone," not "someone with access to the device's storage."
-// A determined attacker with storage access could read the PIN
-// directly; that's an accepted, correctly-scoped limitation given what
-// this feature is actually for, not an oversight. This app has no
+// cryptographic sense at the anonymise-toggle layer — the App Lock PIN is
+// now a PBKDF2 verifier (t131), not a plain string, but the anonymise
+// mode PIN comparison at this layer is still a string compare scoped to
+// "someone briefly holding my unlocked phone." A determined attacker with
+// storage access could still read the (encrypted) settings blob; that is
+// an accepted, correctly-scoped limitation given what this feature is
+// actually for, not an oversight. This app has no
 // broader authentication system to hook into (Architecture Lock's own
 // scope never included one), so building real cryptographic PIN
 // verification here would be a disproportionate amount of new

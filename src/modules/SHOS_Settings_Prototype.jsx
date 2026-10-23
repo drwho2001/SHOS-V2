@@ -18,7 +18,7 @@
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback } from "react";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../calculations/designTokens";
+import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS } from "../storage/backupService";
@@ -52,6 +52,7 @@ const AboutScreen = lazy(() => import("./settings/AboutScreen"));
 
 function SelectiveExportSheet({ onClose, onExported }) {
   const [darkMode] = useDarkModePreference();
+  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
 
   // All items checked by default — "everything, but deselectable",
   // exactly as asked, rather than starting from nothing and making
@@ -132,7 +133,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
   // sheet. Same fix mirrored below in EncryptedExportSheet's own
   // copy of this component.
   const Box = ({ state }) => (
-    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? (darkMode ? DARK.border : "#656568") : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : (darkMode ? DARK.surfaceVariant : "#FFFFFF"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? (darkMode ? DARK.border : "#656568") : healthcareColor}`, background: state === "full" ? healthcareColor : state === "partial" ? "#C7D5F7" : (darkMode ? DARK.surfaceVariant : "#FFFFFF"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
     </div>
   );
@@ -151,7 +152,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
                 after deselecting some meant tapping every group's own
                 checkbox one at a time. One tap for the whole list now. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
-              style={{ fontSize: 12, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2 }}>
+              style={{ fontSize: 12, fontWeight: 600, color: healthcareColor, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2 }}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
@@ -195,7 +196,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
               </div>
             </div>
             {(dateFrom || dateTo) && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: healthcareColor, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
             )}
           </div>
         </div>
@@ -204,13 +205,13 @@ function SelectiveExportSheet({ onClose, onExported }) {
             <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
           )}
           <button onClick={doExport} disabled={checked.size === 0}
-            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
+            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#656568" : healthcareColor, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
             {checked.size === allKeys.length && !dateFrom && !dateTo ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
           </button>
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer", padding: "10px 0 0" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer", padding: "10px 0 0" }}>
               Choose a folder instead…
             </div>
           )}
@@ -232,6 +233,7 @@ const CSV_EXPORT_GROUPS = EXPORT_GROUPS.filter((g) => g.key !== "profile" && g.k
 
 function CSVExportSheet({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
   const [status, setStatus] = useState(null);
   // ADDED 1 Sep 2026 — real ask, item 3 of the follow-up feature list
   // completed: same optional date-range filter Selective/Encrypted
@@ -276,7 +278,7 @@ function CSVExportSheet({ onClose }) {
               </div>
             </div>
             {(dateFrom || dateTo) && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: healthcareColor, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
             )}
           </div>
           {CSV_EXPORT_GROUPS.map((group) => (
@@ -311,6 +313,7 @@ function CSVExportSheet({ onClose }) {
 // logic rather than a second copy of it.
 function EncryptedExportSheet({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
   const allKeys = EXPORT_GROUPS.flatMap((g) => g.items.map((i) => i.dataKey));
   const [checked, setChecked] = useState(() => new Set(allKeys));
   const [password, setPassword] = useState("");
@@ -387,7 +390,7 @@ function EncryptedExportSheet({ onClose }) {
   };
 
   const Box = ({ state }) => (
-    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? (darkMode ? DARK.border : "#656568") : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : (darkMode ? DARK.surfaceVariant : "#FFFFFF"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? (darkMode ? DARK.border : "#656568") : healthcareColor}`, background: state === "full" ? healthcareColor : state === "partial" ? "#C7D5F7" : (darkMode ? DARK.surfaceVariant : "#FFFFFF"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
     </div>
   );
@@ -415,7 +418,7 @@ function EncryptedExportSheet({ onClose }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
             <span style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>What to include</span>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
-              style={{ fontSize: 12, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer" }}>
+              style={{ fontSize: 12, fontWeight: 600, color: healthcareColor, cursor: "pointer" }}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
@@ -457,7 +460,7 @@ function EncryptedExportSheet({ onClose }) {
               </div>
             </div>
             {(dateFrom || dateTo) && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: healthcareColor, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
             )}
           </div>
         </div>
@@ -466,13 +469,13 @@ function EncryptedExportSheet({ onClose }) {
             <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
           )}
           <button onClick={doExport} disabled={checked.size === 0 || exporting}
-            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
+            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#656568" : healthcareColor, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
             {exporting ? "Encrypting…" : "Export encrypted backup"}
           </button>
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div onClick={exporting ? undefined : doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : ACCENTS.healthcare, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
+            <div onClick={exporting ? undefined : doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : healthcareColor, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
               Choose a folder instead…
             </div>
           )}
@@ -498,6 +501,7 @@ function EncryptedExportSheet({ onClose }) {
 // needs to print a byte count.
 function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour }) {
   const [darkMode] = useDarkModePreference();
+  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
 

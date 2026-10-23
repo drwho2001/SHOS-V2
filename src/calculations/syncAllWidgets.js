@@ -124,7 +124,7 @@ export function syncAllWidgets() {
       // The queue itself must never enter a rejected state, or every later call
       // would reject immediately and the widgets would silently stop updating
       // forever - a far worse outcome than one missed push.
-      console.debug("Widget sync queue recovered:", e);
+      console.warn("Widget sync queue recovered:", e);
     });
   return queue;
 }
