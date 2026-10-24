@@ -219,6 +219,7 @@ public class WidgetBridgePlugin extends Plugin {
                 call.getInt("day", 0),
                 opt(call, "phase"),
                 opt(call, "nextPeriod"),
+                opt(call, "flow"),
       // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
       // tier is not Redacted. Empty rather than absent, so the provider needs no
       // null case and a stale value cannot survive a change back to full.
