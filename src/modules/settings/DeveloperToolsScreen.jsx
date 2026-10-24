@@ -589,7 +589,7 @@ export function DeveloperToolsScreen({ onClose }) {
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <AlertTriangle size={16} color={ACTION.red} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes EVERYTHING on this device — your contacts, encounters, medications, logs, tests, clinic visits, the sample data, and every preference, including your App Lock PIN. There's no undo — export a backup first if you're not sure. To remove only the made-up example data, cancel and use “Clear sample data” instead.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes EVERYTHING on this device — your contacts, encounters, medications, logs, tests, clinic visits, the sample data, and every preference, including your App Lock PIN. There's no undo — export a backup first if you're not sure. To remove only the made-up example data, cancel and use “Clear demo data” instead.</div>
             </div>
             {/* ADDED 26 Aug 2026 — real ask: warn explicitly if there
                 are genuinely unbacked-up changes, not just a generic
@@ -639,7 +639,7 @@ export function DeveloperToolsScreen({ onClose }) {
                   anything. Removing it keeps every record you have added yourself.
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
-                  aria-label="Clear the sample data"
+                  aria-label="Clear the demo data"
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
                   {clearingSample ? "Clearing…" : "Clear sample data"}
                 </div>

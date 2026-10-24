@@ -24,7 +24,7 @@ import { it, expect } from "vitest";
  *     before - and one copy showing names while the other showed counts would
  *     be worse than either.
  *  2. The destructive call is behind the confirmation, not behind the
- *     "Clear the sample data" control. This is the whole point of the change:
+ *     "Clear the demo data" control. This is the whole point of the change:
  *     the control that used to destroy the data now opens a confirmation.
  *  3. The count, the list and the clear share ONE predicate, so the list can
  *     never name a record the clear would keep.
@@ -61,9 +61,9 @@ it("both surfaces offer the SAME shared confirmation component", () => {
   }
 });
 
-it("the 'Clear the sample data' control OPENS the confirmation - it does not clear", () => {
+it("the 'Clear the demo data' control OPENS the confirmation - it does not clear", () => {
   for (const [name, source] of [["Home", home], ["Developer tools", devtools]]) {
-    const control = around(source, 'aria-label="Clear the sample data"');
+    const control = around(source, 'aria-label="Clear the demo data"');
     expect(control, `${name}'s control does not open the confirmation`).toMatch(/onClick=\{openSampleClearConfirm\}/);
     expect(
       control,

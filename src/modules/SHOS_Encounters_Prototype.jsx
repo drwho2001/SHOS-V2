@@ -1020,7 +1020,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
             <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15, color: T.textPrimary }}>{encounter.title || "Untitled encounter"}</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15, color: T.textPrimary }}>{encounter.title || "Untitled encounter"}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
           </div>
           <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
             <span>
@@ -1493,11 +1493,11 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
           {menuOpen && (
             <div role="menu" style={{ position: "absolute", right: 0, top: 26, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 10, minWidth: 140 }}>
-              <div onClick={() => { setMenuOpen(false); onEdit(encounter.id); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>Edit</div>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>Edit</div>
               <div onClick={archive} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); archive(); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
                 <Archive size={14} /> {encounter.isArchived ? "Unarchive" : "Archive"}
               </div>
-              <div onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); setConfirmDelete(true); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
                 <Trash2 size={14} /> Delete permanently
               </div>
             </div>

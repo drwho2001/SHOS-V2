@@ -1315,7 +1315,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {sampleData.total > 0 && !sampleDataHidden && (
         <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : "#F0FDFA" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
-            This app starts with sample data
+            This app starts with demo data
           </div>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4, lineHeight: 1.45 }}>
             Everything you can see right now — {sampleData.total} records — is made-up example
@@ -1338,7 +1338,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
-                aria-label="Clear the sample data"
+                aria-label="Clear the demo data"
                 style={{ fontSize: 12, fontWeight: 600, color: homeColorText, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
                 {clearingSample ? "Clearing…" : "Clear sample data"}
               </div>

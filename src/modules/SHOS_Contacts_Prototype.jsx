@@ -1691,7 +1691,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
           style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none" }} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
         {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
             too small a jump, 12px vs 15px reading as a much bigger drop
@@ -2445,13 +2445,13 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             <>
               <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 39 }} />
               <div role="menu" style={{ position: "absolute", top: 28, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 40, minWidth: 170, overflow: "hidden" }}>
-                <div onClick={() => { onEdit(contact.id); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(contact.id); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                <div onClick={() => { if (!contact.isDemo) { onEdit(contact.id); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(contact.id); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                   <Settings2 size={14} color={T.textSecondary} /> Edit contact
                 </div>
                 <div onClick={() => { setConfirmArchive(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmArchive(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                   <Archive size={14} /> Archive contact
                 </div>
-                <div onClick={() => { setConfirmDelete(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmDelete(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+                <div onClick={() => { if (!contact.isDemo) { setConfirmDelete(true); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmDelete(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                   <Trash2 size={14} /> Delete permanently
                 </div>
               </div>
