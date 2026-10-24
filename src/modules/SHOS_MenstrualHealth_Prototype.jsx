@@ -545,15 +545,14 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
       {cycles && cycles.length >= 2 && (() => {
         const correlation = getCycleSymptomCorrelation(cycles, 6);
         if (!correlation.length) return null;
-        const symptomNameById = new Map();
-        // Symptom names are already loaded; use the registry if available
+        // Symptom names are resolved from the registry
         return (
           <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>
             <div style={{ fontWeight: 600, color: T.textPrimary, marginBottom: 6 }}>Symptom patterns (experimental)</div>
             <div style={{ fontSize: 11, marginBottom: 8, fontStyle: "italic" }}>Informational only - not a diagnosis. Verify independently with a clinician.</div>
             {correlation.map((c) => (
               <div key={c.symptomId} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid " + T.border }}>
-                <span>{c.symptomId}</span>
+                <span>{symptomNameById.get(c.symptomId) || c.symptomId}</span>
                 <span style={{ color: T.textPrimary, fontWeight: 600 }}>{c.count}/{c.total} cycles ({c.frequency}%)</span>
               </div>
             ))}
