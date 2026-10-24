@@ -2447,7 +2447,7 @@ async function testSampleDataDisclosureAndClear(browser) {
     // countSampleData() has resolved across 14 repositories, and a fixed wait
     // is the kind of flake this suite has been bitten by repeatedly.
     try {
-      await page.getByText("This app starts with sample data", { exact: false }).first()
+      await page.getByText("This app starts with demo data", { exact: false }).first()
         .waitFor({ state: "visible", timeout: 20000 });
     } catch {
       // Self-diagnosing on purpose. A bare timeout gives no clue whether the
@@ -2498,7 +2498,7 @@ async function testSampleDataDisclosureAndClear(browser) {
 
     // Back to Home, and clear.
     await nav.getByRole("button", { name: "Home", exact: true }).first().click({ timeout: 5000 });
-    await page.getByText("This app starts with sample data", { exact: false }).first()
+    await page.getByText("This app starts with demo data", { exact: false }).first()
       .waitFor({ state: "visible", timeout: 15000 });
     await page.getByRole("button", { name: "Clear the demo data" }).first().click({ timeout: 5000 });
     // ADDED 20 Oct 2026 (t064) - clearing the sample data is now CONFIRMED,
@@ -2525,8 +2525,8 @@ async function testSampleDataDisclosureAndClear(browser) {
     // become hidden rather than guessing how long a clear takes. A negative
     // assertion that runs before anything proves the app rendered can pass
     // against a blank page, so the wait is on the thing that must disappear.
-    await waitForGone(page, page.getByText("This app starts with sample data"));
-    assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with sample data"),
+    await waitForGone(page, page.getByText("This app starts with demo data"));
+    assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with demo data"),
       "the banner is gone once the sample data is cleared");
     console.log("  ok — clearing removes the sample data and dismisses the banner");
 
@@ -2910,7 +2910,7 @@ async function testSampleDataClearInDeveloperTools(browser) {
     // something positive has proved the app actually booted, so that is what
     // is waited for - the nav bar - rather than guessing at a duration.
     await page.waitForSelector('[role="navigation"][aria-label="Main navigation"]', { timeout: 20000 });
-    assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with sample data"),
+    assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with demo data"),
       "the sample data is still gone after a reload — the clear genuinely persisted");
     await nav(page, "Contacts");
     // Bounded wait on the state actually being asserted: the real contact
