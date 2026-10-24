@@ -1065,7 +1065,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span role="button" tabIndex={0} aria-label="Edit test" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(testId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
+          <span role="button" tabIndex={0} aria-label="Edit test" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => { if (!test.isDemo) onEdit(testId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
           <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
@@ -1577,7 +1577,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block", opacity: isOlder ? 0.5 : 1 }} />
-        <span style={{ fontSize: 15, fontWeight: 600, color: isOlder ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: isOlder ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>{t.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
         {isOlder && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>Older test</span>}
 {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
         {/* A plan must never read as a result from a glance at the list either.

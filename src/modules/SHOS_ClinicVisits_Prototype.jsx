@@ -1910,7 +1910,7 @@ function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, on
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || "Untitled visit"}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || "Untitled visit"}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
         {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
