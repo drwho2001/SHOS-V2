@@ -1340,7 +1340,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
                 aria-label="Clear the demo data"
                 style={{ fontSize: 12, fontWeight: 600, color: homeColorText, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
-                {clearingSample ? "Clearing…" : "Clear sample data"}
+                {clearingSample ? "Clearing…" : "Clear demo data"}
               </div>
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSampleDataHidden(true); } }} onClick={() => setSampleDataHidden(true)}
                 style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>
