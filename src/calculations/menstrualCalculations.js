@@ -87,6 +87,49 @@ export function getNextPeriodDayKey(startDateStored, avgLengthDays) {
 }
 
 /**
+ * Symptom correlation across cycles - EXPERIMENTAL, INFORMATIONAL ONLY.
+ *
+ * Returns an array of { symptomId, count, total } showing how many of the
+ * last N cycles included each symptom. This is a DESCRIPTION of logged
+ * data, not a prediction and not a diagnosis.
+ *
+ * SAFETY: The app is not a diagnosis engine. This function must never be
+ * used to suggest a condition, recommend treatment, or make any clinical
+ * claim. It is a pattern-recognition aid for the user's own awareness,
+ * labelled "experimental" in the UI, with a prompt to verify with a
+ * clinician independently.
+ *
+ * @param {Array<{symptomIds: string[]}>} cycles - most recent first
+ * @param {number} lookback - how many cycles to consider (default 6)
+ * @returns {Array<{symptomId: string, count: number, total: number, frequency: number}>}
+ */
+export function getCycleSymptomCorrelation(cycles, lookback = 6) {
+  if (!Array.isArray(cycles) || cycles.length === 0) return [];
+  const recent = cycles.slice(0, Math.min(lookback, cycles.length));
+  const total = recent.length;
+  if (total === 0) return [];
+  const counts = new Map();
+  for (const c of recent) {
+    const ids = Array.isArray(c.symptomIds) ? c.symptomIds : [];
+    for (const id of ids) {
+      if (!id) continue;
+      counts.set(id, (counts.get(id) || 0) + 1);
+    }
+  }
+  const result = [];
+  for (const [symptomId, count] of counts) {
+    result.push({
+      symptomId,
+      count,
+      total,
+      frequency: Math.round((count / total) * 100),
+    });
+  }
+  result.sort((a, b) => b.frequency - a.frequency || a.symptomId.localeCompare(b.symptomId));
+  return result;
+}
+
+/**
  * How many days until the predicted next period, or null if there is no
  * prediction. Negative when the prediction has passed - that is not an
  * error, it is the normal "overdue" state, and the caller decides how to

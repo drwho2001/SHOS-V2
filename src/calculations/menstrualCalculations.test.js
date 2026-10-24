@@ -27,6 +27,7 @@ import {
   formatDayKeyForDisplay,
   getDaysUntilNextPeriod,
   getCycleRegularity,
+  getCycleSymptomCorrelation,
 } from "./menstrualCalculations.js";
 // The day-key primitives moved to dateInputHelpers when this became the third
 // copy of them written in a day. Re-pointed here deliberately rather than
@@ -371,5 +372,93 @@ describe("cycle regularity - a description, not a prediction", () => {
     const r = getCycleRegularity(["2026-09-10", null, "", "2026-10-08"]);
     expect(r).not.toBeNull();
     expect(r.count).toBe(1);
+  });
+});
+
+describe("symptom correlation - experimental, informational only", () => {
+  it("returns empty for no cycles", () => {
+    expect(getCycleSymptomCorrelation([])).toEqual([]);
+    expect(getCycleSymptomCorrelation(null)).toEqual([]);
+  });
+
+  it("returns empty when no symptoms are logged", () => {
+    const cycles = [
+      { symptomIds: [] },
+      { symptomIds: [] },
+    ];
+    expect(getCycleSymptomCorrelation(cycles)).toEqual([]);
+  });
+
+  it("counts symptom frequency across cycles", () => {
+    const cycles = [
+      { symptomIds: ["s1", "s2"] },
+      { symptomIds: ["s1"] },
+      { symptomIds: ["s2", "s3"] },
+    ];
+    const result = getCycleSymptomCorrelation(cycles);
+    expect(result).toHaveLength(3);
+    // s1: 2/3 = 67%
+    const s1 = result.find((r) => r.symptomId === "s1");
+    expect(s1.count).toBe(2);
+    expect(s1.total).toBe(3);
+    expect(s1.frequency).toBe(67);
+    // s2: 2/3 = 67%
+    const s2 = result.find((r) => r.symptomId === "s2");
+    expect(s2.count).toBe(2);
+    expect(s2.total).toBe(3);
+    // s3: 1/3 = 33%
+    const s3 = result.find((r) => r.symptomId === "s3");
+    expect(s3.count).toBe(1);
+    expect(s3.total).toBe(3);
+    expect(s3.frequency).toBe(33);
+  });
+
+  it("respects the lookback limit", () => {
+    const cycles = [
+      { symptomIds: ["s1"] },
+      { symptomIds: ["s1"] },
+      { symptomIds: ["s1"] },
+      { symptomIds: ["s2"] },
+    ];
+    const result = getCycleSymptomCorrelation(cycles, 2);
+    expect(result).toHaveLength(1);
+    expect(result[0].symptomId).toBe("s1");
+    expect(result[0].total).toBe(2);
+  });
+
+  it("sorts by frequency descending", () => {
+    const cycles = [
+      { symptomIds: ["s1", "s2"] },
+      { symptomIds: ["s1", "s2"] },
+      { symptomIds: ["s2"] },
+    ];
+    const result = getCycleSymptomCorrelation(cycles);
+    expect(result[0].symptomId).toBe("s2"); // 3/3 = 100%
+    expect(result[1].symptomId).toBe("s1"); // 2/3 = 67%
+  });
+
+  it("handles missing symptomIds gracefully", () => {
+    const cycles = [
+      { symptomIds: null },
+      { symptomIds: undefined },
+      { /* no symptomIds */ },
+    ];
+    expect(getCycleSymptomCorrelation(cycles)).toEqual([]);
+  });
+
+  it("is a description, not a diagnosis - no medical claims in the output", () => {
+    const cycles = [{ symptomIds: ["s1"] }];
+    const result = getCycleSymptomCorrelation(cycles);
+    // The output only contains counts and frequencies, never medical terms
+    for (const r of result) {
+      expect(r).toHaveProperty("symptomId");
+      expect(r).toHaveProperty("count");
+      expect(r).toHaveProperty("total");
+      expect(r).toHaveProperty("frequency");
+      // No diagnostic fields
+      expect(r).not.toHaveProperty("diagnosis");
+      expect(r).not.toHaveProperty("condition");
+      expect(r).not.toHaveProperty("recommendation");
+    }
   });
 });

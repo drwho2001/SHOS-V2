@@ -67,6 +67,7 @@ export async function updateCycleWidget() {
         // Label the prediction as an estimate in the widget text, so the
         // user is not told a date is certain when it is a projection from
         // past cycles. "est." is short enough to fit the card.
+        const flow = latest.flow || "";
         const nextPeriodText = nextPeriod
           ? (daysUntil === null
               ? nextPeriod + " (est.)"
@@ -83,6 +84,7 @@ export async function updateCycleWidget() {
           day: cycleDay,
           phase,
           nextPeriod: nextPeriodText || null,
+          flow: flow || null,
           category: "Tracking",
           state: phase,
         },

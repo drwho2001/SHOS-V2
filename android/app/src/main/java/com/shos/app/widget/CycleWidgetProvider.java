@@ -15,6 +15,7 @@ public class CycleWidgetProvider extends ResizingWidgetProvider {
     private static final String KEY_CYCLE_DAY = "cycle_day";
     private static final String KEY_CYCLE_PHASE = "cycle_phase";
     private static final String KEY_NEXT_PERIOD = "next_period";
+    private static final String KEY_FLOW = "cycle_flow";
 
 // CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
 // Redacted widget, decided in JS. Distinct per provider because all seven share
@@ -54,6 +55,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_cycle";
         int cycleDay = prefs.getInt(KEY_CYCLE_DAY, 0);
         String phase = prefs.getString(KEY_CYCLE_PHASE, "No cycle data");
         String nextPeriod = prefs.getString(KEY_NEXT_PERIOD, "—");
+        String flow = prefs.getString(KEY_FLOW, "");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.cycle_widget);
 
@@ -96,6 +98,7 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
                 views.setTextViewText(R.id.widget_cycle_title, redactedText);
             views.setViewVisibility(R.id.widget_cycle_phase, android.view.View.GONE);
 views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
+views.setViewVisibility(R.id.widget_cycle_flow, android.view.View.GONE);
                 WidgetTextFit.fit(views, context, R.id.widget_cycle_title, redactedText, wDp, 16f, 2);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
@@ -114,6 +117,12 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
             views.setTextViewText(R.id.widget_cycle_title, "Cycle Day " + cycleDay);
             views.setTextViewText(R.id.widget_cycle_phase, phase);
             views.setTextViewText(R.id.widget_next_period, "Next period: " + nextPeriod);
+            if (flow != null && !flow.isEmpty()) {
+                views.setTextViewText(R.id.widget_cycle_flow, "Flow: " + flow);
+                views.setViewVisibility(R.id.widget_cycle_flow, android.view.View.VISIBLE);
+            } else {
+                views.setViewVisibility(R.id.widget_cycle_flow, android.view.View.GONE);
+            }
             WidgetTextFit.fit(views, context, R.id.widget_cycle_phase, phase, wDp, 18f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_next_period, "Next period: " + nextPeriod, wDp, 12f, 2);
         } else {
@@ -122,6 +131,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
             views.setTextViewText(R.id.widget_cycle_title, "Menstrual Cycle");
             views.setTextViewText(R.id.widget_cycle_phase, "Tracking off or no data");
             views.setTextViewText(R.id.widget_next_period, "");
+            views.setViewVisibility(R.id.widget_cycle_flow, android.view.View.GONE);
         }
 
         // Click opens Healthcare > Menstrual tab
@@ -130,7 +140,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
     }
 
     public static void updateCycle(Context context, int day, String phase, String nextPeriod,
-                                  String redactedText) {
+                                  String flow, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -144,6 +154,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
             .putInt(KEY_CYCLE_DAY, day)
             .putString(KEY_CYCLE_PHASE, phase)
             .putString(KEY_NEXT_PERIOD, nextPeriod)
+            .putString(KEY_FLOW, flow == null ? "" : flow)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 

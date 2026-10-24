@@ -43,7 +43,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
-import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay } from "../calculations/menstrualCalculations";
+import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -541,6 +541,24 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         if (!nextDisplay) return null;
         const when = daysUntil === null ? "" : daysUntil === 0 ? " (est. today)" : daysUntil > 0 ? " (est. in " + daysUntil + " day" + (daysUntil === 1 ? "" : "s") + ")" : " (est. " + Math.abs(daysUntil) + " day" + (Math.abs(daysUntil) === 1 ? "" : "s") + " ago)";
         return <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Next period (estimate): <strong style={{ color: T.textPrimary }}>{nextDisplay}{when}</strong></div>;
+      })()}
+      {cycles && cycles.length >= 2 && (() => {
+        const correlation = getCycleSymptomCorrelation(cycles, 6);
+        if (!correlation.length) return null;
+        const symptomNameById = new Map();
+        // Symptom names are already loaded; use the registry if available
+        return (
+          <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>
+            <div style={{ fontWeight: 600, color: T.textPrimary, marginBottom: 6 }}>Symptom patterns (experimental)</div>
+            <div style={{ fontSize: 11, marginBottom: 8, fontStyle: "italic" }}>Informational only - not a diagnosis. Verify independently with a clinician.</div>
+            {correlation.map((c) => (
+              <div key={c.symptomId} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid " + T.border }}>
+                <span>{c.symptomId}</span>
+                <span style={{ color: T.textPrimary, fontWeight: 600 }}>{c.count}/{c.total} cycles ({c.frequency}%)</span>
+              </div>
+            ))}
+          </div>
+        );
       })()}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
         <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Log period" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
