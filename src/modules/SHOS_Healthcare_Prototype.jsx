@@ -234,6 +234,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           fills all the way up while the title/icons stay safely below
           the notch. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px" }}>
+  <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Healthcare</h1>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
