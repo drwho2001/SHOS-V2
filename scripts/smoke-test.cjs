@@ -2155,7 +2155,7 @@ async function testBannerAcknowledgementPersists(browser) {
 //
 // WHY THIS FLOW, AND WHY IT IS A BROWSER FLOW
 // ---------------------------------------------
-// "Clear sample data" identifies demo data PURELY BY ID. On 5 Oct that deleted
+// "Clear demo data" identifies demo data PURELY BY ID. On 5 Oct that deleted
 // 74 of the owner's REAL records - 16 contacts, 18 encounters, 7 tests - because
 // he had edited the demo records IN PLACE, which left the app no way to tell a
 // person from a sample. Three fixes shipped: `isSeed: false` on every edit (3c),
@@ -2279,15 +2279,15 @@ const devText = await page.evaluate(() => document.body.innerText);
 
     if (hasSampleCount) {
       // Read from the real component rather than guessing: the control is a
-      // `role="button"` div with aria-label "Clear the sample data", NOT a
+      // `role="button"` div with aria-label "Clear the demo data", NOT a
       // <button>, and there is NO confirmation step - the click runs the clear
       // directly. Both of those were wrong in the first version of this flow,
       // which is why it "failed" while doing nothing at all: the locator matched
       // zero elements, the `.catch(() => {})` swallowed the timeout, and the
       // assertion then failed on state that had never been touched.
-      const clear = page.locator('[aria-label="Clear the sample data"]').first();
+      const clear = page.locator('[aria-label="Clear the demo data"]').first();
       assert((await clear.count()) > 0,
-        "the Clear Sample Data control is present on Developer Tools after the id migration");
+        "the Clear Demo Data control is present on Developer Tools after the id migration");
       await clear.click({ timeout: 8000 });
       // CHANGED 21 Oct 2026 (t125) - clearing is confirmed now, so the
       // second click is the one that clears.
@@ -2295,7 +2295,7 @@ const devText = await page.evaluate(() => document.body.innerText);
       await page.waitForTimeout(2500);
       const after = await page.evaluate(() => document.body.innerText);
       assert(!/sample records are still here/i.test(after),
-        "after the id migration, Clear Sample Data still works - the re-keyed demo ids are still recognised as demo data");
+        "after the id migration, Clear Demo Data still works - the re-keyed demo ids are still recognised as demo data");
     } else {
       // Honest, and it still logs "ok - " so the suite's assertion count stays
       // accurate. Its sibling helper in this file has already had one bug where
@@ -2415,7 +2415,7 @@ await run("routine-retest", () => testRoutineRetestScheduling(browser));
 // The behaviour that genuinely matters, and that a naive implementation would
 // get wrong, is preservation: repositories load their seed as the fallback for
 // an absent key, so the moment a user adds a record the sample data is
-// persisted into the same array. "Clear sample data" must therefore remove the
+// persisted into the same array. "Clear demo data" must therefore remove the
 // sample records and KEEP the user's, in one and the same array - which is
 // exactly what "Reset all app data" would not do. So the flow adds a real
 // contact through the real Contacts form first, then clears, then checks both
@@ -2500,7 +2500,7 @@ async function testSampleDataDisclosureAndClear(browser) {
     await nav.getByRole("button", { name: "Home", exact: true }).first().click({ timeout: 5000 });
     await page.getByText("This app starts with sample data", { exact: false }).first()
       .waitFor({ state: "visible", timeout: 15000 });
-    await page.getByRole("button", { name: "Clear the sample data" }).first().click({ timeout: 5000 });
+    await page.getByRole("button", { name: "Clear the demo data" }).first().click({ timeout: 5000 });
     // ADDED 20 Oct 2026 (t064) - clearing the sample data is now CONFIRMED,
     // and the confirmation NAMES the records rather than counting them. All
     // three of these assertions matter:
@@ -2782,8 +2782,8 @@ async function testSampleDataClearInDeveloperTools(browser) {
     await page.waitForTimeout(2000);
 
     const dev = await page.evaluate(() => document.body.innerText);
-    assert(dev.includes("Clear sample data"),
-      "Developer Tools offers 'Clear sample data' as its own action, not only as a reset");
+    assert(dev.includes("Clear demo data"),
+      "Developer Tools offers 'Clear demo data' as its own action, not only as a reset");
     assert(/sample records are still here/.test(dev),
       "Developer Tools shows how many sample records remain, so the action is not a blind guess");
     // The distinction is the whole point: the reset next to it destroys the
@@ -2845,7 +2845,7 @@ async function testSampleDataClearInDeveloperTools(browser) {
     await page.waitForTimeout(2000);
     // Scoped to the Developer Tools dialog, NOT a bare document lookup.
     //
-    // Two elements carry aria-label="Clear the sample data": this panel's, and
+    // Two elements carry aria-label="Clear the demo data": this panel's, and
     // the first-run banner's on Home. Home stays mounted behind the Settings
     // overlay, so `document.querySelector` finds Home's one first - and a
     // document-wide click therefore clears the data from the wrong screen
@@ -2856,7 +2856,7 @@ async function testSampleDataClearInDeveloperTools(browser) {
     await page.evaluate(() => {
       const panel = [...document.querySelectorAll('[role="dialog"]')]
         .find((d) => (d.getAttribute("aria-label") || "") === "Developer tools");
-      const el = panel && panel.querySelector('[aria-label="Clear the sample data"]');
+      const el = panel && panel.querySelector('[aria-label="Clear the demo data"]');
       if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
     await page.waitForTimeout(3000);

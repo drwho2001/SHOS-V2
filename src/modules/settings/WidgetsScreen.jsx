@@ -38,12 +38,6 @@ export function WidgetsScreen({ onClose }) {
 
     },
     {
-      key: "nextAppointment",
-      label: "Next Appointment",
-      description: "Shows appointment count + next clinic visit",
-
-    },
-    {
       key: "doxyPepWindow",
       label: "DoxyPEP Window",
       description: "Shows 72h post-exposure countdown",

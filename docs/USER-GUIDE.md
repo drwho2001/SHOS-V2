@@ -170,6 +170,7 @@ App Lock PINs are verified against a PBKDF2 verifier (100k iterations, own salt)
 ## 7. Home-screen widgets
 
 - Per-widget tier: `full`, `redacted`, or `off`.
+- There is no separate "Next Appointment" widget; appointment details are part of the Clinic Card widget.
 - Adding a field to a widget is a privacy decision: it survives Redacted only if explicitly allowlisted.
 - Widget text fitting measures the real string against the widget's real width and steps down a whole-sp ladder (floor 12sp); `maxLines` controls wrapping.
 - Resize handling: data providers extend `ResizingWidgetProvider` so a manual resize re-renders; Quick Add widgets do not resize-dependently.

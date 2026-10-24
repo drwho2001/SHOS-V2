@@ -564,7 +564,6 @@ describe("redacting the payload is not the same as redacting the screen", () => 
       nextDose: ["medName", "med.name", "nextDoseTime", "name"],
       refillDue: ["nextRefill", "medName", "name"],
       lastTest: ["lastTest", "retestDue", "testName", "organism"],
-      nextAppointment: ["nextAppt", "title", "clinic"],
       cycle: ["day", "nextPeriod", "cycleLength", "startDate"],
     };
     // The builder is found THROUGH ITS CALL SITE, not by matching the first
