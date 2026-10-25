@@ -1,3 +1,52 @@
+# Handover update - session MAKER (25 Oct 2026, continuation)
+
+## What shipped since the last handover
+- Quick fixes: multi-picker color, console.debug→warn, stale comments, settings notch band
+- Notch band consistency: Encounters, Timeline, Healthcare, Attachments, Settings
+- Demo data separation: isDemo flag on 74 seed records, Demo badges, read-only enforcement, sample→demo rename
+- Menstrual health: days-until-next-period, period length, regularity, symptom correlation, flow on widget, menopause/irregularity awareness, UKMEC symptoms, UK body references, period end prediction, flow trend
+- Flaky smoke test flow 4 fixed (v3)
+- Bundle optimization: manualChunks for 10 more modules
+
+## Device verified
+- t138: DoxyPEP select gone, PrEP inferred
+- t131: Full recovery path with PIN 1234 (on/off, verifier accepted)
+- t062: Warm start opens Add Contact sheet
+- t139: Planned events on phone calendar (event appeared and removed)
+- Screen-by-screen audit: all tabs load, no JS errors, notch band consistent
+
+## CI status
+- All three workflows green on latest commits
+- 1931/1932 tests pass
+- 0 lint errors, build clean
+
+## What's left
+- Demo badges on remaining modules (Medication, Vaccinations, etc.)
+- Menstrual flow trends (more than current flow)
+- Large JS chunks (healthcare 842 kB, settings 606 kB)
+- Smoke test gaps (no core CRUD flows)
+- contactMerge.js stub
+- Encrypted-restore PIN handling (owner decision)
+- Plaintext drafts (sessionStorage)
+- Hardware-backed key storage
+- Bundle optimization (more needed)
+- Accessibility audit (formal)
+- Internationalization
+- Release keystore (if going to Play Store)
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+## Questions for owner
+1. Demo data: keep with isDemo flag, or remove entirely?
+2. Menstrual depth: flow trends on widget? symptom correlation (experimental)? or keep it simple?
+3. Release target: personal + GitHub Pages only, or Play Store eventually?
+4. Flaky test: should I fix flow 4 (Testing <-> Symptom Log) to not count skips as failures? (Already fixed)
+
 # Handover — session MAKER (21 Oct 2026)
 
 Written by session **MAKER** at the end of a long session, immediately before
