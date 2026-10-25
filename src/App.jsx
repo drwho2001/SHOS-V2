@@ -496,7 +496,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
         <button onClick={attemptRecovery} disabled={recoveryBusy} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: recoveryBusy ? "default" : "pointer", opacity: recoveryBusy ? 0.6 : 1, marginBottom: 14 }}>
           {recoveryBusy ? "Unlocking…" : "Unlock and set new PIN"}
         </button>
-        <div onClick={() => { setRecoveryMode(false); setRecoveryString(""); setRecoveryNewPin(""); setRecoveryNewPinConfirm(""); setRecoveryError(""); }} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
+        <div onClick={() => { setRecoveryMode(false); setRecoveryString(""); setRecoveryNewPin(""); setRecoveryNewPinConfirm(""); setRecoveryError(""); }} role="button" tabIndex={0} aria-label="Back to PIN entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRecoveryMode(false); setRecoveryString(""); setRecoveryNewPin(""); setRecoveryNewPinConfirm(""); setRecoveryError(""); } }} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
           Back to PIN entry
         </div>
       </div>
@@ -534,7 +534,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
           hasBiometricSlot() above — only shown once a recovery string
           genuinely exists, never a dead-end link. */}
       {hasRecoveryString() && (
-        <div onClick={() => setRecoveryMode(true)} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
+        <div onClick={() => setRecoveryMode(true)} role="button" tabIndex={0} aria-label="Forgot PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRecoveryMode(true); } }} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
           Forgot PIN?
         </div>
       )}
@@ -632,7 +632,7 @@ function DecoyHome({ onLockNow, darkMode }) {
           applied elsewhere in this codebase. */}
       <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0 calc(10px + env(safe-area-inset-bottom))", borderTop: `1px solid ${N.border}`, background: N.surface, flexShrink: 0 }}>
         {TABS.map((t) => (
-          <div key={t.key} onClick={() => setTab(t.key)}
+          <div key={t.key} onClick={() => setTab(t.key)} role="button" tabIndex={0} aria-label={t.label || t.key} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTab(t.key); } }}
             style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : N.textDisabled }}>
             <t.icon size={22} weight={tab === t.key ? "fill" : "regular"} />
             <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
