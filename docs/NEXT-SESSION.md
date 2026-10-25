@@ -97,6 +97,7 @@
 - contactMerge.js: replaced stub with per-target duplicate candidate detection using fuzzyMatch.findContactDuplicateCandidates; sync preview API preserved.
 - i18n: scaffolded src/i18n with English translation file and provider.
 - Accessibility: improved keyboard/ARIA support in Home StatusRing and SummaryRow.
+- Accessibility: improved keyboard/ARIA support in MyProfile rule chips and Save.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -153,6 +154,7 @@
 - contactMerge.js: replaced stub with per-target duplicate candidate detection using fuzzyMatch.findContactDuplicateCandidates; sync preview API preserved.
 - i18n: scaffolded src/i18n with English translation file and provider.
 - Accessibility: improved keyboard/ARIA support in Home StatusRing and SummaryRow.
+- Accessibility: improved keyboard/ARIA support in MyProfile rule chips and Save.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?

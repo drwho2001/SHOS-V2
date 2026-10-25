@@ -872,7 +872,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
       <div style={{ padding: 10, borderRadius: radius.sm, border: `1px dashed ${T.border}` }}>
         <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
           {AVAILABILITY_RULE_TYPES.map((t) => (
-            <div key={t} onClick={() => setDraft((d) => ({ ...d, type: t }))}
+            <div key={t} onClick={() => setDraft((d) => ({ ...d, type: t }))} role="button" tabIndex={0} aria-pressed={draft.type === t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
               style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${draft.type === t ? T.contactsTeal : T.border}`, color: draft.type === t ? T.contactsTeal : T.textSecondary }}>
               {t}
             </div>
@@ -1071,7 +1071,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Edit My Profile</h1>
-        <div onClick={handleSave} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</div>
+        <div onClick={handleSave} role="button" tabIndex={0} aria-label="Save" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</div>
       </div>
 
       <div style={{ padding: "0 16px 100px" }}>
