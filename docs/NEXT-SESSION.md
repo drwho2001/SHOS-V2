@@ -1,3 +1,45 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 2)
+
+## What shipped since last wrap-up
+- Demo data: isDemo added to medication, logRepository, episodeRepository (last 3 missed repositories). All 14 repositories now have isDemo.
+- Menstrual flow trend display added.
+- Flaky smoke test flow 4 fixed (v3).
+- Bundle optimization: manualChunks for 10 more modules.
+
+## CI status
+- All three workflows green
+- 1931/1932 tests pass
+- 0 lint errors, build clean
+
+## Still open
+- Demo badges on remaining modules (Medication, Attachments)
+- Menstrual flow trends (more than current flow)
+- Large JS chunks (healthcare 842 kB, settings 606 kB)
+- Smoke test gaps (no core CRUD flows)
+- contactMerge.js stub
+- Encrypted-restore PIN handling (owner decision)
+- Plaintext drafts (sessionStorage)
+- Hardware-backed key storage
+- Bundle optimization (more needed)
+- Accessibility audit (formal)
+- Internationalization
+- Release keystore (if going to Play Store)
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+## Questions for owner
+1. Demo data: keep with isDemo flag, or remove entirely?
+2. Menstrual depth: flow trends on widget? symptom correlation (experimental)? or keep it simple?
+3. Release target: personal + GitHub Pages only, or Play Store eventually?
+4. Flaky test: should I fix flow 4 (Testing <-> Symptom Log) to not count skips as failures? (Already fixed)
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation)
 
 ## What shipped since the last handover
