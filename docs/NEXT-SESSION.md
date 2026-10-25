@@ -1,3 +1,35 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 3)
+
+## What shipped since last wrap-up
+- Menstrual: flow intensity chart on cycle list (bar chart showing flow per cycle)
+- Bundle optimization: settings chunk 606->538 kB, healthcare 843->526 kB
+- Demo badges: MedicationCard, AttachmentRow
+- contactMerge.js: implemented by DELEGATE (duplicate candidate detection)
+- All 14 repositories now have isDemo
+
+## CI status
+- All three workflows green on f4adfaf
+- Build clean (3 large chunks remain: index 268 kB, settings 538 kB, healthcare 538 kB)
+- Gzipped sizes acceptable (index 78 kB, settings 133 kB, healthcare 207 kB)
+
+## Remaining backlog
+- Encrypted-restore PIN handling (needs owner decision)
+- Plaintext drafts (needs dedicated async pass)
+- Hardware-backed key storage (needs native plugin)
+- Release keystore (needs Play Store account)
+- Accessibility audit (DELEGATE handling)
+- i18n (DELEGATE handling)
+- Smoke test gaps (DELEGATE handling)
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 2)
 
 ## What shipped since last wrap-up
