@@ -528,7 +528,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         const flows = recent.map((c) => c.flow).filter(Boolean);
         if (flows.length < 2) return null;
         const allSame = flows.every((f) => f === flows[0]);
-        return <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Recent flow: {flows.join(", ")}{allSame ? " (consistent)" : " (varied)"}</div>;
+        return <div style={{ margin: "8px 16px 0" }}><div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Recent flow: {flows.join(", ")}{allSame ? " (consistent)" : " (varied)"}</div><div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 40 }}>{recent.map((c, i) => { const level = getFlowIntensity(c.flow) || 0; const height = level > 0 ? (level / 4) * 36 : 4; const color = level >= 3 ? T.menstrualPurple : level >= 2 ? T.menstrualPurple + "99" : T.menstrualPurple + "55"; return <div key={c.id || i} title={c.flow || "No flow"} style={{ flex: 1, height, background: color, borderRadius: 3, minWidth: 8 }} />; })}</div></div>;
       })()}
       {cycles && cycles.length > 0 && (() => {
         const latest = cycles[0];
