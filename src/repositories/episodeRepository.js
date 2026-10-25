@@ -57,6 +57,7 @@ const STORAGE_KEY = "shos_episodes";
 export const RESOLUTION_OPTIONS = ["Negative — no treatment needed", "Treated — course complete"];
 
 export const DEFAULT_EPISODE = {
+  isDemo: false,
   title: "",
   triggerReason: "",
   startEncounterId: "",       // the retroactively-selected anchor Encounter
@@ -82,6 +83,7 @@ export const DEFAULT_EPISODE = {
 let seedEpisodes = [
   {
     ...DEFAULT_EPISODE,
+  isDemo: true,
     id: "seed_episode_9001",
     title: "Gonorrhoea — Sep 2026",
     triggerReason: "Symptom-driven",
@@ -170,6 +172,7 @@ export const EpisodeRepository = {
     const newEpisode = {
       ...DEFAULT_EPISODE,
       ...data,
+      isDemo: false,
       id: generateId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
@@ -190,7 +193,7 @@ export const EpisodeRepository = {
       // an existing record (not just brand-new ones); without it, editing
       // an Episode's own fields couldn't trigger the "you should back up"
       // reminder at all.
-      updated = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updated = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: e.isDemo };
       return updated;
     });
     await persist();
