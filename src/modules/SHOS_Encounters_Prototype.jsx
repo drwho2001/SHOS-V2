@@ -1348,7 +1348,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-live="polite"
+          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
           style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
           <span style={{ fontSize: 13 }}>
@@ -1546,7 +1546,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
               // CHANGED — real ask: "attendees should link through to
               // contact card and open if clicked." Real cross-module
               // navigation now exists (see App.jsx's navigateToRecord).
-              <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)}
+              <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked contact" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("contacts", id); } } : undefined}
                 style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default" }}>
                 {anonymise ? ANONYMISED : contactName(contacts, id)}
               </div>
@@ -1823,7 +1823,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
         <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? "Add Encounter" : "Edit Encounter"}</h1>
-        <div onClick={() => canSave && save()}
+        <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
           Save
         </div>
@@ -1964,7 +1964,7 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
   // shape in this app.
   return (
     <div onClick={isUndo ? onUndo : onRedo}
-      role="button" tabIndex={0} aria-live="polite"
+      role="button" tabIndex={0} aria-label={isUndo ? "Undo" : "Redo"} aria-live="polite"
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
       style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.encountersPink, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}

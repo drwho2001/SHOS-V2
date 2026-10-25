@@ -107,6 +107,7 @@
 - Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
 - Accessibility: improved keyboard/ARIA support in Vaccinations toasts.
+- Accessibility: improved keyboard/ARIA support in Encounters save/links/toasts.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
 
@@ -175,6 +176,7 @@
 - Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
 - Accessibility: improved keyboard/ARIA support in Vaccinations toasts.
+- Accessibility: improved keyboard/ARIA support in Encounters save/links/toasts.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
 
