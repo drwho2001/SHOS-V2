@@ -66,6 +66,7 @@
 
 # Handover update - session DELEGATE (25 Oct 2026)
 - contactMerge.js: replaced stub with per-target duplicate candidate detection using fuzzyMatch.findContactDuplicateCandidates; sync preview API preserved.
+- i18n: scaffolded src/i18n with English translation file and provider.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -120,6 +121,7 @@
 
 # Handover update - session DELEGATE (25 Oct 2026)
 - contactMerge.js: replaced stub with per-target duplicate candidate detection using fuzzyMatch.findContactDuplicateCandidates; sync preview API preserved.
+- i18n: scaffolded src/i18n with English translation file and provider.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
