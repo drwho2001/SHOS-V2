@@ -2397,6 +2397,7 @@ await run("routine-retest", () => testRoutineRetestScheduling(browser));
     // the own-context flows for the cached-app-shell reason documented above.
     await run("myprofile-edit", () => testMyProfileEditFormRenders(page));
     await run("contact-edit", () => testContactEditFormRenders(page));
+    await run("add-contact-crud", () => testAddContactCrud(page));
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);
@@ -3469,4 +3470,17 @@ async function testContactEditFormRenders(page) {
     "the Health & notes tab shows the notes field");
   await page.keyboard.press("Escape");
   await encounterSheet.waitFor({ state: "detached", timeout: 8000 });
+}
+async function testAddContactCrud(page) {
+  console.log("\n[29/28] Add contact CRUD flow");
+  await nav(page, "Contacts");
+  const addBtn = page.locator('[aria-label="Add contact"]').first();
+  await addBtn.click({ timeout: 8000 });
+  const sheet = page.getByRole("dialog", { name: "Add contact" });
+  await sheet.waitFor({ state: "visible", timeout: 8000 });
+  await page.getByLabel("Full name").fill("Smoke Test Contact");
+  await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
+  await sheet.waitFor({ state: "detached", timeout: 8000 });
+  await page.getByText("Smoke Test Contact").waitFor({ state: "visible", timeout: 8000 });
+  console.log("  ok - contact created");
 }
