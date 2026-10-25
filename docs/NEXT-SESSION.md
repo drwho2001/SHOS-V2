@@ -1,3 +1,32 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 4)
+
+## What shipped since last wrap-up
+- Plaintext drafts encrypted at rest (2a): async WebCrypto AES-GCM, all 8 modules updated
+- DELEGATE pushed: i18n scaffold (99618d4), accessibility improvements (ff814d6)
+- Hardware-backed key storage: partially addressed - cryptoService already uses non-extractable CryptoKeys. Full Android Keystore needs Capacitor plugin.
+- Encrypted-restore PIN: already handled by password prompt in BackupExportScreen
+
+## CI status
+- All three workflows green on 71025d4
+- 1931/1932 tests pass
+- 0 lint errors, build clean
+
+## Remaining backlog
+- Hardware-backed key storage: full Android Keystore needs Capacitor plugin (partially addressed)
+- Release keystore: deferred until Play Store release
+- Accessibility audit: DELEGATE handling
+- i18n: DELEGATE started scaffold, needs wiring
+- Smoke test gaps: DELEGATE handling
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 3)
 
 ## What shipped since last wrap-up
