@@ -28,6 +28,7 @@ import {
   getDaysUntilNextPeriod,
   getCycleRegularity,
   getCycleSymptomCorrelation,
+  getPredictedPeriodEndDayKey,
 } from "./menstrualCalculations.js";
 // The day-key primitives moved to dateInputHelpers when this became the third
 // copy of them written in a day. Re-pointed here deliberately rather than
@@ -460,5 +461,31 @@ describe("symptom correlation - experimental, informational only", () => {
       expect(r).not.toHaveProperty("condition");
       expect(r).not.toHaveProperty("recommendation");
     }
+  });
+});
+
+describe("predicted period end - estimate, not diagnosis", () => {
+  it("adds the average period length to the start date", () => {
+    // Start on Sep 10, avg period length 5 days -> end on Sep 14
+    expect(getPredictedPeriodEndDayKey("2026-09-10", 5)).toBe("2026-09-14");
+  });
+
+  it("returns null when there is no history", () => {
+    expect(getPredictedPeriodEndDayKey("2026-09-10", null)).toBeNull();
+    expect(getPredictedPeriodEndDayKey("2026-09-10", 0)).toBeNull();
+    expect(getPredictedPeriodEndDayKey("2026-09-10", undefined)).toBeNull();
+  });
+
+  it("returns null without a start date", () => {
+    expect(getPredictedPeriodEndDayKey(null, 5)).toBeNull();
+    expect(getPredictedPeriodEndDayKey("", 5)).toBeNull();
+  });
+
+  it("handles a single-day period", () => {
+    expect(getPredictedPeriodEndDayKey("2026-09-10", 1)).toBe("2026-09-10");
+  });
+
+  it("crosses a month boundary", () => {
+    expect(getPredictedPeriodEndDayKey("2026-09-28", 5)).toBe("2026-10-02");
   });
 });

@@ -130,6 +130,25 @@ export function getCycleSymptomCorrelation(cycles, lookback = 6) {
 }
 
 /**
+ * Predicted end date of the CURRENT period, or null.
+ *
+ * Only meaningful when the user is currently on their period (cycleDay
+ * is within the typical period length). Returns null otherwise, because
+ * predicting the end of a period that has already ended is nonsense.
+ *
+ * SAFETY. This is an ESTIMATE based on past averages, clearly labelled
+ * as such in the UI. It is not a medical prediction.
+ */
+export function getPredictedPeriodEndDayKey(startDateStored, avgPeriodLengthDays) {
+  const start = storedDayKey(startDateStored);
+  if (!start) return null;
+  if (!Number.isFinite(avgPeriodLengthDays) || avgPeriodLengthDays <= 0) return null;
+  // Period length includes the start day, so end = start + (length - 1)
+  const endDayNumber = dayNumber(start) + Math.round(avgPeriodLengthDays) - 1;
+  return new Date(endDayNumber * 86400000).toISOString().slice(0, 10);
+}
+
+/**
  * How many days until the predicted next period, or null if there is no
  * prediction. Negative when the prediction has passed - that is not an
  * error, it is the normal "overdue" state, and the caller decides how to
