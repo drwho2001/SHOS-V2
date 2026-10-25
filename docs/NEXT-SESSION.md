@@ -104,6 +104,7 @@
 - Accessibility: improved keyboard/ARIA support in App recovery links and tab bar.
 - Accessibility: improved keyboard/ARIA support in ClinicVisits save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in Measurements group chips and toasts.
+- Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
 
 ## Questions for owner
@@ -168,6 +169,7 @@
 - Accessibility: improved keyboard/ARIA support in App recovery links and tab bar.
 - Accessibility: improved keyboard/ARIA support in ClinicVisits save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in Measurements group chips and toasts.
+- Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
 
 ## Questions for owner
