@@ -101,7 +101,7 @@ async function loadMedicationsWithLogs() {
 // confirmation step first, via the shared pendingNav state below.
 function SectionHeader({ children, onTap, T }) {
   return (
-    <div onClick={onTap} style={{ ...TYPE.sectionLabel, color: T.textSecondary, padding: "16px 16px 6px", cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
+    <div onClick={onTap} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined} aria-label={onTap ? (typeof children === "string" ? children : "Section") : undefined} onKeyDown={onTap ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ ...TYPE.sectionLabel, color: T.textSecondary, padding: "16px 16px 6px", cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
       {children}
       {onTap && <ChevronRight size={12} color={T.textSecondary} />}
     </div>
@@ -118,7 +118,7 @@ function SectionHeader({ children, onTap, T }) {
 function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleCollapse, T }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 6px" }}>
-      <div onClick={onTap} style={{ ...TYPE.sectionLabel, color: T.textSecondary, cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
+      <div onClick={onTap} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined} aria-label={onTap ? (typeof children === "string" ? children : "Section") : undefined} onKeyDown={onTap ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ ...TYPE.sectionLabel, color: T.textSecondary, cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
         {children}
         {onTap && <ChevronRight size={12} color={T.textSecondary} />}
       </div>
@@ -136,7 +136,7 @@ function SectionCard({ children, T }) {
 
 function Row({ dot, title, subtitle, alert, color, onTap, T }) {
   return (
-    <div onClick={onTap} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: onTap ? "pointer" : "default" }}>
+    <div onClick={onTap} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined} aria-label={onTap ? title : undefined} onKeyDown={onTap ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: onTap ? "pointer" : "default" }}>
       <span style={{ width: 9, height: 9, borderRadius: 999, background: alert ? T.actionRed : (color || T.healthcareBlue), flexShrink: 0 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: alert ? T.actionRed : T.textPrimary }}>{title}</div>

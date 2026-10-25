@@ -99,6 +99,7 @@
 - Accessibility: improved keyboard/ARIA support in Home StatusRing and SummaryRow.
 - Accessibility: improved keyboard/ARIA support in MyProfile rule chips and Save.
 - Accessibility: added aria-label to Timeline undo/redo toast.
+- Accessibility: improved keyboard/ARIA support in ClinicCard sections and rows.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -157,6 +158,7 @@
 - Accessibility: improved keyboard/ARIA support in Home StatusRing and SummaryRow.
 - Accessibility: improved keyboard/ARIA support in MyProfile rule chips and Save.
 - Accessibility: added aria-label to Timeline undo/redo toast.
+- Accessibility: improved keyboard/ARIA support in ClinicCard sections and rows.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
