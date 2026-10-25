@@ -201,6 +201,7 @@ function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }
       )}
       <div onClick={() => onNavigateToSource?.(a.sourceType, a.sourceId)} style={{ flex: 1, minWidth: 0, cursor: onNavigateToSource ? "pointer" : "default" }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
+    {a.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
         <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
       </div>
       <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => requestDelete(a)} aria-label="Remove attachment" title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />

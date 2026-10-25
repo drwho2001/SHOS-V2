@@ -24,7 +24,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS } from "../storage/backupService";
 import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
-import MyProfileModule from "./SHOS_MyProfile_Prototype";
+const MyProfileModule = lazy(() => import("./SHOS_MyProfile_Prototype"));
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // Settings sub-screens (lazy — one chunk per screen, loaded on first open)
@@ -886,7 +886,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         // and bottom padding on a wrong theory, then reverted. MyProfileModule's
         // own root already provides both; the real defect is its display:flex.
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
-          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={() => setShowGlossary(true)} />
+          <Suspense fallback={<div style={{ padding: 20, textAlign: "center" }}>Loading...</div>}>
+    <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={() => setShowGlossary(true)} />
+    </Suspense>
         </div>
       )}
       {showBackupExport && (

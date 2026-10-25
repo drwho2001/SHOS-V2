@@ -6,7 +6,7 @@
 // to be routing/global-state shell, not feature screens). Pure code
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar } from "@phosphor-icons/react";
@@ -14,18 +14,18 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
-import TestingModule from "./SHOS_Testing_Prototype";
-import ClinicVisitsModule from "./SHOS_ClinicVisits_Prototype";
-import SymptomLogModule from "./SHOS_SymptomLog_Prototype";
-import VaccinationsModule from "./SHOS_Vaccinations_Prototype";
-import MeasurementsModule from "./SHOS_Measurements_Prototype";
-import MenstrualHealthModule from "./SHOS_MenstrualHealth_Prototype";
+const TestingModule = lazy(() => import("./SHOS_Testing_Prototype"));
+const ClinicVisitsModule = lazy(() => import("./SHOS_ClinicVisits_Prototype"));
+const SymptomLogModule = lazy(() => import("./SHOS_SymptomLog_Prototype"));
+const VaccinationsModule = lazy(() => import("./SHOS_Vaccinations_Prototype"));
+const MeasurementsModule = lazy(() => import("./SHOS_Measurements_Prototype"));
+const MenstrualHealthModule = lazy(() => import("./SHOS_MenstrualHealth_Prototype"));
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useLoadedState } from "../calculations/loadedRepositoryState";
 import { isVaccinationOverdue } from "../calculations/vaccinationCalculations";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
-import AttachmentsScreen from "./SHOS_Attachments_Prototype";
-import TimelineModule from "./SHOS_Timeline_Prototype";
+const AttachmentsScreen = lazy(() => import("./SHOS_Attachments_Prototype"));
+const TimelineModule = lazy(() => import("./SHOS_Timeline_Prototype"));
 
 // ADDED 10 Oct 2026 (t108) - onOpenGlossary, forwarded to ClinicCardScreen below.
 // App.jsx already hands this prop to every ActiveModule (line 2875), and
@@ -324,7 +324,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <SummaryStat label="Tests this year" value={summary.testsThisYear} />
         </div>
       </div>
-      {subTab === "testing" ? (
+      <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>Loading...</div>}>
+    {subTab === "testing" ? (
         <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "clinicVisits" ? (
         <ClinicVisitsModule openAddOnMount={openAddOnMount && quickAddTarget === "clinicVisits"} onConsumedQuickAdd={onConsumedQuickAdd} onOpenTest={(testId) => { setSubTab("testing"); setPendingTestId(testId); }} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} registerModuleBackHandler={registerModuleBackHandler} />
@@ -337,6 +338,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       ) : (
         <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
+    </Suspense>
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />}
       {showAttachments && (
         <AttachmentsScreen onClose={() => setShowAttachments(false)}

@@ -32,6 +32,9 @@
 - No encounters saved
 - APK installed: latest
 
+# Handover update - session DELEGATE (25 Oct 2026)
+- contactMerge.js: replaced stub with per-target duplicate candidate detection using fuzzyMatch.findContactDuplicateCandidates; sync preview API preserved.
+
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
 2. Menstrual depth: flow trends on widget? symptom correlation (experimental)? or keep it simple?
@@ -82,6 +85,9 @@
 - No switches turned on
 - No encounters saved
 - APK installed: latest
+
+# Handover update - session DELEGATE (25 Oct 2026)
+- contactMerge.js: replaced stub with per-target duplicate candidate detection using fuzzyMatch.findContactDuplicateCandidates; sync preview API preserved.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?

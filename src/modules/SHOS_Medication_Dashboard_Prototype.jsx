@@ -411,6 +411,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue, display: "inline-block" }} />
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{med.name}</span>
+          {med.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
         </div>
         <MoreVertical size={18} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onToggleMenu(med.id)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleMenu(med.id); } }} />
       </div>
@@ -2162,7 +2163,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const unarchiveMedication = async (id) => { await MedicationRepository.unarchive(id); refreshMeds(); };
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
-  const deleteMedication = async (id) => { const med = await MedicationRepository.getById(id); if (med) { await triggerDelete([med]); refreshMeds(); } };
+  const deleteMedication = async (id) => { const med = await MedicationRepository.getById(id); if (med && med.isDemo) return; if (med) { await triggerDelete([med]); refreshMeds(); } };
 
   const takeReminder = () => { logDose(dueReminder.id); flashComplete(dueReminder.id, "logged"); setDueReminder(null); };
   const snoozeReminder = () => { setSnoozedUntil((prev) => ({ ...prev, [dueReminder.id]: new Date(Date.now() + 30 * 60000).toISOString() })); setDueReminder(null); };

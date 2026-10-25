@@ -19,6 +19,7 @@
 // See trashRepository.js for the reversible destination.
 
 import { ContactRepository } from "../repositories/contactRepository.js"; // for the import graph; not used directly here
+import { findContactDuplicateCandidates } from "./fuzzyMatch.js";
 
 /** The target types this merge supports. Each needs its own detection logic. */
 export const MERGE_TARGET_TYPES = ["contact"];
@@ -28,15 +29,21 @@ export function supportsTarget(type) {
   return MERGE_TARGET_TYPES.includes(type);
 }
 
-export function duplicateCandidatePanel(type) {
+// Per-target detection. Contacts are scored by findContactDuplicateCandidates
+// (name/phone/handle/notes/city/age); other target types are not supported
+// here and return null so callers cannot treat a partial result as valid.
+export function detectDuplicateCandidates(type, records) {
   if (!supportsTarget(type)) return null;
-  // This is a stub. The full implementation would read the repository,
-  // enumerate candidates by comparing names/phones/relationships, and return
-  // a preview array without writing anything. The test below asserts the
-  // structure, not the full data logic.
+  if (type === "contact") return findContactDuplicateCandidates(records || []);
+  return [];
+}
+
+export function duplicateCandidatePanel(type, records = []) {
+  if (!supportsTarget(type)) return null;
+  const candidates = detectDuplicateCandidates(type, records) || [];
   return {
     targetType: type,
     previewAvailable: true,
-    candidates: [],
+    candidates,
   };
 }
