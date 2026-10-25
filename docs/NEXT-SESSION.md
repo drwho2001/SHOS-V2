@@ -106,6 +106,7 @@
 - Accessibility: improved keyboard/ARIA support in Measurements group chips and toasts.
 - Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
+- Accessibility: improved keyboard/ARIA support in Vaccinations toasts.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -171,6 +172,7 @@
 - Accessibility: improved keyboard/ARIA support in Measurements group chips and toasts.
 - Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
+- Accessibility: improved keyboard/ARIA support in Vaccinations toasts.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
