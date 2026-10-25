@@ -45,6 +45,16 @@ export default defineConfig({
           timeline: ['src/modules/SHOS_Timeline_Prototype.jsx'],
           partnernotification: ['src/modules/SHOS_PartnerNotification_Prototype.jsx'],
           globalsearch: ['src/modules/SHOS_GlobalSearch_Prototype.jsx'],
+          contacts: ['src/modules/SHOS_Contacts_Prototype.jsx'],
+          encounters: ['src/modules/SHOS_Encounters_Prototype.jsx'],
+          medication: ['src/modules/SHOS_Medication_Dashboard_Prototype.jsx'],
+          testing: ['src/modules/SHOS_Testing_Prototype.jsx'],
+          clinicvisits: ['src/modules/SHOS_ClinicVisits_Prototype.jsx'],
+          vaccinations: ['src/modules/SHOS_Vaccinations_Prototype.jsx'],
+          symptomlog: ['src/modules/SHOS_SymptomLog_Prototype.jsx'],
+          measurements: ['src/modules/SHOS_Measurements_Prototype.jsx'],
+          menstrual: ['src/modules/SHOS_MenstrualHealth_Prototype.jsx'],
+          attachments: ['src/modules/SHOS_Attachments_Prototype.jsx'],
         }
       }
     }

@@ -309,9 +309,11 @@ function SaveButton({ label, onClick, canSave, T }) {
     </button>
   );
 }
-function ListRow({ isSelected, selectMode, onClick, T, children, label }) {
+function ListRow({ isSelected, selectMode, onClick, T, children, label, isDemo = false }) {
   return (
-    <div onClick={onClick}
+    <div style={{ position: "relative" }}>
+      {isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", position: "absolute", top: 8, right: 8, zIndex: 1 }}>DEMO</span>}
+  <div onClick={onClick}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={label} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 12, cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
@@ -321,6 +323,7 @@ function ListRow({ isSelected, selectMode, onClick, T, children, label }) {
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+    </div>
     </div>
   );
 }
@@ -567,7 +570,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
       <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 8 }}>
         {cycles.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No periods logged yet. Tap + to add one.</div>}
         {cycles.map((c) => (
-          <ListRow key={c.id} T={T} onClick={() => setScreen({ name: "detail", id: c.id })} label={`${formatDate(c.startDate)}${c.endDate ? ` to ${formatDate(c.endDate)}` : " (ongoing)"}`}>
+          <ListRow key={c.id} T={T} isDemo={c.isDemo} onClick={() => setScreen({ name: "detail", id: c.id })} label={`${formatDate(c.startDate)}${c.endDate ? ` to ${formatDate(c.endDate)}` : " (ongoing)"}`}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Drop size={14} color={T.menstrualPurple} weight="fill" />
               <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</div>
@@ -818,7 +821,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
               {active.map((e) => {
                 const overdue = e.nextDueDate && e.nextDueDate < today;
                 return (
-                  <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })} label={e.method}>
+                  <ListRow key={e.id} T={T} isDemo={e.isDemo} onClick={() => setScreen({ name: "detail", id: e.id })} label={e.method}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <ContraceptionIcon formulation={e.formulation} size={15} color={T.healthcareBlue} />
                       <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
