@@ -102,6 +102,7 @@
 - Accessibility: improved keyboard/ARIA support in ClinicCard sections and rows.
 - Accessibility: improved keyboard/ARIA support in PrivacyScreen anonymise control.
 - Accessibility: improved keyboard/ARIA support in App recovery links and tab bar.
+- Accessibility: improved keyboard/ARIA support in ClinicVisits save/links/toasts.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -163,6 +164,7 @@
 - Accessibility: improved keyboard/ARIA support in ClinicCard sections and rows.
 - Accessibility: improved keyboard/ARIA support in PrivacyScreen anonymise control.
 - Accessibility: improved keyboard/ARIA support in App recovery links and tab bar.
+- Accessibility: improved keyboard/ARIA support in ClinicVisits save/links/toasts.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
