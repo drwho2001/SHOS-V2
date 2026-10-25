@@ -107,6 +107,7 @@
 - Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
 - Accessibility: improved keyboard/ARIA support in Vaccinations toasts.
+- i18n: wired provider and extracted Home dashboard title.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -173,6 +174,7 @@
 - Accessibility: improved keyboard/ARIA support in Testing save/links/toasts.
 - Accessibility: improved keyboard/ARIA support in SymptomLog toasts.
 - Accessibility: improved keyboard/ARIA support in Vaccinations toasts.
+- i18n: wired provider and extracted Home dashboard title.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?

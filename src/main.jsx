@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import { I18nProvider } from "./i18n/index.js";
 // ADDED 3 Sep 2026 — real ask: an install-to-home-screen nudge tied to
 // notification reliability. Imported here (not lazily inside whatever
 // screen eventually shows the nudge) purely for its module-level side
@@ -192,7 +193,9 @@ class ErrorBoundary extends React.Component {
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      <I18nProvider>
+        <App />
+      </I18nProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

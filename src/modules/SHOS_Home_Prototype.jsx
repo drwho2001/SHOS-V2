@@ -1,4 +1,5 @@
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useTranslation } from "../i18n/index.js";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED 9 Oct 2026 (t052) - tap-to-reveal explanation for "BASHH" on the
 // testing ring. See JargonNote.jsx for why it is a bubble and not permanent
@@ -164,6 +165,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
 // already-working code, no behavior change here.
 
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
+  const { t } = useTranslation();
   const isDesktopWidth = useIsDesktopWidth();
   // ADDED 30 Sep 2026 (audit) — hooks must be called unconditionally at the top
   // of a component, which is why this sits here rather than next to the row it
@@ -838,7 +840,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Dashboard, rolled out here for consistency. */}
       <div style={{ width: "100%", padding: "20px 16px", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
       <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
+        {profileName ? t("home.dashboardTitle", `${profileName}'s dashboard`) : t("home.yourDashboard", "Your dashboard")}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
               which points to no manual relock button... also for real

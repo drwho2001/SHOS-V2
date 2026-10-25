@@ -1,4 +1,8 @@
 {
+  "home": {
+    "dashboardTitle": "{name}'s dashboard",
+    "yourDashboard": "Your dashboard"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
