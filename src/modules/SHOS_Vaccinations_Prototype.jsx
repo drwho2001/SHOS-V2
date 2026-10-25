@@ -501,12 +501,10 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   const vaccinationReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), [], []);
 const draftKey = `vaccination_${vaccination?.id || "new"}`;
   const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
     const base = vaccination ? { ...vaccination } : { ...DEFAULT_VACCINATION, date: new Date().toISOString().slice(0, 10) };
     // Migrate legacy doseNumber/date to doses array if needed
     if (!base.doses?.length && base.doseNumber && base.date) {
-      return {
+      const migrated = {
         ...base,
         doses: [{
           doseNumber: base.doseNumber,
@@ -518,6 +516,8 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
           nextDue: base.nextDue,
         }],
       };
+      if (!migrated.doses) migrated.doses = [];
+      return migrated;
     }
     // Ensure doses array exists
     if (!base.doses) {
@@ -525,6 +525,18 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
     }
     return base;
   });
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // CHANGED — real bug fix, same as Encounters: fired on the very
   // first render too, immediately autosaving the pristine, untouched
   // default form the instant this sheet opened — so just opening and

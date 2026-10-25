@@ -706,15 +706,19 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
   const sampleTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("sampleType"), [], []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `testEdit_${testId || "new"}`;
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    // ADDED — real ask: Clinic Card's "TOC 2 week" shortcut — a real
-    // new record starting with real values (a 2-weeks-out date,
-    // testing for C&S), not always a totally blank form.
-    return { ...DEFAULT_TEST, ...prefillData };
-  });
-  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  const [form, setForm] = useState(() => ({ ...DEFAULT_TEST, ...prefillData }));
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // CHANGED — Phase 2 encryption groundwork: TestingRepository went
   // async — `existing` used to be read synchronously above, straight
   // into the `form` lazy initializer. Moved into a real load effect,

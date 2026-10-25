@@ -1918,12 +1918,19 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
   // — resolved once here for the Stated kinks/Limits overlap-warning
   // check below.
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    return contact ? { ...contact } : { ...DEFAULT_CONTACT };
-  });
-  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  const [form, setForm] = useState(() => contact ? { ...contact } : { ...DEFAULT_CONTACT });
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // CHANGED — real bug fix, same as Encounters: fired on the very
   // first render too, immediately autosaving the pristine, untouched
   // default form the instant this sheet opened — so just opening and

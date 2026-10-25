@@ -1009,13 +1009,19 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
   const followUpTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("followUpType"), [], []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `visitEdit_${visitId || "new"}`;
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    // ADDED — real ask: Clinic Card's "Book appointment"/"Treatment
-    // given" shortcuts — a real new record starting with real values.
-    return { ...DEFAULT_CLINIC_VISIT, ...prefillData };
-  });
+  const [form, setForm] = useState(() => ({ ...DEFAULT_CLINIC_VISIT, ...prefillData }));
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // MOVED 1 Oct 2026 (t069, found by session A) - these five lines read
   // `form` and sat ~43 lines ABOVE the declaration below, which is a
   // temporal dead zone crash: opening any clinic visit edit sheet threw
@@ -1026,7 +1032,6 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
   const showVaccination = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("vaccination");
   const showMedication = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("medication");
   const showSymptoms = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("symptoms");
-  const [draftRestored] = useState(() => !!loadDraft(draftKey));
   const [refreshKey, setRefreshKey] = useState(0);
   // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
   // went async — `existing` used to be read synchronously above,

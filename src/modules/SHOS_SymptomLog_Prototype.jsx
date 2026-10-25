@@ -355,11 +355,19 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
   const draftKey = `symptomLog_${entry?.id || "new"}`;
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    return entry ? { ...entry } : { ...DEFAULT_SYMPTOM_ENTRY, dateStarted: new Date().toISOString().slice(0, 10) };
-  });
+  const [form, setForm] = useState(() => entry ? { ...entry } : { ...DEFAULT_SYMPTOM_ENTRY, dateStarted: new Date().toISOString().slice(0, 10) });
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // CHANGED — real bug fix, same as Encounters: fired on the very
   // first render too, immediately autosaving the pristine, untouched
   // default form the instant this sheet opened — so just opening and

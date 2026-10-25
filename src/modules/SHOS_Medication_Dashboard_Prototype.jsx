@@ -1377,10 +1377,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   // ADDED — real audit finding: this form had no in-progress-edit
   // autosave, unlike 7 sibling forms — see draftStorage.js.
   const draftKey = `medEdit_${med.id}`;
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    return {
+  const [form, setForm] = useState(() => ({
       name: med.name, route: med.route || "", medicationType: med.medicationType || "",
       category: med.category || [],
       doseComponents: getDoseComponents(med),
@@ -1398,9 +1395,19 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
       // displayed it either — a real note existed with no UI surface
       // anywhere. Genuinely wired up now, not just carried through.
       notes: med.notes || "",
-    };
-  });
-  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  }));
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // Skips the initial mount so just opening and closing this sheet with
   // zero real edits doesn't leave a phantom draft behind — same fix
   // already proven for SymptomLog/Vaccinations/Measurements.
@@ -1557,18 +1564,25 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // MedicationEditSheet above — a fixed key since there's only ever one
   // in-progress "new medication" draft at a time.
   const draftKey = "medAdd_new";
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    return {
+  const [form, setForm] = useState(() => ({
       name: "", route: "", medicationType: "", category: [], doseComponents: [],
       usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
       scheduledTimes: [],
       inventoryTracked: true, unitsPerContainer: 30, refillThreshold: 7, defaultRefillContainers: 1, usualSupplier: "",
       notes: "",
-    };
-  });
-  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  }));
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }

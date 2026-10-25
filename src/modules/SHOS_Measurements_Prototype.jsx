@@ -374,8 +374,6 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     : rankedTypeOptions;
   const draftKey = `measurement_${measurement?.id || "new"}`;
   const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
     if (measurement) return { ...measurement };
     // ADDED — real ask: "memory" for repeat entries — a new entry's
     // type/unit prefilled from the last entry of that type, quick-add
@@ -397,6 +395,18 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     }
     return base;
   });
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }

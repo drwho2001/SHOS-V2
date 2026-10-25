@@ -1644,12 +1644,19 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // instead of the useState initializer, with form falling back to
   // DEFAULT_ENCOUNTER for the one render before it resolves rather than
   // undefined (nothing here null-guards form before rendering fields).
-  const [form, setForm] = useState(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) return draft.data;
-    return { ...DEFAULT_ENCOUNTER };
-  });
-  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  const [form, setForm] = useState(() => ({ ...DEFAULT_ENCOUNTER }));
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    loadDraft(draftKey).then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setForm(draft.data);
+        setDraftRestored(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [draftKey]);
   // CHANGED — real bug from the user's own testing: this fired on the
   // very first render too, immediately autosaving the pristine,
   // untouched default form the instant "Add Encounter" opened — so
