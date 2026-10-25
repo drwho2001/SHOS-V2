@@ -49,7 +49,7 @@ const STORAGE_KEY = "shos_medications";
 
 let seedMedications = [
   {
-    id: "seed_med_9001",
+    id: "seed_med_9001", isDemo: true,
     name: "PrEP (Descovy)",
     unit: "tablet",
     usagePattern: "daily",
@@ -65,7 +65,7 @@ let seedMedications = [
     sortOrder: 0,
   },
   {
-    id: "seed_med_9002",
+    id: "seed_med_9002", isDemo: true,
     name: "DoxyPEP (Doxycycline)",
     unit: "capsule",
     usagePattern: "prn",
@@ -81,7 +81,7 @@ let seedMedications = [
     sortOrder: 1,
   },
   {
-    id: "seed_med_9003",
+    id: "seed_med_9003", isDemo: true,
     name: "Vitamin D3",
     unit: "tablet",
     usagePattern: "daily",
@@ -97,7 +97,7 @@ let seedMedications = [
     sortOrder: 2,
   },
   {
-    id: "seed_med_9004",
+    id: "seed_med_9004", isDemo: true,
     name: "Antihistamine (PRN)",
     unit: "tablet",
     usagePattern: "prn",
@@ -113,7 +113,7 @@ let seedMedications = [
     sortOrder: 3,
   },
   {
-    id: "seed_med_9005",
+    id: "seed_med_9005", isDemo: true,
     name: "Amoxicillin (course, finished)",
     unit: "capsule",
     usagePattern: "custom",
@@ -137,7 +137,7 @@ let seedMedications = [
   // "custom" usagePattern already used for Amoxicillin's own non-daily/
   // non-prn regimen.
   {
-    id: "seed_med_9006",
+    id: "seed_med_9006", isDemo: true,
     name: "Testosterone (Sustanon)",
     unit: "injection",
     usagePattern: "custom",
@@ -256,6 +256,7 @@ export const DOSE_UNIT_OPTIONS = ["ng", "µg", "mg", "g"];
 // (MEDICATION_TYPE_OPTIONS also moved — see comment above ROUTE_OPTIONS' old location.)
 
 const DEFAULT_MEDICATION = {
+  isDemo: false,
   name: "", unit: "", usagePattern: "daily",
   dosesPerDay: null, unitsPerDose: 1,
   // ADDED 19 Aug 2026 — real custom-scheduling support: "every N days".
@@ -362,6 +363,7 @@ export const MedicationRepository = {
     const newMedication = {
       ...DEFAULT_MEDICATION,
       ...data,
+      isDemo: false,
       id: generateMedicationId(),
       refillRequestedAt: null,
       isArchived: false,
@@ -382,7 +384,7 @@ export const MedicationRepository = {
       if (m.id !== id) return m;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updatedMedication = { ...m, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
+      updatedMedication = { ...m, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: m.isDemo };
       return updatedMedication;
     });
     await persist();
