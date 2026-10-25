@@ -425,7 +425,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         {/* Big, clearly separated toggle button — never on by default,
             per the user's explicit instruction, and always one tap to turn
             ON regardless of any PIN. */}
-        <div onClick={settings.anonymiseModeActive ? undefined : activate}
+        <div onClick={settings.anonymiseModeActive ? undefined : activate} role={settings.anonymiseModeActive ? undefined : "button"} tabIndex={settings.anonymiseModeActive ? undefined : 0} aria-label={settings.anonymiseModeActive ? undefined : "Turn on Anonymise mode"} onKeyDown={settings.anonymiseModeActive ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } }}
           style={{ padding: 18, borderRadius: RADIUS.md, background: settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.surface : NEUTRAL.surface), border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.border : NEUTRAL.border)}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />}
