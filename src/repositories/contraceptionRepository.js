@@ -67,8 +67,8 @@ function addDays(dateStr, n) {
 // encounters for the same timeline.
 const seedDepotStart = daysAgo(45);
 let seedEntries = [
-  { ...DEFAULT_CONTRACEPTION_ENTRY, isDemo: true, id: "seed_contra_9001", method: "Combined pill", formulation: "Pill/Tablet", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." },
-  { ...DEFAULT_CONTRACEPTION_ENTRY, isDemo: true, id: "seed_contra_9002", method: "Depot", formulation: "Injection", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, isDemo: true, id: "seed_contra_9001", method: "Combined pill", formulation: "Pill/Tablet", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." , createdAt: new Date().toISOString() },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, isDemo: true, id: "seed_contra_9002", method: "Depot", formulation: "Injection", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." , createdAt: new Date().toISOString() },
   // ADDED 9 Sep 2026 — real ask: represent hormone-related contraception
   // needs through real data — a hormonal IUD, linked to a real clinic
   // visit for the insertion appointment (see clinicVisitsRepository.js's
@@ -76,7 +76,7 @@ let seedEntries = [
   // entry via the shared notes context. A currently-active entry (no
   // endDate), independent of the Depot method above — this app's own
   // design already allows more than one concurrent method on record.
-  { ...DEFAULT_CONTRACEPTION_ENTRY, isDemo: true, id: "seed_contra_9003", method: "IUD (hormonal)", formulation: "IUD/Implant", startDate: daysAgo(75), linkedClinicVisitId: "seed_visit_9006", notes: "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well." },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, isDemo: true, id: "seed_contra_9003", method: "IUD (hormonal)", formulation: "IUD/Implant", startDate: daysAgo(75), linkedClinicVisitId: "seed_visit_9006", notes: "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well." , createdAt: new Date().toISOString() },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-

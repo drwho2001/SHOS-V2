@@ -1028,7 +1028,7 @@ function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen,
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: overdue ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
-        <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
       {rowNextDue && (
