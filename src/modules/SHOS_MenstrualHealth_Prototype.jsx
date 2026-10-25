@@ -523,6 +523,13 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         <div style={{ margin: "12px 16px 0", fontSize: 12, color: T.textSecondary }}>Average cycle length so far: <strong style={{ color: T.textPrimary }}>{avgLength} days</strong>{regularity && regularity.min !== regularity.max ? <span style={{ color: T.textDisabled }}> (range {regularity.min}-{regularity.max} days over {regularity.count} cycles)</span> : null}</div>
       ) : null}
       {avgPeriodLength ? <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Average period length: <strong style={{ color: T.textPrimary }}>{avgPeriodLength} day{avgPeriodLength === 1 ? "" : "s"}</strong></div> : null}
+      {cycles && cycles.length >= 2 && (() => {
+        const recent = cycles.slice(0, Math.min(5, cycles.length));
+        const flows = recent.map((c) => c.flow).filter(Boolean);
+        if (flows.length < 2) return null;
+        const allSame = flows.every((f) => f === flows[0]);
+        return <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Recent flow: {flows.join(", ")}{allSame ? " (consistent)" : " (varied)"}</div>;
+      })()}
       {cycles && cycles.length > 0 && (() => {
         const latest = cycles[0];
         const lastStart = new Date(latest.startDate);
