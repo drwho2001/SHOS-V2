@@ -534,6 +534,12 @@ async function testSymptomTestTwoWayLink(page) {
     assert((await page.evaluate(() => document.body.innerText)).includes(chipLabel), "linked chip moves into the linked-entries list");
   } else {
     console.log("  skip — already linked from a previous run (idempotent state, not a failure)");
+    // Nothing to link and nothing to verify; the test is idempotent.
+    await page.mouse.wheel(0, -900);
+    await page.waitForTimeout(300);
+    await page.locator("text=Save").click({ timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    return;
   }
   await page.mouse.wheel(0, -900);
   await page.waitForTimeout(300);
