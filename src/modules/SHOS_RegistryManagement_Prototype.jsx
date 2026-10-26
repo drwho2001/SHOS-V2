@@ -28,6 +28,7 @@ import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
+import { useTranslation } from "../i18n/index.js";
 
 // ADDED 19 Aug 2026 — Registry Management, per the user's priority order.
 // ONE shared screen for all 6 registries (Kink/Chems/Protection/
@@ -97,6 +98,7 @@ function RegistryRow({ entry, usage, isEditing, editingName, setEditingName, sta
 }
 
 export default function RegistryManagementScreen({ registry, label, color, computeUsage, renderExtra: RenderExtra, onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const actionRed = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;

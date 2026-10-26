@@ -33,6 +33,7 @@ import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
 import SectionCard from "../components/SectionCard.jsx";
+import { useTranslation } from "../i18n/index.js";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -863,6 +864,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
 }
 
 export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();

@@ -42,6 +42,7 @@ import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS, TYPE } from "../calculations/des
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useAnonymiseMode, contactName, contactSearchText } from "../calculations/anonymiseDisplay";
+import { useTranslation } from "../i18n/index.js";
 // FIXED 1 Sep 2026 — real ask: "global search nav breaks as soon as
 // first letter typed." Root cause: the sort-toggle row (added 26 Aug
 // 2026) referenced `radius.full` but this module never defined or
@@ -365,6 +366,7 @@ const TYPE_PLURAL = {
 // real coupling, stated here so the next person to make this screen
 // always-mounted knows these two props would silently stop working.
 export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery = "", initialSortMode }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;

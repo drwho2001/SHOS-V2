@@ -57,6 +57,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 // coupling that left Last Test showing "No tests logged" while the dashboard
 // showed a test from a week earlier.
 import { updateCycleWidget } from "../calculations/cycleWidgetSync";
+import { useTranslation } from "../i18n/index.js";
 
 
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
@@ -1072,6 +1073,7 @@ function tabForRecordId(id) {
 }
 
 export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went

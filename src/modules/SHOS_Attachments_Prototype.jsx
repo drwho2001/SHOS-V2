@@ -16,6 +16,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useTranslation } from "../i18n/index.js";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -73,6 +74,7 @@ function isImage(dataUrl) {
 }
 
 export default function AttachmentsScreen({ onClose, onNavigateToSource, registerModuleBackHandler }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = {

@@ -29,6 +29,7 @@ import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as 
 import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACCENT_TEXT_SAFE, RADIUS, TYPE } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
+import { useTranslation } from "../i18n/index.js";
 
 export const TOUR_STEPS = [
   { id: "welcome", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
@@ -56,6 +57,7 @@ function findValidIndex(steps, fromIndex, direction) {
 }
 
 export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(() => {
     const first = isStepAvailable(steps[0]) ? 0 : findValidIndex(steps, 0, 1);
     return first < 0 ? -1 : first;
