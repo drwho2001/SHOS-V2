@@ -205,5 +205,16 @@
     "tabOptions": "Option lists",
     "registriesIntro": "Shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.",
     "optionsIntro": "Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates."
+  },
+  "autoBackup": {
+    "title": "Automatic backups",
+    "saveLocation": "Save location",
+    "savingToFolder": "Currently saving to \"{name}\".",
+    "savingToDefault": "Currently saving to your phone's Documents folder (the default). Pick a different folder if you'd rather it went somewhere else — a synced cloud folder, for example.",
+    "pickerError": "Couldn't set that folder — please try again.",
+    "choosing": "Choosing…",
+    "changeFolder": "Change folder",
+    "chooseFolder": "Choose a folder…",
+    "resetToDefault": "Reset to default"
   }
 }

@@ -8,6 +8,7 @@ import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { isCustomAutoExportFolderAvailable, pickAutoExportFolder } from "../../storage/fileExportHelper";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
+import { useTranslation } from "../../i18n/index.js";
 
 const AUTO_EXPORT_INTERVAL_OPTIONS = [
   { days: 7, label: "Weekly" },
@@ -30,6 +31,7 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
 // comment. Same content/behavior as before, now with its own header
 // and reachable directly from the Data section next to Export/Restore.
 export function AutomaticBackupsScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const dialogRef = useRef(null);
@@ -61,7 +63,7 @@ export function AutomaticBackupsScreen({ onClose }) {
     if (result.ok) {
       setPrefs(await AppPreferencesRepository.update({ autoExportFolder: result.folder }));
     } else if (result.reason !== "cancelled") {
-      setPickerError("Couldn't set that folder — please try again.");
+      setPickerError(t("autoBackup.pickerError", "Couldn't set that folder — please try again."));
     }
   };
   const resetFolder = async () => {
@@ -70,16 +72,16 @@ export function AutomaticBackupsScreen({ onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Automatic backups" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("autoBackup.title", "Automatic backups")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Automatic backups</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("autoBackup.title", "Automatic backups")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Automatic backups</span>
-            <div onClick={toggleAutoExport} role="switch" tabIndex={0} aria-checked={prefs.autoExportEnabled} aria-label="Automatic backups"
+            <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("autoBackup.title", "Automatic backups")}</span>
+            <div onClick={toggleAutoExport} role="switch" tabIndex={0} aria-checked={prefs.autoExportEnabled} aria-label={t("autoBackup.title", "Automatic backups")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAutoExport(); } }}
               style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: prefs.autoExportEnabled ? 21 : 3, transition: "left 0.15s" }} />
@@ -113,24 +115,24 @@ export function AutomaticBackupsScreen({ onClose }) {
             offered there. */}
         {folderPickerAvailable && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Save location</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("autoBackup.saveLocation", "Save location")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
               {prefs.autoExportFolder
-                ? `Currently saving to "${prefs.autoExportFolder.name || "the chosen folder"}".`
-                : "Currently saving to your phone's Documents folder (the default). Pick a different folder if you'd rather it went somewhere else — a synced cloud folder, for example."}
+                ? t("autoBackup.savingToFolder", `Currently saving to "${prefs.autoExportFolder.name || "the chosen folder"}".`)
+                : t("autoBackup.savingToDefault", "Currently saving to your phone's Documents folder (the default). Pick a different folder if you'd rather it went somewhere else — a synced cloud folder, for example.")}
             </div>
             {pickerError && <div style={{ fontSize: 11, color: ACTION.red, marginBottom: 8 }}>{pickerError}</div>}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span onClick={pickerBusy ? undefined : chooseFolder} role="button" tabIndex={0}
                 onKeyDown={(e) => { if (!pickerBusy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); chooseFolder(); } }}
                 style={{ padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: pickerBusy ? "default" : "pointer", opacity: pickerBusy ? 0.6 : 1, background: ACCENTS.home, color: "#FFFFFF" }}>
-                {pickerBusy ? "Choosing…" : prefs.autoExportFolder ? "Change folder" : "Choose a folder…"}
+                {pickerBusy ? t("autoBackup.choosing", "Choosing…") : prefs.autoExportFolder ? t("autoBackup.changeFolder", "Change folder") : t("autoBackup.chooseFolder", "Choose a folder…")}
               </span>
               {prefs.autoExportFolder && (
                 <span onClick={resetFolder} role="button" tabIndex={0}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); resetFolder(); } }}
                   style={{ padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
-                  Reset to default
+                  {t("autoBackup.resetToDefault", "Reset to default")}
                 </span>
               )}
             </div>
