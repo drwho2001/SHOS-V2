@@ -45,7 +45,8 @@
     "add": "Add",
     "search": "Search",
     "loading": "Loading...",
-    "removeAttachment": "Remove attachment"
+    "removeAttachment": "Remove attachment",
+    "back": "Back"
   },
   "settings": {
     "title": "Settings",
@@ -94,5 +95,17 @@
     "openSource": "Open source record",
     "back": "Back",
     "showAll": "Show all attachments"
+  },
+  "about": {
+    "title": "About",
+    "appName": "SHOS",
+    "appSubtitle": "Sexual Health Operating System",
+    "version": "Version",
+    "build": "Build",
+    "repository": "Repository",
+    "github": "GitHub",
+    "webApp": "Web app (iPhone / computer)",
+    "open": "Open",
+    "footer": "Local-first — nothing here leaves this device unless you choose to export or share it."
   }
 }
