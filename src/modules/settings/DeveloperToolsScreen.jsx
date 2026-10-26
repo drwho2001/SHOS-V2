@@ -458,7 +458,7 @@ export function DeveloperToolsScreen({ onClose }) {
           offered — no auto-repair, no bulk repair, no field merging. */}
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Data integrity</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
-        <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
+        <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} role={orphans.length > 0 ? "button" : undefined} tabIndex={orphans.length > 0 ? 0 : undefined} aria-label="Toggle broken references" aria-expanded={showOrphans} onKeyDown={orphans.length > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowOrphans((s) => !s); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
           <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Broken references</span>
           <span onClick={recheckOrphans} role="button" tabIndex={0} aria-label="Check again"
@@ -495,7 +495,7 @@ export function DeveloperToolsScreen({ onClose }) {
           worded as "worth a look" because a same-venue pair is EVIDENCE, not
           proof — two separate meetings in one evening are a real thing. */}
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
-        <div onClick={() => anomaly.total > 0 && setShowAnomalies((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: anomaly.total > 0 ? "pointer" : "default" }}>
+        <div onClick={() => anomaly.total > 0 && setShowAnomalies((s) => !s)} role={anomaly.total > 0 ? "button" : undefined} tabIndex={anomaly.total > 0 ? 0 : undefined} aria-label="Toggle records worth a look" aria-expanded={showAnomalies} onKeyDown={anomaly.total > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAnomalies((s) => !s); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: anomaly.total > 0 ? "pointer" : "default" }}>
           <WarningDiamond size={15} color={anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Records worth a look</span>
           <span onClick={recheckAnomalies} role="button" tabIndex={0} aria-label="Check records again"

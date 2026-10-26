@@ -492,7 +492,7 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
               when on, outline/grey when off, so the icon's own look
               says what state it's in at a glance, not just what it
               does. */}
-          <div onClick={() => setShowSyncSheet(true)} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title="Phone calendar sync">
+          <div onClick={() => setShowSyncSheet(true)} role="button" tabIndex={0} aria-label="Phone calendar sync" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSyncSheet(true); } }} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title="Phone calendar sync">
             {syncEnabled
               ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
               : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />}
