@@ -182,5 +182,21 @@
     "search": "Search terms",
     "noMatch": "No terms match your search.",
     "viewEvidence": "View clinical evidence and sources"
+  },
+  "errorLog": {
+    "title": "Error log",
+    "intro": "On-device only — nothing here is ever sent anywhere automatically. Export produces a plain text file you can choose to share yourself, e.g. in a bug report.",
+    "export": "Export",
+    "exportAria": "Export error log",
+    "clear": "Clear",
+    "clearAria": "Clear error log",
+    "clearConfirm": "This clears the whole error log — there's no getting it back.",
+    "reportProblem": "Report a problem",
+    "reportWithEndpoint": "Not a crash, just something that seems off? Write it below and tap Send — it's saved here AND sent, just this text, to the address set in Settings > Data & network.",
+    "reportWithoutEndpoint": "Not a crash, just something that seems off? Note it here — it's added to this same log so it's not forgotten. Set an address in Settings > Data & network to also send it directly.",
+    "placeholder": "What happened, and what did you expect instead?",
+    "send": "Send",
+    "saveNote": "Save note",
+    "empty": "No errors logged. A real uncaught error or crash will show up here automatically."
   }
 }

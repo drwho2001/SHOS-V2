@@ -12,8 +12,10 @@ import { ErrorLogRepository } from "../../repositories/errorLogRepository";
 import { AppPreferencesRepository } from "../../repositories/appPreferencesRepository";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../../components/useOverlayBackHandler";
+import { useTranslation } from "../../i18n/index.js";
 
 export function ErrorLogScreen({ darkMode, onClose }) {
+  const { t } = useTranslation();
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
   // ADDED — real audit finding (desktop full-width sweep): uneven
   // multi-line log entries — CSS multi-column flow, same as Trash/
@@ -110,45 +112,45 @@ export function ErrorLogScreen({ darkMode, onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Error log" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("errorLog.title", "Error log")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Error log</h1>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("errorLog.title", "Error log")}</h1>
         </div>
         {entries.length > 0 && (
           <div style={{ display: "flex", gap: 14 }}>
-            <span role="button" tabIndex={0} aria-label="Export error log" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Export</span>
-            <span role="button" tabIndex={0} aria-label="Clear error log" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+            <span role="button" tabIndex={0} aria-label={t("errorLog.exportAria", "Export error log")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{t("errorLog.export", "Export")}</span>
+            <span role="button" tabIndex={0} aria-label={t("errorLog.clearAria", "Clear error log")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>{t("errorLog.clear", "Clear")}</span>
           </div>
         )}
       </div>
       {confirmClear && (
         <ConfirmDeleteCard
           T={T}
-          message="This clears the whole error log — there's no getting it back."
-          confirmLabel="Clear"
+          message={t("errorLog.clearConfirm", "This clears the whole error log — there's no getting it back.")}
+          confirmLabel={t("errorLog.clear", "Clear")}
           onCancel={() => setConfirmClear(false)}
           onConfirm={clear}
         />
       )}
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
-          On-device only — nothing here is ever sent anywhere automatically. Export produces a plain text file you can choose to share yourself, e.g. in a bug report.
+          {t("errorLog.intro", "On-device only \u2014 nothing here is ever sent anywhere automatically. Export produces a plain text file you can choose to share yourself, e.g. in a bug report.")}
         </div>
         <div style={{ marginBottom: 16, padding: 12, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 6 }}>Report a problem</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 6 }}>{t("errorLog.reportProblem", "Report a problem")}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
             {endpoint
-              ? "Not a crash, just something that seems off? Write it below and tap Send — it's saved here AND sent, just this text, to the address set in Settings > Data & network."
-              : "Not a crash, just something that seems off? Note it here — it's added to this same log so it's not forgotten. Set an address in Settings > Data & network to also send it directly."}
+              ? t("errorLog.reportWithEndpoint", "Not a crash, just something that seems off? Write it below and tap Send — it's saved here AND sent, just this text, to the address set in Settings > Data & network.")
+              : t("errorLog.reportWithoutEndpoint", "Not a crash, just something that seems off? Note it here — it's added to this same log so it's not forgotten. Set an address in Settings > Data & network to also send it directly.")}
           </div>
           <textarea
             value={reportText}
             onChange={(e) => setReportText(e.target.value)}
-            placeholder="What happened, and what did you expect instead?"
+            placeholder={t("errorLog.placeholder", "What happened, and what did you expect instead?")}
             rows={2}
-            aria-label="Report a problem"
+            aria-label={t("errorLog.reportProblem", "Report a problem")}
             style={{ width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 13, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, resize: "vertical" }}
           />
           <div
@@ -158,14 +160,14 @@ export function ErrorLogScreen({ darkMode, onClose }) {
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submitReport(); } }}
             style={{ marginTop: 8, display: "inline-block", fontSize: 12, fontWeight: 700, color: reportText.trim() ? ACCENTS.home : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), cursor: reportText.trim() ? "pointer" : "default" }}
           >
-            {endpoint ? "Send" : "Save note"}
+            {endpoint ? t("errorLog.send", "Send") : t("errorLog.saveNote", "Save note")}
           </div>
           {sendStatus && <div style={{ marginTop: 6, fontSize: 11, color: sendStatus.ok ? ACTION.green : ACTION.red }}>{sendStatus.msg}</div>}
         </div>
         {exportStatus && <div style={{ fontSize: 12, color: exportStatus.ok ? ACTION.green : ACTION.red, marginBottom: 12 }}>{exportStatus.msg}</div>}
         {entries.length === 0 ? (
           <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
-            No errors logged. A real uncaught error or crash will show up here automatically.
+            {t("errorLog.empty", "No errors logged. A real uncaught error or crash will show up here automatically.")}
           </div>
         ) : (
         <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
