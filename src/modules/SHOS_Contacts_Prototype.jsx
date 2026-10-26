@@ -552,7 +552,7 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
   // does.
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState("");
-  const useCurrentLocation = async () => {
+  const handleUseCurrentLocation = async () => {
     setLocating(true);
     setLocateError("");
     try {
@@ -606,7 +606,7 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
     <div style={{ padding: "8px 0", position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
-        <span onClick={locating ? undefined : useCurrentLocation}
+        <span onClick={locating ? undefined : handleUseCurrentLocation} role="button" tabIndex={locating ? -1 : 0} aria-label={locating ? "Locating current location" : "Use current location"} aria-disabled={locating} onKeyDown={(e) => { if (!locating && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleUseCurrentLocation(); } }}
           style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.contactsTeal, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
           <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
         </span>
@@ -2013,7 +2013,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             <span>Restored unsaved changes from earlier.</span>
             {/* ADDED 19 Aug 2026 — the user's ask: a way to discard a
                 restored draft and start clean instead of continuing it. */}
-            <span onClick={() => { clearDraft(draftKey); setForm(contact ? { ...contact } : { ...DEFAULT_CONTACT }); }}
+            <span onClick={() => { clearDraft(draftKey); setForm(contact ? { ...contact } : { ...DEFAULT_CONTACT }); }} role="button" tabIndex={0} aria-label="Clear restored draft and start fresh" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clearDraft(draftKey); setForm(contact ? { ...contact } : { ...DEFAULT_CONTACT }); } }}
               style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
               Clear & start fresh
             </span>

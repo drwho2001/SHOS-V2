@@ -476,7 +476,7 @@ function EncryptedExportSheet({ onClose }) {
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div onClick={exporting ? undefined : doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : healthcareColor, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
+            <div onClick={exporting ? undefined : doExportToFolder} role="button" tabIndex={exporting ? -1 : 0} aria-disabled={exporting} aria-label="Choose a folder to export to" onKeyDown={(e) => { if (!exporting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); doExportToFolder(); } }} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : healthcareColor, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
               Choose a folder instead…
             </div>
           )}
@@ -696,7 +696,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const SettingsRow = ({ icon: Icon, label, onClick, disabled }) => {
     const resolvedIconColor = darkMode ? DARK.textDisabled : "#5B5B62";
     return (
-    <div onClick={disabled ? undefined : onClick}
+    <div onClick={disabled ? undefined : onClick} role={disabled ? undefined : "button"} tabIndex={disabled ? -1 : 0} aria-disabled={disabled} aria-label={label} onKeyDown={disabled ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Icon size={17} weight="regular" color={resolvedIconColor} />
