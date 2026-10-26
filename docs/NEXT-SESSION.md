@@ -168,6 +168,7 @@
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
+- i18n: extracted Vaccinations sheet strings.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -244,6 +245,7 @@
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
+- i18n: extracted Vaccinations sheet strings.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?

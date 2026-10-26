@@ -18,7 +18,9 @@
   },
   "vaccinations": {
     "logVaccination": "Log vaccination",
-    "editVaccination": "Edit vaccination"
+    "editVaccination": "Edit vaccination",
+    "addVaccination": "Add vaccination",
+    "saveChanges": "Save changes"
   },
   "common": {
     "save": "Save",

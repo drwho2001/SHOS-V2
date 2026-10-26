@@ -623,7 +623,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
           <button onClick={() => canSave && doSave()} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-            {isNew ? "Add vaccination" : "Save changes"}
+            {isNew ? t("vaccinations.addVaccination", "Add vaccination") : t("vaccinations.saveChanges", "Save changes")}
           </button>
         </div>
       </div>
