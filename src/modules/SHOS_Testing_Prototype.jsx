@@ -794,7 +794,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? t("testing.newTest", "New test") : t("testing.editTest", "Edit test")}</h1>
         <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcareBlue : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-          Save
+          {t("common.save", "Save")}
         </div>
       </div>
 
