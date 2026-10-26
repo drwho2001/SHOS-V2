@@ -5,6 +5,7 @@ import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DownloadSimpleIcon as Download } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../../repositories/notificationPreferencesRepository";
@@ -316,6 +317,7 @@ function NotificationPermissionBanner({ darkMode }) {
 // inside NotificationPermissionBanner above instead — showing a second,
 // generic nudge on top of that specific one would just be noise.
 function InstallPwaNudge({ darkMode }) {
+  const { t } = useTranslation();
   const [promptEvent, setPromptEvent] = useState(() => getDeferredInstallPrompt());
   const [platform, setPlatform] = useState(null);
   const [dismissed, setDismissed] = useState(false);
@@ -333,13 +335,13 @@ function InstallPwaNudge({ darkMode }) {
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface }}>
       <Download size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Install SHOS for more reliable reminders</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.installNudge", "Install SHOS for more reliable reminders")}</div>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           Installed as its own app (not just a browser tab), SHOS keeps its background notification handling registered more reliably.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={install} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Install</button>
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setDismissed(true)} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Not now</span>
+            <button onClick={install} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("notifications.install", "Install")}</button>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setDismissed(true)} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{t("notifications.notNow", "Not now")}</span>
         </div>
       </div>
     </div>
@@ -347,6 +349,7 @@ function InstallPwaNudge({ darkMode }) {
 }
 
 export function NotificationsScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
@@ -447,10 +450,10 @@ export function NotificationsScreen({ onClose }) {
   );
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Notifications" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("notifications.title", "Notifications")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notifications</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.title", "Notifications")}</h1>
       </div>
 
       <div style={{ padding: 16 }}>
@@ -534,7 +537,7 @@ export function NotificationsScreen({ onClose }) {
             from the 5 independent per-type toggles below. Checked in
             notificationService.js's own scheduleNotification() before
             any real reminder fires, regardless of type. */}
-        <NotificationToggleRow darkMode={darkMode} label="All notifications" enabled={notifPrefs.masterEnabled} onToggle={toggleMaster}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.allNotifications", "All notifications")} enabled={notifPrefs.masterEnabled} onToggle={toggleMaster}
           description="Turns every reminder type below on or off at once. Each toggle keeps its own setting for when this is back on." />
 
         {/* ADDED 3 Sep 2026 — real ask: "pause all reminders" vacation
@@ -543,13 +546,13 @@ export function NotificationsScreen({ onClose }) {
             single medication's own "skip until tomorrow" (only covers
             one medication, one day). */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Pause everything</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.pauseEverything", "Pause everything")}</div>
           {pausedActive ? (
             <>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
                 Paused until {new Date(notifPrefs.pausedUntil).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(notifPrefs.pausedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.
               </div>
-              <button onClick={resumeNow} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Resume now</button>
+              <button onClick={resumeNow} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("notifications.resumeNow", "Resume now")}</button>
             </>
           ) : (
             <>
@@ -569,7 +572,7 @@ export function NotificationsScreen({ onClose }) {
             dropped — a reminder due inside the window is rescheduled
             for the window's end, see quietHoursEndAfter() in
             notificationPreferencesRepository.js. */}
-        <NotificationToggleRow darkMode={darkMode} label="Quiet hours" enabled={notifPrefs.quietHoursEnabled} onToggle={() => setQuietHours({ quietHoursEnabled: !notifPrefs.quietHoursEnabled })}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.quietHours", "Quiet hours")} enabled={notifPrefs.quietHoursEnabled} onToggle={() => setQuietHours({ quietHoursEnabled: !notifPrefs.quietHoursEnabled })}
           description="Reminders due inside this window wait until it ends, rather than firing overnight.">
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
             <div>
@@ -585,28 +588,28 @@ export function NotificationsScreen({ onClose }) {
           </div>
         </NotificationToggleRow>
 
-        <NotificationToggleRow darkMode={darkMode} label="Medication dose reminders" enabled={medPrefs.doseRemindersEnabled} onToggle={toggleMed}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.medicationDose", "Medication dose reminders")} enabled={medPrefs.doseRemindersEnabled} onToggle={toggleMed}
           description="Alerts when a daily medication is due, or due soon." />
-        <NotificationToggleRow darkMode={darkMode} label="Refill reminders" enabled={notifPrefs.refillReminderEnabled} onToggle={() => toggleNotif("refillReminderEnabled")}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.refill", "Refill reminders")} enabled={notifPrefs.refillReminderEnabled} onToggle={() => toggleNotif("refillReminderEnabled")}
           description="Alerts when a tracked medication's stock drops to its refill threshold." />
-        <NotificationToggleRow darkMode={darkMode} label="DoxyPEP dose alert" enabled={notifPrefs.doxyPepAlertEnabled} onToggle={() => toggleNotif("doxyPepAlertEnabled")}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.doxyPep", "DoxyPEP dose alert")} enabled={notifPrefs.doxyPepAlertEnabled} onToggle={() => toggleNotif("doxyPepAlertEnabled")}
           description="Alert as the 72-hour DoxyPEP window approaches after a qualifying activity." />
-        <NotificationToggleRow darkMode={darkMode} label="Testing due reminder" enabled={notifPrefs.testingReminderEnabled} onToggle={() => toggleNotif("testingReminderEnabled")}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.testingDue", "Testing due reminder")} enabled={notifPrefs.testingReminderEnabled} onToggle={() => toggleNotif("testingReminderEnabled")}
           description="Reminder around your suggested routine retest date (3 months after a negative test)." />
-        <NotificationToggleRow darkMode={darkMode} label="Vaccination due reminder" enabled={notifPrefs.vaccinationReminderEnabled} onToggle={() => toggleNotif("vaccinationReminderEnabled")}
+        <NotificationToggleRow darkMode={darkMode} label={t("notifications.vaccinationDue", "Vaccination due reminder")} enabled={notifPrefs.vaccinationReminderEnabled} onToggle={() => toggleNotif("vaccinationReminderEnabled")}
           description="Reminder on a vaccination record's own 'Next due' date (e.g. the second dose of a multi-dose course)." />
         {/* CHANGED 17 Sep 2026 — real ask: put the two clinic-appointment
             reminders on one shared card instead of two separate ones —
             they're the same real feature (a booked appointment), just
             two independently-timed alerts about it. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 10 }}>Clinic appointment reminders</div>
-          <NotificationToggleRow bare darkMode={darkMode} label="First reminder" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
-            description="Defaults to 24 hours before the appointment.">
+          <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 10 }}>{t("notifications.clinicAppointment", "Clinic appointment reminders")}</div>
+          <NotificationToggleRow bare darkMode={darkMode} label={t("notifications.firstReminder", "First reminder")} enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
+            description={t("notifications.firstReminderDesc", "Defaults to 24 hours before the appointment.")}>
             {hoursInput(notifPrefs.clinicVisitReminderAHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
           </NotificationToggleRow>
           <div style={{ height: 1, background: darkMode ? DARK.border : NEUTRAL.border, margin: "12px 0" }} />
-          <NotificationToggleRow bare darkMode={darkMode} label="Second reminder" enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
+          <NotificationToggleRow bare darkMode={darkMode} label={t("notifications.secondReminder", "Second reminder")} enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
             description="A closer, second reminder. Defaults to 2 hours before.">
             {hoursInput(notifPrefs.clinicVisitReminderBHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
           </NotificationToggleRow>
@@ -616,7 +619,7 @@ export function NotificationsScreen({ onClose }) {
             nothing anywhere previously recorded that a real
             notification had delivered. */}
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowHistory(true)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.history", "Notification history")}</span>
           <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
         </div>
         </div>

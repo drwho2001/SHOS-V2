@@ -311,5 +311,25 @@
     "clearDemoData": "Clear demo data",
     "clearing": "Clearing…",
     "deleteEverything": "Yes, delete everything"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "history": "Notification history",
+    "allNotifications": "All notifications",
+    "pauseEverything": "Pause everything",
+    "resumeNow": "Resume now",
+    "quietHours": "Quiet hours",
+    "medicationDose": "Medication dose reminders",
+    "refill": "Refill reminders",
+    "doxyPep": "DoxyPEP dose alert",
+    "testingDue": "Testing due reminder",
+    "vaccinationDue": "Vaccination due reminder",
+    "clinicAppointment": "Clinic appointment reminders",
+    "firstReminder": "First reminder",
+    "firstReminderDesc": "Defaults to 24 hours before the appointment.",
+    "secondReminder": "Second reminder",
+    "installNudge": "Install SHOS for more reliable reminders",
+    "install": "Install",
+    "notNow": "Not now"
   }
 }
