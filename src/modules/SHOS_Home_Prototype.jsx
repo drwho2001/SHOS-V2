@@ -1064,7 +1064,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Recent activity</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
-        <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
+        <SummaryRow label={t("home.lastEncounter", "Last encounter")} moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         {/* ADDED 26 Sep 2026 — this row's query has existed since the
             "Recent activity" list was first built (lastContact is set from
             ContactRepository further up this same effect) but was never
@@ -1095,10 +1095,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             one, which is the whole point of that module: the original bug was
             two hand-duplicated placeholders drifting apart, and a third local
             copy here would rebuild exactly that. */}
-        <SummaryRow label="Newest contact" moduleColor={ACCENTS.contacts} value={lastContact ? `${anonymise ? ANONYMISED : lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
-        <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
-        <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
-        <SummaryRow label="Next clinic visit" moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "No future visit booked — BASHH advises 3/12 monthly testing"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />
+        <SummaryRow label={t("home.newestContact", "Newest contact")} moduleColor={ACCENTS.contacts} value={lastContact ? `${anonymise ? ANONYMISED : lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
+        <SummaryRow label={t("home.lastMedicationDose", "Last medication dose")} moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
+        <SummaryRow label={t("home.lastTest", "Last test")} moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
+        <SummaryRow label={t("home.nextClinicVisit", "Next clinic visit")} moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "No future visit booked — BASHH advises 3/12 monthly testing"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />
         {/* ADDED — real ask: Menstrual/Contraception real results on
             the dashboard, same "click opens the actual record" pattern
             as every row above — not a separate stats section, this
@@ -1109,14 +1109,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 colour (menstrualColor), same as the Cycle tab's own
                 drop icon and the "Log period" button below — no
                 longer borrowing ACTION.red, see designTokens.js. */}
-            <SummaryRow label="Last period" moduleColor={menstrualColor} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
+            <SummaryRow label={t("home.lastPeriod", "Last period")} moduleColor={menstrualColor} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
             {/* CHANGED — real ask: contraception reads as a medication
                 (something taken/administered on a schedule), not a
                 Healthcare-generic fact — same medsBlue "Log
                 medication"/"Last medication dose" already use above,
                 so it groups visually with dose/refill data instead of
                 blending into the green Healthcare rows around it. */}
-            <SummaryRow label="Contraception due" moduleColor={medsBlue} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
+            <SummaryRow label={t("home.contraceptionDue", "Contraception due")} moduleColor={medsBlue} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
           </>
         )}
       </div>

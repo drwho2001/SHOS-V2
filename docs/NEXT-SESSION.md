@@ -170,6 +170,7 @@
 - Accessibility: improved keyboard/ARIA support in GlobalSearch sort chips.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
+- i18n: extracted Home recent activity labels.
 - i18n: extracted Vaccinations sheet strings.
 
 ## Questions for owner
@@ -249,6 +250,7 @@
 - Accessibility: improved keyboard/ARIA support in GlobalSearch sort chips.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
+- i18n: extracted Home recent activity labels.
 - i18n: extracted Vaccinations sheet strings.
 
 ## Questions for owner

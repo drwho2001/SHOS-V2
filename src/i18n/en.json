@@ -1,7 +1,14 @@
 {
   "home": {
     "dashboardTitle": "{name}'s dashboard",
-    "yourDashboard": "Your dashboard"
+    "yourDashboard": "Your dashboard",
+    "lastEncounter": "Last encounter",
+    "newestContact": "Newest contact",
+    "lastMedicationDose": "Last medication dose",
+    "lastTest": "Last test",
+    "nextClinicVisit": "Next clinic visit",
+    "lastPeriod": "Last period",
+    "contraceptionDue": "Contraception due"
   },
   "contacts": {
     "addContact": "Add contact",
