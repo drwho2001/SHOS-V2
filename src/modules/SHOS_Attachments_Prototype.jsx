@@ -138,7 +138,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px" }}>
-        <div onClick={() => setFilterType("")}
+        <div role="button" tabIndex={0} aria-pressed={filterType === ""} aria-label="Show all attachments" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilterType(""); } }} onClick={() => setFilterType("")}
           style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcareBlue : T.border}`, color: filterType === "" ? T.healthcareBlue : T.textSecondary, background: filterType === "" ? `${T.healthcareBlue}15` : "transparent" }}>
           All
         </div>

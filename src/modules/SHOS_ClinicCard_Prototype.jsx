@@ -466,9 +466,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             printing for) a clinician rather than only reading it on
             screen. Disabled mid-export rather than hidden, so a slow
             device doesn't look like the tap did nothing. */}
-        <FilePdf size={20} color={exportingPdf ? T.textDisabled : T.textSecondary} style={{ cursor: exportingPdf ? "default" : "pointer" }} onClick={exportPdf} />
+        <FilePdf size={20} color={exportingPdf ? T.textDisabled : T.textSecondary} style={{ cursor: exportingPdf ? "default" : "pointer" }} onClick={exportPdf} role="button" tabIndex={exportingPdf ? -1 : 0} aria-label="Export clinic card as PDF" aria-disabled={exportingPdf} onKeyDown={(e) => { if (!exportingPdf && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); exportPdf(); } }} />
         {/* ADDED — real ask: settings to filter which sections show. */}
-        <Settings size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(true)} />
+        <Settings size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(true)} role="button" tabIndex={0} aria-label="Clinic card visibility settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowVisibilitySettings(true); } }} />
       </div>
       <div style={{ padding: "10px 16px 0", fontSize: 12, color: T.textSecondary }}>
         A read-only summary — nothing here is editable from this screen, except the identity details directly below. Tap the relevant module to make other changes.
