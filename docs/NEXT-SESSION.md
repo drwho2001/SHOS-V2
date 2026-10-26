@@ -1,3 +1,28 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 9)
+
+## What shipped since last wrap-up
+- Reclaimed all work from DELEGATE (user frustrated with micro-steps)
+- Fixed anonymiseCoverageGuard test (DELEGATE renamed Newest contact label)
+- Wired up i18n in Settings and Healthcare modules
+- Added settings and healthcare strings to en.json
+- verify:fast ALL GATES PASSED
+
+## Remaining backlog (needs owner decisions or native development)
+- Release keystore: deferred until Play Store release
+- CSP meta tag: deferred (risk of breaking inline styles/scripts)
+- Accessibility audit: in progress (DELEGATE was handling, now reclaimed)
+- i18n wiring: in progress (DELEGATE was handling, now reclaimed)
+- Smoke test gaps: in progress (DELEGATE was handling, now reclaimed)
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 8)
 
 ## What shipped since last wrap-up
