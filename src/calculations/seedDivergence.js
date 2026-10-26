@@ -2634,12 +2634,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomLogIds": [
         "seed_symlog_9001"
       ],
-      "resolvedDate": "2026-10-24T23:37:38.348Z",
+      "resolvedDate": "2026-10-25T00:39:07.830Z",
       "resolution": "Treated — course complete",
       "notes": "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
       "isArchived": false,
       "id": "episode_001",
-      "createdAt": "2026-10-16T23:37:38.348Z"
+      "createdAt": "2026-10-17T00:39:07.830Z"
     }
   ],
   "Logs": [
@@ -2815,36 +2815,36 @@ export const RAW_LEGACY_SEED_ARRAYS = {
   "Cycles": [
     {
       "isDemo": true,
-      "startDate": "2026-08-28",
-      "endDate": "2026-09-02",
+      "startDate": "2026-08-29",
+      "endDate": "2026-09-03",
       "flow": "Medium",
       "symptomIds": [],
       "notes": "",
       "isArchived": false,
       "id": "cycle_001",
-      "createdAt": "2026-10-26T00:37:38.554Z"
+      "createdAt": "2026-10-26T01:39:08.047Z"
     },
     {
       "isDemo": true,
-      "startDate": "2026-09-25",
-      "endDate": "2026-09-29",
+      "startDate": "2026-09-26",
+      "endDate": "2026-09-30",
       "flow": "Heavy",
       "symptomIds": [],
       "notes": "",
       "isArchived": false,
       "id": "cycle_002",
-      "createdAt": "2026-10-26T00:37:38.554Z"
+      "createdAt": "2026-10-26T01:39:08.047Z"
     },
     {
       "isDemo": true,
-      "startDate": "2026-10-24",
+      "startDate": "2026-10-25",
       "endDate": null,
       "flow": "Light",
       "symptomIds": [],
       "notes": "Ongoing.",
       "isArchived": false,
       "id": "cycle_003",
-      "createdAt": "2026-10-26T00:37:38.554Z"
+      "createdAt": "2026-10-26T01:39:08.047Z"
     }
   ],
   "Contraception": [
@@ -2852,35 +2852,35 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "isDemo": true,
       "method": "Combined pill",
       "formulation": "Pill/Tablet",
-      "startDate": "2025-09-20",
-      "endDate": "2026-07-22",
+      "startDate": "2025-09-21",
+      "endDate": "2026-07-23",
       "intervalDays": null,
       "nextDueDate": null,
       "linkedClinicVisitId": null,
       "notes": "Stopped when the relationship with Morgan became exclusive.",
       "isArchived": false,
       "id": "contra_001",
-      "createdAt": "2026-10-26T00:37:38.240Z"
+      "createdAt": "2026-10-26T01:39:07.735Z"
     },
     {
       "isDemo": true,
       "method": "Depot",
       "formulation": "Injection",
-      "startDate": "2026-09-10",
+      "startDate": "2026-09-11",
       "endDate": null,
       "intervalDays": 84,
-      "nextDueDate": "2026-12-03",
+      "nextDueDate": "2026-12-04",
       "linkedClinicVisitId": null,
       "notes": "Started after the miscarriage — wanted something more reliable than the pill.",
       "isArchived": false,
       "id": "contra_002",
-      "createdAt": "2026-10-26T00:37:38.240Z"
+      "createdAt": "2026-10-26T01:39:07.735Z"
     },
     {
       "isDemo": true,
       "method": "IUD (hormonal)",
       "formulation": "IUD/Implant",
-      "startDate": "2026-08-11",
+      "startDate": "2026-08-12",
       "endDate": null,
       "intervalDays": null,
       "nextDueDate": null,
@@ -2888,13 +2888,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well.",
       "isArchived": false,
       "id": "contra_003",
-      "createdAt": "2026-10-26T00:37:38.240Z"
+      "createdAt": "2026-10-26T01:39:07.735Z"
     }
   ],
   "Pregnancy": [
     {
       "isDemo": true,
-      "testDate": "2026-09-15",
+      "testDate": "2026-09-16",
       "testResult": "Negative",
       "estimatedDueDate": null,
       "status": "",
@@ -2903,15 +2903,15 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Precautionary test.",
       "isArchived": false,
       "id": "pregnancy_001",
-      "createdAt": "2026-10-26T00:37:38.574Z"
+      "createdAt": "2026-10-26T01:39:08.072Z"
     },
     {
       "isDemo": true,
-      "testDate": "2026-08-11",
+      "testDate": "2026-08-12",
       "testResult": "Positive",
-      "estimatedDueDate": "2027-04-13",
+      "estimatedDueDate": "2027-04-14",
       "status": "Miscarriage",
-      "outcomeDate": "2026-09-02",
+      "outcomeDate": "2026-09-03",
       "sensitive": true,
       "notes": "Found out at 5 weeks. Miscarried naturally at home, confirmed at follow-up.",
       "isArchived": false,
