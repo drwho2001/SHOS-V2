@@ -56,6 +56,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // deliberate light-on-dark inversion, not an accent at all).
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useTranslation } from "../i18n/index.js";
 // `Info` is the shared tap-to-reveal affordance used across this app for
 // explaining a derived value (see CLAUDE.md's icon-only-UI rule). Aliased to
 // InfoIcon on import above, so it is referenced by that name here.
@@ -1839,6 +1840,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget } = {}) {
+  const { t } = useTranslation();
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // Declared before useEditUndo below so that call can pass a stable
   // indirection to refreshMeds without a temporal-dead-zone reference.

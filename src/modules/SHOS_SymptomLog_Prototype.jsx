@@ -29,6 +29,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 import { isRecentRecord } from "../calculations/recordRecency";
 import { findDataAnomalies, NEVER_RESOLVED_DAYS } from "../calculations/dataAnomalyScan";
 import SectionCard from "../components/SectionCard.jsx";
+import { useTranslation } from "../i18n/index.js";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -828,6 +829,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
 }
 
 export default function SymptomLogModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });

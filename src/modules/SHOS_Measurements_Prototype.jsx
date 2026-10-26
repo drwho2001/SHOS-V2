@@ -36,6 +36,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
+import { useTranslation } from "../i18n/index.js";
 
 // Domain key for CustomGroupsRepository — shared mechanism, this
 // module's own namespace within it (see customGroupsRepository.js).
@@ -1183,6 +1184,7 @@ function detectUnitSystem(prefs) {
 }
 
 export default function MeasurementsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
