@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, PencilSimpleIcon as PencilSimple } from "
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { BASHH_TESTING_SOURCE_URL } from "../../calculations/statsCalculations";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { ResourcesRepository, CATEGORY_LABELS as RESOURCE_CATEGORY_LABELS } from "../../repositories/resourcesRepository";
@@ -33,6 +34,7 @@ function resourceLinkHref(link) {
 // resourcesRepository.js's own addEntry()) so the curated list and a
 // user's own additions are visually distinguishable at a glance.
 function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
+  const { t } = useTranslation();
   const T = darkMode ? DARK : NEUTRAL;
   const [expanded, setExpanded] = useState(false);
   const [link, setLink] = useState(entry.link);
@@ -52,13 +54,13 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{entry.name}</span>
         {entry.isCustom && (
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, color: T.textDisabled, border: `1px solid ${T.border}`, borderRadius: 999, padding: "1px 6px" }}>Added by you</span>
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, color: T.textDisabled, border: `1px solid ${T.border}`, borderRadius: 999, padding: "1px 6px" }}>{t("resources.addedByYou", "Added by you")}</span>
         )}
       </div>
       {!expanded && entry.link && (
         <div style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2, textDecoration: "underline" }}>{entry.link}</div>
       )}
-      {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>No link saved yet — tap the pencil to add one</div>}
+      {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>{t("resources.noLink", "No link saved yet — tap the pencil to add one")}</div>}
     </div>
   );
 
@@ -81,19 +83,19 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
           onClick={() => setExpanded((e) => !e)}
           role="button"
           tabIndex={0}
-          aria-label={`Edit ${entry.name}`}
+          aria-label={t("resources.editAria", `Edit ${entry.name}`)}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((v) => !v); } }}
         />
       </div>
       {expanded && (
         <div style={{ marginTop: 10 }}>
-          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link or phone number" aria-label="Resource link"
+          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder={t("resources.linkPlaceholder", "Link or phone number")} aria-label={t("resources.linkAria", "Resource link")}
             style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 8 }} />
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} aria-label="Resource notes"
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("resources.notesPlaceholder", "Notes (optional)")} rows={2} aria-label={t("resources.notesAria", "Resource notes")}
             style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical", marginBottom: 8 }} />
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={remove} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${ACTION.red}`, background: "transparent", color: ACTION.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Remove</button>
-            <button onClick={save} style={{ flex: 1, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+            <button onClick={remove} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${ACTION.red}`, background: "transparent", color: ACTION.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t("resources.remove", "Remove")}</button>
+            <button onClick={save} style={{ flex: 1, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("resources.save", "Save")}</button>
           </div>
         </div>
       )}
@@ -126,6 +128,7 @@ async function hasAnyResourceMatch(query) {
 }
 
 function ResourceCategory({ categoryKey, darkMode, query }) {
+  const { t } = useTranslation();
   const T = darkMode ? DARK : NEUTRAL;
   const [refreshKey, setRefreshKey] = useState(0);
   const [addingName, setAddingName] = useState("");
@@ -158,16 +161,16 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>Nothing added yet.</div>
+          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>{t("resources.nothingAdded", "Nothing added yet.")}</div>
         ) : filtered.map((entry) => (
           <ResourceEntryRow key={entry.id} entry={entry} categoryKey={categoryKey} onChanged={refresh} darkMode={darkMode} />
         ))}
         {!q && (
           <div style={{ display: "flex", gap: 8, padding: 12 }}>
-            <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder="+ Add your own"
+            <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder={t("resources.addYourOwn", "+ Add your own")}
               onKeyDown={(e) => { if (e.key === "Enter") addEntry(); }}
               style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-            <button onClick={addEntry} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
+            <button onClick={addEntry} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("resources.add", "Add")}</button>
           </div>
         )}
       </div>
@@ -185,6 +188,7 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
 // (Stats screen) — no other link here is invented; guidance without an
 // existing verified URL in this codebase is named, not linked.
 function ClinicalJustificationsCategory({ darkMode }) {
+  const { t } = useTranslation();
   const T = darkMode ? DARK : NEUTRAL;
   const items = [
     { title: "STI retesting interval (90 days)", body: "BASHH's 2023 \"Summary Guidance on Testing for STIs\" recommends 3-monthly asymptomatic screening for higher-risk groups; matches CDC's own 3–6 month guidance for PrEP users.", link: BASHH_TESTING_SOURCE_URL },
@@ -193,10 +197,10 @@ function ClinicalJustificationsCategory({ darkMode }) {
   ];
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>Clinical justifications used</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>{t("resources.clinicalJustifications", "Clinical justifications used")}</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
         <div style={{ fontSize: 11, color: T.textSecondary, padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
-          What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice.
+          {t("resources.clinicalJustificationsIntro", "What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on \u2014 informational, not personalised medical advice.")}
         </div>
         {items.map((item) => (
           <div key={item.title} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
@@ -211,6 +215,7 @@ function ClinicalJustificationsCategory({ darkMode }) {
 }
 
 export function ResourcesScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   // ADDED — real audit finding (desktop full-width sweep): each
@@ -228,19 +233,19 @@ export function ResourcesScreen({ onClose }) {
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Resources" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("resources.title", "Resources")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Resources</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("resources.title", "Resources")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
-          Real organisations, most with a real link already filled in. Anything still blank is worth adding yourself with a current, verified one rather than trusting a guess for something this important — and any link here is worth double-checking still works before relying on it.
+          {t("resources.intro", "Real organisations, most with a real link already filled in. Anything still blank is worth adding yourself with a current, verified one rather than trusting a guess for something this important \u2014 and any link here is worth double-checking still works before relying on it.")}
         </div>
         {/* ADDED 1 Sep 2026 — real ask: search, now that this list runs
             to 11 categories and ~30 entries after the real URL
             population pass. Matches name, link, or notes. */}
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search resources"
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("resources.search", "Search resources")}
           style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
         <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
           {hasMatch ? `Results found${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No resources match" : "No query"}
@@ -252,7 +257,7 @@ export function ResourcesScreen({ onClose }) {
           {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
         </div>
         {query.trim() && !hasMatch && (
-          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No resources match your search.</div>
+          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>{t("resources.noMatch", "No resources match your search.")}</div>
         )}
       </div>
     </div>

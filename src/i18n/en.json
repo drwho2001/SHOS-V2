@@ -277,5 +277,25 @@
     "privateDesc": "On-device only, structurally can't sync or be shared.",
     "notPrivateTitle": "Not private by default",
     "notPrivate": "Not private by default — its own sharing settings apply."
+  },
+  "resources": {
+    "title": "Resources",
+    "intro": "Real organisations, most with a real link already filled in. Anything still blank is worth adding yourself with a current, verified one rather than trusting a guess for something this important — and any link here is worth double-checking still works before relying on it.",
+    "search": "Search resources",
+    "noMatch": "No resources match your search.",
+    "nothingAdded": "Nothing added yet.",
+    "addYourOwn": "+ Add your own",
+    "add": "Add",
+    "remove": "Remove",
+    "save": "Save",
+    "addedByYou": "Added by you",
+    "noLink": "No link saved yet — tap the pencil to add one",
+    "linkPlaceholder": "Link or phone number",
+    "linkAria": "Resource link",
+    "notesPlaceholder": "Notes (optional)",
+    "notesAria": "Resource notes",
+    "editAria": "Edit {name}",
+    "clinicalJustifications": "Clinical justifications used",
+    "clinicalJustificationsIntro": "What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice."
   }
 }
