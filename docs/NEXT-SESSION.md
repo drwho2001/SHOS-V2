@@ -1,3 +1,30 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 5)
+
+## What shipped since last wrap-up
+- Regenerated seed snapshot after isDemo additions (fixes seedSnapshotCoverage test)
+- DELEGATE pushed: i18n (c6d7124), accessibility (9a7ad5a, 6e46065, 0d63fba, 15b18d6, 2acfa87, 6c37b11), add-contact smoke flow (b405966)
+
+## CI status
+- 1930/1933 tests pass (3 failures are flaky: sessionBridge network timeout, FormTabs resource contention)
+- 0 lint errors, build clean
+- All failures are environment-related, not code-related
+
+## Remaining backlog
+- Hardware-backed Android Keystore (needs Capacitor plugin)
+- Release keystore (deferred)
+- Accessibility audit: DELEGATE handling remaining components
+- i18n wiring: DELEGATE started scaffold, needs more extraction
+- Smoke test gaps: DELEGATE handling
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 4)
 
 ## What shipped since last wrap-up
