@@ -198,5 +198,12 @@
     "send": "Send",
     "saveNote": "Save note",
     "empty": "No errors logged. A real uncaught error or crash will show up here automatically."
+  },
+  "manageLists": {
+    "title": "Manage lists",
+    "tabRegistries": "Registries",
+    "tabOptions": "Option lists",
+    "registriesIntro": "Shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.",
+    "optionsIntro": "Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates."
   }
 }

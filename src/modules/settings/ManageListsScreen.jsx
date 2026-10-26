@@ -5,6 +5,7 @@ import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ListChecksIcon as ClipboardCheck, FireIcon as Flame, MicroscopeIcon as Microscope, PillIcon as Pill, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MapPinIcon as MapPin } from "@phosphor-icons/react";
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage, computeLocationsUsage } from "../../calculations/registryUsage";
 import { LOCATION_TYPE_OPTIONS } from "../../repositories/locationsRepository";
@@ -83,6 +84,7 @@ const REGISTRIES = [
 // still do all the real add/rename/archive work exactly as before —
 // this only touches how the two lists are ENTERED, not how they work.
 export function ManageListsScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const [tab, setTab] = useState("registries");
   const [openRegistry, setOpenRegistry] = useState(null);
@@ -100,13 +102,13 @@ export function ManageListsScreen({ onClose }) {
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Manage lists" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("manageLists.title", "Manage lists")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Manage lists</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("manageLists.title", "Manage lists")}</h1>
       </div>
       <div style={{ display: "flex", gap: 8, padding: "12px 16px 0" }}>
-        {[["registries", "Registries"], ["options", "Option lists"]].map(([key, label]) => (
+        {[["registries", t("manageLists.tabRegistries", "Registries")], ["options", t("manageLists.tabOptions", "Option lists")]].map(([key, label]) => (
           <div key={key} onClick={() => setTab(key)} role="button" tabIndex={0} aria-pressed={tab === key} aria-label={label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTab(key); } }}
             style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary) }}>
             {label}
@@ -116,7 +118,7 @@ export function ManageListsScreen({ onClose }) {
       {tab === "registries" ? (
         <>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "10px 16px 0" }}>
-            Shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.
+            {t("manageLists.registriesIntro", "Shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.")}
           </div>
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
             {REGISTRIES.map((r) => (
@@ -136,7 +138,7 @@ export function ManageListsScreen({ onClose }) {
       ) : (
         <>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "10px 16px 0" }}>
-            Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.
+            {t("manageLists.optionsIntro", "Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.")}
           </div>
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
             {optionListNames.map((name) => {
