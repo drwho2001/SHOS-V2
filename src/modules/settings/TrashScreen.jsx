@@ -6,6 +6,7 @@ import ConfirmDeleteCard from "../../components/ConfirmDeleteCard";
 import { CheckIcon as Check, CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useTranslation } from "../../i18n/index.js";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { ContactRepository } from "../../repositories/contactRepository";
@@ -48,6 +49,7 @@ const TRASH_REPOSITORIES = {
 // excluded — see that file's own comment for why).
 
 export function TrashScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
@@ -111,15 +113,15 @@ export function TrashScreen({ onClose }) {
   const recordLabel = (entry) => entry.record.title || entry.record.name || entry.record.displayName || "Untitled";
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Trash" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("trash.title", "Trash")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), justifyContent: "space-between" }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Trash</h1>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("trash.title", "Trash")}</h1>
         </div>
         {items.length > 0 && (
           <span role="button" tabIndex={0} aria-label={selectMode ? "Done selecting" : "Select items"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>
-            {selectMode ? "Done" : "Select"}
+            {selectMode ? t("trash.done", "Done") : t("trash.select", "Select")}
           </span>
         )}
       </div>
@@ -127,9 +129,9 @@ export function TrashScreen({ onClose }) {
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
-            <span role="button" tabIndex={0} aria-label="Restore selected items" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
-            <span role="button" tabIndex={0} aria-label="Delete selected items" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectedIds.length > 0 && setConfirmDeleteSelected(true)} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
+            <span role="button" tabIndex={0} aria-label="Restore selected items" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{t("trash.restore", "Restore")}</span>
+            <span role="button" tabIndex={0} aria-label="Delete selected items" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectedIds.length > 0 && setConfirmDeleteSelected(true)} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{t("trash.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</span>
           </div>
         </div>
       )}
@@ -147,7 +149,7 @@ export function TrashScreen({ onClose }) {
           Deleted items stay here for 30 days before they're no longer shown. This is separate from the "tap to undo" that appears right after deleting something.
         </div>
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontSize: 13 }}>Nothing in the trash.</div>
+          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontSize: 13 }}>{t("trash.empty", "Nothing in the trash.")}</div>
         ) : (
           <>
             {/* ADDED 26 Aug 2026 — real ask: "restore all" and "delete
@@ -156,8 +158,8 @@ export function TrashScreen({ onClose }) {
                 select mode. */}
             {!selectMode && (
               <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
-                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={restoreAll} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>Restore all</span>
-                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmDeleteAll(true)} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Delete all</span>
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={restoreAll} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>{t("trash.restoreAll", "Restore all")}</span>
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmDeleteAll(true)} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>{t("trash.deleteAll", "Delete all")}</span>
               </div>
             )}
             {confirmDeleteAll && (
@@ -165,7 +167,7 @@ export function TrashScreen({ onClose }) {
                 T={T}
                 margin="0 0 12px"
                 message={`Permanently delete all ${items.length} item${items.length > 1 ? "s" : ""} in the trash? This can't be undone.`}
-                confirmLabel="Delete all"
+                confirmLabel={t("trash.deleteAll", "Delete all")}
                 onCancel={() => setConfirmDeleteAll(false)}
                 onConfirm={deleteAll}
               />
@@ -193,8 +195,8 @@ export function TrashScreen({ onClose }) {
                   </div>
                   {!selectMode && (
                     <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
-                      <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => restoreItem(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.medication, cursor: "pointer" }}>Restore</span>
-                      <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmDeleteEntry(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACTION.red, cursor: "pointer" }}>Delete</span>
+                      <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => restoreItem(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.medication, cursor: "pointer" }}>{t("trash.restore", "Restore")}</span>
+                      <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmDeleteEntry(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACTION.red, cursor: "pointer" }}>{t("trash.delete", "Delete")}</span>
                     </div>
                   )}
                 </div>
@@ -205,7 +207,7 @@ export function TrashScreen({ onClose }) {
                 <ConfirmDeleteCard
                   T={T}
                   margin="0"
-                  message="Delete this permanently? It won't be recoverable after this."
+                  message={t("trash.deletePermanent", "Delete this permanently? It won't be recoverable after this.")}
                   onCancel={() => setConfirmDeleteEntry(null)}
                   onConfirm={() => deletePermanently(confirmDeleteEntry)}
                 />

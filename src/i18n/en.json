@@ -331,5 +331,16 @@
     "installNudge": "Install SHOS for more reliable reminders",
     "install": "Install",
     "notNow": "Not now"
+  },
+  "trash": {
+    "title": "Trash",
+    "empty": "Nothing in the trash.",
+    "select": "Select",
+    "done": "Done",
+    "restore": "Restore",
+    "delete": "Delete",
+    "restoreAll": "Restore all",
+    "deleteAll": "Delete all",
+    "deletePermanent": "Delete this permanently? It won't be recoverable after this."
   }
 }
