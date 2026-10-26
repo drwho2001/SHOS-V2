@@ -1257,7 +1257,7 @@ function DoseComponentsField({ value, onChange, T }) {
           )}
         </div>
       ))}
-      <div onClick={addRow} style={{ fontSize: 12, color: T.medsBlue, fontWeight: 600, cursor: "pointer" }}>
+      <div onClick={addRow} role="button" tabIndex={0} aria-label="Add a dose component" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addRow(); } }} style={{ fontSize: 12, color: T.medsBlue, fontWeight: 600, cursor: "pointer" }}>
         + Add another active ingredient (e.g. combination products like PrEP or co-codamol)
       </div>
     </div>
@@ -1825,7 +1825,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: every per-module settings
             screen ends with a link back to general/app Settings. */}
-        <div onClick={onOpenGeneralSettings} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
+        <div onClick={onOpenGeneralSettings} role="button" tabIndex={0} aria-label="Open general settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenGeneralSettings(); } }} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
           Go to general app settings
         </div>
       </div>
@@ -2303,7 +2303,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
                 not long-press (see the selectMode state comment above
                 for why). */}
-            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
+            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit selection mode" : "Enter selection mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
               {selectMode ? "Done" : "Select"}
             </span>
             <Search size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={openMedSearch} role="button" tabIndex={0} aria-label="Search medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMedSearch(); } }} />
