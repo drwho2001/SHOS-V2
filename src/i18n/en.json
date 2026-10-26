@@ -252,5 +252,30 @@
     "changeRecovery": "Change recovery string",
     "setRecovery": "Set a recovery string",
     "savePin": "Save PIN"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "phoneSync": "Phone calendar sync",
+    "closeSync": "Close calendar sync settings",
+    "filter": "Filter",
+    "weekStartsOn": "Week starts on",
+    "nothingLogged": "Nothing logged this day.",
+    "syncToPhone": "Sync to phone calendar",
+    "syncVaccinations": "Also sync vaccination doses",
+    "syncVaccinationsAria": "Sync vaccination doses to phone calendar",
+    "syncPlanned": "Also sync planned events",
+    "syncPlannedAria": "Sync planned events to phone calendar",
+    "genericTitle": "Use a generic event title",
+    "genericTitleAria": "Use a generic event title",
+    "syncNow": "Sync now",
+    "syncNowAria": "Sync now",
+    "syncing": "Syncing…",
+    "syncAppointmentsTo": "Sync appointments to",
+    "loadingCalendars": "Loading calendars…",
+    "noOtherCalendars": "No other calendars found on this device.",
+    "privateRecommended": "SHOS (private) — recommended",
+    "privateDesc": "On-device only, structurally can't sync or be shared.",
+    "notPrivateTitle": "Not private by default",
+    "notPrivate": "Not private by default — its own sharing settings apply."
   }
 }

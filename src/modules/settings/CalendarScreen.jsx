@@ -19,6 +19,7 @@ import { getCalendarEvents, groupEventsByDay } from "../../calculations/calendar
 import { checkCalendarAvailable, syncClinicVisitsToCalendar, syncVaccinationsToCalendar, syncPlannedEventsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, removeSyncedVaccinationEvents, removeSyncedPlannedEvents, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../../storage/calendarSyncService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
+import { useTranslation } from "../../i18n/index.js";
 
 const CALENDAR_MODULE_TARGETS = {
   encounters: { tab: "activity", subTab: null },
@@ -69,6 +70,7 @@ function calendarModuleAccent(moduleKey) {
 // needed for a list this short).
 
 function CalendarSyncSheet({ onClose }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   // ADDED 21 Oct 2026 (t129) - and the hardware back button closes it too.
   // It closed on Escape but not on back: the back button closed the whole
@@ -249,18 +251,18 @@ function CalendarSyncSheet({ onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Phone calendar sync" tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => !calendarSyncing && onClose()}>
+    <div ref={dialogRef} role="dialog" aria-label={t("calendar.phoneSync", "Phone calendar sync")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => !calendarSyncing && onClose()}>
       <div tabIndex={0} style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Phone calendar sync</h1>
-          <X size={18} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close calendar sync settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.phoneSync", "Phone calendar sync")}</h1>
+          <X size={18} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label={t("calendar.closeSync", "Close calendar sync settings")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
 
-        <div onClick={calendarSyncing ? undefined : toggleCalendarSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncEnabled} aria-label="Sync to phone calendar"
+        <div onClick={calendarSyncing ? undefined : toggleCalendarSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncEnabled} aria-label={t("calendar.syncToPhone", "Sync to phone calendar")}
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCalendarSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Sync to phone calendar</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncToPhone", "Sync to phone calendar")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               Booked appointments appear in your phone's real calendar app. Defaults to its own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes everything this app put there.
             </div>
@@ -277,11 +279,11 @@ function CalendarSyncSheet({ onClose }) {
             names on the calendar: a dose is health data with a name on it, and
             every privacy-adjacent feature in this app is opt-in and off by
             default. */}
-        <div onClick={calendarSyncing ? undefined : toggleVaccinationSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncVaccinations} aria-label="Sync vaccination doses to phone calendar"
+        <div onClick={calendarSyncing ? undefined : toggleVaccinationSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncVaccinations} aria-label={t("calendar.syncVaccinationsAria", "Sync vaccination doses to phone calendar")}
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleVaccinationSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also sync vaccination doses</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncVaccinations", "Also sync vaccination doses")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               Each dose becomes its own event, dated the day it was given — so a four-week course is four events. Off by default. Turning it off removes the dose events this app put there.
             </div>
@@ -295,11 +297,11 @@ function CalendarSyncSheet({ onClose }) {
             separate again for the same reason as the two above: a plan is
             health data with a date on it, and "Test due" on a lock screen
             says something even without a test name. */}
-        <div onClick={calendarSyncing ? undefined : togglePlannedSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncPlanned} aria-label="Sync planned events to phone calendar"
+        <div onClick={calendarSyncing ? undefined : togglePlannedSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncPlanned} aria-label={t("calendar.syncPlannedAria", "Sync planned events to phone calendar")}
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlannedSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also sync planned events</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncPlanned", "Also sync planned events")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               A scheduled retest, and a vaccination dose that is still due — each as an event on the day it is planned for. Off by default. Turning it off removes the planned events this app put there.
             </div>
@@ -325,11 +327,11 @@ function CalendarSyncSheet({ onClose }) {
                 separate, always-relevant risk, so shown regardless of
                 which calendar is targeted (private included: a local
                 calendar's own reminders still notify on-device). */}
-            <div onClick={calendarSyncing ? undefined : toggleGenericTitle} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncGenericTitle} aria-label="Use a generic event title"
+            <div onClick={calendarSyncing ? undefined : toggleGenericTitle} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncGenericTitle} aria-label={t("calendar.genericTitleAria", "Use a generic event title")}
               onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGenericTitle(); } }}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
-                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Use a generic event title</div>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.genericTitle", "Use a generic event title")}</div>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
                   "Clinic appointment" and "Vaccination" instead of the real visit and vaccine names — safer if reminders show on your lock screen.
                 </div>
@@ -343,10 +345,10 @@ function CalendarSyncSheet({ onClose }) {
                 synced anything. After a permission grant, a calendar change
                 made on the phone, or a write that failed, the user had no
                 way to ask for it again. */}
-            <div onClick={calendarSyncing ? undefined : syncNow} role="button" tabIndex={0} aria-label="Sync now"
+            <div onClick={calendarSyncing ? undefined : syncNow} role="button" tabIndex={0} aria-label={t("calendar.syncNowAria", "Sync now")}
               onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); syncNow(); } }}
               style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, padding: "8px 12px", borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: calendarSyncing ? "default" : "pointer", opacity: calendarSyncing ? 0.6 : 1 }}>
-              {calendarSyncing ? "Syncing…" : "Sync now"}
+              {calendarSyncing ? t("calendar.syncing", "Syncing…") : t("calendar.syncNow", "Sync now")}
             </div>
             {/* Real ask: "not sure if this is something you can force,
                 if not allow sync with warning, maybe a link for how to
@@ -359,7 +361,7 @@ function CalendarSyncSheet({ onClose }) {
               <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: darkMode ? "#3A2A1080" : "#FFF7ED", border: `1px solid ${darkMode ? "#5A3E1080" : "#F59E0B40"}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                   <AlertTriangle size={14} color={ACTION.gold} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: ACTION.gold }}>Not private by default</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: ACTION.gold }}>{t("calendar.notPrivateTitle", "Not private by default")}</span>
                 </div>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
                   This app can't control whether "{appPrefs.calendarSyncTargetName}" is shared with anyone else — that's entirely up to how that calendar's own account is set up. If it's a Google Calendar, check it isn't set to "Make available to public" and isn't shared under its own sharing settings. If it's Outlook, check Calendar settings → Shared calendars. If it's Apple/iCloud, check Calendar → Edit → Shared With. When in doubt, switch back to the private "SHOS (private)" calendar above.
@@ -373,24 +375,24 @@ function CalendarSyncSheet({ onClose }) {
             on first open. Always offers the private default first. */}
         {showCalendarPicker && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Sync appointments to</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("calendar.syncAppointmentsTo", "Sync appointments to")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>Only calendars already on this device — nothing new is ever created except the private option below.</div>
             <div onClick={() => !calendarSyncing && selectCalendarTarget(null)} role="radio" tabIndex={0} aria-checked={!appPrefs.calendarSyncTargetName}
               onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(null); } }}
               style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${!appPrefs.calendarSyncTargetName ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: !appPrefs.calendarSyncTargetName ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>SHOS (private) — recommended</div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>On-device only, structurally can't sync or be shared.</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.privateRecommended", "SHOS (private) \u2014 recommended")}</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{t("calendar.privateDesc", "On-device only, structurally can't sync or be shared.")}</div>
             </div>
-            {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>Loading calendars…</div>}
+            {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>{t("calendar.loadingCalendars", "Loading calendars…")}</div>}
             {availableCalendars?.length === 0 && (
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>No other calendars found on this device.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>{t("calendar.noOtherCalendars", "No other calendars found on this device.")}</div>
             )}
             {availableCalendars?.map((cal) => (
               <div key={cal.id} onClick={() => !calendarSyncing && selectCalendarTarget(cal.name)} role="radio" tabIndex={0} aria-checked={appPrefs.calendarSyncTargetName === cal.name}
                 onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(cal.name); } }}
                 style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${appPrefs.calendarSyncTargetName === cal.name ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: appPrefs.calendarSyncTargetName === cal.name ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{cal.displayName || cal.name}</div>
-                <div style={{ fontSize: 11, color: ACTION.gold, marginTop: 2 }}>Not private by default — its own sharing settings apply.</div>
+                <div style={{ fontSize: 11, color: ACTION.gold, marginTop: 2 }}>{t("calendar.notPrivate", "Not private by default — its own sharing settings apply.")}</div>
               </div>
             ))}
           </div>
@@ -401,6 +403,7 @@ function CalendarSyncSheet({ onClose }) {
 }
 
 export function CalendarScreen({ onClose, onNavigateToRecord }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const isDesktopWidth = useIsDesktopWidth();
   const dialogRef = useRef(null);
@@ -480,11 +483,11 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Calendar" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("calendar.title", "Calendar")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), justifyContent: "space-between" }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</h1>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.title", "Calendar")}</h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED — real ask: phone-calendar sync now lives here, an
@@ -492,18 +495,18 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
               when on, outline/grey when off, so the icon's own look
               says what state it's in at a glance, not just what it
               does. */}
-          <div onClick={() => setShowSyncSheet(true)} role="button" tabIndex={0} aria-label="Phone calendar sync" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSyncSheet(true); } }} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title="Phone calendar sync">
+          <div onClick={() => setShowSyncSheet(true)} role="button" tabIndex={0} aria-label={t("calendar.phoneSync", "Phone calendar sync")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSyncSheet(true); } }} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title={t("calendar.phoneSync", "Phone calendar sync")}>
             {syncEnabled
               ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
               : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />}
           </div>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? ACCENTS.medication : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
-            Filter{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
+            {t("calendar.filter", "Filter")}{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
           </span>
         </div>
       </div>
       <div style={{ padding: "10px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Week starts on</span>
+        <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("calendar.weekStartsOn", "Week starts on")}</span>
         <div role="radiogroup" aria-label="Week starts on" style={{ display: "flex", gap: 6 }}>
           {[{ value: "monday", label: "Mon" }, { value: "sunday", label: "Sun" }].map((opt) => (
             <div key={opt.value} onClick={() => setWeekStartsOn(opt.value)} role="radio" tabIndex={0} aria-checked={weekStartsOn === opt.value}
@@ -614,7 +617,7 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {selectedEvents.length === 0 ? (
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged this day.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>{t("calendar.nothingLogged", "Nothing logged this day.")}</div>
             ) : (
               <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
                 {selectedEvents.map((ev, i) => (
