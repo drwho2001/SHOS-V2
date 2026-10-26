@@ -173,6 +173,7 @@
 - i18n: wired provider and extracted Home dashboard title.
 - i18n: extracted Home recent activity labels.
 - i18n: extracted Vaccinations sheet strings.
+- i18n: extracted ClinicVisits sheet title.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -254,6 +255,7 @@
 - i18n: wired provider and extracted Home dashboard title.
 - i18n: extracted Home recent activity labels.
 - i18n: extracted Vaccinations sheet strings.
+- i18n: extracted ClinicVisits sheet title.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?

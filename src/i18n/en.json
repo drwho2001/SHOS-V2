@@ -29,6 +29,10 @@
     "addVaccination": "Add vaccination",
     "saveChanges": "Save changes"
   },
+  "clinicVisits": {
+    "newVisit": "New visit",
+    "editVisit": "Edit visit"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
