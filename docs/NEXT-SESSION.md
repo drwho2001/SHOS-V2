@@ -198,6 +198,7 @@
 - Accessibility: improved keyboard/ARIA support in GlobalSearch and RegistryManagement.
 - Accessibility: improved keyboard/ARIA support in GlobalSearch sort chips.
 - Accessibility: improved keyboard/ARIA support in Calendar/DeveloperTools.
+- Accessibility: improved keyboard/ARIA support in ManageLists.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
 - i18n: extracted Home recent activity labels.
@@ -281,6 +282,7 @@
 - Accessibility: improved keyboard/ARIA support in GlobalSearch and RegistryManagement.
 - Accessibility: improved keyboard/ARIA support in GlobalSearch sort chips.
 - Accessibility: improved keyboard/ARIA support in Calendar/DeveloperTools.
+- Accessibility: improved keyboard/ARIA support in ManageLists.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
 - i18n: extracted Home recent activity labels.

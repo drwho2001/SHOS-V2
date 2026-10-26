@@ -107,7 +107,7 @@ export function ManageListsScreen({ onClose }) {
       </div>
       <div style={{ display: "flex", gap: 8, padding: "12px 16px 0" }}>
         {[["registries", "Registries"], ["options", "Option lists"]].map(([key, label]) => (
-          <div key={key} onClick={() => setTab(key)}
+          <div key={key} onClick={() => setTab(key)} role="button" tabIndex={0} aria-pressed={tab === key} aria-label={label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTab(key); } }}
             style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary) }}>
             {label}
           </div>
