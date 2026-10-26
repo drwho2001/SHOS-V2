@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, BookOpenTextIcon as BookOpen } from "@pho
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
+import { useTranslation } from "../../i18n/index.js";
 
 
 const GLOSSARY_TERMS = [
@@ -47,6 +48,7 @@ const GLOSSARY_TERMS = [
 // screen still said it did.
 
 export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const [query, setQuery] = useState("");
@@ -57,17 +59,17 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Glossary" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("glossary.title", "Glossary")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       {/* CHANGED 16 Sep 2026, later still — same "full width page, not a
           narrow centered column" reversal as GuideScreen above; see
           that screen's own comment for the full reasoning. */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         {/* ADDED — real ask: same as GuideScreen above, carrying this
             screen's own Settings-menu row icon (BookOpen) through into
             its title bar. */}
         <BookOpen size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</h1>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("glossary.title", "Glossary")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         {/* CHANGED — real report: same "capped elements read janky
@@ -76,13 +78,13 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
             instead of two separately-capped stacked blocks. */}
         <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 16, marginBottom: 16 } : {}}>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.4, maxWidth: isDesktopWidth ? 520 : undefined, marginBottom: isDesktopWidth ? 0 : 16, flex: isDesktopWidth ? "1 1 auto" : undefined }}>
-            Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
+            {t("glossary.intro", "Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.")}
           </div>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search terms"
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("glossary.search", "Search terms")}
             style={{ width: isDesktopWidth ? 300 : "100%", flexShrink: 0, padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: isDesktopWidth ? 0 : 16 }} />
         </div>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No terms match your search.</div>
+          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>{t("glossary.noMatch", "No terms match your search.")}</div>
         ) : (
           // CHANGED 16 Sep 2026, later still — real ask: "module
           // contents still mobile width" — a single scrolling column
@@ -95,9 +97,9 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
           // column break. Mobile keeps the exact prior single-column
           // list, untouched.
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden", columnCount: isDesktopWidth ? 2 : undefined, columnGap: 0 }}>
-            {filtered.map((t) => (
-              <div key={t.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 3 }}>{t.term}</div>
+            {filtered.map((term) => (
+              <div key={term.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 3 }}>{term.term}</div>
                 {/* CHANGED 2 Oct 2026 — a bold LEAD line for the terms that have
                     one, as its own block rather than an inline bold phrase inside
                     the paragraph. Gemini's review pushed back on inline bolding
@@ -109,12 +111,12 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
                     clinicalEvidenceCopy.test.js: it states what the science is,
                     not what it means for the reader, so it stays true whatever
                     someone's status happens to be. */}
-                {t.lead && (
+                {term.lead && (
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary, lineHeight: 1.4, marginBottom: 6 }}>
-                    {t.lead}
+                    {term.lead}
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{t.body}</div>
+                <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{term.body}</div>
                 {/* CHANGED 2 Oct 2026 — the citations MOVED to their own Clinical
                     evidence screen. They briefly lived here, and both the owner
                     and Gemini's review were right that this is the wrong home: a
@@ -127,7 +129,7 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
                     So this stays a signpost. The term keeps the explanation,
                     because that is what the underlined "U=U" on any record is
                     for; the evidence sits in code, in clinicalEvidence.js. */}
-                {t.evidence && onOpenClinicalEvidence && (
+                {term.evidence && onOpenClinicalEvidence && (
                   <div
                     role="button"
                     tabIndex={0}
@@ -138,10 +140,10 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
                         e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
                       }
                     }}
-                    aria-label="View clinical evidence and sources"
+                    aria-label={t("glossary.viewEvidence", "View clinical evidence and sources")}
                     style={{ fontSize: 11, color: T.textSecondary, textDecoration: "underline", textUnderlineOffset: 2, cursor: "pointer", marginTop: 6 }}
                   >
-                    View clinical evidence and sources
+                    {t("glossary.viewEvidence", "View clinical evidence and sources")}
                   </div>
                 )}
               </div>

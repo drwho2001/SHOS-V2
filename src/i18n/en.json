@@ -175,5 +175,12 @@
     "title": "Guide",
     "intro": "Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to \"where do I find X.\"",
     "takeTour": "Take the interactive tour"
+  },
+  "glossary": {
+    "title": "Glossary",
+    "intro": "Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.",
+    "search": "Search terms",
+    "noMatch": "No terms match your search.",
+    "viewEvidence": "View clinical evidence and sources"
   }
 }
