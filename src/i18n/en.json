@@ -3,6 +3,11 @@
     "dashboardTitle": "{name}'s dashboard",
     "yourDashboard": "Your dashboard"
   },
+  "contacts": {
+    "addContact": "Add contact",
+    "editContact": "Edit contact",
+    "saveChanges": "Save changes"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
