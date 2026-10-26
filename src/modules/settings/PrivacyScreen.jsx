@@ -7,6 +7,7 @@ import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/desig
 import { DISCLOSURE_LEVELS, normaliseDisclosureLevel } from "../../calculations/disclosureLevel";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
+import { useTranslation } from "../../i18n/index.js";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { ANONYMISE_MODE_SURFACES } from "../../calculations/anonymiseDisplay";
 import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../../repositories/privacySettingsRepository";
@@ -15,6 +16,7 @@ import { checkBiometryAvailable } from "../../storage/biometricAuthService";
 import { isScreenSecurityAvailable, setScreenshotsAllowed } from "../../storage/screenSecurityService";
 
 export function PrivacyScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   // ADDED — real audit finding (desktop full-width sweep): a real
   // multi-column grid was considered (the audit's own suggestion —
@@ -346,10 +348,10 @@ const [disclosureLevel, setDisclosureLevel] = useState(
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Privacy & Security" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("privacy.title", "Privacy & Security")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Privacy & Security</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.title", "Privacy & Security")}</h1>
       </div>
 
       <div style={isDesktopWidth ? { padding: "16px", maxWidth: 640, margin: "0 auto" } : { padding: "16px" }}>
@@ -368,7 +370,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         <div style={{ display: "flex", gap: 10, padding: 14, borderRadius: RADIUS.md, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginBottom: 16 }}>
           <Lock size={18} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
-            SHOS has no account, no server, and no cloud sync — everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.
+            {t("privacy.noCloud", "SHOS has no account, no server, and no cloud sync \u2014 everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.")}
           </div>
         </div>
 
@@ -386,7 +388,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             which already states this split. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
-            Lock screen &amp; notification detail
+            {t("privacy.lockScreenDetail", "Lock screen & notification detail")}
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
             How much your notifications say without you opening the app. Home-screen widgets are NOT covered by this setting — each widget has its own privacy tier in Settings → Widgets, because one level for all of them would be cruder than the choice they actually need. This is separate from Anonymise mode below, which is a temporary way of hiding things from someone holding your phone right now.
@@ -430,7 +432,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />}
             <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) }}>
-              {settings.anonymiseModeActive ? "Anonymise mode is ON" : "Turn on Anonymise mode"}
+              {settings.anonymiseModeActive ? t("privacy.anonymiseOn", "Anonymise mode is ON") : t("privacy.anonymiseTurnOn", "Turn on Anonymise mode")}
             </span>
           </div>
           <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginTop: 6 }}>
@@ -475,7 +477,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             )}
             {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
             <button onClick={attemptDeactivate} style={{ width: "100%", padding: 12, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
-              Turn off Anonymise mode
+              {t("privacy.anonymiseTurnOff", "Turn off Anonymise mode")}
             </button>
           </div>
         )}
@@ -492,7 +494,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             onKeyDown={settings.anonymiseModeActive ? async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also hide kinks & physical attributes</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.hideKinks", "Also hide kinks & physical attributes")}</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
                 {settings.anonymiseModeActive
                   ? "Stated kinks, limits, length/girth, and ejaculation stats — hidden in addition to the base fields above, only while Anonymise mode is on."
@@ -519,7 +521,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAppLock(); } }}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>App Lock</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.appLock", "App Lock")}</div>
               {/* FIXED 27 Sep 2026 - the description implied App Lock is what
                   protects the data, and that without it the records sit
                   readable. They don't: at-rest encryption is always on (see
@@ -563,8 +565,8 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               </div>
               {pinPrompt.error && <div style={{ fontSize: 12, color: ACTION.red, marginTop: 8, marginBottom: 8 }}>{pinPrompt.error}</div>}
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button onClick={cancelPinPrompt} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button onClick={confirmPinPrompt} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Confirm</button>
+                <button onClick={cancelPinPrompt} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
+                <button onClick={confirmPinPrompt} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{t("common.confirm", "Confirm")}</button>
               </div>
             </div>
           )}
@@ -582,7 +584,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               role="switch" tabIndex={0} aria-checked={settings.biometricUnlockEnabled} aria-label="Unlock with biometrics"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleBiometric(); } }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Unlock with biometrics</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.biometrics", "Unlock with biometrics")}</div>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Fingerprint or face unlock as a shortcut for the PIN above — the PIN still works any time this is on, off, or unavailable.</div>
                 {biometricError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{biometricError}</div>}
               </div>
@@ -604,7 +606,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
                 onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Skip re-verification briefly</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.skipReverify", "Skip re-verification briefly")}</div>
                   <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>
                 </div>
                 <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
@@ -629,7 +631,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             neighbours" — moved to sit directly below App Lock now,
             since they share the exact same PIN. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Revert PIN</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.revertPin", "Revert PIN")}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
             {settings.hasAppLockPin ? "A PIN is set — used for both Anonymise mode's revert and App Lock above." : "No PIN set yet — anyone can turn Anonymise mode back off right now, and App Lock can't be turned on. Set one so both actually protect you."}
           </div>
@@ -663,13 +665,13 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               </div>
               {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setCurrentPinInput(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button onClick={savePin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
+                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setCurrentPinInput(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
+                <button onClick={savePin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{t("privacy.savePin", "Save PIN")}</button>
               </div>
             </>
           ) : (
             <button onClick={() => setSettingPin(true)} style={{ width: "100%", padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
-              {settings.hasAppLockPin ? "Change PIN" : "Set a PIN"}
+              {settings.hasAppLockPin ? t("privacy.changePin", "Change PIN") : t("privacy.setPin", "Set a PIN")}
             </button>
           )}
         </div>
@@ -680,7 +682,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             on in the first place. */}
         {settings.appLockEnabled && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Duress PIN (optional)</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.duressPin", "Duress PIN (optional)")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
               {settings.hasDuressPin
                 ? "Set. Entering this PIN on the App Lock screen — instead of your real one — opens a convincing but empty, fake version of the app. Your real data stays completely untouched, just not shown. There's no way back to real data from inside a decoy session — close and reopen the app, then enter your REAL PIN."
@@ -727,18 +729,18 @@ const [disclosureLevel, setDisclosureLevel] = useState(
                 </div>
                 {duressPinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{duressPinError}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setSettingDuressPin(false); setNewDuressPin(""); setConfirmDuressPin(""); setDuressPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                  <button onClick={saveDuressPin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
+                  <button onClick={() => { setSettingDuressPin(false); setNewDuressPin(""); setConfirmDuressPin(""); setDuressPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
+                  <button onClick={saveDuressPin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{t("privacy.savePin", "Save PIN")}</button>
                 </div>
               </>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setSettingDuressPin(true)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
-                  {settings.hasDuressPin ? "Change duress PIN" : "Set a duress PIN"}
+                  {settings.hasDuressPin ? t("privacy.changeDuressPin", "Change duress PIN") : t("privacy.setDuressPin", "Set a duress PIN")}
                 </button>
                 {settings.hasDuressPin && (
                   <button onClick={clearDuressPin} style={{ padding: "10px 16px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
-                    Remove
+                    {t("common.remove", "Remove")}
                   </button>
                 )}
               </div>
@@ -752,7 +754,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             otherwise. */}
         {settings.appLockEnabled && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Recovery string (optional)</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.recoveryString", "Recovery string (optional)")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
               {hasRecoveryString()
                 ? "Set. If you ever forget your PIN, \"Forgot PIN?\" on the lock screen lets you unlock with this instead and set a new PIN in the same step — your real data stays exactly as it is."
@@ -774,18 +776,18 @@ const [disclosureLevel, setDisclosureLevel] = useState(
                 </div>
                 {recoveryError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{recoveryError}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setSettingRecovery(false); setRecoveryStringInput(""); setRecoveryStringConfirm(""); setRecoveryError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                  <button onClick={saveRecoveryString} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save</button>
+                  <button onClick={() => { setSettingRecovery(false); setRecoveryStringInput(""); setRecoveryStringConfirm(""); setRecoveryError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
+                  <button onClick={saveRecoveryString} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{t("common.save", "Save")}</button>
                 </div>
               </>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setSettingRecovery(true)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
-                  {hasRecoveryString() ? "Change recovery string" : "Set a recovery string"}
+                  {hasRecoveryString() ? t("privacy.changeRecovery", "Change recovery string") : t("privacy.setRecovery", "Set a recovery string")}
                 </button>
                 {hasRecoveryString() && (
                   <button onClick={clearRecovery} style={{ padding: "10px 16px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
-                    Remove
+                    {t("common.remove", "Remove")}
                   </button>
                 )}
               </div>
@@ -799,7 +801,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         {screenshotsToggleAvailable && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Allow screenshots</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.allowScreenshots", "Allow screenshots")}</span>
               <div onClick={toggleScreenshots} role="switch" tabIndex={0} aria-checked={settings.allowScreenshots} aria-label="Allow screenshots"
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleScreenshots(); } }}
                 style={{ width: 44, height: 26, borderRadius: 999, background: settings.allowScreenshots ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>

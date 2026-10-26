@@ -229,5 +229,28 @@
     "reloadNow": "Reload now",
     "navigation": "Navigation",
     "healthcare": "Healthcare"
+  },
+  "privacy": {
+    "title": "Privacy & Security",
+    "noCloud": "SHOS has no account, no server, and no cloud sync — everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.",
+    "lockScreenDetail": "Lock screen & notification detail",
+    "anonymiseOn": "Anonymise mode is ON",
+    "anonymiseTurnOn": "Turn on Anonymise mode",
+    "anonymiseTurnOff": "Turn off Anonymise mode",
+    "hideKinks": "Also hide kinks & physical attributes",
+    "appLock": "App Lock",
+    "revertPin": "Revert PIN",
+    "duressPin": "Duress PIN (optional)",
+    "recoveryString": "Recovery string (optional)",
+    "allowScreenshots": "Allow screenshots",
+    "biometrics": "Unlock with biometrics",
+    "skipReverify": "Skip re-verification briefly",
+    "changePin": "Change PIN",
+    "setPin": "Set a PIN",
+    "changeDuressPin": "Change duress PIN",
+    "setDuressPin": "Set a duress PIN",
+    "changeRecovery": "Change recovery string",
+    "setRecovery": "Set a recovery string",
+    "savePin": "Save PIN"
   }
 }
