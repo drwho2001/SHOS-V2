@@ -130,17 +130,17 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
       <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Attachments</h1>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("attachments.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("attachments.title", "Attachments")}</h1>
       </div>
       <div style={{ padding: "10px 16px 0", fontSize: 12, color: T.textSecondary }}>
-        Everything attached to a Test or Clinic Visit, in one place. Files still live on their original record — deleting here removes it from there too.
+        {t("attachments.subtitle", "Everything attached to a Test or Clinic Visit, in one place. Files still live on their original record — deleting here removes it from there too.")}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px" }}>
-        <div role="button" tabIndex={0} aria-pressed={filterType === ""} aria-label="Show all attachments" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilterType(""); } }} onClick={() => setFilterType("")}
+        <div role="button" tabIndex={0} aria-pressed={filterType === ""} aria-label={t("attachments.showAll", "Show all attachments")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilterType(""); } }} onClick={() => setFilterType("")}
           style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcareBlue : T.border}`, color: filterType === "" ? T.healthcareBlue : T.textSecondary, background: filterType === "" ? `${T.healthcareBlue}15` : "transparent" }}>
-          All
+          {t("attachments.filterAll", "All")}
         </div>
         {TYPE_OPTIONS.map((t) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setFilterType(t)}
@@ -154,8 +154,8 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
         <ConfirmDeleteCard
           T={T}
           moduleColor={T.healthcareBlue}
-          message={`Remove "${pendingDelete.title}"? It'll also disappear from its original ${pendingDelete.sourceType === "test" ? "Test" : "Clinic Visit"} record — there's no getting it back.`}
-          confirmLabel="Remove"
+          message={t("attachments.removeConfirm", `Remove "${pendingDelete.title}"? It'll also disappear from its original ${pendingDelete.sourceType === "test" ? "Test" : "Clinic Visit"} record — there's no getting it back.`, { title: pendingDelete.title, kind: pendingDelete.sourceType === "test" ? "Test" : "Clinic Visit" })}
+          confirmLabel={t("common.remove", "Remove")}
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => handleDelete(pendingDelete)}
         />
@@ -164,7 +164,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
       <div style={{ padding: "0 16px 24px" }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            {all.length === 0 ? "No attachments yet — add one from a Test or Clinic Visit." : "Nothing matches this filter."}
+            {all.length === 0 ? t("attachments.empty", "No attachments yet — add one from a Test or Clinic Visit.") : t("attachments.noMatch", "Nothing matches this filter.")}
           </div>
         ) : isDesktopWidth ? (
           // ADDED — real ask: desktop grid grouped consecutively by
@@ -192,6 +192,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 // the desktop-grid month-grouping pass and the mobile flat list both
 // render the exact same row markup, unchanged.
 function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom }}>
       {isImage(a.fileDataUrl) ? (
@@ -201,12 +202,12 @@ function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }
           <FileText size={18} color={T.textSecondary} />
         </div>
       )}
-      <div onClick={() => onNavigateToSource?.(a.sourceType, a.sourceId)} role={onNavigateToSource ? "button" : undefined} tabIndex={onNavigateToSource ? 0 : -1} aria-label={onNavigateToSource ? "Open source record" : undefined} onKeyDown={onNavigateToSource ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToSource(a.sourceType, a.sourceId); } } : undefined} style={{ flex: 1, minWidth: 0, cursor: onNavigateToSource ? "pointer" : "default" }}>
+      <div onClick={() => onNavigateToSource?.(a.sourceType, a.sourceId)} role={onNavigateToSource ? "button" : undefined} tabIndex={onNavigateToSource ? 0 : -1} aria-label={onNavigateToSource ? t("attachments.openSource", "Open source record") : undefined} onKeyDown={onNavigateToSource ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToSource(a.sourceType, a.sourceId); } } : undefined} style={{ flex: 1, minWidth: 0, cursor: onNavigateToSource ? "pointer" : "default" }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
     {a.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
         <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
       </div>
-      <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => requestDelete(a)} aria-label="Remove attachment" title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+      <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => requestDelete(a)} aria-label={t("common.removeAttachment", "Remove attachment")} title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
     </div>
   );
 }

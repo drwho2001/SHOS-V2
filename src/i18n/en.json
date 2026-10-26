@@ -44,7 +44,8 @@
     "edit": "Edit",
     "add": "Add",
     "search": "Search",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "removeAttachment": "Remove attachment"
   },
   "settings": {
     "title": "Settings",
@@ -82,5 +83,16 @@
     "duplicateHelp": "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.",
     "noDuplicates": "No likely duplicates found.",
     "archiveThis": "Archive this one"
+  },
+  "attachments": {
+    "title": "Attachments",
+    "subtitle": "Everything attached to a Test or Clinic Visit, in one place. Files still live on their original record — deleting here removes it from there too.",
+    "filterAll": "All",
+    "empty": "No attachments yet — add one from a Test or Clinic Visit.",
+    "noMatch": "Nothing matches this filter.",
+    "removeConfirm": "Remove \"{title}\"? It'll also disappear from its original {kind} record — there's no getting it back.",
+    "openSource": "Open source record",
+    "back": "Back",
+    "showAll": "Show all attachments"
   }
 }
