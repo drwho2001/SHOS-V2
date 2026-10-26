@@ -42,7 +42,7 @@
         android:pathData="M40,63H48V81H66V89H48V107H40V89H22V81H40Z" />
     <!-- The module disc. -->
     <path
-        android:fillColor="#00796B"
+        android:fillColor="#B36205"
         android:pathData="M160,15A70,70 0,1 0,160,155A70,70 0,1 0,160,15Z" />
     <!-- Phosphor "Users", regular weight, in white, scaled to fit the disc
          and centred on the ink's own middle. -->

@@ -2966,3 +2966,11 @@ superstition, and this repo has repeatedly found those.
 **The last full CI run predates the current `main`** — the flow/assertion counts
 CI prints are the ones to trust, because a green exit code alone has lied here
 five times.
+
+
+# Handover update - session DELEGATE (26 Oct 2026)
+
+- Device updated to latest passing build (commit e74d8ab) via release 'latest' APK install.
+- Widget quick-add disc colours corrected: Contacts orange (#B36205), Medication blue (#003B6F).
+- Remaining brainstorm items: refill widget, menstrual widget split, banner link colours, last-test date+days-ago, sticky quick-add tabs.
+
