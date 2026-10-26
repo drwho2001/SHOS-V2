@@ -1288,7 +1288,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
       <div style={{ border: `1px dashed ${T.border}`, borderRadius: radius.sm, padding: 10 }}>
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 8 }}>
           {AVAILABILITY_RULE_TYPES.map((t) => (
-            <div key={t} onClick={() => setDraft((d) => ({ ...d, type: t }))}
+            <div key={t} onClick={() => setDraft((d) => ({ ...d, type: t }))} role="button" tabIndex={0} aria-pressed={draft.type === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDraft((d) => ({ ...d, type: t })); } }}
               style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 12, fontWeight: 600, background: draft.type === t ? T.contactsTeal : "transparent", color: draft.type === t ? "#FFFFFF" : T.textSecondary }}>
               {t}
             </div>
@@ -2590,7 +2590,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                   // actually linked — click and it takes you to it."
                   // Real cross-module navigation now exists (see
                   // App.jsx's navigateToRecord) — no longer read-only.
-                  <div key={e.id} onClick={() => onNavigateToRecord?.("activity", e.id)}
+                  <div key={e.id} onClick={() => onNavigateToRecord?.("activity", e.id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked encounter" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity", e.id); } } : undefined}
                     style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: onNavigateToRecord ? "pointer" : "default" }}>
                     <div style={{ color: T.textPrimary, fontWeight: 600 }}>{e.title || "Untitled encounter"}</div>
                     <div style={{ color: T.textSecondary, fontSize: 12 }}>{e.date ? formatStoredDate(e.date) : "No date"}</div>
@@ -3294,7 +3294,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           { key: "lastEncounter", label: "Last encounter" },
           { key: "incomplete", label: "Incomplete" },
         ].map((opt) => (
-          <div key={opt.key} onClick={() => setSortBy(opt.key)}
+          <div key={opt.key} onClick={() => setSortBy(opt.key)} role="button" tabIndex={0} aria-pressed={sortBy === opt.key} aria-label={opt.label || opt.key} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortBy(opt.key); } }}
             style={{ padding: "6px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", border: `1px solid ${sortBy === opt.key ? T.contactsTeal : T.border}`, color: sortBy === opt.key ? T.contactsTealText : T.textSecondary }}>
             {opt.label}
           </div>
@@ -3447,14 +3447,14 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
         <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
         {/* ADDED — real ask: link to Privacy settings for Anonymise mode */}
         {onOpenPrivacySettings && (
-          <div onClick={onOpenPrivacySettings} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, background: T.surface, border: `1px solid ${T.border}`, marginBottom: 12, cursor: "pointer" }}>
+          <div onClick={onOpenPrivacySettings} role="button" tabIndex={0} aria-label="Open privacy settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPrivacySettings(); } }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, background: T.surface, border: `1px solid ${T.border}`, marginBottom: 12, cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 14, color: T.textPrimary }}>Anonymise mode</span>
             </div>
             <ChevronRight size={16} color={T.textDisabled} />
           </div>
         )}
-        <div onClick={onOpenGeneralSettings} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
+        <div onClick={onOpenGeneralSettings} role="button" tabIndex={0} aria-label="Go to general app settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenGeneralSettings(); } }} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
           Go to general app settings
         </div>
       </div>
