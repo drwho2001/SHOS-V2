@@ -26,6 +26,7 @@ import { CaretLeftIcon as ChevronLeft, FlaskIcon as Flask } from "@phosphor-icon
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { U_U_SOURCES, EVIDENCE_GROUPS } from "./clinicalEvidence";
+import { useTranslation } from "../../i18n/index.js";
 
 // The one-sentence takeaway, leading the entry - the owner's own wording, and
 // deliberately NOT phrased about the reader. It states what the science is, not
@@ -85,6 +86,7 @@ function EvidenceGroup({ title, sources, T }) {
 }
 
 export default function ClinicalEvidenceScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   // The inline ternary every sibling Settings sub-screen uses. There is no shared
   // dark-theme resolver in this codebase and inventing one here would be a new
@@ -107,7 +109,7 @@ export default function ClinicalEvidenceScreen({ onClose }) {
     <div
       ref={dialogRef}
       role="dialog"
-      aria-label="Clinical evidence"
+      aria-label={t("clinicalEvidence.title", "Clinical evidence")}
       tabIndex={0}
       style={{
         position: "fixed",
@@ -140,7 +142,7 @@ export default function ClinicalEvidenceScreen({ onClose }) {
           onClick={onClose}
           role="button"
           tabIndex={0}
-          aria-label="Back"
+          aria-label={t("common.back", "Back")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
@@ -149,14 +151,12 @@ export default function ClinicalEvidenceScreen({ onClose }) {
           }}
         />
         <Flask size={19} weight="bold" color={T.textPrimary} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Clinical evidence</h1>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("clinicalEvidence.title", "Clinical evidence")}</h1>
       </div>
 
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45, marginBottom: 16 }}>
-          Sources behind statements this app makes. These ship with the app and cannot be edited or
-          removed — if a claim here matters to you, this is where to check it rather than take the
-          app&apos;s word for it.
+          {t("clinicalEvidence.intro", "Sources behind statements this app makes. These ship with the app and cannot be edited or removed — if a claim here matters to you, this is where to check it rather than take the app's word for it.")}
         </div>
 
         {/* The lead takeaway is its own BLOCK, not an inline bold phrase inside a
@@ -185,11 +185,7 @@ export default function ClinicalEvidenceScreen({ onClose }) {
         ))}
 
         <div style={{ fontSize: 11, color: T.textDisabled, lineHeight: 1.5 }}>
-          These are third-party documents and are not maintained by this app. Each one was opened and
-          read on the date shown against it, so a reference that has since been revised, moved or
-          withdrawn will not say so here &mdash; this is a snapshot taken on that date, not a live
-          feed. If a claim here matters to you, open the source and check it rather than take this
-          screen&apos;s word for it either way.
+          {t("clinicalEvidence.footer", "These are third-party documents and are not maintained by this app. Each one was opened and read on the date shown against it, so a reference that has since been revised, moved or withdrawn will not say so here — this is a snapshot taken on that date, not a live feed. If a claim here matters to you, open the source and check it rather than take this screen's word for it either way.")}
         </div>
       </div>
     </div>

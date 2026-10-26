@@ -153,5 +153,10 @@
     "clearAria": "Clear notification history",
     "clearConfirm": "This clears the whole notification history — there's no getting it back.",
     "empty": "Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver."
+  },
+  "clinicalEvidence": {
+    "title": "Clinical evidence",
+    "intro": "Sources behind statements this app makes. These ship with the app and cannot be edited or removed — if a claim here matters to you, this is where to check it rather than take the app’s word for it.",
+    "footer": "These are third-party documents and are not maintained by this app. Each one was opened and read on the date shown against it, so a reference that has since been revised, moved or withdrawn will not say so here — this is a snapshot taken on that date, not a live feed. If a claim here matters to you, open the source and check it rather than take this screen’s word for it either way."
   }
 }
