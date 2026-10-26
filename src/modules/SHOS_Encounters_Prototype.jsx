@@ -638,7 +638,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // becomes a real registry entry exactly like typing one in would.
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState("");
-  const useCurrentLocation = async () => {
+  const handleUseCurrentLocation = async () => {
     setLocating(true);
     setLocateError("");
     try {
@@ -796,10 +796,10 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
         {showLocateButton && (
-          <span onClick={locating ? undefined : useCurrentLocation}
-            style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.encountersPink, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
-            <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
-          </span>
+           <span onClick={locating ? undefined : handleUseCurrentLocation} role="button" tabIndex={locating ? -1 : 0} aria-label={locating ? "Locating current location" : "Use current location"} aria-disabled={locating} onKeyDown={(e) => { if (!locating && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleUseCurrentLocation(); } }}
+             style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.encountersPink, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
+             <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
+           </span>
         )}
       </div>
       {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}

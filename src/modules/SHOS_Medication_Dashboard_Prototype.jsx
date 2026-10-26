@@ -233,7 +233,7 @@ function HoldButton({ onStep, dir, children, style }) {
 
 function StatTile({ label, value, tint, subtitle, onClick, T }) {
   return (
-    <div onClick={onClick} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: "14px 16px", flex: "1 1 0", minWidth: 0, cursor: onClick ? "pointer" : "default" }}>
+     <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : -1} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: "14px 16px", flex: "1 1 0", minWidth: 0, cursor: onClick ? "pointer" : "default" }}>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 600, color: tint || T.textPrimary }}>{value}</div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{label}</div>
       {subtitle && <div style={{ fontSize: 11, color: tint || T.textSecondary, marginTop: 3, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>}
@@ -520,7 +520,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             </div>
           )}
 
-          <div onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} style={{ fontSize: 12, color: T.textSecondary, marginTop: 6, cursor: lastDose ? "pointer" : "default", width: "fit-content" }}>
+           <div onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} role={lastDose ? "button" : undefined} tabIndex={lastDose ? 0 : -1} aria-label={lastDose ? "Correct last dose" : undefined} onKeyDown={lastDose ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCorrection(med.id, lastDose); } } : undefined} style={{ fontSize: 12, color: T.textSecondary, marginTop: 6, cursor: lastDose ? "pointer" : "default", width: "fit-content" }}>
             <span style={{ textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>Last dose: {formatLastDose(lastDose?.date)}</span>
             {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
           </div>
@@ -593,7 +593,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         </>
       ) : (
         <div style={{ fontSize: 13, color: T.textSecondary }}>
-          <span onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} style={{ cursor: lastDose ? "pointer" : "default", textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>
+           <span onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} role={lastDose ? "button" : undefined} tabIndex={lastDose ? 0 : -1} aria-label={lastDose ? "Correct last dose" : undefined} onKeyDown={lastDose ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCorrection(med.id, lastDose); } } : undefined} style={{ cursor: lastDose ? "pointer" : "default", textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>
             Last dose: {formatLastDose(lastDose?.date)}
           </span>
           {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
@@ -727,7 +727,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
         {isRefill && med.unitsPerContainer && (
           <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 18 }}>
             {["container", "unit"].map((m) => (
-              <div key={m} onClick={() => { setUnitMode(m); setAmount(1); }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: unitMode === m ? T.surface : "transparent", color: unitMode === m ? T.medsBlue : T.textSecondary }}>
+               <div key={m} onClick={() => { setUnitMode(m); setAmount(1); }} role="button" tabIndex={0} aria-pressed={unitMode === m} aria-label={`Use ${m} unit`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setUnitMode(m); setAmount(1); } }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: unitMode === m ? T.surface : "transparent", color: unitMode === m ? T.medsBlue : T.textSecondary }}>
                 {m === "container" ? "Containers" : "Units"}
               </div>
             ))}

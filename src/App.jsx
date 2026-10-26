@@ -2963,8 +2963,8 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               text-link pattern already used for AppLockScreen's own
               "Back to PIN entry" link) distinguishes it as the tappable
               action without needing a new colour. */}
-          <span onClick={() => window.location.reload()} style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0 }}>Refresh</span>
-          <X size={16} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" />
+          <span onClick={() => window.location.reload()} role="button" tabIndex={0} aria-label="Refresh page" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.location.reload(); } }} style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0 }}>Refresh</span>
+          <X size={16} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSwUpdateAvailable(false); } }} />
         </div>
       )}
 
