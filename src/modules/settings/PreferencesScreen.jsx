@@ -7,18 +7,20 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens"
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
+import { useTranslation } from "../../i18n/index.js";
 
 function MenstrualTrackingToggleCard({ T }) {
+  const { t } = useTranslation();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const toggle = async () => setPrefs(await AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.menstrualTrackingEnabled} aria-label="Menstrual & contraception tracking"
+      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.menstrualTrackingEnabled} aria-label={t("preferences.menstrualTracking", "Menstrual & contraception tracking")}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Menstrual & contraception tracking</div>
-          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("preferences.menstrualTracking", "Menstrual & contraception tracking")}</div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.menstrualTrackingDesc", "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.")}</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
           <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
@@ -34,12 +36,12 @@ function MenstrualTrackingToggleCard({ T }) {
       */}
       {prefs.menstrualTrackingEnabled && (
         <div onClick={async () => setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
-          role="switch" tabIndex={0} aria-checked={prefs.pregnancyTrackingHidden} aria-label="Hide Pregnancy tab"
+          role="switch" tabIndex={0} aria-checked={prefs.pregnancyTrackingHidden} aria-label={t("preferences.hidePregnancy", "Hide Pregnancy tab")}
           onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Hide Pregnancy tab</div>
-            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("preferences.hidePregnancy", "Hide Pregnancy tab")}</div>
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.hidePregnancyDesc", "Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.")}</div>
           </div>
           <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
             <div style={{ position: "absolute", top: 2, left: prefs.pregnancyTrackingHidden ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
@@ -63,6 +65,7 @@ function MenstrualTrackingToggleCard({ T }) {
 const NON_HOME_TAB_LABELS = { contacts: "Contacts", activity: "Encounter", medication: "Medication", healthcare: "Healthcare" };
 const DEFAULT_TAB_ORDER = ["contacts", "activity", "medication", "healthcare"];
 function TabOrderCard({ T, onChanged }) {
+  const { t } = useTranslation();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const order = (Array.isArray(prefs.tabOrder) && prefs.tabOrder.length === 4 && DEFAULT_TAB_ORDER.every((k) => prefs.tabOrder.includes(k)))
     ? prefs.tabOrder : DEFAULT_TAB_ORDER;
@@ -78,9 +81,9 @@ function TabOrderCard({ T, onChanged }) {
 
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>Bottom nav tab order</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>{t("preferences.tabOrder", "Bottom nav tab order")}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
-        Reorder Contacts, Encounter, Medication, and Healthcare — Home always stays fixed in the centre.
+        {t("preferences.tabOrderDesc", "Reorder Contacts, Encounter, Medication, and Healthcare \u2014 Home always stays fixed in the centre.")}
       </div>
       {order.map((key, i) => (
         <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none" }}>
@@ -110,6 +113,7 @@ function TabOrderCard({ T, onChanged }) {
 // Appearance. Same singleton-repository backing as before
 // (appPreferencesRepository.js), only the screen that surfaces it changed.
 export function PreferencesScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   // ADDED 9 Sep 2026 — real ask: tab order, see TabOrderCard's own
@@ -121,24 +125,24 @@ export function PreferencesScreen({ onClose }) {
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Preferences" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("preferences.title", "Preferences")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Preferences</h1>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("preferences.title", "Preferences")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         {changed && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", borderRadius: 12, background: "#1B1B1F", color: "#FFFFFF", fontSize: 12, fontWeight: 600, marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <AlertTriangle size={15} /> Tab order needs a reload to apply.
+              <AlertTriangle size={15} /> {t("preferences.tabOrderReload", "Tab order needs a reload to apply.")}
             </div>
             <button onClick={() => window.location.reload()}
               style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid #FFFFFF", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-              Reload now
+              {t("preferences.reloadNow", "Reload now")}
             </button>
           </div>
         )}
-        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Navigation</div>
+        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>{t("preferences.navigation", "Navigation")}</div>
         <div style={{ marginBottom: 20 }}><TabOrderCard T={T} onChanged={() => setChanged(true)} /></div>
         {/* REMOVED 15 Sep 2026 — real ask: audit whether global-Settings
             items would fit better in each module's own settings.
@@ -148,7 +152,7 @@ export function PreferencesScreen({ onClose }) {
             MedicationSettingsScreen's already-established pattern —
             same reasoning that screen was never duplicated back into
             this Preferences screen either. */}
-        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Healthcare</div>
+        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>{t("preferences.healthcare", "Healthcare")}</div>
         {/* CHANGED 15 Sep 2026 — real exception, stated explicitly by
             the owner: this toggle can NOT move into a Menstrual Health
             settings screen the way Contacts' own settings did, since

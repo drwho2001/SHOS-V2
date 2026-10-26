@@ -216,5 +216,18 @@
     "changeFolder": "Change folder",
     "chooseFolder": "Choose a folder…",
     "resetToDefault": "Reset to default"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "menstrualTracking": "Menstrual & contraception tracking",
+    "menstrualTrackingDesc": "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.",
+    "hidePregnancy": "Hide Pregnancy tab",
+    "hidePregnancyDesc": "Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.",
+    "tabOrder": "Bottom nav tab order",
+    "tabOrderDesc": "Reorder Contacts, Encounter, Medication, and Healthcare — Home always stays fixed in the centre.",
+    "tabOrderReload": "Tab order needs a reload to apply.",
+    "reloadNow": "Reload now",
+    "navigation": "Navigation",
+    "healthcare": "Healthcare"
   }
 }
