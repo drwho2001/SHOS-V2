@@ -67,18 +67,18 @@
   "healthcare": {
     "title": "Healthcare",
     "testing": "Testing",
-    "clinicVisits": "Clinic visits",
-    "symptomLog": "Symptom log",
+    "clinicVisits": "Clinic Visits",
     "vaccinations": "Vaccinations",
+    "symptoms": "Symptoms",
     "measurements": "Measurements",
-    "menstrualHealth": "Menstrual health",
+    "menstrual": "Menstrual & Contraception",
+    "episodes": "Episodes",
     "attachments": "Attachments",
-    "timeline": "Timeline",
-    "addTest": "Add test",
-    "addVisit": "Add visit",
-    "addSymptom": "Add symptom",
-    "addVaccination": "Add vaccination",
-    "addMeasurement": "Add measurement"
+    "calendar": "Calendar",
+    "clinicCard": "Clinic Card",
+    "activeSymptoms": "Active symptoms",
+    "overdueVaccinations": "Overdue vaccinations",
+    "testsThisYear": "Tests this year"
   },
   "registry": {
     "duplicateHelp": "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.",

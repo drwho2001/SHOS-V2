@@ -34,7 +34,7 @@ const TimelineModule = lazy(() => import("./SHOS_Timeline_Prototype"));
 // a dead U=U link is that this signature dropped it. See ClinicCardScreen's own
 // mount below for the second half.
 function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink, onOpenGlossary, onOpenCalendar }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
   // position with Vaccinations, ensure all six sit in two clean rows
   // of three. Order below now reads Testing/Clinic Visits/Vaccinations
@@ -237,7 +237,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           the notch. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px" }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
-        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Healthcare</h1>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
         {/* CHANGED — real ask: "ensure all six sit in two rows of three
@@ -251,26 +251,26 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             reflow. */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
           {[
-            { key: "testing", label: "Testing" },
-            { key: "clinicVisits", label: "Clinic Visits" },
-            { key: "vaccinations", label: "Vaccinations" },
-            { key: "symptomLog", label: "Symptoms" },
-            { key: "measurements", label: "Measurements" },
-            // ADDED — real ask: gated behind Settings' own toggle, not
-            // shown at all otherwise — same "opt-in, off by default"
+            { key: "testing", label: tr("healthcare.testing", "Testing") },
+            { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
+            { key: "vaccinations", label: tr("healthcare.vaccinations", "Vaccinations") },
+            { key: "symptomLog", label: tr("healthcare.symptoms", "Symptoms") },
+            { key: "measurements", label: tr("healthcare.measurements", "Measurements") },
+            // ADDED �?" real ask: gated behind Settings' own toggle, not
+            // shown at all otherwise �?" same "opt-in, off by default"
             // treatment as every other feature area in this app.
-            ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: "Menstrual & Contraception" }] : []),
-          ].map((t) => (
+            ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Menstrual & Contraception") }] : []),
+          ].map((tab) => (
             // CHANGED — real audit finding (exhaustive screen-reader
             // audit): these sub-tab pills were 100% unreachable via
             // keyboard (confirmed via a real Tab-key trace — focus
             // skipped straight from the search input into the list
             // rows) — a genuinely navigation-blocking bug, since this
             // is the only way to switch Healthcare's own sub-tab.
-            <div key={t.key} onClick={() => setSubTab(t.key)} role="tab" tabIndex={0} aria-selected={subTab === t.key} aria-label={t.label}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(t.key); } }}
-              style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {t.label}
+            <div key={tab.key} onClick={() => setSubTab(tab.key)} role="tab" tabIndex={0} aria-selected={subTab === tab.key} aria-label={tab.label}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(tab.key); } }}
+              style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === tab.key ? T.healthcareBlue : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {tab.label}
             </div>
           ))}
         </div>
@@ -287,13 +287,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowTimeline(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <Stack size={15} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Episodes</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.episodes", "Episodes")}</span>
           </div>
           <div onClick={() => setShowAttachments(true)} role="button" tabIndex={0} aria-label="Attachments"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAttachments(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <Paperclip size={15} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Attachments</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.attachments", "Attachments")}</span>
           </div>
           {/* ADDED 20 Oct 2026 (t122) - real ask: "add calendar to healthcare
               next to attachments". It REUSES the existing Calendar screen
@@ -309,24 +309,24 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCalendar?.(); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <Calendar size={15} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Calendar</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.calendar", "Calendar")}</span>
           </div>
           <div onClick={() => setShowClinicCard(true)} role="button" tabIndex={0} aria-label="Clinic Card"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowClinicCard(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <CreditCard size={16} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Clinic Card</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.clinicCard", "Clinic Card")}</span>
           </div>
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
         <div style={{ display: "flex", background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
-          <SummaryStat label="Active symptoms" value={summary.activeSymptoms} alert />
-          <SummaryStat label="Overdue vaccinations" value={summary.overdueVaccinations} alert />
-          <SummaryStat label="Tests this year" value={summary.testsThisYear} />
+          <SummaryStat label={tr("healthcare.activeSymptoms", "Active symptoms")} value={summary.activeSymptoms} alert />
+          <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
+          <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />
         </div>
       </div>
-      <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>Loading...</div>}>
+      <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>{tr("common.loading", "Loading...")}</div>}>
     {subTab === "testing" ? (
         <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "clinicVisits" ? (
