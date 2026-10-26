@@ -26,6 +26,7 @@ import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 const MyProfileModule = lazy(() => import("./SHOS_MyProfile_Prototype"));
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useTranslation } from "../i18n/index.js";
 
 // Settings sub-screens (lazy — one chunk per screen, loaded on first open)
 const DeveloperToolsScreen = lazy(() => import("./settings/DeveloperToolsScreen"));
@@ -500,6 +501,7 @@ function EncryptedExportSheet({ onClose }) {
 // indicator below. Kept local — the only place this app currently
 // needs to print a byte count.
 function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
   const dialogRef = useRef(null);

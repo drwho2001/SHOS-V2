@@ -45,5 +45,37 @@
     "add": "Add",
     "search": "Search",
     "loading": "Loading..."
+  },
+  "settings": {
+    "title": "Settings",
+    "privacy": "Privacy",
+    "backup": "Backup & Export",
+    "developerTools": "Developer tools",
+    "manageLists": "Manage lists",
+    "resources": "Resources",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "about": "About",
+    "exportBackup": "Export backup",
+    "restoreFromBackup": "Restore from backup",
+    "automaticBackups": "Automatic backups",
+    "clearSampleData": "Clear sample data",
+    "clearDemoData": "Clear demo data"
+  },
+  "healthcare": {
+    "title": "Healthcare",
+    "testing": "Testing",
+    "clinicVisits": "Clinic visits",
+    "symptomLog": "Symptom log",
+    "vaccinations": "Vaccinations",
+    "measurements": "Measurements",
+    "menstrualHealth": "Menstrual health",
+    "attachments": "Attachments",
+    "timeline": "Timeline",
+    "addTest": "Add test",
+    "addVisit": "Add visit",
+    "addSymptom": "Add symptom",
+    "addVaccination": "Add vaccination",
+    "addMeasurement": "Add measurement"
   }
 }
