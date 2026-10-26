@@ -1,3 +1,27 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 6)
+
+## What shipped since last wrap-up
+- Regenerated seed snapshot after isDemo additions (fixes seedSnapshotCoverage test)
+- DELEGATE pushed: i18n wiring, accessibility improvements, add-contact smoke flow
+- All tests pass except 3 flaky (sessionBridge network, FormTabs resource contention)
+- Build clean, 0 lint errors
+
+## Remaining backlog (needs native development or owner decisions)
+- Hardware-backed Android Keystore: needs Capacitor plugin. Current implementation already uses non-extractable CryptoKeys (protection against key extraction via XSS). Full Android Keystore integration would protect against physical device extraction.
+- Release keystore: deferred until Play Store release
+- Accessibility audit: DELEGATE handling remaining components
+- i18n wiring: DELEGATE started scaffold + Contacts extraction
+- Smoke test gaps: DELEGATE handling
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 5)
 
 ## What shipped since last wrap-up
