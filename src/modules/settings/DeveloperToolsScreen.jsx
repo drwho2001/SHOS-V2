@@ -5,6 +5,7 @@ import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug, WarningDiamondIcon as WarningDiamond } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { hasUnbackedChanges } from "../../storage/backupService";
@@ -203,6 +204,7 @@ export function OrphanRow({ orphan, onRepaired, darkMode }) {
 }
 
 export function DeveloperToolsScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
@@ -392,10 +394,10 @@ export function DeveloperToolsScreen({ onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Developer tools" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("devTools.title", "Developer tools")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Developer tools</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("devTools.title", "Developer tools")}</h1>
       </div>
 
       {/* ADDED — real ask: this never explained what it was actually
@@ -409,7 +411,7 @@ export function DeveloperToolsScreen({ onClose }) {
 
       <div style={isDesktopWidth ? { columnCount: 2, columnGap: 0 } : undefined}>
       <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Storage overview</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>{t("devTools.storageOverview", "Storage overview")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowStorageBreakdown((s) => !s)} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Local storage used{storageUsage.byKey.length > 0 ? (showStorageBreakdown ? " ▲" : " ▼") : ""}</span>
@@ -456,11 +458,11 @@ export function DeveloperToolsScreen({ onClose }) {
           explicitly per-row per-field, with the prior value kept for undo.
           See referenceRepair.js's own header for what is deliberately not
           offered — no auto-repair, no bulk repair, no field merging. */}
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Data integrity</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>{t("devTools.dataIntegrity", "Data integrity")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} role={orphans.length > 0 ? "button" : undefined} tabIndex={orphans.length > 0 ? 0 : undefined} aria-label="Toggle broken references" aria-expanded={showOrphans} onKeyDown={orphans.length > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowOrphans((s) => !s); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
           <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Broken references</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.brokenReferences", "Broken references")}</span>
           <span onClick={recheckOrphans} role="button" tabIndex={0} aria-label="Check again"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckOrphans(e); } }}
             style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
@@ -497,7 +499,7 @@ export function DeveloperToolsScreen({ onClose }) {
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => anomaly.total > 0 && setShowAnomalies((s) => !s)} role={anomaly.total > 0 ? "button" : undefined} tabIndex={anomaly.total > 0 ? 0 : undefined} aria-label="Toggle records worth a look" aria-expanded={showAnomalies} onKeyDown={anomaly.total > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAnomalies((s) => !s); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: anomaly.total > 0 ? "pointer" : "default" }}>
           <WarningDiamond size={15} color={anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Records worth a look</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.recordsWorthLook", "Records worth a look")}</span>
           <span onClick={recheckAnomalies} role="button" tabIndex={0} aria-label="Check records again"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckAnomalies(e); } }}
             style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
@@ -552,11 +554,11 @@ export function DeveloperToolsScreen({ onClose }) {
           on-device log, not a real third-party crash-reporting
           service — this app's whole "nothing leaves the device
           without you choosing to" design applies here too). */}
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Diagnostics</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>{t("devTools.diagnostics", "Diagnostics")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowErrorLog(true)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: "pointer" }}>
           <Bug size={15} color={errorCount > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Error log</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.errorLog", "Error log")}</span>
           <span style={{ fontSize: 13, color: errorCount > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
             {errorCount === 0 ? "None" : errorCount}
           </span>
@@ -567,7 +569,7 @@ export function DeveloperToolsScreen({ onClose }) {
       </div>
 
       <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Danger zone</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>{t("devTools.dangerZone", "Danger zone")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, margin: "0 16px 20px", padding: 16 }}>
         {resetStage === "done" ? (
           // Reports what actually happened rather than a blanket "cleared",
@@ -608,8 +610,8 @@ export function DeveloperToolsScreen({ onClose }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setResetStage("idle")} style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-              <button onClick={handleReset} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: ACTION.red, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Yes, delete everything</button>
+              <button onClick={() => setResetStage("idle")} style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
+              <button onClick={handleReset} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: ACTION.red, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{t("devTools.deleteEverything", "Yes, delete everything")}</button>
             </div>
           </>
         ) : (
@@ -641,7 +643,7 @@ export function DeveloperToolsScreen({ onClose }) {
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
                   aria-label="Clear the demo data"
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
-                  {clearingSample ? "Clearing…" : "Clear demo data"}
+                  {clearingSample ? t("devTools.clearing", "Clearing…") : t("devTools.clearDemoData", "Clear demo data")}
                 </div>
                 {sampleList && (
                   <div style={{ marginTop: 10 }}>
@@ -660,7 +662,7 @@ export function DeveloperToolsScreen({ onClose }) {
             )}
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setResetStage("confirming")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <Trash2 size={17} color={ACTION.red} />
-              <span style={{ fontSize: 14, color: ACTION.red, fontWeight: 600 }}>Reset all app data</span>
+              <span style={{ fontSize: 14, color: ACTION.red, fontWeight: 600 }}>{t("devTools.resetAllData", "Reset all app data")}</span>
             </div>
             {/* ADDED 27 Sep 2026 - the one-line distinction. The two buttons
                 above look similar and mean very different things, and a user

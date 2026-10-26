@@ -297,5 +297,19 @@
     "editAria": "Edit {name}",
     "clinicalJustifications": "Clinical justifications used",
     "clinicalJustificationsIntro": "What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice."
+  },
+  "devTools": {
+    "title": "Developer tools",
+    "storageOverview": "Storage overview",
+    "dataIntegrity": "Data integrity",
+    "diagnostics": "Diagnostics",
+    "dangerZone": "Danger zone",
+    "brokenReferences": "Broken references",
+    "recordsWorthLook": "Records worth a look",
+    "errorLog": "Error log",
+    "resetAllData": "Reset all app data",
+    "clearDemoData": "Clear demo data",
+    "clearing": "Clearing…",
+    "deleteEverything": "Yes, delete everything"
   }
 }
