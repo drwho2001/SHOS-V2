@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, CompassIcon as Compass } from "@phosphor-
 import { ACCENT_TEXT_SAFE, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
+import { useTranslation } from "../../i18n/index.js";
 import { ANONYMISE_MODE_SURFACES } from "../../calculations/anonymiseDisplay";
 
 const GUIDE_SECTIONS = [
@@ -69,6 +70,7 @@ const GUIDE_SECTIONS = [
 ];
 
 export function GuideScreen({ onClose, onStartTour }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   // ADDED 16 Sep 2026 — real ask (#93, desktop empty-space): at a wide
@@ -82,7 +84,7 @@ export function GuideScreen({ onClose, onStartTour }) {
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Guide" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("guide.title", "Guide")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       {/* CHANGED 16 Sep 2026, later still — real report: "shouldn't be
           narrow, should be full width page." The earlier 640px
           centered-column cap (this same day's own prior fix, see
@@ -93,13 +95,13 @@ export function GuideScreen({ onClose, onStartTour }) {
           full-width header, matching the body below (also reverted to
           full-width). */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         {/* ADDED — real ask: this screen's own title had no icon, even
             though its Settings-menu row already has one (Compass) —
             carried through for a consistent identity between the row
             and the screen it opens. */}
         <Compass size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</h1>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("guide.title", "Guide")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         {/* CHANGED — real report: capped-width elements (this intro,
@@ -113,7 +115,7 @@ export function GuideScreen({ onClose, onStartTour }) {
             does. Mobile keeps the exact prior stacked markup. */}
         <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 16, marginBottom: 16 } : {}}>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.4, maxWidth: isDesktopWidth ? 520 : undefined, marginBottom: isDesktopWidth ? 0 : 16, flex: isDesktopWidth ? "1 1 auto" : undefined }}>
-            Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
+            {t("guide.intro", "Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to \"where do I find X.\"")}
           </div>
           {/* ADDED 9 Sep 2026 — real ask: a genuine spotlight-overlay
               tour, not just this written reference. Replayable here
@@ -121,7 +123,7 @@ export function GuideScreen({ onClose, onStartTour }) {
               offer was already taken or skipped. */}
           {onStartTour && (
             <button onClick={onStartTour} style={{ width: isDesktopWidth ? "auto" : "100%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 20px", borderRadius: RADIUS.md, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: isDesktopWidth ? 0 : 16, whiteSpace: "nowrap" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>
-              Take the interactive tour
+              {t("guide.takeTour", "Take the interactive tour")}
             </button>
           )}
         </div>

@@ -170,5 +170,10 @@
     "exportEncrypted": "Export encrypted backup…",
     "restore": "Restore from backup",
     "automaticBackups": "Automatic backups"
+  },
+  "guide": {
+    "title": "Guide",
+    "intro": "Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to \"where do I find X.\"",
+    "takeTour": "Take the interactive tour"
   }
 }
