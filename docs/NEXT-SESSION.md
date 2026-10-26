@@ -167,6 +167,7 @@
 - i18n: extracted Vaccinations sheet title.
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
 - Accessibility: improved keyboard/ARIA support in GlobalSearch and RegistryManagement.
+- Accessibility: improved keyboard/ARIA support in GlobalSearch sort chips.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
 - i18n: extracted Vaccinations sheet strings.
@@ -245,6 +246,7 @@
 - i18n: extracted Vaccinations sheet title.
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
 - Accessibility: improved keyboard/ARIA support in GlobalSearch and RegistryManagement.
+- Accessibility: improved keyboard/ARIA support in GlobalSearch sort chips.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
 - i18n: extracted Vaccinations sheet strings.
