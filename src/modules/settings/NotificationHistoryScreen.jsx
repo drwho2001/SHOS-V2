@@ -10,8 +10,10 @@ import { useIsDesktopWidth } from "../../calculations/responsive";
 import { NotificationHistoryRepository } from "../../repositories/notificationHistoryRepository";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../../components/useOverlayBackHandler";
+import { useTranslation } from "../../i18n/index.js";
 
 export function NotificationHistoryScreen({ darkMode, onClose }) {
+  const { t } = useTranslation();
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
   // ADDED — real audit finding (desktop full-width sweep): uneven
   // multi-line log entries — CSS multi-column flow, same as Trash.
@@ -34,21 +36,21 @@ export function NotificationHistoryScreen({ darkMode, onClose }) {
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Notification history" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("notifHistory.title", "Notification history")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</h1>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifHistory.title", "Notification history")}</h1>
         </div>
         {entries.length > 0 && (
-          <span role="button" tabIndex={0} aria-label="Clear notification history" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+          <span role="button" tabIndex={0} aria-label={t("notifHistory.clearAria", "Clear notification history")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>{t("notifHistory.clear", "Clear")}</span>
         )}
       </div>
       {confirmClear && (
         <ConfirmDeleteCard
           T={T}
-          message="This clears the whole notification history — there's no getting it back."
-          confirmLabel="Clear"
+          message={t("notifHistory.clearConfirm", "This clears the whole notification history — there's no getting it back.")}
+          confirmLabel={t("notifHistory.clear", "Clear")}
           onCancel={() => setConfirmClear(false)}
           onConfirm={clear}
         />
@@ -56,7 +58,7 @@ export function NotificationHistoryScreen({ darkMode, onClose }) {
       <div style={{ padding: 16 }}>
         {entries.length === 0 ? (
           <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
-            Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.
+            {t("notifHistory.empty", "Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.")}
           </div>
         ) : (
         <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>

@@ -146,5 +146,12 @@
     "shortcutOnly": "Shortcut only — no data to hide",
     "privacyNote": "Privacy note:",
     "privacyNoteBody": "Widgets are visible on the lock screen without authentication."
+  },
+  "notifHistory": {
+    "title": "Notification history",
+    "clear": "Clear",
+    "clearAria": "Clear notification history",
+    "clearConfirm": "This clears the whole notification history — there's no getting it back.",
+    "empty": "Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver."
   }
 }
