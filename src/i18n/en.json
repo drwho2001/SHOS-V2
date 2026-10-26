@@ -158,5 +158,17 @@
     "title": "Clinical evidence",
     "intro": "Sources behind statements this app makes. These ship with the app and cannot be edited or removed — if a claim here matters to you, this is where to check it rather than take the app’s word for it.",
     "footer": "These are third-party documents and are not maintained by this app. Each one was opened and read on the date shown against it, so a reference that has since been revised, moved or withdrawn will not say so here — this is a snapshot taken on that date, not a live feed. If a claim here matters to you, open the source and check it rather than take this screen’s word for it either way."
+  },
+  "backup": {
+    "title": "Backup & Export",
+    "intro": "Everything here makes a copy of your data or brings one back in — nothing here ever leaves this device unless you choose to send it somewhere yourself.",
+    "sampleWarning": "Heads up: {count} of the records in this export are still SHOS's made-up sample data, not yours. Clear it first if this file is going to a clinic or a new phone — it's in Settings → Support → Developer tools.",
+    "exportBackup": "Export backup",
+    "exportToFolder": "Export backup to a folder…",
+    "selectiveExport": "Selective export…",
+    "exportCsv": "Export as CSV…",
+    "exportEncrypted": "Export encrypted backup…",
+    "restore": "Restore from backup",
+    "automaticBackups": "Automatic backups"
   }
 }

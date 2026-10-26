@@ -6,8 +6,10 @@ import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DownloadS
 import { ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { countSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
+import { useTranslation } from "../../i18n/index.js";
 
 export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   // ADDED 27 Sep 2026 - how many sample records an export would still carry.
   // See the warning row below for why this belongs on THIS screen.
@@ -39,13 +41,13 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
     </div>
   );
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Backup & Export" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("backup.title", "Backup & Export")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Backup &amp; Export</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("backup.title", "Backup & Export")}</h1>
       </div>
       <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "12px 16px 4px" }}>
-        Everything here makes a copy of your data or brings one back in — nothing here ever leaves this device unless you choose to send it somewhere yourself.
+        {t("backup.intro", "Everything here makes a copy of your data or brings one back in \u2014 nothing here ever leaves this device unless you choose to send it somewhere yourself.")}
       </div>
       {/* ADDED 27 Sep 2026 — warn before exporting while sample data is present.
           buildBackup() reads through the repositories, so a user who exports on
@@ -62,9 +64,7 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
       {sampleDataCount > 0 && (
         <div style={{ margin: "8px 16px 0", padding: "10px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }}>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, lineHeight: 1.45 }}>
-            Heads up: {sampleDataCount} of the records in this export are still SHOS's made-up
-            sample data, not yours. Clear it first if this file is going to a clinic or a new
-            phone — it’s in Settings → Support → Developer tools.
+            {t("backup.sampleWarning", "Heads up: {count} of the records in this export are still SHOS's made-up sample data, not yours. Clear it first if this file is going to a clinic or a new phone — it's in Settings → Support → Developer tools.", { count: sampleDataCount })}
           </div>
         </div>
       )}
@@ -76,7 +76,7 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
             export never hit this because its own button already
             wrapped the call in an arrow function that discards the
             event. Wrapping this one the same way. */}
-        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} />
+        <SettingsRow icon={Upload} label={t("backup.exportBackup", "Export backup")} onClick={doPlainExport} />
         {/* ADDED — real ask: real confirmation for this button — it
             fires the OS share sheet with no feedback of its own, and
             round-trip verification (backupService.js's own
@@ -93,7 +93,7 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
             Only shown once actually available — see
             fileExportHelper.js's isChooseFolderExportAvailable. */}
         {chooseFolderAvailable && (
-          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} />
+          <SettingsRow icon={Folder} label={t("backup.exportToFolder", "Export backup to a folder…")} onClick={doPlainExportToFolder} />
         )}
         {/* FIXED — real bug found in the same pass as the round-trip
             verification above: this status was tracked (set on every
@@ -110,21 +110,21 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
             Contacts' Import earlier this session, mirrored here —
             Export (data leaving) reads as Upload, Restore (data coming
             back in) reads as Download. */}
-        <SettingsRow icon={Filter} label="Selective export…" onClick={onSelectiveExport} />
+        <SettingsRow icon={Filter} label={t("backup.selectiveExport", "Selective export…")} onClick={onSelectiveExport} />
         {/* ADDED — real ask: CSV export, for reading data elsewhere
             (Excel/Sheets), separate from the JSON backup above (which
             is for restoring into SHOS, not for opening as a
             spreadsheet). */}
-        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={onCSVExport} />
+        <SettingsRow icon={FileCsv} label={t("backup.exportCsv", "Export as CSV…")} onClick={onCSVExport} />
         {/* ADDED — real ask: password-protected backup, for storing or
             sending a backup somewhere less trusted than this device. */}
-        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={onEncryptedExport} />
-        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} />
+        <SettingsRow icon={Lock} label={t("backup.exportEncrypted", "Export encrypted backup…")} onClick={onEncryptedExport} />
+        <SettingsRow icon={Download} label={t("backup.restore", "Restore from backup")} onClick={onImportClick} />
         {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
             setting belongs next to the other backup controls, not
             bundled with an unrelated Contacts-display setting under a
             generic "Preferences" label. */}
-        <SettingsRow icon={Clock} label="Automatic backups" onClick={onAutoBackupSettings} />
+        <SettingsRow icon={Clock} label={t("backup.automaticBackups", "Automatic backups")} onClick={onAutoBackupSettings} />
       </div>
     </div>
   );
