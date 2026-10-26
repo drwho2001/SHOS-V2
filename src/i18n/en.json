@@ -8,6 +8,10 @@
     "editContact": "Edit contact",
     "saveChanges": "Save changes"
   },
+  "encounters": {
+    "addEncounter": "Add Encounter",
+    "editEncounter": "Edit Encounter"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
