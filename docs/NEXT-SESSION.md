@@ -3025,3 +3025,10 @@ five times.
 - Widget quick-add disc colours corrected: Contacts orange (#B36205), Medication blue (#003B6F).
 - Remaining brainstorm items: refill widget, menstrual widget split, banner link colours, last-test date+days-ago, sticky quick-add tabs.
 
+
+
+# Handover update - session DELEGATE (26 Oct 2026, i18n interpolation)
+
+- Added variable interpolation to the i18n t() helper.
+- Updated Home dashboard title to use translated interpolation.
+
