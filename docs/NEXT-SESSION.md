@@ -1,3 +1,32 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 7)
+
+## What shipped since last wrap-up
+- Hardware-backed key storage: @aparajita/capacitor-secure-storage integration
+- DELEGATE pushed: i18n extraction (Home, Contacts, Encounters, Testing, Vaccinations), accessibility improvements
+- Regenerated seed snapshot after DELEGATE changes
+
+## CI status
+- 1931/1932 tests pass (1 failure: anonymiseCoverageGuard - DELEGATE renamed Newest contact label to t() call, test needs update)
+- 0 lint errors, build clean
+- 3 flaky tests (sessionBridge network, FormTabs/orphanRowRender resource contention)
+
+## Remaining backlog
+- Hardware-backed Android Keystore: DONE (plugin installed + integrated)
+- Release keystore: deferred
+- Accessibility audit: DELEGATE handling
+- i18n wiring: DELEGATE active
+- Smoke test gaps: DELEGATE active
+- anonymiseCoverageGuard test: needs DELEGATE to update after label rename
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 6)
 
 ## What shipped since last wrap-up
