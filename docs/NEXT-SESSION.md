@@ -161,6 +161,7 @@
 - Accessibility: improved keyboard/ARIA support in Encounters save/links/toasts.
 - i18n: extracted Contacts sheet title and save button.
 - i18n: extracted Encounters sheet title.
+- i18n: extracted Encounters Save button.
 - i18n: extracted Testing sheet title.
 - i18n: extracted Vaccinations sheet title.
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
@@ -235,6 +236,7 @@
 - Accessibility: improved keyboard/ARIA support in Encounters save/links/toasts.
 - i18n: extracted Contacts sheet title and save button.
 - i18n: extracted Encounters sheet title.
+- i18n: extracted Encounters Save button.
 - i18n: extracted Testing sheet title.
 - i18n: extracted Vaccinations sheet title.
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.

@@ -1827,7 +1827,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? t("encounters.addEncounter", "Add Encounter") : t("encounters.editEncounter", "Edit Encounter")}</h1>
         <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
-          Save
+          {t("common.save", "Save")}
         </div>
       </div>
 
