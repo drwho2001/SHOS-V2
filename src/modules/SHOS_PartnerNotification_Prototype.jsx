@@ -23,6 +23,7 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { exportTextFile } from "../storage/fileExportHelper";
 import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useAnonymiseMode, contactName, ANONYMISED } from "../calculations/anonymiseDisplay";
@@ -74,6 +75,7 @@ function itemFromContact(c, anonymise = false) {
 
 // ── Contact picker (the "build/edit" step) ──
 function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, onCancel, T }) {
+  const { t } = useTranslation();
   // FIXED 28 Sep 2026 — Anonymise mode. This screen lists every contact by
   // name, so it is one of the places the 28 Sep security review found a real
   // leak: the feature is documented for handing the phone to someone, and this
@@ -131,13 +133,13 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   return (
     <div style={{ padding: "0 16px 100px" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12, lineHeight: 1.4 }}>
-        Pick who to include. This never sends anything — it just builds a checklist you work through yourself, or hand to a clinic's partner notification team.
+        {t("partnerNotification.intro", "Pick who to include. This never sends anything \u2014 it just builds a checklist you work through yourself, or hand to a clinic's partner notification team.")}
       </div>
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Clinical version</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("partnerNotification.clinicalVersion", "Clinical version")}</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds DOB, Age, and Address per contact — for handing to a clinic's own partner notification team, who need enough to actually locate someone themselves.</div>
           </div>
           <div onClick={() => setClinical((c) => !c)} role="switch" tabIndex={0} aria-checked={clinical} aria-label="Clinical version"
@@ -165,8 +167,8 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
           // that actually helps: add someone first.
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>
             {contacts.length === 0
-              ? "You have no contacts yet. Add someone in the Contacts tab first, then come back here."
-              : "No contacts match your search."}
+              ? t("partnerNotification.noContacts", "You have no contacts yet. Add someone in the Contacts tab first, then come back here.")
+              : t("partnerNotification.noContactsMatch", "No contacts match your search.")}
           </div>
         ) : visible.map((c) => {
           const isSelected = selectedIds.has(c.id);
@@ -190,10 +192,10 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+        <button onClick={onCancel} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
         <button onClick={generate} disabled={selectedIds.size === 0}
           style={{ flex: 2, padding: 12, borderRadius: 999, border: "none", background: selectedIds.size === 0 ? T.textDisabled : ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: selectedIds.size === 0 ? "default" : "pointer" }}>
-          {selectedIds.size === 0 ? "Select at least one" : `Generate list (${selectedIds.size})`}
+          {selectedIds.size === 0 ? t("partnerNotification.selectAtLeastOne", "Select at least one") : t("partnerNotification.generateList", "Generate list ({count})", { count: selectedIds.size })}
         </button>
       </div>
     </div>
@@ -202,6 +204,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
 
 // ── Checklist (the generated list itself) ──
 function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
@@ -320,10 +323,10 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
 
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button onClick={onEditContacts} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>
-          <Edit size={14} /> Edit contacts
+          <Edit size={14} /> {t("partnerNotification.editContacts", "Edit contacts")}
         </button>
         <button onClick={doExport} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
-          <ExportIcon size={14} /> Export as text
+          <ExportIcon size={14} /> {t("partnerNotification.exportAsText", "Export as text")}
         </button>
       </div>
       {confirmDelete ? (
@@ -331,14 +334,14 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
           T={T}
           moduleColor={ACCENTS.healthcare}
           margin="0"
-          message="This permanently deletes the checklist — unlike archiving, there's no getting it back."
-          confirmLabel="Delete this list"
+          message={t("partnerNotification.deleteConfirm", "This permanently deletes the checklist \u2014 unlike archiving, there's no getting it back.")}
+          confirmLabel={t("partnerNotification.deleteThisList", "Delete this list")}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={onDelete}
         />
       ) : (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmDelete(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 8, fontSize: 12, color: ACTION.red, cursor: "pointer" }}>
-          <Trash2 size={13} /> Delete this list
+          <Trash2 size={13} /> {t("partnerNotification.deleteThisList", "Delete this list")}
         </div>
       )}
     </div>
@@ -346,6 +349,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
 }
 
 export default function PartnerNotificationSheet({ testId, onClose }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -417,11 +421,11 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {editing && list ? (
-            <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+            <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           ) : (
-            <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+            <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label={t("common.close", "Close")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           )}
-          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</h1>
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{editing ? (list ? t("partnerNotification.editContacts", "Edit contacts") : t("partnerNotification.contactList", "Contact list")) : t("partnerNotification.contactList", "Contact list")}</h1>
         </div>
       </div>
       {editing ? (
