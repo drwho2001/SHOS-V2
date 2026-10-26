@@ -7,8 +7,10 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens"
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
+import { useTranslation } from "../../i18n/index.js";
 
 export function DataNetworkScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const dialogRef = useRef(null);
@@ -48,38 +50,38 @@ export function DataNetworkScreen({ onClose }) {
   );
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Data & network" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("dataNetwork.title", "Data & network")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Data & network</h1>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("dataNetwork.title", "Data & network")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16 }}>
-          SHOS is on-device only — nothing is ever sent to a server SHOS runs. Two features do call a third party directly from your device to do their job. Both are listed here exactly, and can be turned off.
+          {t("dataNetwork.intro", "SHOS is on-device only — nothing is ever sent to a server SHOS runs. Two features do call a third party directly from your device to do their job. Both are listed here exactly, and can be turned off.")}
         </div>
         {row(
-          "Address lookup",
+          t("dataNetwork.addressLookup", "Address lookup"),
           prefs.addressLookupEnabled,
           toggleAddressLookup,
-          "“Use current location” and address autocomplete (Contacts, My Profile, Clinic Visits, Encounters) send a typed address or your GPS coordinates to OpenStreetMap's free Nominatim service to look up a real address or place name. Off: you can still type an address by hand, just without suggestions or auto-lookup."
+          t("dataNetwork.addressLookupDesc", "\u201cUse current location\u201d and address autocomplete (Contacts, My Profile, Clinic Visits, Encounters) send a typed address or your GPS coordinates to OpenStreetMap's free Nominatim service to look up a real address or place name. Off: you can still type an address by hand, just without suggestions or auto-lookup.")
         )}
         {row(
-          "Check for app updates",
+          t("dataNetwork.updateCheck", "Check for app updates"),
           prefs.updateCheckEnabled,
           toggleUpdateCheck,
-          "On the installed Android app only, checks GitHub's public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen."
+          t("dataNetwork.updateCheckDesc", "On the installed Android app only, checks GitHub's public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen.")
         )}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Send problem reports</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("dataNetwork.sendReports", "Send problem reports")}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
-            Settings &gt; Developer tools &gt; Error log's own "Report a problem" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly — no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.
+            {t("dataNetwork.sendReportsDesc", "Settings > Developer tools > Error log's own \"Report a problem\" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly \u2014 no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.")}
           </div>
           <input
             type="url"
             value={endpointDraft}
             onChange={(e) => setEndpointDraft(e.target.value)}
             onBlur={commitEndpoint}
-            placeholder="https://…"
+            placeholder={t("dataNetwork.endpointPlaceholder", "https://\u2026")}
             style={{ width: "100%", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}
           />
         </div>

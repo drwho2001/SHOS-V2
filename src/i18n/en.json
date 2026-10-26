@@ -107,5 +107,16 @@
     "webApp": "Web app (iPhone / computer)",
     "open": "Open",
     "footer": "Local-first — nothing here leaves this device unless you choose to export or share it."
+  },
+  "dataNetwork": {
+    "title": "Data & network",
+    "intro": "SHOS is on-device only — nothing is ever sent to a server SHOS runs. Two features do call a third party directly from your device to do their job. Both are listed here exactly, and can be turned off.",
+    "addressLookup": "Address lookup",
+    "addressLookupDesc": "“Use current location” and address autocomplete (Contacts, My Profile, Clinic Visits, Encounters) send a typed address or your GPS coordinates to OpenStreetMap’s free Nominatim service to look up a real address or place name. Off: you can still type an address by hand, just without suggestions or auto-lookup.",
+    "updateCheck": "Check for app updates",
+    "updateCheckDesc": "On the installed Android app only, checks GitHub’s public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen.",
+    "sendReports": "Send problem reports",
+    "sendReportsDesc": "Settings > Developer tools > Error log’s own \"Report a problem\" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly — no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.",
+    "endpointPlaceholder": "https://…"
   }
 }
