@@ -222,7 +222,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>{label}</h1>
         {duplicatePairs.length > 0 && (
-          <div onClick={() => setShowDuplicates(true)} role="button" tabIndex={0} aria-label="Show duplicates" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowDuplicates(true); } }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, border: `1px solid ${actionRed}`, color: actionRed, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          <div onClick={() => setShowDuplicates(true)} role="button" tabIndex={0} aria-label={t("registry.showDuplicates", "Show duplicates")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowDuplicates(true); } }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, border: `1px solid ${actionRed}`, color: actionRed, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             <Copy size={13} /> {duplicatePairs.length} possible dupe{duplicatePairs.length > 1 ? "s" : ""}
           </div>
         )}
@@ -232,8 +232,8 @@ export default function RegistryManagementScreen({ registry, label, color, compu
         <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 230 }} onClick={() => setShowDuplicates(false)}>
           <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: color, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-              <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: "#FFFFFF" }}>Possible duplicates</h1>
-              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: "#FFFFFF" }}>{t("registry.possibleDuplicates", "Possible duplicates")}</h1>
+              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label={t("registry.closeDuplicates", "Close duplicates panel")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
               <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
                 {t("registry.duplicateHelp", "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.")}
@@ -260,14 +260,14 @@ export default function RegistryManagementScreen({ registry, label, color, compu
 
       <div style={{ padding: "12px 16px 8px" }}>
         <div style={{ display: "flex", gap: 8 }}>
-          <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder={`New ${label.toLowerCase()} entry`}
+          <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder={t("registry.newEntry", `New ${label.toLowerCase()} entry`)}
             onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
             style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
           <button onClick={handleAdd} style={{ padding: "0 16px", borderRadius: 8, border: "none", background: color, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             <Plus size={16} /> {t("common.add", "Add")}
           </button>
         </div>
-        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a name to rename it. Renaming updates everywhere it's used, immediately.</div>
+        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>{t("registry.tapToRename", "Tap a name to rename it. Renaming updates everywhere it's used, immediately.")}</div>
         {/* ADDED — real ask: sort A-Z (the prior fixed order) or by real
             usage count, most or least referenced first — same chip-row
             pattern Contacts' own sort-by row already uses. */}
@@ -288,14 +288,14 @@ export default function RegistryManagementScreen({ registry, label, color, compu
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 0", overflow: "hidden", columnCount: isDesktopWidth && active.length > 0 ? 2 : undefined, columnGap: 0 }}>
         {active.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No entries yet.</div>
+          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>{t("registry.noEntries", "No entries yet.")}</div>
         ) : active.map(Row)}
       </div>
 
       {archived.length > 0 && (
         <div style={{ margin: "16px 16px 24px" }}>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 0", fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
-            {showArchived ? "Hide" : "Show"} archived ({archived.length})
+            {showArchived ? t("registry.hideArchived", "Hide") : t("registry.showArchived", "Show")} archived ({archived.length})
           </div>
           {showArchived && (
             <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden", columnCount: isDesktopWidth && archived.length > 0 ? 2 : undefined, columnGap: 0 }}>

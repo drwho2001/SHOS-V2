@@ -83,7 +83,15 @@
   "registry": {
     "duplicateHelp": "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.",
     "noDuplicates": "No likely duplicates found.",
-    "archiveThis": "Archive this one"
+    "archiveThis": "Archive this one",
+    "noEntries": "No entries yet.",
+    "tapToRename": "Tap a name to rename it. Renaming updates everywhere it's used, immediately.",
+    "hideArchived": "Hide",
+    "showArchived": "Show",
+    "showDuplicates": "Show duplicates",
+    "possibleDuplicates": "Possible duplicates",
+    "closeDuplicates": "Close duplicates panel",
+    "newEntry": "New {label} entry"
   },
   "attachments": {
     "title": "Attachments",
