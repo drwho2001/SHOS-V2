@@ -942,7 +942,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             )}
           </div>
           <X size={16} color={doxyStatus.overdue ? actionRedColor : medsBlue} style={{ cursor: "pointer", flexShrink: 0, marginTop: 1 }}
-            onClick={(e) => { e.stopPropagation(); setDoxyTempDismissed(true); }} aria-label="Dismiss DoxyPEP banner" />
+            onClick={(e) => { e.stopPropagation(); setDoxyTempDismissed(true); }} aria-label="Dismiss DoxyPEP banner" role="button" tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDoxyTempDismissed(true); } }} />
         </div>
       )}
 

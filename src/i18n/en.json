@@ -77,5 +77,10 @@
     "addSymptom": "Add symptom",
     "addVaccination": "Add vaccination",
     "addMeasurement": "Add measurement"
+  },
+  "registry": {
+    "duplicateHelp": "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.",
+    "noDuplicates": "No likely duplicates found.",
+    "archiveThis": "Archive this one"
   }
 }

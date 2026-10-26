@@ -235,19 +235,19 @@ export default function RegistryManagementScreen({ registry, label, color, compu
               <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: "#FFFFFF" }}>Possible duplicates</h1>
               <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
-            <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
-              Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.
+              <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
+                {t("registry.duplicateHelp", "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.")}
             </div>
             <div tabIndex={0} style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
               {duplicatePairs.length === 0 ? (
-                <div style={{ fontSize: 13, color: T.textDisabled, padding: "20px 0", textAlign: "center" }}>No likely duplicates found.</div>
+                <div style={{ fontSize: 13, color: T.textDisabled, padding: "20px 0", textAlign: "center" }}>{t("registry.noDuplicates", "No likely duplicates found.")}</div>
               ) : duplicatePairs.map(({ a, b }) => (
                 <div key={`${a.id}-${b.id}`} style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom: 8 }}>
                   {[a, b].map((entry) => (
                     <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>{entry.name}{entry.isArchived ? " (archived)" : ""}</span>
                       {!entry.isArchived && (
-                        <span onClick={async () => { await registry.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: actionRed, cursor: "pointer" }}>Archive this one</span>
+                         <span onClick={async () => { await registry.archive(entry.id); refresh(); }} role="button" tabIndex={0} aria-label={`Archive ${entry.name}`} onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await registry.archive(entry.id); refresh(); } }} style={{ fontSize: 11, fontWeight: 700, color: actionRed, cursor: "pointer" }}>{t("registry.archiveThis", "Archive this one")}</span>
                       )}
                     </div>
                   ))}
@@ -264,7 +264,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
             onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
             style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
           <button onClick={handleAdd} style={{ padding: "0 16px", borderRadius: 8, border: "none", background: color, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            <Plus size={16} /> Add
+            <Plus size={16} /> {t("common.add", "Add")}
           </button>
         </div>
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a name to rename it. Renaming updates everywhere it's used, immediately.</div>
