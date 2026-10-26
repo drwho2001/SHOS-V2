@@ -90,6 +90,8 @@
 // same underlying reason: this one specific piece of data structurally
 // cannot go through the normal encrypted path.
 
+import { secureGet, secureSet, initSecureCache, getCachedVaultMeta, setCachedVaultMeta } from "./secureStorageAdapter.js";
+
 const VAULT_KEY = "shos_vault_key_slots";
 const IDB_NAME = "shos_crypto";
 const IDB_VERSION = 1;
@@ -142,6 +144,8 @@ function base64ToBytes(b64) {
 // --- Vault slot metadata (plain, unencrypted — see file header) ---
 
 function readVaultMeta() {
+  const cached = getCachedVaultMeta();
+  if (cached !== null && cached !== undefined) return cached;
   try {
     const raw = localStorage.getItem(VAULT_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -151,7 +155,9 @@ function readVaultMeta() {
   }
 }
 function writeVaultMeta(meta) {
+  setCachedVaultMeta(meta);
   localStorage.setItem(VAULT_KEY, JSON.stringify(meta));
+  secureSet("vault_key_slots", meta).catch(() => {});
 }
 
 // --- IndexedDB: the one non-extractable device-bound protector key ---
@@ -290,6 +296,7 @@ async function initializeFreshVault() {
 // whether a PIN prompt is actually required. Never touches
 // PrivacySettingsRepository — can't yet, see file header. ---
 export async function bootUnlock() {
+  await initSecureCache();
   const meta = readVaultMeta();
   if (!meta) {
     await initializeFreshVault();
