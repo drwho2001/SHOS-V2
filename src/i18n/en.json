@@ -16,6 +16,10 @@
     "newTest": "New test",
     "editTest": "Edit test"
   },
+  "vaccinations": {
+    "logVaccination": "Log vaccination",
+    "editVaccination": "Edit vaccination"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

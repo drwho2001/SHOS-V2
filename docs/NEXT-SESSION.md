@@ -162,6 +162,7 @@
 - i18n: extracted Contacts sheet title and save button.
 - i18n: extracted Encounters sheet title.
 - i18n: extracted Testing sheet title.
+- i18n: extracted Vaccinations sheet title.
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
@@ -235,6 +236,7 @@
 - i18n: extracted Contacts sheet title and save button.
 - i18n: extracted Encounters sheet title.
 - i18n: extracted Testing sheet title.
+- i18n: extracted Vaccinations sheet title.
 - Accessibility: improved keyboard/ARIA support in Contacts chips/links/settings.
 - Smoke test: added add-contact CRUD flow.
 - i18n: wired provider and extracted Home dashboard title.
