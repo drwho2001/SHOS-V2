@@ -1,3 +1,26 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 11)
+
+## What shipped since last wrap-up
+- Accessibility: added dialog role to Registry Management overlay
+- verify:fast ALL GATES PASSED
+
+## Remaining backlog (needs owner decisions or native development)
+- Release keystore: deferred until Play Store release
+- CSP meta tag: deferred (risk of breaking inline styles/scripts)
+- Accessibility audit: mostly done, remaining components need check
+- i18n wiring: DONE (all 16 modules wired)
+- Smoke test gaps: DELEGATE added add-contact CRUD flow, more needed
+- Hardware-backed Android Keystore: DONE (plugin installed + integrated)
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 10)
 
 ## What shipped since last wrap-up
