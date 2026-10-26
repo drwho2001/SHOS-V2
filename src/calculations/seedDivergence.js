@@ -360,7 +360,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_005",
-      "createdAt": "2026-09-15T08:00:00.000Z",
+      "createdAt": "2026-09-16T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -419,7 +419,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_006",
-      "createdAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-02T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -478,7 +478,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_007",
-      "createdAt": "2026-10-16T08:00:00.000Z",
+      "createdAt": "2026-10-17T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -541,7 +541,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_008",
-      "createdAt": "2026-07-05T08:00:00.000Z",
+      "createdAt": "2026-07-06T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -618,7 +618,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_009",
-      "createdAt": "2026-10-19T08:00:00.000Z",
+      "createdAt": "2026-10-20T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -677,7 +677,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_010",
-      "createdAt": "2026-10-22T08:00:00.000Z",
+      "createdAt": "2026-10-23T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -744,7 +744,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_011",
-      "createdAt": "2026-08-16T08:00:00.000Z",
+      "createdAt": "2026-08-17T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -822,7 +822,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_012",
-      "createdAt": "2026-04-08T08:00:00.000Z",
+      "createdAt": "2026-04-09T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -881,7 +881,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": true,
       "id": "contact_013",
-      "createdAt": "2026-10-10T08:00:00.000Z",
+      "createdAt": "2026-10-11T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -938,7 +938,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": true,
       "favourited": false,
       "id": "contact_014",
-      "createdAt": "2026-10-23T08:00:00.000Z",
+      "createdAt": "2026-10-24T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -995,7 +995,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_015",
-      "createdAt": "2025-12-29T09:00:00.000Z",
+      "createdAt": "2025-12-30T09:00:00.000Z",
       "isArchived": true
     },
     {
@@ -1054,7 +1054,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_016",
-      "createdAt": "2026-09-10T08:00:00.000Z",
+      "createdAt": "2026-09-11T08:00:00.000Z",
       "isArchived": false
     }
   ],
@@ -1121,7 +1121,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "F. Mercury — his place",
-      "date": "2026-10-11T21:30:00.000Z",
+      "date": "2026-10-12T21:30:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1147,13 +1147,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 90,
       "symptomsNoted": [],
       "id": "encounter_003",
-      "createdAt": "2026-10-11T22:00:00.000Z",
+      "createdAt": "2026-10-12T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Sylvie — drinks then hers",
-      "date": "2026-10-19T20:00:00.000Z",
+      "date": "2026-10-20T20:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1178,13 +1178,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 80,
       "symptomsNoted": [],
       "id": "encounter_004",
-      "createdAt": "2026-10-19T21:00:00.000Z",
+      "createdAt": "2026-10-20T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Grace — first date",
-      "date": "2026-10-23T18:00:00.000Z",
+      "date": "2026-10-24T18:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1207,13 +1207,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 75,
       "symptomsNoted": [],
       "id": "encounter_005",
-      "createdAt": "2026-10-23T20:00:00.000Z",
+      "createdAt": "2026-10-24T20:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — first date",
-      "date": "2026-07-06T18:30:00.000Z",
+      "date": "2026-07-07T18:30:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1238,13 +1238,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 88,
       "symptomsNoted": [],
       "id": "encounter_006",
-      "createdAt": "2026-07-06T21:00:00.000Z",
+      "createdAt": "2026-07-07T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — hers, exclusive now",
-      "date": "2026-07-21T19:00:00.000Z",
+      "date": "2026-07-22T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1267,13 +1267,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 92,
       "symptomsNoted": [],
       "id": "encounter_007",
-      "createdAt": "2026-07-21T21:30:00.000Z",
+      "createdAt": "2026-07-22T21:30:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — weekend away",
-      "date": "2026-08-04T17:00:00.000Z",
+      "date": "2026-08-05T17:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1296,13 +1296,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 95,
       "symptomsNoted": [],
       "id": "encounter_008",
-      "createdAt": "2026-08-04T22:00:00.000Z",
+      "createdAt": "2026-08-05T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — hers",
-      "date": "2026-09-22T19:00:00.000Z",
+      "date": "2026-09-23T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1325,13 +1325,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 80,
       "symptomsNoted": [],
       "id": "encounter_009",
-      "createdAt": "2026-09-22T21:00:00.000Z",
+      "createdAt": "2026-09-23T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — mine",
-      "date": "2026-10-14T19:30:00.000Z",
+      "date": "2026-10-15T19:30:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1354,13 +1354,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 90,
       "symptomsNoted": [],
       "id": "encounter_010",
-      "createdAt": "2026-10-14T21:00:00.000Z",
+      "createdAt": "2026-10-15T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Jordan — his place",
-      "date": "2026-08-16T20:00:00.000Z",
+      "date": "2026-08-17T20:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1387,13 +1387,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 85,
       "symptomsNoted": [],
       "id": "encounter_011",
-      "createdAt": "2026-08-16T22:00:00.000Z",
+      "createdAt": "2026-08-17T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Sauna trip",
-      "date": "2026-09-10T15:00:00.000Z",
+      "date": "2026-09-11T15:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Sauna",
@@ -1418,13 +1418,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 72,
       "symptomsNoted": [],
       "id": "encounter_012",
-      "createdAt": "2026-09-10T17:00:00.000Z",
+      "createdAt": "2026-09-11T17:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Priya — birthday drinks then mine",
-      "date": "2026-10-20T21:00:00.000Z",
+      "date": "2026-10-21T21:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1458,13 +1458,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 88,
       "symptomsNoted": [],
       "id": "encounter_013",
-      "createdAt": "2026-10-20T22:30:00.000Z",
+      "createdAt": "2026-10-21T22:30:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Devon — app hookup, his place",
-      "date": "2026-08-21T19:00:00.000Z",
+      "date": "2026-08-22T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1487,13 +1487,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 78,
       "symptomsNoted": [],
       "id": "encounter_014",
-      "createdAt": "2026-08-21T21:00:00.000Z",
+      "createdAt": "2026-08-22T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Kai — his flat",
-      "date": "2026-04-13T20:00:00.000Z",
+      "date": "2026-04-14T20:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1525,13 +1525,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 60,
       "symptomsNoted": [],
       "id": "encounter_015",
-      "createdAt": "2026-04-13T22:00:00.000Z",
+      "createdAt": "2026-04-14T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Ash — mine, regular thing",
-      "date": "2026-10-15T19:00:00.000Z",
+      "date": "2026-10-16T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1556,13 +1556,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 93,
       "symptomsNoted": [],
       "id": "encounter_016",
-      "createdAt": "2026-10-15T21:30:00.000Z",
+      "createdAt": "2026-10-16T21:30:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Nat — coffee date",
-      "date": "2026-09-15T14:00:00.000Z",
+      "date": "2026-09-16T14:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1585,13 +1585,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 65,
       "symptomsNoted": [],
       "id": "encounter_017",
-      "createdAt": "2026-09-15T16:00:00.000Z",
+      "createdAt": "2026-09-16T16:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Birthday party afters",
-      "date": "2026-10-05T22:00:00.000Z",
+      "date": "2026-10-06T22:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Group",
@@ -1621,7 +1621,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "enjoymentRating": 82,
       "symptomsNoted": [],
       "id": "encounter_018",
-      "createdAt": "2026-10-05T22:45:00.000Z",
+      "createdAt": "2026-10-06T22:45:00.000Z",
       "isArchived": false
     }
   ],
@@ -1629,8 +1629,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Symptomatic screen — Gonorrhoea positive",
-      "date": "2026-10-16T09:00:00.000Z",
-      "resultDate": "2026-10-18T09:00:00.000Z",
+      "date": "2026-10-17T09:00:00.000Z",
+      "resultDate": "2026-10-19T09:00:00.000Z",
       "setting": "🏥🤢 Clinic - Symptomatic",
       "sampleType": [
         "Urine",
@@ -1649,7 +1649,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "result_001"
       ],
       "mostRecent": false,
-      "followUpActionedDate": "2026-10-17T09:00:00.000Z",
+      "followUpActionedDate": "2026-10-18T09:00:00.000Z",
       "writtenPlan": "",
       "notes": "Discharge + discomfort a few days after an encounter. Positive for Gonorrhoea, negative for everything else screened.",
       "trackingInfo": "",
@@ -1670,8 +1670,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Test of cure — Gonorrhoea",
-      "date": "2026-10-23T09:00:00.000Z",
-      "resultDate": "2026-10-24T09:00:00.000Z",
+      "date": "2026-10-24T09:00:00.000Z",
+      "resultDate": "2026-10-25T10:00:00.000Z",
       "setting": "🏥😎 Clinic - Routine",
       "sampleType": [
         "Urine",
@@ -1706,8 +1706,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Routine PrEP monitoring screen",
-      "date": "2026-07-17T09:00:00.000Z",
-      "resultDate": "2026-07-20T09:00:00.000Z",
+      "date": "2026-07-18T09:00:00.000Z",
+      "resultDate": "2026-07-21T09:00:00.000Z",
       "setting": "🏥😎 Clinic - Routine",
       "sampleType": [
         "Blood",
@@ -1743,8 +1743,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Pre-relationship screen",
-      "date": "2026-07-04T09:00:00.000Z",
-      "resultDate": "2026-07-07T09:00:00.000Z",
+      "date": "2026-07-05T09:00:00.000Z",
+      "resultDate": "2026-07-08T09:00:00.000Z",
       "setting": "🏥😎 Clinic - Routine",
       "sampleType": [
         "Blood",
@@ -1780,7 +1780,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Home kit STI screen",
-      "date": "2026-10-22T09:00:00.000Z",
+      "date": "2026-10-23T09:00:00.000Z",
       "resultDate": null,
       "setting": "🏠 Home",
       "sampleType": [
@@ -1817,8 +1817,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Symptomatic screen — Chlamydia positive",
-      "date": "2026-04-12T09:00:00.000Z",
-      "resultDate": "2026-04-15T09:00:00.000Z",
+      "date": "2026-04-13T09:00:00.000Z",
+      "resultDate": "2026-04-16T09:00:00.000Z",
       "setting": "🏥🤢 Clinic - Symptomatic",
       "sampleType": [
         "Urine"
@@ -1857,8 +1857,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Routine annual screen",
-      "date": "2026-05-18T09:00:00.000Z",
-      "resultDate": "2026-05-23T09:00:00.000Z",
+      "date": "2026-05-19T09:00:00.000Z",
+      "resultDate": "2026-05-24T09:00:00.000Z",
       "setting": "🏥😎 Clinic - Routine",
       "sampleType": [
         "Blood",
@@ -1899,6 +1899,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
   ],
   "Medications": [
     {
+      "isDemo": true,
       "name": "PrEP (Descovy)",
       "unit": "tablet",
       "usagePattern": "daily",
@@ -1924,6 +1925,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "id": "med_001"
     },
     {
+      "isDemo": true,
       "name": "DoxyPEP (Doxycycline)",
       "unit": "capsule",
       "usagePattern": "prn",
@@ -1949,6 +1951,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "id": "med_002"
     },
     {
+      "isDemo": true,
       "name": "Vitamin D3",
       "unit": "tablet",
       "usagePattern": "daily",
@@ -1974,6 +1977,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "id": "med_003"
     },
     {
+      "isDemo": true,
       "name": "Antihistamine (PRN)",
       "unit": "tablet",
       "usagePattern": "prn",
@@ -1999,6 +2003,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "id": "med_004"
     },
     {
+      "isDemo": true,
       "name": "Amoxicillin (course, finished)",
       "unit": "capsule",
       "usagePattern": "custom",
@@ -2024,6 +2029,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "id": "med_005"
     },
     {
+      "isDemo": true,
       "name": "Testosterone (Sustanon)",
       "unit": "injection",
       "usagePattern": "custom",
@@ -2053,7 +2059,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Treatment — Gonorrhoea",
-      "date": "2026-10-18T13:00:00.000Z",
+      "date": "2026-10-19T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2096,7 +2102,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Early pregnancy scan",
-      "date": "2026-08-16T13:00:00.000Z",
+      "date": "2026-08-17T13:00:00.000Z",
       "location": "Local hospital — antenatal unit",
       "locationId": "",
       "clinician": [
@@ -2126,7 +2132,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Miscarriage aftercare",
-      "date": "2026-09-05T13:00:00.000Z",
+      "date": "2026-09-06T13:00:00.000Z",
       "location": "Local hospital — antenatal unit",
       "locationId": "",
       "clinician": [
@@ -2156,7 +2162,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Treatment — Chlamydia",
-      "date": "2026-04-12T13:00:00.000Z",
+      "date": "2026-04-13T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2166,7 +2172,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Treatment"
       ],
       "isFutureAppointment": true,
-      "nextReviewDate": "2026-05-03T13:00:00.000Z",
+      "nextReviewDate": "2026-05-04T13:00:00.000Z",
       "followUpType": "Test of cure",
       "clinicalImpression": "",
       "clinicalNotes": "Confirmed Chlamydia on symptomatic screen. Doxycycline course given. TOC advised in 3 weeks.",
@@ -2188,7 +2194,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Routine annual screen",
-      "date": "2026-05-18T13:00:00.000Z",
+      "date": "2026-05-19T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2233,7 +2239,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "IUD insertion",
-      "date": "2026-08-11T13:00:00.000Z",
+      "date": "2026-08-12T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2270,13 +2276,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "High-risk status"
       ],
       "time": null,
-      "date": "2026-10-24T10:00:00.000Z",
+      "date": "2026-10-25T11:00:00.000Z",
       "notes": "Offered given recent Gonorrhoea diagnosis and ongoing risk.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 1,
-          "date": "2026-10-24T10:00:00.000Z",
+          "date": "2026-10-25T11:00:00.000Z",
           "provider": "56 Dean Street",
           "injectionSite": "Deltoid",
           "notes": "Offered given recent Gonorrhoea diagnosis and ongoing risk."
@@ -2293,13 +2299,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Routine"
       ],
       "time": null,
-      "date": "2026-07-17T10:00:00.000Z",
+      "date": "2026-07-18T10:00:00.000Z",
       "notes": "Routine MenB vaccination, offered opportunistically at a clinic visit.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 1,
-          "date": "2026-07-17T10:00:00.000Z",
+          "date": "2026-07-18T10:00:00.000Z",
           "provider": "56 Dean Street",
           "injectionSite": "Deltoid",
           "notes": "Routine MenB vaccination, offered opportunistically at a clinic visit."
@@ -2316,13 +2322,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Routine"
       ],
       "time": null,
-      "date": "2026-05-18T10:00:00.000Z",
+      "date": "2026-05-19T10:00:00.000Z",
       "notes": "First of a 3-dose Twinrix course, offered at the routine annual screen.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 1,
-          "date": "2026-05-18T10:00:00.000Z",
+          "date": "2026-05-19T10:00:00.000Z",
           "provider": "56 Dean Street",
           "injectionSite": "Deltoid",
           "notes": "First of a 3-dose Twinrix course, offered at the routine annual screen."
@@ -2339,14 +2345,14 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Routine"
       ],
       "time": null,
-      "date": "2026-06-17T10:00:00.000Z",
+      "date": "2026-06-18T10:00:00.000Z",
       "notes": "Second dose, on schedule. Third and final dose due at the 6-month mark.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 2,
-          "date": "2026-06-17T10:00:00.000Z",
-          "nextDue": "2026-11-14",
+          "date": "2026-06-18T10:00:00.000Z",
+          "nextDue": "2026-11-15",
           "provider": "56 Dean Street",
           "injectionSite": "Gluteal",
           "notes": "Second dose, on schedule. Third and final dose due at the 6-month mark."
@@ -2363,8 +2369,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomIds": [
         "symptom_cat_001"
       ],
-      "dateStarted": "2026-10-14T07:00:00.000Z",
-      "dateResolved": "2026-10-22T07:00:00.000Z",
+      "dateStarted": "2026-10-15T07:00:00.000Z",
+      "dateResolved": "2026-10-23T07:00:00.000Z",
       "severity": "Moderate",
       "relatedEncounterIds": [
         "seed_encounter_9003"
@@ -2382,8 +2388,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomIds": [
         "symptom_cat_001"
       ],
-      "dateStarted": "2026-04-10T07:00:00.000Z",
-      "dateResolved": "2026-04-18T07:00:00.000Z",
+      "dateStarted": "2026-04-11T07:00:00.000Z",
+      "dateResolved": "2026-04-19T07:00:00.000Z",
       "severity": "Mild",
       "relatedEncounterIds": [
         "seed_encounter_9015"
@@ -2401,7 +2407,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomIds": [
         "symptom_cat_001"
       ],
-      "dateStarted": "2026-10-23T07:00:00.000Z",
+      "dateStarted": "2026-10-24T07:00:00.000Z",
       "dateResolved": null,
       "severity": "Mild",
       "relatedEncounterIds": [],
@@ -2415,7 +2421,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "CD4 count",
-      "date": "2026-09-25T08:00:00.000Z",
+      "date": "2026-09-26T08:00:00.000Z",
       "value": 620,
       "unit": "cells/µL",
       "enteredValue": 620,
@@ -2433,7 +2439,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Weight",
-      "date": "2026-10-11T08:00:00.000Z",
+      "date": "2026-10-12T08:00:00.000Z",
       "value": 68.04,
       "unit": "kg",
       "enteredValue": 150,
@@ -2451,7 +2457,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Blood pressure",
-      "date": "2026-10-11T08:00:00.000Z",
+      "date": "2026-10-12T08:00:00.000Z",
       "value": null,
       "unit": "mmHg",
       "enteredValue": null,
@@ -2469,7 +2475,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Weight",
-      "date": "2026-10-23T08:00:00.000Z",
+      "date": "2026-10-24T08:00:00.000Z",
       "value": 67.5,
       "unit": "kg",
       "enteredValue": 67.5,
@@ -2487,7 +2493,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "CD4 count",
-      "date": "2026-06-27T08:00:00.000Z",
+      "date": "2026-06-28T08:00:00.000Z",
       "value": 590,
       "unit": "cells/µL",
       "enteredValue": 590,
@@ -2505,7 +2511,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Blood glucose",
-      "date": "2026-10-20T08:00:00.000Z",
+      "date": "2026-10-21T08:00:00.000Z",
       "value": 5.4,
       "unit": "mmol/L",
       "enteredValue": 5.4,
@@ -2609,6 +2615,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
   ],
   "Episodes": [
     {
+      "isDemo": true,
       "title": "Gonorrhoea — Sep 2026",
       "triggerReason": "Symptom-driven",
       "startEncounterId": "seed_encounter_9003",
@@ -2627,16 +2634,17 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomLogIds": [
         "seed_symlog_9001"
       ],
-      "resolvedDate": "2026-10-24T00:23:48.771Z",
+      "resolvedDate": "2026-10-24T23:37:38.348Z",
       "resolution": "Treated — course complete",
       "notes": "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
       "isArchived": false,
       "id": "episode_001",
-      "createdAt": "2026-10-16T00:23:48.771Z"
+      "createdAt": "2026-10-16T23:37:38.348Z"
     }
   ],
   "Logs": [
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2644,10 +2652,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "refill",
       "delta": 30,
-      "date": "2026-10-17T08:30:00.000Z",
+      "date": "2026-10-18T08:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2655,10 +2664,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-24T07:30:00.000Z",
+      "date": "2026-10-25T08:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2666,10 +2676,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-23T07:30:00.000Z",
+      "date": "2026-10-24T07:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2677,10 +2688,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-22T07:30:00.000Z",
+      "date": "2026-10-23T07:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2688,10 +2700,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-21T07:30:00.000Z",
+      "date": "2026-10-22T07:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2699,10 +2712,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-20T07:30:00.000Z",
+      "date": "2026-10-21T07:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2710,10 +2724,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-19T07:30:00.000Z",
+      "date": "2026-10-20T07:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2721,10 +2736,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9002",
       "type": "refill",
       "delta": 16,
-      "date": "2026-10-05T08:30:00.000Z",
+      "date": "2026-10-06T08:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2732,10 +2748,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9002",
       "type": "dose",
       "delta": -6,
-      "date": "2026-10-20T21:30:00.000Z",
+      "date": "2026-10-21T21:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2743,10 +2760,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9003",
       "type": "refill",
       "delta": 90,
-      "date": "2026-08-26T08:30:00.000Z",
+      "date": "2026-08-27T08:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2754,10 +2772,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9003",
       "type": "dose",
       "delta": -30,
-      "date": "2026-09-25T07:30:00.000Z",
+      "date": "2026-09-26T07:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2765,10 +2784,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9003",
       "type": "dose",
       "delta": -14,
-      "date": "2026-10-24T19:30:00.000Z",
+      "date": "2026-10-25T20:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2776,10 +2796,11 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9004",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-23T13:30:00.000Z",
+      "date": "2026-10-24T13:30:00.000Z",
       "voided": false
     },
     {
+      "isDemo": true,
       "reason": [],
       "sideEffects": [],
       "notes": "",
@@ -2787,7 +2808,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9005",
       "type": "dose",
       "delta": -21,
-      "date": "2026-09-10T08:30:00.000Z",
+      "date": "2026-09-11T08:30:00.000Z",
       "voided": false
     }
   ],
@@ -2801,7 +2822,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "isArchived": false,
       "id": "cycle_001",
-      "createdAt": "2026-10-25T00:23:49.083Z"
+      "createdAt": "2026-10-26T00:37:38.554Z"
     },
     {
       "isDemo": true,
@@ -2812,7 +2833,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "isArchived": false,
       "id": "cycle_002",
-      "createdAt": "2026-10-25T00:23:49.083Z"
+      "createdAt": "2026-10-26T00:37:38.554Z"
     },
     {
       "isDemo": true,
@@ -2823,7 +2844,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Ongoing.",
       "isArchived": false,
       "id": "cycle_003",
-      "createdAt": "2026-10-25T00:23:49.083Z"
+      "createdAt": "2026-10-26T00:37:38.554Z"
     }
   ],
   "Contraception": [
@@ -2839,7 +2860,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Stopped when the relationship with Morgan became exclusive.",
       "isArchived": false,
       "id": "contra_001",
-      "createdAt": "2026-10-25T00:23:48.604Z"
+      "createdAt": "2026-10-26T00:37:38.240Z"
     },
     {
       "isDemo": true,
@@ -2853,7 +2874,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Started after the miscarriage — wanted something more reliable than the pill.",
       "isArchived": false,
       "id": "contra_002",
-      "createdAt": "2026-10-25T00:23:48.604Z"
+      "createdAt": "2026-10-26T00:37:38.240Z"
     },
     {
       "isDemo": true,
@@ -2867,7 +2888,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well.",
       "isArchived": false,
       "id": "contra_003",
-      "createdAt": "2026-10-25T00:23:48.604Z"
+      "createdAt": "2026-10-26T00:37:38.240Z"
     }
   ],
   "Pregnancy": [
@@ -2882,7 +2903,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Precautionary test.",
       "isArchived": false,
       "id": "pregnancy_001",
-      "createdAt": "2026-10-25T00:23:49.121Z"
+      "createdAt": "2026-10-26T00:37:38.574Z"
     },
     {
       "isDemo": true,
@@ -3046,7 +3067,7 @@ function projectDate(value, anchor) {
  * the live seed arrays against these rows on every run, and a wrong epoch turns
  * every date-bearing record diverged, so the suite goes red immediately.
  */
-export const SNAPSHOT_TAKEN_AT = "2026-10-25";
+export const SNAPSHOT_TAKEN_AT = "2026-10-26";
 
 /** Today, as the fake-UTC date string the rest of this module compares. */
 function todayAsStoredDate() {
