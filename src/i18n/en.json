@@ -118,5 +118,33 @@
     "sendReports": "Send problem reports",
     "sendReportsDesc": "Settings > Developer tools > Error log’s own \"Report a problem\" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly — no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.",
     "endpointPlaceholder": "https://…"
+  },
+  "widgets": {
+    "title": "Widgets",
+    "intro": "Widgets appear on your home screen and lock screen.",
+    "nextDose": "Next Medication Dose",
+    "nextDoseDesc": "Shows medication name + next dose time",
+    "refillDue": "Refills Due",
+    "refillDueDesc": "Shows count + next medication needing refill",
+    "doxyPepWindow": "DoxyPEP Window",
+    "doxyPepWindowDesc": "Shows 72h post-exposure countdown",
+    "lastTest": "Last Test",
+    "lastTestDesc": "Shows last STI test date + when a retest is due",
+    "cycle": "Menstrual Cycle",
+    "cycleDesc": "Shows cycle day, phase and next period",
+    "clinicCard": "Clinic Card",
+    "clinicCardDesc": "Shows the next appointment, its location and test count",
+    "quickAddEncounter": "Quick Add: Encounter",
+    "quickAddEncounterDesc": "Tap to open Add Encounter form",
+    "quickAddContact": "Quick Add: Contact",
+    "quickAddContactDesc": "Tap to open Add Contact form",
+    "quickAddMedication": "Quick Add: Medication",
+    "quickAddMedicationDesc": "Tap to open Log Medication form",
+    "tierFull": "Full — names & times",
+    "tierRedacted": "Redacted — counts only",
+    "tierOff": "Off — disabled",
+    "shortcutOnly": "Shortcut only — no data to hide",
+    "privacyNote": "Privacy note:",
+    "privacyNoteBody": "Widgets are visible on the lock screen without authentication."
   }
 }

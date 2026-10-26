@@ -12,8 +12,10 @@ import { useLoadedState } from "../../calculations/loadedRepositoryState";
 // answer the widgets will act on.
 import { tierFor, isDataWidget } from "../../calculations/widgetPrivacy";
 import { syncAllWidgets } from "../../calculations/syncAllWidgets";
+import { useTranslation } from "../../i18n/index.js";
 
 export function WidgetsScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const dialogRef = useRef(null);
@@ -27,20 +29,20 @@ export function WidgetsScreen({ onClose }) {
   const widgetConfigs = [
     {
       key: "nextDose",
-      label: "Next Medication Dose",
-      description: "Shows medication name + next dose time",
+      label: t("widgets.nextDose", "Next Medication Dose"),
+      description: t("widgets.nextDoseDesc", "Shows medication name + next dose time"),
 
     },
     {
       key: "refillDue",
-      label: "Refills Due",
-      description: "Shows count + next medication needing refill",
+      label: t("widgets.refillDue","Refills Due"),
+      description: t("widgets.refillDueDesc","Shows count + next medication needing refill"),
 
     },
     {
       key: "doxyPepWindow",
-      label: "DoxyPEP Window",
-      description: "Shows 72h post-exposure countdown",
+      label: t("widgets.doxyPepWindow","DoxyPEP Window"),
+      description: t("widgets.doxyPepWindowDesc","Shows 72h post-exposure countdown"),
 
     },
     // ADDED 1 Oct 2026 - these three were MISSING ENTIRELY, and they are the
@@ -51,46 +53,46 @@ export function WidgetsScreen({ onClose }) {
     // widgets, which render a launch icon and no data at all.
     {
       key: "lastTest",
-      label: "Last Test",
-      description: "Shows last STI test date + when a retest is due",
+      label: t("widgets.lastTest","Last Test"),
+      description: t("widgets.lastTestDesc","Shows last STI test date + when a retest is due"),
 
     },
     {
       key: "cycle",
-      label: "Menstrual Cycle",
-      description: "Shows cycle day, phase and next period",
+      label: t("widgets.cycle","Menstrual Cycle"),
+      description: t("widgets.cycleDesc","Shows cycle day, phase and next period"),
 
     },
     {
       key: "clinicCard",
-      label: "Clinic Card",
-      description: "Shows the next appointment, its location and test count",
+      label: t("widgets.clinicCard","Clinic Card"),
+      description: t("widgets.clinicCardDesc","Shows the next appointment, its location and test count"),
 
     },
     {
       key: "quickAddEncounter",
-      label: "Quick Add: Encounter",
-      description: "Tap to open Add Encounter form",
+      label: t("widgets.quickAddEncounter","Quick Add: Encounter"),
+      description: t("widgets.quickAddEncounterDesc","Tap to open Add Encounter form"),
 
     },
     {
       key: "quickAddContact",
-      label: "Quick Add: Contact",
-      description: "Tap to open Add Contact form",
+      label: t("widgets.quickAddContact","Quick Add: Contact"),
+      description: t("widgets.quickAddContactDesc","Tap to open Add Contact form"),
 
     },
     {
       key: "quickAddMedication",
-      label: "Quick Add: Medication",
-      description: "Tap to open Log Medication form",
+      label: t("widgets.quickAddMedication","Quick Add: Medication"),
+      description: t("widgets.quickAddMedicationDesc","Tap to open Log Medication form"),
 
     },
   ];
 
   const privacyOptions = [
-    { value: "full", label: "Full — names & times" },
-    { value: "redacted", label: "Redacted — counts only" },
-    { value: "off", label: "Off — disabled" },
+    { value: "full", label: t("widgets.tierFull","Full — names & times") },
+    { value: "redacted", label: t("widgets.tierRedacted","Redacted — counts only") },
+    { value: "off", label: t("widgets.tierOff","Off — disabled") },
   ];
 
   const handlePrivacyChange = async (widgetKey, tier) => {
@@ -106,10 +108,10 @@ export function WidgetsScreen({ onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Widgets" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("widgets.title", "Widgets")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Widgets</h1>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("widgets.title", "Widgets")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 16, lineHeight: 1.5 }}>
@@ -152,7 +154,7 @@ export function WidgetsScreen({ onClose }) {
                     </select>
                   ) : (
                     <span style={{ fontSize: 12, color: T.textDisabled, textAlign: "right", maxWidth: 160, lineHeight: 1.5 }}>
-                      Shortcut only — no data to hide
+                      {t("widgets.shortcutOnly","Shortcut only — no data to hide")}
                     </span>
                   )}
                 </div>
@@ -161,7 +163,7 @@ export function WidgetsScreen({ onClose }) {
           );
         })}
         <div style={{ marginTop: 20, padding: 16, background: T.surfaceVariant, borderRadius: RADIUS.md, fontSize: 12, color: T.textSecondary, lineHeight: 1.5 }}>
-          <strong>Privacy note:</strong> Widgets are visible on the lock screen without authentication. Use <strong>Redacted</strong> for sensitive data (refills, appointments). <strong>Full</strong> is OK for Next Dose (you're the one taking it). Quick-add widgets don't show data — they're just shortcuts.
+          <strong>{t("widgets.privacyNote","Privacy note:")}</strong> Widgets are visible on the lock screen without authentication. Use <strong>Redacted</strong> for sensitive data (refills, appointments). <strong>Full</strong> is OK for Next Dose (you're the one taking it). Quick-add widgets don't show data — they're just shortcuts.
         </div>
       </div>
     </div>
