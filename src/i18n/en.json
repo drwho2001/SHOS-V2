@@ -12,6 +12,10 @@
     "addEncounter": "Add Encounter",
     "editEncounter": "Edit Encounter"
   },
+  "testing": {
+    "newTest": "New test",
+    "editTest": "Edit test"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
