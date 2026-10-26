@@ -1,3 +1,26 @@
+# Handover update - session MAKER (25 Oct 2026, continuation 8)
+
+## What shipped since last wrap-up
+- Fixed anonymiseCoverageGuard test (DELEGATE renamed Newest contact label)
+- Hardware-backed key storage: @aparajita/capacitor-secure-storage integration complete
+- All verify:fast gates pass (build, lint, unit tests, encoding, docs)
+
+## Remaining backlog (needs owner decisions or native development)
+- Release keystore: deferred until Play Store release
+- CSP meta tag: deferred (risk of breaking inline styles/scripts)
+- Accessibility audit: DELEGATE handling (reclaimed - will continue)
+- i18n wiring: DELEGATE handling (reclaimed - will continue)
+- Smoke test gaps: DELEGATE handling (reclaimed - will continue)
+
+## Device status
+- Connected via USB
+- App Lock off (as found)
+- No switches turned on
+- No encounters saved
+- APK installed: latest
+
+
+
 # Handover update - session MAKER (25 Oct 2026, continuation 7)
 
 ## What shipped since last wrap-up
