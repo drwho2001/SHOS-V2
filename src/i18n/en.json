@@ -33,6 +33,10 @@
     "newVisit": "New visit",
     "editVisit": "Edit visit"
   },
+  "myProfile": {
+    "title": "My Profile",
+    "editTitle": "Edit My Profile"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

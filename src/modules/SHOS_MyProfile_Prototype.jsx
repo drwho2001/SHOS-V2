@@ -91,6 +91,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
@@ -946,6 +947,7 @@ function useResolvedHivStatus(stated) {
 }
 
 function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
+  const { t } = useTranslation();
     const [form, setForm] = useState(profile);
     const [activeFormTab, setActiveFormTab] = useState(PROFILE_EDIT_TABS[0].key);
     const editSheetRef = useRef(null);
@@ -1067,7 +1069,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
   const [revealPhysicalAnyway, setRevealPhysicalAnyway] = useState(false);
 
   return (
-    <div role="dialog" aria-label="Edit My Profile" ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
+    <div role="dialog" aria-label={t("myProfile.editTitle", "Edit My Profile")} ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Edit My Profile</h1>
@@ -1667,10 +1669,11 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate }) {
 // content; now just the name + Edit button, since the actual data
 // renders below via ProfileDataView.
 function ProfileSummary({ profile, T, onEdit }) {
+  const { t } = useTranslation();
   return (
     <div style={{ padding: "16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: T.textPrimary }}>{profile.nickname || profile.displayName || "My Profile"}</h1>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: T.textPrimary }}>{profile.nickname || profile.displayName || t("myProfile.title", "My Profile")}</h1>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onEdit} style={{ padding: "8px 16px", borderRadius: radius.full, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Edit
         </div>
@@ -1687,6 +1690,7 @@ function ProfileSummary({ profile, T, onEdit }) {
 // optional, every existing call site keeps its current behavior by
 // simply not passing it.
 export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false, onOpenGlossary }) {
+  const { t } = useTranslation();
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
   const [editing, setEditing] = useState(openEditingOnMount);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred

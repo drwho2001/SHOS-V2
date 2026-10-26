@@ -174,6 +174,7 @@
 - i18n: extracted Home recent activity labels.
 - i18n: extracted Vaccinations sheet strings.
 - i18n: extracted ClinicVisits sheet title.
+- i18n: extracted MyProfile title.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
@@ -256,6 +257,7 @@
 - i18n: extracted Home recent activity labels.
 - i18n: extracted Vaccinations sheet strings.
 - i18n: extracted ClinicVisits sheet title.
+- i18n: extracted MyProfile title.
 
 ## Questions for owner
 1. Demo data: keep with isDemo flag, or remove entirely?
