@@ -338,6 +338,7 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
 }
 
 function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const isNew = !measurement;
   const editSheetRef = useRef(null);
@@ -506,7 +507,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     <div role="dialog" aria-label={isNew ? "Add measurement" : "Edit measurement"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</h1>
+          <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("measurements.addMeasurement", "Add measurement") : tr("measurements.editMeasurement", "Edit measurement")}</h1>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
@@ -1184,7 +1185,7 @@ function detectUnitSystem(prefs) {
 }
 
 export default function MeasurementsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
