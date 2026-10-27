@@ -958,7 +958,7 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
 
 // ── Add/Edit sheet ──
 function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBeforeEdit, onAfterEdit, T }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   // FIXED 30 Sep 2026 (t035) - same defect as Testing's TestEditSheet: this
   // sheet is mounted permanently and closes via a falsy `visitId`, so a CLOSED
   // sheet sat on the Escape stack and could swallow or misdirect the key.
@@ -1141,7 +1141,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
           banner reads as the same family of UI element. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", zIndex: 1 }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? t("clinicVisits.newVisit", "New visit") : t("clinicVisits.editVisit", "Edit visit")}</h1>
+        <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("clinicVisits.newVisit", "New visit") : tr("clinicVisits.editVisit", "Edit visit")}</h1>
         <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcareBlue : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
           Save
