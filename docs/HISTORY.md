@@ -9372,3 +9372,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (13)
 - Enlarged Settings icon touch targets; fixed missing sessions restore destructure.
+
+## 27 Oct 2026 - Zeus (14)
+- Enlarged Contacts icon touch targets (batch).

@@ -1287,7 +1287,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           {rules.map((r) => (
             <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
               <span>{describeRule(r)}</span>
-              <Trash2 size={13} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              <Trash2 size={20} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8, padding: 4 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
           ))}
         </div>
@@ -1755,24 +1755,24 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             CHANGED — real audit finding: same tap/title/aria-label
             treatment as the transport icon above. */}
         {contact.hosts === "Yes" ? (
-          <Home size={13} color={T.textSecondary} role="button" tabIndex={0} title="Hosts meetups" aria-label="Hosts meetups — tap for details"
+          <Home size={20} color={T.textSecondary} role="button" tabIndex={0} title="Hosts meetups" aria-label="Hosts meetups — tap for details"
             onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer" }} />
         ) : contact.travels === "Yes" ? (
-          <NavigationArrow size={13} color={T.textSecondary} role="button" tabIndex={0} title="Will travel to you" aria-label="Will travel to you — tap for details"
+          <NavigationArrow size={20} color={T.textSecondary} role="button" tabIndex={0} title="Will travel to you" aria-label="Will travel to you — tap for details"
             onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer" }} />
         ) : null}
         {contact.linkedContactIds.length > 0 && (
-          <Link2 size={13} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
+          <Link2 size={20} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
             onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer" }} />
         )}
         {flaggedDontMeetAgain && (
-          <AlertTriangle size={13} color={T.actionRed} role="button" tabIndex={0} title="Flagged: do not meet again" aria-label="Flagged: do not meet again — tap for details"
+          <AlertTriangle size={20} color={T.actionRed} role="button" tabIndex={0} title="Flagged: do not meet again" aria-label="Flagged: do not meet again — tap for details"
             onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer" }} />
