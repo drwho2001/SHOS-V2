@@ -1732,6 +1732,7 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(600);
       await page.locator('[aria-label="Add encounter"]').first().click({ timeout: 5000 });
       await page.waitForTimeout(500);
+      await page.waitForSelector('input[aria-label="Title"]', { timeout: 10000 });
       await page.locator('input[aria-label="Title"]').fill("Timezone probe");
       await page.waitForSelector('input[aria-label="Date & time"]', { timeout: 10000 });
       await page.evaluate((val) => {
