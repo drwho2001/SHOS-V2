@@ -1858,7 +1858,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           textColor={T.textSecondary} border={T.border} surface={T.bg}>
         <div>
         <SectionCard title={tr("encounters.overview", "Overview")} T={T}>
-          <TextField label={tr("encounters.title", "Title")} value={form.title} onChange={set("title")} T={T} placeholder={tr("encounters.titlePlaceholder", "e.g. Alex — coffee then back to theirs")} />
+          <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder={tr("encounters.titlePlaceholder", "e.g. Alex — coffee then back to theirs")} />
           <DateTimeField label={tr("encounters.dateTime", "Date & time")} value={form.date} onChange={set("date")} T={T} />
           {/* ADDED — real ask: "optional end time for encounter (ie if
               multiday or particularly long)". `dateEnd` already existed
