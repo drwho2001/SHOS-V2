@@ -1733,6 +1733,7 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.locator('[aria-label="Add encounter"]').first().click({ timeout: 5000 });
       await page.waitForTimeout(500);
       await page.waitForSelector('input[aria-label="Title"]', { timeout: 10000 });
+      console.log("TITLE FOUND, page URL:", page.url());
       await page.locator('input[aria-label="Title"]').fill("Timezone probe");
       await page.locator('input[type="datetime-local"]').first().waitFor({ state: 'attached', timeout: 10000 });
       await page.evaluate((val) => {
