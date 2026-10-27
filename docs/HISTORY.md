@@ -9375,3 +9375,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (14)
 - Enlarged Contacts icon touch targets (batch).
+
+## 27 Oct 2026 - Zeus (15)
+- Grouped Encounters list by date on mobile (t162a).

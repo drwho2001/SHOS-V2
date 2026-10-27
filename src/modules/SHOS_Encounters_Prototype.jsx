@@ -1202,7 +1202,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // ADDED — real ask: desktop grid grouped consecutively by month, since
   // "visible" is already newest-first this is a plain contiguous grouping,
   // see dateGrouping.js.
-  const visibleGroups = isDesktopWidth ? groupConsecutive(visible, (e) => monthLabel(e.date)) : null;
+  const visibleGroups = groupConsecutive(visible, (e) => monthLabel(e.date));
 
   return (
     <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
@@ -1345,9 +1345,16 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               </div>
             </div>
           ))
-        ) : visible.map((e) => (
-          <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
-            selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
+        ) : visibleGroups.map((group) => (
+          <div key={group.key} style={{ marginBottom: 16 }}>
+            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+              {group.items.map((e) => (
+                <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
+                  selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
