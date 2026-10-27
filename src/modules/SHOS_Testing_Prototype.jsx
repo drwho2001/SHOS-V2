@@ -544,7 +544,7 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
                   <div style={{ fontSize: 10, color: T.textDisabled }}>{a.type} · {formatDate(a.date)}</div>
                 </div>
               </div>
-              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setPendingRemove(a)} aria-label={tr("common.removeAttachment", "Remove attachment")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0, padding: 4 }} onClick={() => setPendingRemove(a)} aria-label={tr("common.removeAttachment", "Remove attachment")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
           ))}
         </div>
@@ -872,7 +872,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6, gap: 8 }}>
                     <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{v.title || (v.reasonForVisit || []).join("/") || tr("testing.clinicVisit", "Clinic visit")} · {formatDate(v.date)}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkVisit(v.id); }} title={tr("testing.removeLink", "Remove link")} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                      <X size={20} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkVisit(v.id); }} title={tr("testing.removeLink", "Remove link")} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
                       <ChevronRight size={14} color={T.healthcareBlue} />
                     </div>
                   </div>
@@ -898,7 +898,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6, gap: 8 }}>
                     <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{s.title || tr("testing.symptomEntry", "Symptom entry")} · {formatDate(s.dateStarted)}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} title={tr("testing.removeLink", "Remove link")} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                      <X size={20} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} title={tr("testing.removeLink", "Remove link")} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
                       <ChevronRight size={14} color={T.healthcareBlue} />
                     </div>
                   </div>
@@ -1081,7 +1081,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span role="button" tabIndex={0} aria-label={tr("testing.editTest", "Edit test")} style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => { if (!test.isDemo) onEdit(testId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>{tr("common.edit", "Edit")}</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label={tr("testing.deletePermanently", "Delete permanently")} title={tr("testing.deletePermanently", "Delete permanently")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 4 }} onClick={() => setConfirmDelete(true)} aria-label={tr("testing.deletePermanently", "Delete permanently")} title={tr("testing.deletePermanently", "Delete permanently")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
 
