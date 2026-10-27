@@ -118,6 +118,7 @@ import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 // called directly inside it, synchronously enough to satisfy Safari's
 // own requirement, unlike the old auto-request on mount.
 function NotificationPermissionNudge({ status, onStatusChange }) {
+  const { t: tr } = useTranslation();
   const [darkMode] = useDarkModePreference();
   // CHANGED — Phase 2 encryption groundwork: NotificationPreferencesRepository
   // went async — the old loader chained `.permissionNudgeDismissed`
@@ -143,13 +144,13 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface }}>
       <Bell size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Get reminded about medications and other due dates</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.getReminded", "Get reminded about medications and other due dates")}</div>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Enable notifications</button>
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Not now</span>
+          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{tr("home.enableNotifications", "Enable notifications")}</button>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{tr("home.notNow", "Not now")}</span>
         </div>
       </div>
     </div>
@@ -1029,7 +1030,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         const cardStyle = { display: "flex", flexWrap: "wrap", gap: 16, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "24px 20px" };
         return (
           <>
-            <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
+            <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.statusAtAGlance", "Status at a glance")}</div>
             {isDesktopWidth ? (
               // FIXED 16 Sep 2026, later still — real report: "desktop
               // at a glance section still has lots of dead space left
@@ -1063,7 +1064,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         );
       })()}
 
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Recent activity</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.recentActivity", "Recent activity")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label={tr("home.lastEncounter", "Last encounter")} moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         {/* ADDED 26 Sep 2026 — this row's query has existed since the
@@ -1152,16 +1153,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowClinicCard(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
             <CreditCard size={20} color={homeColor} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.clinicCard", "Clinic Card")}</span>
           </div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowTimeline(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
             <Stack size={20} color={homeColor} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.episodes", "Episodes")}</span>
           </div>
           {onOpenCalendar && (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
               <Calendar size={20} color={homeColor} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.calendar", "Calendar")}</span>
             </div>
           )}
         </div>
@@ -1170,26 +1171,26 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
               <CreditCard size={20} color={homeColor} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.clinicCard", "Clinic Card")}</span>
             </div>
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
               <Stack size={20} color={homeColor} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.episodes", "Episodes")}</span>
             </div>
           </div>
           {onOpenCalendar && (
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
                 <Calendar size={20} color={homeColor} />
-                <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.calendar", "Calendar")}</span>
               </div>
             </div>
           )}
         </>
       )}
 
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Quick add</div>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Personal</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.quickAdd", "Quick add")}</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>{tr("home.personal", "Personal")}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
@@ -1217,7 +1218,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             other write in this app requires. */}
         <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
       </div>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Healthcare</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>{tr("home.healthcare", "Healthcare")}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <QuickAddButton icon={TestTube} label="Log test" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "testing")} />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom
@@ -1390,7 +1391,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {autoExportRan && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${actionGreenColor}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
           <Database size={15} color={actionGreenColor} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: actionGreenColor }}>Backed up automatically — saved to Documents</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: actionGreenColor }}>{tr("home.backedUpAutomatically", "Backed up automatically — saved to Documents")}</span>
         </div>
       )}
 

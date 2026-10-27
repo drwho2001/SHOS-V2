@@ -8,7 +8,19 @@
     "lastTest": "Last test",
     "nextClinicVisit": "Next clinic visit",
     "lastPeriod": "Last period",
-    "contraceptionDue": "Contraception due"
+    "contraceptionDue": "Contraception due",
+    "getReminded": "Get reminded about medications and other due dates",
+    "enableNotifications": "Enable notifications",
+    "notNow": "Not now",
+    "statusAtAGlance": "Status at a glance",
+    "recentActivity": "Recent activity",
+    "quickAdd": "Quick add",
+    "personal": "Personal",
+    "healthcare": "Healthcare",
+    "clinicCard": "Clinic Card",
+    "episodes": "Episodes",
+    "calendar": "Calendar",
+    "backedUpAutomatically": "Backed up automatically — saved to Documents"
   },
   "contacts": {
     "addContact": "Add contact",
