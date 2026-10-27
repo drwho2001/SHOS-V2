@@ -254,6 +254,7 @@ async function getKnownClinicians() {
   return Array.from(new Set([...CLINICIAN_OPTIONS, ...typed]));
 }
 function ClinicianField({ value, onChange, T }) {
+  const { t: tr } = useTranslation();
   const known = useLoadedMemo(() => getKnownClinicians(), [], []);
   const [draft, setDraft] = useState("");
   // CHANGED — same static-suggestions-never-narrow bug fixed elsewhere
@@ -290,7 +291,7 @@ function ClinicianField({ value, onChange, T }) {
   const removeClinician = (name) => onChange(value.filter((c) => c !== name));
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinician(s) (optional)</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.cliniciansOptional", "Clinician(s) (optional)")}</div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((c) => (
@@ -305,9 +306,9 @@ function ClinicianField({ value, onChange, T }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.suggestion)) onChange([...value, pendingSuggestion.suggestion]); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
+            style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>{tr("clinicVisits.yesUseIt", "Yes, use it")}</div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>{tr("clinicVisits.noAddAsNew", "No, add as new")}</div>
         </div>
       )}
       {visibleSuggestions.length > 0 && (
@@ -342,6 +343,7 @@ async function getKnownClinicVisitLocations() {
 // for visit. Type to filter existing options, Enter to select
 // or create new (same pattern as ClinicianField).
 function ReasonForVisitField({ value, onChange, options, T, listName }) {
+  const { t: tr } = useTranslation();
   const [draft, setDraft] = useState("");
     // WIDENED 7 Oct 2026 - same reason as ClinicianField above: casing alone
     // let "Dean St" and "Dean Street"-style near-duplicates through, because
@@ -366,7 +368,7 @@ function ReasonForVisitField({ value, onChange, options, T, listName }) {
   const removeReason = (name) => onChange(value.filter((c) => c !== name));
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Reason for visit</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.reasonForVisit", "Reason for visit")}</div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((r) => (
@@ -381,9 +383,9 @@ function ReasonForVisitField({ value, onChange, options, T, listName }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.suggestion)) onChange([...value, pendingSuggestion.suggestion]); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
+            style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>{tr("clinicVisits.yesUseIt", "Yes, use it")}</div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>{tr("clinicVisits.noAddAsNew", "No, add as new")}</div>
         </div>
       )}
       {visibleSuggestions.length > 0 && (
@@ -406,6 +408,7 @@ function ReasonForVisitField({ value, onChange, options, T, listName }) {
 }
 
 function ClinicVisitLocationField({ value, onChange, locationId, onLocationIdChange, T }) {
+  const { t: tr } = useTranslation();
   const known = useLoadedMemo(() => getKnownClinicVisitLocations(), [], []);
   // ADDED 21 Oct 2026 - the clinics the Locations registry already knows about.
   //
@@ -475,7 +478,7 @@ function ClinicVisitLocationField({ value, onChange, locationId, onLocationIdCha
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <div style={{ fontSize: 12, color: T.textSecondary }}>Location (optional)</div>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>{tr("clinicVisits.locationOptional", "Location (optional)")}</div>
          <span onClick={locating ? undefined : handleUseCurrentLocation} role="button" tabIndex={locating ? -1 : 0} aria-label={locating ? "Locating current location" : "Use current location"} aria-disabled={locating} onKeyDown={(e) => { if (!locating && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleUseCurrentLocation(); } }}
            style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
            <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
@@ -745,6 +748,7 @@ function YesNoQuestion({ question, value, onChange, T }) {
 // add/remove list of free-text {name, notes} entries, distinct from
 // the registry-linked RelationPicker used for medicationsGivenIds.
 function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
+  const { t: tr } = useTranslation();
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
   // ADDED 26 Sep 2026 — the owner's own point: someone who writes a
@@ -794,7 +798,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
   const remove = (id) => onChange(value.filter((m) => m.id !== id));
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Other medications given (not in your Medication tracker)</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.otherMedications", "Other medications given (not in your Medication tracker)")}</div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
           {value.map((m) => (
@@ -815,7 +819,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
                     aria-label={`Dose for ${m.name}`}
                     style={{ width: 120, padding: "6px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }}
                   />
-                  <span style={{ fontSize: 11, color: T.textDisabled }}>adds it to Medication Dashboard</span>
+                  <span style={{ fontSize: 11, color: T.textDisabled }}>{tr("clinicVisits.addsToMedicationDashboard", "adds it to Medication Dashboard")}</span>
                   <div role="button" tabIndex={0}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
                     onClick={() => promote(m)}
@@ -870,6 +874,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
 // app — there's no plumbing anywhere yet for opening one specific
 // record from outside its own module.
 function StartTestInline({ visitDate, onCreated, T }) {
+  const { t: tr } = useTranslation();
   const [name, setName] = useState("");
   const [showInput, setShowInput] = useState(false);
   const create = async () => {
@@ -891,12 +896,13 @@ function StartTestInline({ visitDate, onCreated, T }) {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Test name — continue details in Testing"
         onKeyDown={(e) => { if (e.key === "Enter") create(); }}
         style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13 }} />
-      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={create} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Start</div>
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={create} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{tr("clinicVisits.start", "Start")}</div>
     </div>
   );
 }
 
 function AttachmentManager({ visitId, attachments, onChanged, T }) {
+  const { t: tr } = useTranslation();
   const inputRef = useRef(null);
   const [pendingType, setPendingType] = useState("Other");
   // ADDED — real audit finding: this deleted an attachment on a single
@@ -917,7 +923,7 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
   const remove = async (id) => { await ClinicVisitsRepository.removeAttachment(visitId, id); onChanged(); setPendingRemove(null); };
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Attachments</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("clinicVisits.attachments", "Attachments")}</div>
       {attachments.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
           {attachments.map((a) => (
@@ -1227,7 +1233,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
               visit that already happened). */}
           {form.isFutureAppointment && (
             <div style={{ marginTop: 8, padding: "12px", borderRadius: radius.sm, background: `${T.healthcareBlue}12`, border: `1px solid ${T.healthcareBlue}40` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>This visit was scheduled for the future. When you attend it, confirm below to convert it to a real visit record.</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>{tr("clinicVisits.futureVisitScheduled", "This visit was scheduled for the future. When you attend it, confirm below to convert it to a real visit record.")}</div>
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => {
                 const newDate = new Date(form.date);
                 const now = new Date();
@@ -1274,15 +1280,15 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
               anything ambiguous/unlabelled. "TOC" is a genuine medical
               abbreviation, not obvious without sexual-health context. */}
           {form.followUpType === "TOC" && (
-            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>TOC = Test of Cure, a follow-up test confirming treatment actually worked.</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>{tr("clinicVisits.tocExplanation", "TOC = Test of Cure, a follow-up test confirming treatment actually worked.")}</div>
           )}
           {/* ADDED — real ask: expand the meaning of the other two
               options too, not just TOC. */}
           {form.followUpType === "Routine" && (
-            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>e.g. medication review, annual check-up.</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>{tr("clinicVisits.routineExample", "e.g. medication review, annual check-up.")}</div>
           )}
           {form.followUpType === "Other" && (
-            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>e.g. contraception, vaccination.</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>{tr("clinicVisits.otherExample", "e.g. contraception, vaccination.")}</div>
           )}
           <TextField label="Follow-up / next review date" value={form.nextReviewDate ? form.nextReviewDate.slice(0, 10) : ""} onChange={(v) => set("nextReviewDate")(v ? new Date(v).toISOString() : null)} T={T} type="date" />
         </SectionCard>
@@ -1370,7 +1376,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
           }} items={allSymptomLogEntries} T={T} placeholder="No symptom entries logged yet" />
           {form.symptomsDiscussedIds.length > 0 && (
             <div style={{ padding: "6px 0" }}>
-              <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 4 }}>Which one is why you're here? (optional)</div>
+              <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 4 }}>{tr("clinicVisits.whyHere", "Which one is why you're here? (optional)")}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {form.symptomsDiscussedIds.map((id) => {
                   // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository
@@ -1397,11 +1403,11 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
         {showMedication && (
         <SectionCard title="Medications — Administered in clinic" T={T}>
           <div style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>From your Medication tracker</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.fromMedicationTracker", "From your Medication tracker")}</div>
             <RelationPicker label="" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
           </div>
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>One-off (free text)</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.oneOffFreeText", "One-off (free text)")}</div>
             <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
           </div>
         </SectionCard>
@@ -1422,7 +1428,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             Overview card, so this is now just the free-text narrative. */}
         <SectionCard title="Notes" T={T}>
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinical notes</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.clinicalNotes", "Clinical notes")}</div>
             <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3} aria-label="Clinical notes"
               placeholder="e.g. Discussed PrEP adherence, no concerns raised. Advised to continue current regimen."
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
@@ -1446,6 +1452,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
 
 // ── Detail view ──
 function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, refresh }) {
+  const { t: tr } = useTranslation();
   const [visit, setVisit] = useLoadedState(() => ClinicVisitsRepository.getById(visitId), [visitId], null);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing/Vaccinations/Symptom Log.
@@ -1514,7 +1521,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span role="button" tabIndex={0} aria-label="Edit clinic visit" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(visitId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
+          <span role="button" tabIndex={0} aria-label={tr("clinicVisits.editVisit", "Edit clinic visit")} style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(visitId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>{tr("common.edit", "Edit")}</span>
           <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
@@ -1557,7 +1564,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         <SectionCard title="Linked records" T={T}>
           {testEntries.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Linked tests</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.linkedTests", "Linked tests")}</div>
               {testEntries.map((t) => {
                 const resultNames = (t.resultIds || []).map((rid) => resultNameById.get(rid)).filter(Boolean);
                 const isPositive = resultNames.some((n) => n.toLowerCase() === "positive");
@@ -1587,7 +1594,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         <SectionCard title="Medications" T={T}>
           {visit.medicationsGivenIds?.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Administered in clinic (tracker)</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.administeredTracker", "Administered in clinic (tracker)")}</div>
               {medNames.map((n, i) => (
                 <div key={i} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{n}</div>
               ))}
@@ -1595,7 +1602,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           )}
           {visit.adHocMedicationsGiven.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Administered in clinic (one-off)</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.administeredOneOff", "Administered in clinic (one-off)")}</div>
               {visit.adHocMedicationsGiven.map((m) => (
                 <div key={m.id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}{m.notes ? ` — ${m.notes}` : ""}</div>
               ))}
@@ -1608,7 +1615,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
               was to be able to read it back. */}
           {Array.isArray(visit.takeHomeMedications) && visit.takeHomeMedications.length > 0 && (
             <div style={{ padding: "7px 0" }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>To take home</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.toTakeHome", "To take home")}</div>
               {visit.takeHomeMedications.map((entry) => {
                 const m = allMeds.find((x) => x.id === entry.medicationId);
                 const name = m?.name || "Medication";
@@ -1643,7 +1650,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             <ReadRow label="Symptom types discussed" value={symptomNames} T={T} />
           {symptomLogEntries.length > 0 && (
             <div style={{ padding: "7px 0" }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Specific symptom entries</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.specificSymptomEntries", "Specific symptom entries")}</div>
               {symptomLogEntries.map((s) => (
                 <div key={s.id} style={{ fontSize: 13, color: visit.primaryReasonSymptomLogId === s.id ? T.actionRed : T.textPrimary, fontWeight: visit.primaryReasonSymptomLogId === s.id ? 700 : 400, marginBottom: 2 }}>
                   {s.title}{visit.primaryReasonSymptomLogId === s.id ? " — why I'm here" : ""}
@@ -1708,6 +1715,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
 
 // ── List / landing view ──
 function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  const { t: tr } = useTranslation();
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
@@ -1774,7 +1782,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
       <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Clinic Visits</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>{tr("healthcare.clinicVisits", "Clinic Visits")}</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
           {selectMode ? "Done" : "Select"}
@@ -1896,6 +1904,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
 // desktop-grid month-grouping pass and the mobile flat list both render
 // the exact same row markup, unchanged.
 function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+  const { t: tr } = useTranslation();
   // ADDED 6 Oct 2026 (t081) - mirrors Testing's own recency treatment: age is
   // shown by fading the record AROUND the content, never by muting the content
   // itself, so a visit's real meaning survives being old.
@@ -1921,11 +1930,11 @@ function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, on
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || "Untitled visit"}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
+        <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || tr("clinicVisits.untitledVisit", "Untitled visit")}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
         {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
-      {!isRecent && <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>Older visit</div>}
+      {!isRecent && <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{tr("clinicVisits.olderVisit", "Older visit")}</div>}
       {v.clinician.length > 0 && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
       {v.location && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}
       </div>
