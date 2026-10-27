@@ -1732,19 +1732,10 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(600);
       await page.locator('[aria-label="Add encounter"]').first().click({ timeout: 5000 });
       await page.waitForTimeout(500);
-      page.on("pageerror", (err) => console.log("PAGE ERROR:", err.message));
       await page.waitForSelector('input[aria-label="Title"]', { timeout: 10000 });
-      console.log("TITLE FOUND, page URL:", page.url());
       await page.locator('input[aria-label="Title"]').fill("Timezone probe");
       await page.locator('input[type="datetime-local"]').first().waitFor({ state: 'attached', timeout: 10000 });
-      await page.evaluate((val) => {
-        const input = document.querySelector('input[type="datetime-local"]');
-        if (input) {
-          input.value = val;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          input.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }, TZ_PROBE_TIME);
+      await page.locator('input[type="datetime-local"]').first().fill(TZ_PROBE_TIME, { force: true });
       await page.locator('text=Save').first().click({ timeout: 5000 });
       await page.waitForTimeout(900);
 
