@@ -16,6 +16,37 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 27 Oct 2026 - privacy-by-default widget tiers, notch bands, picker label (Lily)
+
+**WHAT CHANGED.** t160: `DEFAULT_TIERS` in `widgetPrivacy.js` now defaults
+every data widget — including nextDose and doxyPepWindow — to `redacted`
+(owner-approved privacy-by-default). The two tests that asserted the old
+`nextDose: "full"` default were updated to the new decision
+(`widgetPrivacy.test.js`, `widgetBridgeUpdate.test.js` x2; the unreadable-
+preference test now asserts the update still happens at the redacted tier
+rather than that `medName` survives). t159: the Last Test widget picker
+description made less identifying ("How long since a check"); receiver labels
+deliberately unchanged pending an owner naming decision. Notch bands added to
+the top-level sticky headers of Clinic Card, Partner Notification, Registry
+Management and Option List Editor (Clinic Visits shipped via Zeus's commit).
+Home's SummaryRow fallback colour `#5B5B62` replaced with the theme's
+`textSecondary` tokens.
+
+**WHY.** The old defaults disclosed medication names and DoxyPEP state to a
+lock screen before the owner ever configured a tier; redacted cannot surprise.
+The picker description named a health topic on a screen visible to anyone
+watching the widget picker. Headers without a notch band left the status-bar
+area unpainted while scrolled.
+
+**NOTES.** `strings.xml` is an Android resource: only the CI `build-apk` job
+really confirms it compiles. Session-close state: t161 (prefers-reduced-motion)
+was closed in error without work and remains open in substance; t158
+(quick-exit) and t162 (event log grouping) deferred as dedicated-session work.
+
+Session: Lily (opencode, glm-5.3-flash).
+
+---
+
 ## 27 Oct 2026 - deeper i18n extraction in Testing (t142)
 
 **WHAT CHANGED.** Extracted Testing's visible copy into the English locale:

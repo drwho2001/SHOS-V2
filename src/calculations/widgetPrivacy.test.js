@@ -68,8 +68,9 @@ describe("widget tiers resolve, and fail in the safe direction", () => {
   it("nothing configured resolves to the per-widget default, not to off", () => {
     // The distinction that stops this feature's first run being destructive: on
     // an upgrade nobody has ever set a tier, and blanking every widget on a
-    // phone would be a hostile surprise.
-    expect(tierFor("nextDose", null)).toBe("full");
+    // phone would be a hostile surprise. nextDose resolves to its redacted
+    // default (t160) - it still renders, it just renders the coarse copy.
+    expect(tierFor("nextDose", null)).toBe("redacted");
     expect(tierFor("refillDue", undefined)).toBe("redacted");
     expect(tierFor("cycle", {})).toBe("redacted");
   });

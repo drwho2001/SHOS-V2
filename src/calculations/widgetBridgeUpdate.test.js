@@ -82,9 +82,10 @@ describe("the tier is applied at the write boundary", () => {
     AppPreferencesRepository.getPreferences.mockResolvedValue({});
     const bridge = fakeBridge("updateNextDose");
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
-    // nextDose defaults to full; a widget that silently went blank on upgrade
-    // because the feature is new would be a hostile surprise.
-    expect(bridge.plugin.calls[0]).toEqual({ ...FULL, tier: "full" });
+    // nextDose defaults to redacted (t160, owner-approved privacy-by-default):
+    // an upgrade must neither blank the widget nor newly disclose - it still
+    // updates, rendering the coarse redacted copy instead of the full payload.
+    expect(bridge.plugin.calls[0]).toEqual({ tier: "redacted" });
   });
 
   it("an unreadable preference file is not a reason to disclose", async () => {
@@ -92,8 +93,11 @@ describe("the tier is applied at the write boundary", () => {
     const bridge = fakeBridge("updateNextDose");
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
     // Resolves to the safe per-widget default rather than throwing, because a
-    // widget must not stop updating just because storage hiccuped.
-    expect(bridge.plugin.calls[0].medName).toBe("Testosterone");
+    // widget must not stop updating just because storage hiccuped. The default
+    // is redacted (t160), so the identifying fields are stripped - the property
+    // under test is that the update still HAPPENS, not that it discloses.
+    expect(bridge.plugin.calls).toHaveLength(1);
+    expect(bridge.plugin.calls[0].tier).toBe("redacted");
   });
 
   it("warns when a field is dropped, so a new field cannot be added silently", async () => {

@@ -21,7 +21,7 @@
          which is the whole reason resource changes go through the APK job. -->
     <string name="widget_desc_next_dose">Your next medication dose time</string>
     <string name="widget_desc_refill">Which medications need refilling</string>
-        <string name="widget_desc_test">How long since your last test</string>
+        <string name="widget_desc_test">How long since a check</string>
     <string name="widget_desc_cycle">Your current cycle day</string>
     <string name="widget_desc_doxy_pep">Whether you are inside a DoxyPEP window</string>
     <string name="widget_desc_quick_add_contact">Jump straight to adding a contact</string>

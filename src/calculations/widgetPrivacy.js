@@ -75,16 +75,18 @@ export const TIERS = ["full", "redacted", "off"];
 /**
  * Defaults when nothing has been stored.
  *
- * nextDose is `full` deliberately: the owner chose to see the medication name,
- * reversing an earlier decision that it should never be shown. The other data
- * widgets default to `redacted` because none of them has been reviewed by the
- * owner yet, and redacted is the choice that cannot surprise them by disclosing.
+ * CHANGED 27 Oct 2026 (t160, owner-approved): every data widget now defaults to
+ * `redacted` - privacy-by-default. An owner who wants a widget's full detail
+ * opts in per widget in Settings. nextDose was previously `full` by an earlier
+ * owner choice; t160 supersedes it. The upgrade is non-destructive either way:
+ * `tierFor` resolves a missing value to the per-widget default rather than to
+ * `off`, so no widget silently blanks.
  */
 export const DEFAULT_TIERS = {
-  nextDose: "full",
+  nextDose: "redacted",
   refillDue: "redacted",
   lastTest: "redacted",
-  doxyPepWindow: "full",
+  doxyPepWindow: "redacted",
   cycle: "redacted",
   clinicCard: "redacted",
 };

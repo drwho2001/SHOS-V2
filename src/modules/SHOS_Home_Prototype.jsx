@@ -813,7 +813,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
     <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: onClick ? "pointer" : "default" }}>
-      <span style={{ fontSize: 13, color: moduleColor || "#5B5B62", fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 13, color: moduleColor || (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontWeight: 600 }}>{label}</span>
       <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, textAlign: "right" }}>{value}</span>
     </div>
   );

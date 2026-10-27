@@ -419,6 +419,7 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
           the scroll geometry. Pinned by scrollingFlexGuard.test.js. */}
       <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
+        <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {editing && list ? (
             <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
