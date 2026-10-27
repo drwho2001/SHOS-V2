@@ -414,5 +414,15 @@
     "pdfExport": "PDF export",
     "includeRecentContacts": "Include recent contacts",
     "closeVisibility": "Close visibility settings"
+  },
+  "optionList": {
+    "title": "Option lists",
+    "intro": "Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.",
+    "addNew": "Add a new option",
+    "tapToRename": "Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app. Removing archives it (below), rather than deleting it outright.",
+    "noOptions": "No options — add one above.",
+    "archived": "Archived",
+    "reassociateHint": "Reassociate moves every record using the archived value onto the one you pick, then removes it from the archive for good. Restore just brings it back as a normal, live option.",
+    "noLiveValues": "No live values to reassociate with yet — add one above first."
   }
 }

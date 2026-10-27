@@ -17,6 +17,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // retyped here. See designTokens.js.
 import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useTranslation } from "../i18n/index.js";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 
 // EXPORTED 1 Sep 2026 — real ask: "check settings not unnecessarily
@@ -60,6 +61,7 @@ export const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, Calendar
 // is scoped for; seeing WHICH records are affected before deciding to
 // rename/remove is the real, immediate need this closes.
 function UsageDisclosure({ listName, value, T }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const records = useLoadedMemo(() => (open ? findRecordsUsingOptionValue(listName, value) : Promise.resolve(null)), [listName, value, open], null);
 
@@ -83,6 +85,7 @@ function UsageDisclosure({ listName, value, T }) {
 }
 
 export function OptionListDetail({ listName, onClose }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   // ADDED 21 Oct 2026 (t129) - and the hardware back button closes it too.
   // It closed on Escape but not on back: the back button closed the WHOLE
@@ -165,7 +168,7 @@ export function OptionListDetail({ listName, onClose }) {
   return (
     <div role="dialog" aria-label={`Manage ${OPTION_LIST_LABELS[listName] || listName}`} ref={detailRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{OPTION_LIST_LABELS[listName] || listName}</h1>
       </div>
 
@@ -173,13 +176,13 @@ export function OptionListDetail({ listName, onClose }) {
         <div style={{ display: "flex", gap: 8 }}>
           <input value={addingValue} onChange={(e) => setAddingValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
-            placeholder="Add a new option"
+            placeholder={t("optionList.addNew", "Add a new option")}
             style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
           <button onClick={handleAdd} style={{ padding: "0 16px", borderRadius: 8, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            <Plus size={16} /> Add
+            <Plus size={16} /> {t("common.add", "Add")}
           </button>
         </div>
-        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app. Removing archives it (below), rather than deleting it outright.</div>
+        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>{t("optionList.tapToRename", "Tap a value to rename it. Arrows reorder \u2014 order here is the order shown throughout the app. Removing archives it (below), rather than deleting it outright.")}</div>
         {options.some((opt) => CustomOptionListsRepository.isProtected(listName, opt)) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.textDisabled, marginTop: 4 }}>
             <Lock size={11} /> A value marked with a lock can't be renamed or removed — the app depends on its exact text.
@@ -189,7 +192,7 @@ export function OptionListDetail({ listName, onClose }) {
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 24px", overflow: "hidden" }}>
         {options.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No options — add one above.</div>
+          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>{t("optionList.noOptions", "No options \u2014 add one above.")}</div>
         ) : options.map((opt, i) => {
           const protectedValue = CustomOptionListsRepository.isProtected(listName, opt);
           return (
@@ -238,7 +241,7 @@ export function OptionListDetail({ listName, onClose }) {
       {reassociateStatus && <div style={{ fontSize: 12, color: ACTION.green, margin: "0 16px 12px" }}>{reassociateStatus}</div>}
       {archivedValues.length > 0 && (
         <div style={{ margin: "0 16px 24px" }}>
-          <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, marginBottom: 8 }}>Archived</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, marginBottom: 8 }}>{t("optionList.archived", "Archived")}</div>
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
             {archivedValues.map((value, i) => (
               <div key={value} style={{ padding: "10px 14px", borderBottom: i < archivedValues.length - 1 ? `1px solid ${T.border}` : "none" }}>
@@ -262,7 +265,7 @@ export function OptionListDetail({ listName, onClose }) {
                 {reassociatingValue === value && (
                   <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {options.length === 0 ? (
-                      <span style={{ fontSize: 11, color: T.textDisabled }}>No live values to reassociate with yet — add one above first.</span>
+                      <span style={{ fontSize: 11, color: T.textDisabled }}>{t("optionList.noLiveValues", "No live values to reassociate with yet — add one above first.")}</span>
                     ) : options.map((liveValue) => (
                       <span key={liveValue} onClick={() => doReassociate(value, liveValue)} role="button" tabIndex={0}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); doReassociate(value, liveValue); } }}
@@ -275,7 +278,7 @@ export function OptionListDetail({ listName, onClose }) {
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Reassociate moves every record using the archived value onto the one you pick, then removes it from the archive for good. Restore just brings it back as a normal, live option.</div>
+          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>{t("optionList.reassociateHint", "Reassociate moves every record using the archived value onto the one you pick, then removes it from the archive for good. Restore just brings it back as a normal, live option.")}</div>
         </div>
       )}
     </div>
@@ -283,6 +286,7 @@ export function OptionListDetail({ listName, onClose }) {
 }
 
 export default function OptionListsScreen({ onClose }) {
+  const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -300,13 +304,13 @@ export default function OptionListsScreen({ onClose }) {
   }, [], {});
 
   return (
-    <div role="dialog" aria-label="Option lists" ref={optionListsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label={t("optionList.title", "Option lists")} ref={optionListsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Option lists</h1>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("optionList.title", "Option lists")}</h1>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, padding: "10px 16px 0" }}>
-        Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.
+        {t("optionList.intro", "Add, rename, or reorder the simple option lists used across the app \u2014 no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.")}
       </div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
         {listNames.map((name) => {
