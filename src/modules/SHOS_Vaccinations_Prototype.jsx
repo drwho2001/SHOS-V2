@@ -491,7 +491,7 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
 }
 
 function VaccinationSheet({ vaccination, onSave, onClose, T }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const isNew = !vaccination;
   const editSheetRef = useRef(null);
@@ -580,7 +580,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
             module banner title. Also added a real close button — this
             had no visible close control at all, only backdrop-tap. */}
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? t("vaccinations.logVaccination", "Log vaccination") : t("vaccinations.editVaccination", "Edit vaccination")}</h1>
+          <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("vaccinations.logVaccination", "Log vaccination") : tr("vaccinations.editVaccination", "Edit vaccination")}</h1>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
@@ -623,7 +623,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
           <button onClick={() => canSave && doSave()} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-            {isNew ? t("vaccinations.addVaccination", "Add vaccination") : t("vaccinations.saveChanges", "Save changes")}
+            {isNew ? tr("vaccinations.addVaccination", "Add vaccination") : tr("vaccinations.saveChanges", "Save changes")}
           </button>
         </div>
       </div>
