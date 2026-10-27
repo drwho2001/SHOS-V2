@@ -9345,3 +9345,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (4)
 - Added notch band to sticky headers in Contacts, Medication Dashboard, MyProfile, Testing.
+
+## 27 Oct 2026 - Zeus (5)
+- Added notch band to sticky headers in Attachments, Timeline.
