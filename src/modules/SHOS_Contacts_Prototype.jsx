@@ -351,6 +351,7 @@ function SectionCard({ title, T, children }) {
 // other module's own UI this session — doesn't import UI from
 // SHOS_MyProfile_Prototype.jsx, just the pure functions it needs.
 function ImportSharedProfileSheet({ T, onClose, onImported }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [pasteText, setPasteText] = useState("");
   const [status, setStatus] = useState(null);
@@ -379,7 +380,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   return (
     <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
       </div>
       <div style={{ padding: 16 }}>
@@ -2363,6 +2364,7 @@ function describeAvailabilityRule(r) {
 // Location & logistics as the edit sheet, plus the don't-meet-again
 // warning banner. ──
 function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, onNavigateToRecord, triggerDelete, onOpenGlossary }) {
+  const { t: tr } = useTranslation();
   // CHANGED — Phase 2 encryption groundwork: ContactRepository went
   // async — this used to be a plain render-body const, previously
   // flagged safe to leave alone "since it re-runs every render", the
@@ -2441,7 +2443,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
     <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 16px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* ADDED — real ask: show-blank-fields toggle. */}
@@ -2849,6 +2851,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // remount) picks up the new value naturally.
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
+  const { t: tr } = useTranslation();
   // ADDED 19 Aug 2026 — real ask: configurable inactive threshold.
   // FIXED 9 Sep 2026 — real bug found live: getPreferences() is async,
   // so chaining .inactiveThresholdDays directly onto its return value
@@ -3032,7 +3035,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           top padding, so only the title/icons — not the colour — sit
           below the notch. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Contacts</h1>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("contacts.title", "Contacts")}</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
             Import creates a Contact, so it belongs where Contacts are
@@ -3434,6 +3437,7 @@ function ShowRoleOnCardsToggleCard({ T }) {
 }
 
 function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacySettings, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const settingsRef = useRef(null);
   useEffect(() => { settingsRef.current?.focus(); }, []);
@@ -3441,8 +3445,8 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
   return (
     <div role="dialog" aria-label="Contacts settings" ref={settingsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Contacts settings</h1>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("contacts.settings", "Contacts settings")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} /></div>
