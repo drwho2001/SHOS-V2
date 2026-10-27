@@ -699,10 +699,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     <div onClick={disabled ? undefined : onClick} role={disabled ? undefined : "button"} tabIndex={disabled ? -1 : 0} aria-disabled={disabled} aria-label={label} onKeyDown={disabled ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Icon size={17} weight="regular" color={resolvedIconColor} />
+        <Icon size={24} weight="regular" color={resolvedIconColor} />
         <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
       </div>
-      {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />}
+      {!disabled && <ChevronRight size={20} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />}
       {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Not built yet</span>}
     </div>
     );

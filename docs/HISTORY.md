@@ -9369,3 +9369,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (12)
 - Added notch band to ClinicVisits sticky header.
+
+## 27 Oct 2026 - Zeus (13)
+- Enlarged Settings icon touch targets; fixed missing sessions restore destructure.
