@@ -9336,3 +9336,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 ## 27 Oct 2026 - Zeus
 - Hardened profileShareService import mapping (city/phone/snapchat/fabguys/fabswingers/contactableVia/statedKinks/name).
 - Added allowlist, parser, and mapping tests.
+
+## 27 Oct 2026 - Zeus (2)
+- Hardened parseProfileShare data/schema validation.

@@ -5,6 +5,10 @@ describe("parseProfileShare", () => {
   it("rejects invalid JSON", () => {
     expect(() => parseProfileShare("{")).toThrow();
   });
+  it("rejects non-object data", () => {
+    const json = JSON.stringify({ type: "shos_profile_share", data: "nope" });
+    expect(() => parseProfileShare(json)).toThrow();
+  });
   it("rejects backup-shaped data", () => {
     const json = JSON.stringify({ type: "x", data: { contacts: [] } });
     expect(() => parseProfileShare(json)).toThrow(/backup/i);

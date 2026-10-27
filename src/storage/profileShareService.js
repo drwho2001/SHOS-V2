@@ -149,7 +149,7 @@ export function parseProfileShare(jsonText) {
   } catch {
     throw new Error("That doesn't look like a valid SHOS shared profile.");
   }
-  if (!parsed || typeof parsed !== "object" || !parsed.data) {
+  if (!parsed || typeof parsed !== "object" || !parsed.data || typeof parsed.data !== "object") {
     throw new Error("That doesn't look like a SHOS shared profile.");
   }
   if (parsed.type !== SHARE_TYPE) {
@@ -160,6 +160,9 @@ export function parseProfileShare(jsonText) {
     if (Array.isArray(parsed.data.contacts) || Array.isArray(parsed.data.medications)) {
       throw new Error("That file is a SHOS backup, not a shared profile — use Restore Backup instead.");
     }
+    throw new Error("That doesn't look like a SHOS shared profile.");
+  }
+  if (parsed.schemaVersion !== undefined && typeof parsed.schemaVersion !== "number") {
     throw new Error("That doesn't look like a SHOS shared profile.");
   }
   if (typeof parsed.schemaVersion === "number" && parsed.schemaVersion > SCHEMA_VERSION) {
