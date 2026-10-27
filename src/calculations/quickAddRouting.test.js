@@ -31,6 +31,8 @@ import path from "node:path";
 
 const source = readFileSync(
   path.join(process.cwd(), "src", "modules", "SHOS_Home_Prototype.jsx"), "utf8");
+const translations = JSON.parse(readFileSync(
+  path.join(process.cwd(), "src", "i18n", "en.json"), "utf8"));
 
 /** The shortcut's own JSX, from the label to the end of the element. */
 function shortcutBlock() {
@@ -86,6 +88,10 @@ describe("the New test form refuses a result for a scheduled test", () => {
 
   it("and it says so, under the date field, in plain words", () => {
     expect(form).toMatch(/isFutureDated && \(/);
-    expect(form).toMatch(/scheduled<\/strong> test, not a result/);
+    expect(form).toMatch(/tr\("testing\.futureDatePrefix", "A date in the future is a"\)/);
+    expect(form).toMatch(/<strong>\{tr\("testing\.scheduledWord", "scheduled"\)\}<\/strong>/);
+    expect(form).toMatch(/tr\("testing\.futureDateSuffix", " test, not a result\./);
+    expect(`${translations.testing.futureDatePrefix} ${translations.testing.scheduledWord}${translations.testing.futureDateSuffix}`)
+      .toBe("A date in the future is a scheduled test, not a result. It will be shown as planned, and it will not count as a completed test.");
   });
 });

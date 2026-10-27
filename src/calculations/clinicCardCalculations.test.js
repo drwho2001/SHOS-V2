@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { isWithinClinicCardTimeframe } from "./clinicCardCalculations.js";
 
 const clinicCardSource = readFileSync("src/modules/SHOS_ClinicCard_Prototype.jsx", "utf8");
+const translations = JSON.parse(readFileSync("src/i18n/en.json", "utf8"));
 const stripComments = (source) => source
   .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "))
   .replace(/\/\/.*$/gm, (comment) => comment.replace(/[^\n]/g, " "));
@@ -36,8 +37,10 @@ describe("Clinic Card timeframe matching", () => {
       /const recentTests = tests\.filter\(\(t\) => isWithinClinicCardTimeframe\(t\.date, cutoffDate\)\)\.slice\(0, 5\)/
     );
     expect(clinicCardCode).toMatch(
-      /tests\.length === 0 \? "No tests logged yet\." : "No tests in this timeframe\."/
+      /tests\.length === 0 \? tr\("clinicCard\.noTestsLogged", "No tests logged yet\."\) : tr\("clinicCard\.noTestsInTimeframe", "No tests in this timeframe\."\)/
     );
+    expect(translations.clinicCard.noTestsLogged).toBe("No tests logged yet.");
+    expect(translations.clinicCard.noTestsInTimeframe).toBe("No tests in this timeframe.");
   });
 
   it("proves the wiring guard strips comments without dropping code", () => {

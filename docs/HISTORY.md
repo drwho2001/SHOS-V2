@@ -16,6 +16,25 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 27 Oct 2026 - deeper i18n extraction in Testing (t142)
+
+**WHAT CHANGED.** Extracted Testing's visible copy into the English locale:
+form labels and helper text, registry and attachment controls, linked-record
+copy, detail and scheduled-test status, list/search/filter controls, empty
+states, accessibility labels, deletion confirmations, and undo/redo messages.
+Dynamic dates and counts use the existing interpolation convention. Existing
+stored option values and record data remain unchanged. The icon-only UI source
+guard now reads the English fallback in `t()`/`tr()` calls as visible text, so
+localized icon buttons are not mistaken for textless controls.
+
+**WHY.** The module had already been wired to `useTranslation`, but only its
+new/edit headings were in the locale. This continues the incremental string
+extraction without repeating the Encounters “Now” extraction.
+
+Session: `i18n-extract-20261027-km`.
+
+---
+
 ## 21 Oct 2026 - the App Lock PIN is a verifier, and the oracles are closed (t131)
 
 This is the part of t047 that t126 deliberately did NOT do, and it was

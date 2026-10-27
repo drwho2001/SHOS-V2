@@ -63,7 +63,7 @@ describe("every module that shows a contact name honours Anonymise mode", () => 
 describe("the two gaps this audit found are closed", () => {
   it("Home's 'Newest contact' row masks the name", () => {
     const src = read("SHOS_Home_Prototype.jsx");
-    const row = src.split("\n").find((l) => l.includes('label={t("home.newestContact"'));
+    const row = src.split("\n").find((l) => l.includes('label={tr("home.newestContact"'));
     expect(row, "the Newest contact row was not found — renamed?").toBeTruthy();
     // Assert the GUARDED TERNARY, not the absence of `lastContact.name`.
     //

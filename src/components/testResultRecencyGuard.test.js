@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync("src/modules/SHOS_Testing_Prototype.jsx", "utf8");
+const translations = JSON.parse(readFileSync("src/i18n/en.json", "utf8"));
 const stripComments = (src) => src
   .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "))
   .replace(/\/\/.*$/gm, (comment) => comment.replace(/[^\n]/g, " "));
@@ -12,7 +13,8 @@ const testRow = rowStart >= 0 && rowEnd > rowStart ? code.slice(rowStart, rowEnd
 
 describe("older Testing results remain explicit", () => {
   it("marks an old row explicitly rather than relying on faded text alone", () => {
-    expect(testRow).toMatch(/isOlder\s*&&\s*<span[^>]*>Older test<\/span>/);
+    expect(testRow).toMatch(/isOlder\s*&&\s*<span[^>]*>\{tr\("testing\.olderTest", "Older test"\)\}<\/span>/);
+    expect(translations.testing.olderTest).toBe("Older test");
   });
 
   it("keeps the result's positive/negative colour at full opacity", () => {

@@ -131,6 +131,15 @@ function exprText(e, seen) {
     case "StringLiteral":
     case "NumericLiteral":
       return { text: String(e.value), unknown: false };
+    case "CallExpression": {
+      // The module's visible copy may come through its standard i18n call.
+      // Use the English fallback, just as a rendered default-English screen
+      // does, rather than classifying a labelled icon button as textless.
+      if (e.callee.type === "Identifier" && ["t", "tr"].includes(e.callee.name) && e.arguments[1]?.type === "StringLiteral") {
+        return { text: e.arguments[1].value, unknown: false };
+      }
+      return { text: "", unknown: true };
+    }
     case "TemplateLiteral": {
       let t = "";
       for (const q of e.quasis) t += q.value.cooked ?? q.value.raw ?? "";
@@ -322,6 +331,7 @@ describe("icon-only UI rule", () => {
       const F = () => (<button><Pill/>{"joined " + "parts"}</button>);
       const G = () => (<button><Pill/></button>);
       const H = () => (<button><Pill/>{count}</button>);
+      const I = () => (<button><Pill/>{tr("common.save", "Save")}</button>);
     `;
     const ast = parse(src, { sourceType: "module", plugins: ["jsx"] });
     const iconNames = new Map([["Pill", "Pill"]]);
@@ -341,11 +351,12 @@ describe("icon-only UI rule", () => {
     visit(ast.program);
 
     expect(seen.map((s) => s.text)).toEqual([
-      "plain", "7", "yesno", "tpl", "fallback", "joined parts", "", "",
+      "plain", "7", "yesno", "tpl", "fallback", "joined parts", "", "", "Save",
     ]);
     // And the last one must be UNDECIDABLE, not "no text". If it were reported
     // as empty it would be filed as a gap, which is defect #5 all over again.
     expect(seen[7].unknown).toBe(true);
+    expect(seen[8].unknown).toBe(false);
   }, 30000);
 
   it("every icon-only element has a recorded, reasoned verdict", () => {

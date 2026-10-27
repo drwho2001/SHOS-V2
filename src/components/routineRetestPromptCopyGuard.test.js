@@ -21,6 +21,10 @@ const source = readFileSync(
   path.join(process.cwd(), "src", "modules", "SHOS_Testing_Prototype.jsx"),
   "utf8",
 );
+const translations = JSON.parse(readFileSync(
+  path.join(process.cwd(), "src", "i18n", "en.json"),
+  "utf8",
+));
 
 /**
  * Remove block and line comments, keeping STRING LITERALS.
@@ -117,17 +121,22 @@ describe("the scheduled-retest prompt's copy", () => {
   });
 
   it("distinguishes an early test from a plan whose day has arrived", () => {
-    expect(code).toContain("wasEarly");
-    expect(code).toContain("you tested before this date");
-    expect(code).toContain("this date has now passed");
+    expect(code).toMatch(/wasEarly \? tr\("testing\.testedBeforePlanDate", "you tested before this date"\) : tr\("testing\.planDatePassed", "this date has now passed"\)/);
+    expect(translations.testing.testedBeforePlanDate).toBe("you tested before this date");
+    expect(translations.testing.planDatePassed).toBe("this date has now passed");
   });
 
   it("still offers all three answers, because both buckets use them", () => {
     // Keep / update / archive are unchanged handlers; the guard exists so that
     // reporting the early case did not quietly reduce the choices offered.
-    expect(code).toContain("Update to the next suggested date");
-    expect(code).toContain("Keep it as planned");
-    expect(code).toContain("Archive ");
+    expect(code).toContain('tr("testing.updateNextSuggestedDate", "Update to the next suggested date")');
+    expect(code).toContain('tr("testing.keepItPlanned", "Keep it as planned")');
+    expect(code).toContain('tr("testing.archiveThem", "Archive them")');
+    expect(code).toContain('tr("testing.archiveIt", "Archive it")');
+    expect(translations.testing.updateNextSuggestedDate).toBe("Update to the next suggested date");
+    expect(translations.testing.keepItPlanned).toBe("Keep it as planned");
+    expect(translations.testing.archiveThem).toBe("Archive them");
+    expect(translations.testing.archiveIt).toBe("Archive it");
   });
 
   it("passes the union of both buckets to the prompt, not just the on-time half", () => {
