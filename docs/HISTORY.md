@@ -9378,3 +9378,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (15)
 - Grouped Encounters list by date on mobile (t162a).
+
+## 27 Oct 2026 - Zeus (16)
+- Attachments: enlarged the delete-attachment Trash2 touch target (15 to 20, with 4px padding) on both desktop and mobile list rows.
