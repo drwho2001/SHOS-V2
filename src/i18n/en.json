@@ -424,5 +424,9 @@
     "archived": "Archived",
     "reassociateHint": "Reassociate moves every record using the archived value onto the one you pick, then removes it from the archive for good. Restore just brings it back as a normal, live option.",
     "noLiveValues": "No live values to reassociate with yet — add one above first."
+  },
+  "timeline": {
+    "title": "Episodes",
+    "addEpisode": "Add episode"
   }
 }
