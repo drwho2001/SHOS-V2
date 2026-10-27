@@ -1776,12 +1776,15 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.locator('[aria-label="More options"]').first().click({ timeout: 5000 });
       await page.waitForTimeout(400);
       await page.getByRole("menuitem", { name: /^Edit/ }).first().click({ timeout: 5000 });
-      await page.waitForTimeout(600);
+      await page.waitForFunction(
+        (expected) => document.querySelector('input[aria-label="Date & time"]')?.value === expected,
+        TZ_PROBE_TIME,
+        { timeout: 5000 },
+      );
       const stored = await page
         .locator('input[aria-label="Date & time"]')
         .first()
-        .inputValue()
-        .catch(() => "");
+        .inputValue();
       check(stored === TZ_PROBE_TIME,
         `${zone}: the stored wall-clock time round-trips unchanged (got "${stored}")`);
 

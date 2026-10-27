@@ -25,11 +25,33 @@ states, accessibility labels, deletion confirmations, and undo/redo messages.
 Dynamic dates and counts use the existing interpolation convention. Existing
 stored option values and record data remain unchanged. The icon-only UI source
 guard now reads the English fallback in `t()`/`tr()` calls as visible text, so
-localized icon buttons are not mistaken for textless controls.
+localized icon buttons are not mistaken for textless controls. The Timezone
+smoke flow now waits for its edited wall-clock value instead of reading after a
+fixed delay; CI and a focused local reproduction had both caught the input
+still loading.
 
 **WHY.** The module had already been wired to `useTranslation`, but only its
 new/edit headings were in the locale. This continues the incremental string
 extraction without repeating the Encounters “Now” extraction.
+
+Session: `i18n-extract-20261027-km`.
+
+---
+
+## 27 Oct 2026 - edit sheets await encrypted draft checks
+
+The CI timezone flow exposed a separate edit-load defect while checking that an
+Encounter's saved wall-clock time could be reopened unchanged. After saving, the
+detail view displayed the right date, but the edit field was empty.
+
+`loadDraft()` became asynchronous when draft data was encrypted at rest. Three
+edit sheets still used its Promise as a synchronous truth test
+(`isNew || loadDraft(draftKey)`), so the always-truthy Promise returned before
+the record repository could load. Encounter, Clinic Visit and Testing edit
+sheets now await the draft check, preserve an actual draft when present, and
+otherwise load the saved record. The timezone smoke flow now waits for the
+expected field value instead of relying on a fixed delay and swallowing a
+missing-value failure.
 
 Session: `i18n-extract-20261027-km`.
 

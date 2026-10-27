@@ -1045,13 +1045,17 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
   // infer "was this the load or a real edit" from render order/timing.
   const isDirty = useRef(false);
   useEffect(() => {
-    if (isNew || loadDraft(draftKey)) return;
+    if (isNew) return;
+    let cancelled = false;
     (async () => {
+      const draft = await loadDraft(draftKey);
+      if (cancelled || draft) return;
       const real = await ClinicVisitsRepository.getById(visitId);
-      if (real) setForm(real);
+      if (!cancelled && !isDirty.current && real) setForm(real);
     })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visitId]);
+  }, [visitId, draftKey]);
   useEffect(() => {
     if (!isDirty.current) return;
     saveDraft(draftKey, form);

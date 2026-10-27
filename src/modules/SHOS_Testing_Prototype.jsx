@@ -738,13 +738,17 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
   // StrictMode's mount double-invoke.
   const isDirty = useRef(false);
   useEffect(() => {
-    if (isNew || loadDraft(draftKey)) return;
+    if (isNew) return;
+    let cancelled = false;
     (async () => {
+      const draft = await loadDraft(draftKey);
+      if (cancelled || draft) return;
       const real = await TestingRepository.getById(testId);
-      if (real) setForm(real);
+      if (!cancelled && !isDirty.current && real) setForm(real);
     })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testId]);
+  }, [testId, draftKey]);
   useEffect(() => {
     if (!isDirty.current) return;
     saveDraft(draftKey, form);

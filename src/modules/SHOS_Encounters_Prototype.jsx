@@ -1751,15 +1751,19 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
     // directive was here.
   }, [form.myPosition, form.date]);
   useEffect(() => {
-    if (isNew || loadDraft(draftKey)) return;
+    if (isNew) return;
+    let cancelled = false;
     // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
     // async — an effect body can't itself be async, wrapped in an IIFE.
     (async () => {
+      const draft = await loadDraft(draftKey);
+      if (cancelled || draft) return;
       const real = await EncounterRepository.getById(encounterId);
-      if (real) setForm(real);
+      if (!cancelled && !isDirty.current && real) setForm(real);
     })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [encounterId]);
+  }, [encounterId, draftKey]);
   useEffect(() => {
     if (!isDirty.current) return;
     saveDraft(draftKey, form);
