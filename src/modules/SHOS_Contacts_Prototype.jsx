@@ -1864,7 +1864,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
 const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswingers", "recon"];
 
 function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOpenGlossary }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   // FIXED 28 Sep 2026 — Anonymise mode. The duplicate warning below named the
   // OTHER contact, so opening any contact's edit sheet while masking would have
@@ -2004,7 +2004,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             close button instead of a back arrow — same principle,
             right control for this screen's actual navigation model. */}
         <div style={{ background: T.contactsTeal, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? t("contacts.addContact", "Add contact") : t("contacts.editContact", "Edit contact")}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? tr("contacts.addContact", "Add contact") : tr("contacts.editContact", "Edit contact")}</span>
           <X size={20} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose(); } }} />
         </div>
@@ -2327,7 +2327,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
           <button onClick={() => canSave && doSave()} style={{ ...btnStyle(canSave ? T.contactsTeal : T.textDisabled, "filled"), width: "100%", padding: 16, fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-            {isNew ? t("contacts.addContact", "Add contact") : t("contacts.saveChanges", "Save changes")}
+            {isNew ? tr("contacts.addContact", "Add contact") : tr("contacts.saveChanges", "Save changes")}
           </button>
         </div>
       </div>
