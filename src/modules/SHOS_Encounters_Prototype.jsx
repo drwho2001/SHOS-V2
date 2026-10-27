@@ -201,7 +201,7 @@ function DateTimeField({ label, value, onChange, T }) {
             shared helper, same safe reasoning as the fix just above. */}
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(`${nowAsDateTimeLocalString()}:00.000Z`)} style={{ fontSize: 11, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>{tr("common.now", "Now")}</span>
       </div>
-      <input type="datetime-local" value={inputVal} aria-label={label}
+      <input type="datetime-local" value={inputVal} aria-label="Date & time"
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
