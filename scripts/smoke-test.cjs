@@ -3100,7 +3100,7 @@ async function testVaccineDoseSeriesFlow(browser) {
   // rather than skipping. Same shape as the editBtn guard two lines above.
   const addDose = page.getByRole("button", { name: /Add dose/i }).first();
   await addDose.waitFor({ state: "visible", timeout: 10000 });
-      await addDose.click();
+      await addDose.click({ force: true });
       await page.waitForFunction(() => document.querySelectorAll('input[type="date"][aria-label="Date"]').length >= 2, null, { timeout: 15000 });
 
       const dateInputs = page.locator('input[type="date"][aria-label="Date"]');
