@@ -1734,9 +1734,9 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(500);
       await page.waitForSelector('input[aria-label="Title"]', { timeout: 10000 });
       await page.locator('input[aria-label="Title"]').fill("Timezone probe");
-      await page.waitForSelector('input[aria-label="Date & time"]', { timeout: 10000 });
+      await page.waitForSelector('input[type="datetime-local"]', { timeout: 10000 });
       await page.evaluate((val) => {
-        const input = document.querySelector('input[aria-label="Date & time"]');
+        const input = document.querySelector('input[type="datetime-local"]');
         if (input) {
           input.value = val;
           input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1786,12 +1786,12 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(400);
       await page.getByRole("menuitem", { name: /^Edit/ }).first().click({ timeout: 5000 });
       await page.waitForFunction(
-        (expected) => document.querySelector('input[aria-label="Date & time"]')?.value === expected,
+        (expected) => document.querySelector('input[type="datetime-local"]')?.value === expected,
         TZ_PROBE_TIME,
         { timeout: 5000 },
       );
       const stored = await page
-        .locator('input[aria-label="Date & time"]')
+        .locator('input[type="datetime-local"]')
         .first()
         .inputValue();
       check(stored === TZ_PROBE_TIME,
