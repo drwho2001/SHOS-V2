@@ -436,5 +436,10 @@
   "measurements": {
     "addMeasurement": "Add measurement",
     "editMeasurement": "Edit measurement"
+  },
+  "menstrual": {
+    "cycle": "Cycle",
+    "contraception": "Contraception",
+    "pregnancy": "Pregnancy"
   }
 }

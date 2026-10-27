@@ -1073,7 +1073,7 @@ function tabForRecordId(id) {
 }
 
 export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
@@ -1106,9 +1106,9 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   const pregnancyReachable = deepLinkTab === "pregnancy" || (!pregnancyTrackingHidden && (showsPregnancyByDefault || showPregnancyAnyway));
 
   const tabs = [
-    { key: "cycle", label: "Cycle" },
-    { key: "contraception", label: "Contraception" },
-    ...(pregnancyReachable ? [{ key: "pregnancy", label: "Pregnancy" }] : []),
+    { key: "cycle", label: tr("menstrual.cycle", "Cycle") },
+    { key: "contraception", label: tr("menstrual.contraception", "Contraception") },
+    ...(pregnancyReachable ? [{ key: "pregnancy", label: tr("menstrual.pregnancy", "Pregnancy") }] : []),
   ];
 
   return (
