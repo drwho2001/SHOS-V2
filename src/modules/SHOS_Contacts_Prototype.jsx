@@ -3077,12 +3077,12 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               an action that brings someone else's shared profile IN.
               Download's arrow-into-tray matches the actual direction.
               CHANGED 26 Aug 2026 — moved into the banner, white. */}
-          {onOpenImportProfile && <Download role="button" tabIndex={0} aria-label="Import profile from file" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenImportProfile} />}
-          {onOpenMyProfile && <User role="button" tabIndex={0} aria-label="Open My Profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenMyProfile} />}
+          {onOpenImportProfile && <Download role="button" tabIndex={0} aria-label="Import profile from file" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={onOpenImportProfile} />}
+          {onOpenMyProfile && <User role="button" tabIndex={0} aria-label="Open My Profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={onOpenMyProfile} />}
           {/* ADDED 15 Sep 2026 — real ask: a real in-module settings
               screen (see ContactsSettingsScreen's own comment above),
               matching Medication Dashboard's own gear-icon placement. */}
-          {onOpenContactsSettings && <SettingsIcon size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
+          {onOpenContactsSettings && <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
         </div>
       </div>
 
