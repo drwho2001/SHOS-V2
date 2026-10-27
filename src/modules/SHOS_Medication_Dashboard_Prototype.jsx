@@ -1311,7 +1311,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
       <div tabIndex={0} onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <X size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ padding: "8px 20px 20px" }}>
           <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
@@ -1646,7 +1646,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             module banner title. */}
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("medication.addMedication", "Add medication")}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <X size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         {draftRestored && (
           <div style={{ margin: "10px 20px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
@@ -2315,11 +2315,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit selection mode" : "Enter selection mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
               {selectMode ? "Done" : "Select"}
             </span>
-            <Search size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={openMedSearch} role="button" tabIndex={0} aria-label="Search medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMedSearch(); } }} />
+            <Search size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={openMedSearch} role="button" tabIndex={0} aria-label="Search medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMedSearch(); } }} />
             {/* CHANGED 26 Aug 2026 — real content now exists (dose
                 reminders), so this is wired up for real — was
                 deliberately a visual-only stub until this existed. */}
-            <SettingsIcon size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
+            <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 4 }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
           </div>
         </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
