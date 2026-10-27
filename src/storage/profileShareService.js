@@ -176,7 +176,7 @@ export function parseProfileShare(jsonText) {
 export function mapShareToContactData(parsedShare) {
   const d = { ...DEFAULT_PROFILE, ...parsedShare.data };
   return {
-    name: d.displayName || d.nickname || "Shared profile",
+    name: (typeof d.displayName === "string" && d.displayName.trim()) ? d.displayName.trim() : (typeof d.nickname === "string" && d.nickname.trim() ? d.nickname.trim() : "Shared profile"),
     nickname: d.nickname,
     // ADDED 26 Aug 2026 — real ask: the photo should travel with a
     // shared profile, even though you don't need one for yourself on
@@ -193,18 +193,18 @@ export function mapShareToContactData(parsedShare) {
     recon: d.recon,
     age: d.age,
     ageIsApprox: d.ageIsApprox,
-    city: d.city,
-    phone: d.phone,
-    snapchat: d.snapchat,
-    fabguys: d.fabguys,
-    fabswingers: d.fabswingers,
-    contactableVia: d.contactableVia,
+    city: typeof d.city === "string" ? d.city : "",
+    phone: typeof d.phone === "string" ? d.phone : "",
+    snapchat: typeof d.snapchat === "string" ? d.snapchat : "",
+    fabguys: typeof d.fabguys === "string" ? d.fabguys : "",
+    fabswingers: typeof d.fabswingers === "string" ? d.fabswingers : "",
+    contactableVia: Array.isArray(d.contactableVia) ? d.contactableVia.filter((x) => typeof x === "string") : [],
     hosts: d.hosts,
     travels: d.travels, travelMode: d.travelMode,
     availability: d.availability,
     nonAvailabilityRules: d.nonAvailabilityRules,
     readilyAvailable: d.readilyAvailable,
-    statedKinks: d.statedKinks,
+    statedKinks: Array.isArray(d.statedKinks) ? d.statedKinks.filter((x) => typeof x === "string") : [],
     limits: d.limits,
     knownChems: d.knownChems,
     bdsmRole: d.bdsmRole,
