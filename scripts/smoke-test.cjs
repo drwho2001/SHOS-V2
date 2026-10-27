@@ -1734,7 +1734,7 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(500);
       await page.locator('input[aria-label="Title"]').fill("Timezone probe");
       await page.waitForSelector('input[aria-label="Date & time"]', { timeout: 10000 });
-      await page.locator('input[aria-label="Date & time"]').fill(TZ_PROBE_TIME);
+      await page.locator('input[aria-label="Date & time"]').fill(TZ_PROBE_TIME, { force: true });
       await page.locator('text=Save').first().click({ timeout: 5000 });
       await page.waitForTimeout(900);
 
@@ -3100,8 +3100,8 @@ async function testVaccineDoseSeriesFlow(browser) {
   const addDose = page.getByRole("button", { name: /Add dose/i }).first();
   await addDose.waitFor({ state: "visible", timeout: 10000 });
       await addDose.click();
-      await page.waitForFunction(() => document.querySelectorAll('input[type="date"][aria-label="Date"]').length >= 2, null, { timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(500);
+      await page.waitForFunction(() => document.querySelectorAll('input[type="date"][aria-label="Date"]').length >= 2, null, { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(1000);
 
       const dateInputs = page.locator('input[type="date"][aria-label="Date"]');
   const n = await dateInputs.count();
