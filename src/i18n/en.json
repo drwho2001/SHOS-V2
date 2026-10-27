@@ -364,5 +364,15 @@
     "deleteThisList": "Delete this list",
     "deleteConfirm": "This permanently deletes the checklist — unlike archiving, there's no getting it back.",
     "contactList": "Contact list"
+  },
+  "globalSearch": {
+    "title": "Global Search",
+    "placeholder": "Search contacts, medications, activities, tests, and more...",
+    "close": "Close search",
+    "mostRecent": "Most recent",
+    "aToZ": "A–Z",
+    "startTyping": "Start typing to search across every record in SHOS — Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Measurements, and Menstrual Health.",
+    "searching": "Searching…",
+    "noMatches": "No matches for \"{query}\"."
   }
 }

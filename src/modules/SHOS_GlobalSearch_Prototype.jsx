@@ -366,7 +366,7 @@ const TYPE_PLURAL = {
 // real coupling, stated here so the next person to make this screen
 // always-mounted knows these two props would silently stop working.
 export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery = "", initialSortMode }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -489,7 +489,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
     // unlike the non-modal content the 10 Sep region fix was for). The
     // "never inside any landmark" note that used to sit here justified
     // role="region" and is no longer the reason for this element.
-    <div role="dialog" aria-label="Global Search" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
+    <div role="dialog" aria-label={tr("globalSearch.title", "Global Search")} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
@@ -500,17 +500,17 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search contacts, medications, activities, tests, and more..."
+          placeholder={tr("globalSearch.placeholder", "Search contacts, medications, activities, tests, and more...")}
           style={{ flex: 1, border: "none", outline: "none", fontSize: 15, background: "transparent", color: T.textPrimary, fontFamily: FONT_FAMILY }}
         />
-        <X size={20} color={T.textSecondary} role="button" tabIndex={0} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onClose} aria-label="Close search"
+        <X size={20} color={T.textSecondary} role="button" tabIndex={0} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onClose} aria-label={tr("globalSearch.close", "Close search")}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose(); } }} />
       </div>
 
       {/* ADDED 26 Aug 2026 — real ask: sort toggle. */}
       {query.trim().length > 0 && results.length > 0 && (
         <div style={{ display: "flex", gap: 6, padding: "10px 16px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, paddingBottom: 10 }}>
-          {[{ key: "chronological", label: "Most recent" }, { key: "alphabetical", label: "A–Z" }].map((s) => (
+          {[{ key: "chronological", label: tr("globalSearch.mostRecent", "Most recent") }, { key: "alphabetical", label: tr("globalSearch.aToZ", "A\u2013Z") }].map((s) => (
             <div key={s.key} onClick={() => setSortMode(s.key)} role="button" tabIndex={0} aria-pressed={sortMode === s.key} aria-label={s.label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortMode(s.key); } }}
               style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? "#FFFFFF" : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent" }}>
               {s.label}
@@ -531,7 +531,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
       <div tabIndex={0} style={{ flex: 1, overflowY: "auto" }}>
         {query.trim().length === 0 && (
           <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
-            Start typing to search across every record in SHOS — Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Measurements, and Menstrual Health.
+            {tr("globalSearch.startTyping", "Start typing to search across every record in SHOS \u2014 Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Measurements, and Menstrual Health.")}
           </div>
         )}
         {query.trim().length > 0 && !indexReady && (
@@ -539,12 +539,12 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
           // whether there are matches, because at this point we genuinely do
           // not know.
           <div role="status" style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
-            Searching…
+            {tr("globalSearch.searching", "Searching…")}
           </div>
         )}
         {query.trim().length > 0 && indexReady && results.length === 0 && (
           <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
-            No matches for "{query}".
+            {tr("globalSearch.noMatches", "No matches for \"{query}\".", { query })}
           </div>
         )}
         {groupedResults.map(([label, items]) => (
