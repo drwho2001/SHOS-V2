@@ -1747,6 +1747,7 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
 // Design's dark mode toggle, for visual consistency across the app's
 // two settings surfaces.
 function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [prefs, setPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);
   const toggleReminders = async () => {
@@ -1774,7 +1775,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
     <div ref={dialogRef} role="dialog" aria-label="Medication settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Medication settings</h1>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("medication.settings", "Medication settings")}</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20 }}>
@@ -1840,7 +1841,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget } = {}) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // Declared before useEditUndo below so that call can pass a stable
   // indirection to refreshMeds without a temporal-dead-zone reference.
@@ -2298,7 +2299,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             top padding, so only the title/icons — not the colour — sit
             below the notch. */}
         <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Medication</h1>
+          <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("medication.title", "Medication")}</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
                 not long-press (see the selectMode state comment above
