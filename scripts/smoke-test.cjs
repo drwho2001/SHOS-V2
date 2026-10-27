@@ -3101,8 +3101,7 @@ async function testVaccineDoseSeriesFlow(browser) {
   const addDose = page.getByRole("button", { name: /Add dose/i }).first();
   await addDose.waitFor({ state: "visible", timeout: 10000 });
       await addDose.click();
-      await page.waitForFunction(() => document.querySelectorAll('input[type="date"][aria-label="Date"]').length >= 2, null, { timeout: 10000 }).catch(() => {});
-      await page.waitForTimeout(1000);
+      await page.waitForFunction(() => document.querySelectorAll('input[type="date"][aria-label="Date"]').length >= 2, null, { timeout: 15000 });
 
       const dateInputs = page.locator('input[type="date"][aria-label="Date"]');
   const n = await dateInputs.count();
