@@ -9351,3 +9351,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (6)
 - Added expiry and anonymise tests for profile sharing.
+
+## 27 Oct 2026 - Zeus (7)
+- Increased password toggle touch target in Settings.
