@@ -1152,7 +1152,7 @@ async function testInteractiveTour(browser) {
   assert(await page.locator("text=Quick tour").first().count() > 0, "the tour auto-offers right after a genuine onboarding completion, not App Lock's prompt swallowing the click");
 
   for (let i = 0; i < 3; i++) {
-    await page.getByRole("button", { name: "Next" }).click({ timeout: 3000 });
+    await page.getByRole("button", { name: "Next", exact: true }).click({ timeout: 3000 });
     await page.waitForTimeout(400);
   }
   assert(await page.locator("text=Medication").first().count() > 0, "stepping through Next reaches the real Medication tab step");

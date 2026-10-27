@@ -51,7 +51,9 @@ the record repository could load. Encounter, Clinic Visit and Testing edit
 sheets now await the draft check, preserve an actual draft when present, and
 otherwise load the saved record. The timezone smoke flow now waits for the
 expected field value instead of relying on a fixed delay and swallowing a
-missing-value failure.
+missing-value failure. The interactive-tour flow's `Next` locator also now
+requires an exact accessible-name match so it cannot select the dashboard's
+`Next clinic visit` button.
 
 Session: `i18n-extract-20261027-km`.
 
