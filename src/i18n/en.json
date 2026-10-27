@@ -46,7 +46,8 @@
     "search": "Search",
     "loading": "Loading...",
     "removeAttachment": "Remove attachment",
-    "back": "Back"
+    "back": "Back",
+    "now": "Now"
   },
   "settings": {
     "title": "Settings",
