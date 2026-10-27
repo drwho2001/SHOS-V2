@@ -1611,7 +1611,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 // optional on JargonNote (the one-sentence note is the point of it), so this is
 // the only wiring that was needed and there is no dead-link risk if it is absent.
 function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, onOpenGlossary }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const isNew = !encounterId;
   const [activeFormTab, setActiveFormTab] = useState(ENCOUNTER_EDIT_TABS[0].key);
@@ -1824,10 +1824,10 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
         <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? t("encounters.addEncounter", "Add Encounter") : t("encounters.editEncounter", "Edit Encounter")}</h1>
+        <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("encounters.addEncounter", "Add Encounter") : tr("encounters.editEncounter", "Edit Encounter")}</h1>
         <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
-          {t("common.save", "Save")}
+          {tr("common.save", "Save")}
         </div>
       </div>
 
