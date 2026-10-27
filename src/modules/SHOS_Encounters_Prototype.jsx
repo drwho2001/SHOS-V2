@@ -862,6 +862,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
 // as removable chips above the search box, matching results only show
 // while actively searching.
 function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
+  const { t: tr } = useTranslation();
   const [query, setQuery] = useState("");
   // FIXED 28 Sep 2026 — Anonymise mode. This is the Attendee picker inside the
   // Encounters EDIT sheet, which the 28 Sep review flagged specifically: the
@@ -915,10 +916,10 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
       {q && matches.length === 0 && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={handleCreate}
           style={{ marginTop: 6, padding: "10px 12px", fontSize: 13, fontWeight: 600, color: T.encountersPink, border: `1px dashed ${T.encountersPink}`, borderRadius: radius.sm, cursor: "pointer" }}>
-          + Add "{query.trim()}" as a new contact
+          + {tr("encounters.addAsNewContact", 'Add "{name}" as a new contact', { name: query.trim() })}
         </div>
       )}
-      {contacts.length === 0 && <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: "italic" }}>No contacts yet — start typing a name above to add one.</div>}
+      {contacts.length === 0 && <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: "italic" }}>{tr("encounters.noContactsYet", "No contacts yet — start typing a name above to add one.")}</div>}
     </div>
   );
 }
@@ -956,6 +957,7 @@ const ENCOUNTER_TYPE_ICONS = {
 };
 
 function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, selected = false, onToggleSelected, onLongPress, anonymise = false }) {
+  const { t: tr } = useTranslation();
   const attendeeNames = encounter.attendeeIds.map((id) => contactName(contacts, id));
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
@@ -1009,7 +1011,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   };
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={encounter.title || "Untitled encounter"} tabIndex={0}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
       style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 14, marginBottom: 10, cursor: "pointer", display: "flex", gap: 10 }}>
       {selectMode && (
@@ -1022,11 +1024,11 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
             <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15, color: T.textPrimary }}>{encounter.title || "Untitled encounter"}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
           </div>
           <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
             <span>
-              {encounter.date ? `${formatStoredDate(encounter.date)} · ${formatRelativeDate(encounter.date)}` : "No date"}
+              {encounter.date ? `${formatStoredDate(encounter.date)} · ${formatRelativeDate(encounter.date)}` : tr("encounters.noDate", "No date")}
               {encounter.encounterType ? " · " : ""}
             </span>
             {encounter.encounterType && (() => {
@@ -1040,11 +1042,11 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
             })()}
           </div>
         </div>
-        {encounter.enjoymentRating != null && (
-          <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif", color: T.textSecondary, display: "flex", alignItems: "center", gap: 3 }}>
-            <Heart size={12} color={T.encountersPink} /> {encounter.enjoymentRating}
-          </div>
-        )}
+{encounter.enjoymentRating != null && (
+  <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif", color: T.textSecondary, display: "flex", alignItems: "center", gap: 3 }}>
+    <Heart size={12} color={T.encountersPink} /> {encounter.enjoymentRating}
+  </div>
+)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
         {shown.length > 0 && (
@@ -1245,14 +1247,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
+            <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{tr("encounters.selectedCount", "{count} selected", { count: selectedIds.length })}</span>
             <div style={{ display: "flex", gap: 16 }}>
               {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                   rather than manual 1 by 1", scoped to whatever's
                   currently visible under the active search/filters. */}
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === visible.length ? [] : visible.map((e) => e.id))}
                 style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
-                {selectedIds.length === visible.length ? "Deselect all" : "Select all"}
+                {selectedIds.length === visible.length ? tr("encounters.deselectAll", "Deselect all") : tr("encounters.selectAll", "Select all")}
               </span>
 {/* ADDED 26 Aug 2026 — real ask: export/print a single
                    record, enabled only when exactly one is selected. */}
@@ -1262,7 +1264,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                  style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
                <span role="button" tabIndex={0} aria-label="Delete encounters" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
                  style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
+               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</span>
             </div>
           </div>
         )}
@@ -1270,7 +1272,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <ConfirmDeleteCard
             T={T}
             moduleColor={T.encountersPink}
-            message={`Delete ${selectedIds.length} activit${selectedIds.length > 1 ? "ies" : "y"} permanently? You'll have a few seconds to undo.`}
+            message={selectedIds.length === 1 ? tr("encounters.deleteOneConfirm", "Delete this activity permanently? You'll have a few seconds to undo.") : tr("encounters.deleteManyConfirm", "Delete {count} activities permanently? You'll have a few seconds to undo.", { count: selectedIds.length })}
             confirmLabel="Delete"
             onCancel={() => setConfirmingBulkDelete(false)}
             onConfirm={async () => {
@@ -1321,7 +1323,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       <div style={{ padding: "8px 16px" }}>
         {visible.length === 0 && (
           <div style={{ textAlign: "center", color: T.textDisabled, fontStyle: "italic", padding: "40px 0" }}>
-            {query.trim() ? "No encounters match your search." : "No encounters logged yet."}
+            {query.trim() ? tr("encounters.noEncountersMatchSearch", "No encounters match your search.") : tr("encounters.noEncountersLoggedYet", "No encounters logged yet.")}
           </div>
         )}
         {/* FIXED 16 Sep 2026 — real report: same "cards read as mobile-
@@ -1491,18 +1493,18 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             live, not assumed), so this detail view had zero headings
             of its own. Same real <h1> treatment as the landing title. */}
         <h1 style={{ fontFamily: "'Inter', sans-serif", ...TYPE.recordTitle, margin: 0, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
-          {encounter.title || (encounter.date ? formatStoredDate(encounter.date) : "Encounter")}
+          {encounter.title || (encounter.date ? formatStoredDate(encounter.date) : tr("encounters.title", "Encounter"))}
         </h1>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
+          <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label={tr("encounters.moreOptions", "More options")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
           {menuOpen && (
             <div role="menu" style={{ position: "absolute", right: 0, top: 26, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 10, minWidth: 140 }}>
-              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>Edit</div>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>{tr("common.edit", "Edit")}</div>
               <div onClick={archive} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); archive(); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
-                <Archive size={14} /> {encounter.isArchived ? "Unarchive" : "Archive"}
+                <Archive size={14} /> {encounter.isArchived ? tr("common.unarchive", "Unarchive") : tr("common.archive", "Archive")}
               </div>
               <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); setConfirmDelete(true); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
-                <Trash2 size={14} /> Delete permanently
+                <Trash2 size={14} /> {tr("common.deletePermanently", "Delete permanently")}
               </div>
             </div>
           )}
@@ -1518,7 +1520,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
         <ConfirmDeleteCard
           T={T}
           moduleColor={T.encountersPink}
-          message="This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry."
+          message={tr("encounters.deleteConfirm", "This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry.")}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={async () => { await triggerDelete([encounter]); refresh(); onBack(); }}
         />
@@ -1531,7 +1533,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           </div>
         )}
 
-        <SectionCard title="Overview" T={T}>
+        <SectionCard title={tr("encounters.overview", "Overview")} T={T}>
           <ReadRow label="Title" value={encounter.title} T={T} />
           <ReadRow label="Encounter type" value={encounter.encounterType} T={T} />
           <ReadRow label="Time of day" value={timeOfDay(encounter.date)} T={T} />
@@ -1543,7 +1545,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           <ReadRow label="Enjoyment rating" value={encounter.enjoymentRating} T={T} />
         </SectionCard>
 
-        <SectionCard title="Attendees" T={T}>
+        <SectionCard title={tr("encounters.attendees", "Attendees")} T={T}>
           {encounter.attendeeIds.length === 0
             ? <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "8px 0" }}>None recorded.</div>
             : encounter.attendeeIds.map((id) => (
@@ -1557,19 +1559,19 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             ))}
         </SectionCard>
 
-        <SectionCard title="Practices" T={T}>
+        <SectionCard title={tr("encounters.practices", "Practices")} T={T}>
           <ReadRow label="My role" value={encounter.myRole} T={T} />
           <ReadRow label="My position" value={encounter.myPosition} T={T} />
           <ReadRow label="Where did I cum?" value={encounter.whereICame} T={T} />
           <ReadRow label="Where did my partner cum?" value={encounter.whereHeCame} T={T} />
         </SectionCard>
 
-        <SectionCard title="Kink & chems" T={T}>
+        <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>
           <ReadRow label="Kinks involved" value={resolveKinkSelections(encounter.kinksInvolved)} T={T} />
           <ReadRow label="Chems/alcohol used" value={resolveNames(chemNameById, encounter.chemsAlcoholUsed)} T={T} />
         </SectionCard>
 
-        <SectionCard title="Protection & medication context" T={T}>
+        <SectionCard title={tr("encounters.protectionMedication", "Protection & medication context")} T={T}>
           <ReadRow label="Protection used" value={resolveNames(protectionNameById, encounter.protectionUsed)} T={T} />
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
           <ReadRow label="My DoxyPEP status" value={doxyPepDisplay.value} T={T} />
@@ -1582,15 +1584,15 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           )}
         </SectionCard>
 
-        <SectionCard title="Health" T={T}>
+        <SectionCard title={tr("encounters.health", "Health")} T={T}>
           <ReadRow label="Symptoms noted" value={resolveNames(symptomNameById, encounter.symptomsNoted)} T={T} />
         </SectionCard>
 
-        <SectionCard title="Location" T={T}>
+        <SectionCard title={tr("encounters.location", "Location")} T={T}>
           <ReadRow label="Location" value={locationName} T={T} />
         </SectionCard>
 
-        <SectionCard title="Notes" T={T}>
+        <SectionCard title={tr("encounters.notes", "Notes")} T={T}>
           <div style={{ fontSize: 14, color: encounter.notes ? T.textPrimary : T.textDisabled, fontStyle: encounter.notes ? "normal" : "italic" }}>
             {encounter.notes || "No notes yet."}
           </div>
@@ -1840,7 +1842,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
 
       {draftRestored && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "10px 16px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
-          <span>Restored unsaved changes from earlier.</span>
+          <span>{tr("encounters.draftRestored", "Restored unsaved changes from earlier.")}</span>
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
               Contacts got, same reasoning. */}
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER } : await EncounterRepository.getById(encounterId)); }}
@@ -1855,9 +1857,9 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           ariaLabel="Encounter form sections" accent={T.encountersPink} accentText={T.encountersPink}
           textColor={T.textSecondary} border={T.border} surface={T.bg}>
         <div>
-        <SectionCard title="Overview" T={T}>
-          <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Alex — coffee then back to theirs" />
-          <DateTimeField label="Date & time" value={form.date} onChange={set("date")} T={T} />
+        <SectionCard title={tr("encounters.overview", "Overview")} T={T}>
+          <TextField label={tr("encounters.title", "Title")} value={form.title} onChange={set("title")} T={T} placeholder={tr("encounters.titlePlaceholder", "e.g. Alex — coffee then back to theirs")} />
+          <DateTimeField label={tr("encounters.dateTime", "Date & time")} value={form.date} onChange={set("date")} T={T} />
           {/* ADDED — real ask: "optional end time for encounter (ie if
               multiday or particularly long)". `dateEnd` already existed
               on the data model (DEFAULT_ENCOUNTER) but had no UI
@@ -1867,35 +1869,35 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
               Location field. */}
           {form.dateEnd ? (
             <>
-              <DateTimeField label="End date & time" value={form.dateEnd} onChange={set("dateEnd")} T={T} />
+              <DateTimeField label={tr("encounters.endDateTime", "End date & time")} value={form.dateEnd} onChange={set("dateEnd")} T={T} />
               <div style={{ padding: "0 0 8px" }}>
-                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>Remove end time</span>
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>{tr("encounters.removeEndTime", "Remove end time")}</span>
               </div>
             </>
           ) : (
             <div style={{ padding: "8px 0" }}>
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")(form.date || `${nowAsDateTimeLocalString()}:00.000Z`)}
                 style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>
-                + Add end date & time (multi-day or long encounter)
+                + {tr("encounters.addEndTime", "Add end date & time (multi-day or long encounter)")}
               </span>
             </div>
           )}
-          <SelectField label="Encounter type" value={form.encounterType} onChange={set("encounterType")} options={ENCOUNTER_TYPE_OPTIONS} T={T} />
-          <SelectField label="Would meet again" value={form.wouldMeetAgain} onChange={set("wouldMeetAgain")} options={WOULD_MEET_AGAIN_OPTIONS} T={T} />
-          <TextField label="Enjoyment rating (0–100)" value={form.enjoymentRating} onChange={set("enjoymentRating")} T={T} type="number" />
+          <SelectField label={tr("encounters.encounterType", "Encounter type")} value={form.encounterType} onChange={set("encounterType")} options={ENCOUNTER_TYPE_OPTIONS} T={T} />
+          <SelectField label={tr("encounters.wouldMeetAgain", "Would meet again")} value={form.wouldMeetAgain} onChange={set("wouldMeetAgain")} options={WOULD_MEET_AGAIN_OPTIONS} T={T} />
+          <TextField label={tr("encounters.enjoymentRating", "Enjoyment rating (0–100)")} value={form.enjoymentRating} onChange={set("enjoymentRating")} T={T} type="number" />
         </SectionCard>
 
         {/* CHANGED 26 Aug 2026 — real ask: "who and where" together —
             Location moved up here from near the bottom of the form,
             merged into the same section as Attendees. */}
-        <SectionCard title="Attendees & Location" T={T}>
+        <SectionCard title={tr("encounters.attendeesLocation", "Attendees & Location")} T={T}>
           <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} />
-          <RegistrySinglePicker label="Location" value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder="e.g. His place, Sauna, or a written address" showLocateButton contacts={contacts} attendeeIds={form.attendeeIds} />
+          <RegistrySinglePicker label={tr("encounters.location", "Location")} value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder={tr("encounters.locationPlaceholder", "e.g. His place, Sauna, or a written address")} showLocateButton contacts={contacts} attendeeIds={form.attendeeIds} />
         </SectionCard>
         </div>
 
         <div>
-        <SectionCard title="Practices" T={T}>
+        <SectionCard title={tr("encounters.practices", "Practices")} T={T}>
           <SelectField label="My role" value={form.myRole} onChange={set("myRole")} options={MY_ROLE_OPTIONS} T={T} />
           {/* ADDED 9 Oct 2026 (t052) — "Dom" and "sub" sit in a dropdown whose
               label says "role" and nothing else. This is a DYNAMIC, and the
@@ -1906,12 +1908,12 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <MultiSelectChips label="Where did my partner cum?" value={form.whereHeCame} onChange={set("whereHeCame")} options={CUM_LOCATION_OPTIONS} T={T} />
         </SectionCard>
 
-        <SectionCard title="Kink & chems" T={T}>
+        <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>
           <RegistryTagPicker label="Kinks involved" value={form.kinksInvolved} onChange={set("kinksInvolved")} T={T} registry={KinkRegistry} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           <RegistryTagPicker label="Chems/alcohol used" value={form.chemsAlcoholUsed} onChange={set("chemsAlcoholUsed")} T={T} registry={ChemsRegistry} resolveSynonym={resolveChemSynonym} />
         </SectionCard>
 
-        <SectionCard title="Protection & medication context" T={T}>
+        <SectionCard title={tr("encounters.protectionMedication", "Protection & medication context")} T={T}>
           <RegistryTagPicker label="Protection used" value={form.protectionUsed} onChange={set("protectionUsed")} T={T} registry={ProtectionRegistry} />
           <SelectField label="My PrEP coverage" value={form.myPrepCoverage} onChange={set("myPrepCoverage")} options={PREP_COVERAGE_OPTIONS} T={T} />
           {/* ADDED 21 Oct 2026 (t137) - where the value came from. */}
@@ -1942,11 +1944,11 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         </div>
 
         <div>
-        <SectionCard title="Health" T={T}>
+        <SectionCard title={tr("encounters.health", "Health")} T={T}>
           <RegistryTagPicker label="Symptoms noted" value={form.symptomsNoted} onChange={set("symptomsNoted")} T={T} registry={SymptomsRegistry} />
         </SectionCard>
 
-        <SectionCard title="Notes" T={T}>
+        <SectionCard title={tr("encounters.notes", "Notes")} T={T}>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", marginTop: 8 }} />
         </SectionCard>
