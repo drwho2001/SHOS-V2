@@ -1149,7 +1149,8 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
           pass): match the rounded-bottom-corner/subtle-border treatment
           the 4 real screen-title banners already got, so a sheet-title
           banner reads as the same family of UI element. */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", zIndex: 1 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", zIndex: 1 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
+        <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("clinicVisits.newVisit", "New visit") : tr("clinicVisits.editVisit", "Edit visit")}</h1>
         <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
