@@ -1068,6 +1068,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
 
 // ── 3a. Activity Landing ──
 function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  const { t: tr } = useTranslation();
   const contacts = useLoadedMemo(loadContacts, [], []);
   // ADDED — real bug report: Anonymise mode masked Contacts but not
   // Encounters' own attendee display. Same read pattern Contacts uses.
@@ -1232,7 +1233,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               screens — this is a 7th. Same real <h1> treatment, same
               margin:0 to avoid the browser's own default heading
               margin adding unwanted spacing. */}
-          <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>Encounter</h1>
+          <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
           {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
               matching Medication's pattern — long-press stays as an
               additional quick entry. */}
@@ -1383,6 +1384,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
 
 // ── 3b. Activity Details ──
 function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, triggerDelete, refresh }) {
+  const { t: tr } = useTranslation();
   const [encounter, setEncounter] = useLoadedState(() => EncounterRepository.getById(encounterId), [encounterId], null);
   const contacts = useLoadedMemo(loadContacts, [], []);
   // ADDED — real bug report: Anonymise mode masked Contacts but not
@@ -1481,7 +1483,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             (Testing's TestDetail, the reference "good" screen the user
             named): T.textPrimary for plain nav, the module's own
             accent for the thing that opens edit/actions. */}
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         {/* CHANGED — real accessibility gap found via live axe testing:
             Encounters' landing and detail screens fully swap (the
             landing's own <h1> unmounts when detail is shown, confirmed
