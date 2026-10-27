@@ -1734,7 +1734,7 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(500);
       await page.waitForSelector('input[aria-label="Title"]', { timeout: 10000 });
       await page.locator('input[aria-label="Title"]').fill("Timezone probe");
-      await page.waitForSelector('input[type="datetime-local"]', { timeout: 10000 });
+      await page.locator('input[type="datetime-local"]').first().waitFor({ state: 'attached', timeout: 10000 });
       await page.evaluate((val) => {
         const input = document.querySelector('input[type="datetime-local"]');
         if (input) {
