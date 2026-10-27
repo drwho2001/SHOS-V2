@@ -3103,7 +3103,10 @@ async function testVaccineDoseSeriesFlow(browser) {
       await page.evaluate(() => {
         const buttons = Array.from(document.querySelectorAll('[role="button"]'));
         const btn = buttons.find(b => b.textContent.includes('Add dose'));
-        if (btn) btn.click();
+        if (btn) {
+          btn.scrollIntoView({ block: 'center' });
+          btn.click();
+        }
       });
       await page.waitForFunction(() => document.querySelectorAll('input[type="date"][aria-label="Date"]').length >= 2, null, { timeout: 15000 });
 
