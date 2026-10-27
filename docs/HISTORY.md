@@ -9339,3 +9339,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (2)
 - Hardened parseProfileShare data/schema validation.
+
+## 27 Oct 2026 - Zeus (3)
+- Added 30s share expiry and anonymise option to profile sharing.

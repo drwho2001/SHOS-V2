@@ -66,6 +66,8 @@ export async function buildProfileShare(options = {}) {
     includeHivStatus = false,
     resolvedHivStatus = null,
     hivStatusInformedDate = "",
+    anonymise = false,
+    expiresInSeconds = 30,
   } = options;
   const profile = await MyProfileRepository.getProfile();
   const shareableData = {
@@ -75,11 +77,11 @@ export async function buildProfileShare(options = {}) {
     recon: profile.recon,
     age: profile.age,
     ageIsApprox: profile.ageIsApprox,
-    city: profile.city,
-    phone: profile.phone,
-    snapchat: profile.snapchat,
-    fabguys: profile.fabguys,
-    fabswingers: profile.fabswingers,
+    city: anonymise ? "" : profile.city,
+    phone: anonymise ? "" : profile.phone,
+    snapchat: anonymise ? "" : profile.snapchat,
+    fabguys: anonymise ? "" : profile.fabguys,
+    fabswingers: anonymise ? "" : profile.fabswingers,
     contactableVia: profile.contactableVia,
     hosts: profile.hosts,
     travels: profile.travels,
@@ -136,6 +138,7 @@ export async function buildProfileShare(options = {}) {
     type: SHARE_TYPE,
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + Math.max(1, Number(expiresInSeconds) || 30) * 1000).toISOString(),
     data: shareableData,
   };
 }
@@ -167,6 +170,9 @@ export function parseProfileShare(jsonText) {
   }
   if (typeof parsed.schemaVersion === "number" && parsed.schemaVersion > SCHEMA_VERSION) {
     throw new Error("This profile was shared from a newer version of SHOS than this app understands.");
+  }
+  if (typeof parsed.expiresAt === "string" && Date.parse(parsed.expiresAt) < Date.now()) {
+    throw new Error("This shared profile has expired.");
   }
   return parsed;
 }
