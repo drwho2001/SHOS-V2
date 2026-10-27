@@ -307,6 +307,7 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
 }
 
 function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStock, onMarkRequested, onOpenCorrection, onEditMedication, onUpdateDose, onMoveUp, onMoveDown, onArchive, onDelete, isFirst, isLast, justCompleted, T, darkMode, cardRef, highlighted, searchHighlighted, menuOpen, onToggleMenu, snoozedUntil, reminderTimingMode = "adaptive" }) {
+  const { t: tr } = useTranslation();
   // ADDED — real ask: local to this card, gated behind the menu
   // already being open for this specific medication — doesn't need
   // the app-wide single-open tracking `menuOpen` uses.
@@ -501,9 +502,9 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
 
           <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
             {justCompleted === "logged" ? (
-              <><Check size={14} color={T.actionGreen} /><span style={{ color: T.actionGreen, fontWeight: 600 }}>Logged</span></>
+              <><Check size={14} color={T.actionGreen} /><span style={{ color: T.actionGreen, fontWeight: 600 }}>{tr("medication.logged", "Logged")}</span></>
             ) : justCompleted === "requested" ? (
-              <><Check size={14} color={T.medsBlue} /><span style={{ color: T.medsBlue, fontWeight: 600 }}>Marked as requested</span></>
+              <><Check size={14} color={T.medsBlue} /><span style={{ color: T.medsBlue, fontWeight: 600 }}>{tr("medication.markedAsRequested", "Marked as requested")}</span></>
             ) : requested ? (
               <><Clock size={14} color={T.textSecondary} /><span style={{ color: T.textSecondary, fontWeight: 600 }}>Requested {daysFromNow(med.refillRequestedAt)} — awaiting refill</span></>
             ) : stock.needsAction ? (
@@ -516,7 +517,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
           {stock.needsAction && !requested && (
             <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 3 }}>
               {med.usualSupplier && <>Usually filled at: {med.usualSupplier} · </>}
-              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onMarkRequested(med.id)} style={{ color: T.medsBlue, fontWeight: 600, cursor: "pointer" }}>Mark as requested</span>
+              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onMarkRequested(med.id)} style={{ color: T.medsBlue, fontWeight: 600, cursor: "pointer" }}>{tr("medication.markAsRequested", "Mark as requested")}</span>
             </div>
           )}
 
@@ -567,7 +568,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             <div style={{ display: "flex", justifyContent: "space-around", background: glowBg, border: `1px solid ${glowBorder}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 3, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
-                <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>streak</div>
+                <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>{tr("medication.streak", "streak")}</div>
               </div>
               <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
               {/* Labelled "this container", not "this refill", because that is what
@@ -598,7 +599,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
           </span>
           {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
           {scheduledTimesLabel && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Scheduled: {scheduledTimesLabel}</div>}
-          <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>Not inventory-tracked</div>
+          <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>{tr("medication.notInventoryTracked", "Not inventory-tracked")}</div>
         </div>
       )}
 
@@ -771,6 +772,7 @@ function DateTimeField({ label, value, onChange, T }) {
 }
 
 function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [amount, setAmount] = useState(Math.abs(entry.delta));
   const [date, setDate] = useState(entry.date);
@@ -827,7 +829,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Side effects (optional)</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("medication.sideEffectsOptional", "Side effects (optional)")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
               {SIDE_EFFECT_OPTIONS.map((s) => (
                 <div key={s} onClick={() => toggle(sideEffects, setSideEffects, s)} role="button" tabIndex={0} aria-pressed={sideEffects.includes(s)}
@@ -840,14 +842,14 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
           </>
         )}
         {!confirmVoid && (
-          <button onClick={() => onSave(amount, date, reason, sideEffects)} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>Save correction</button>
+          <button onClick={() => onSave(amount, date, reason, sideEffects)} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>{tr("medication.saveCorrection", "Save correction")}</button>
         )}
         {!confirmVoid ? (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: 13, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6 }}>This entry was a mistake — void it</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: 13, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6 }}>{tr("medication.voidEntry", "This entry was a mistake — void it")}</div>
         ) : (
           <div style={{ textAlign: "center", padding: 6 }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>Voided entries are kept, not deleted — same as anywhere else in SHOS.</div>
-            <button onClick={onVoid} style={{ ...btnStyle(T.actionRed, "filled", false), padding: "8px 20px" }}>Confirm void</button>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>{tr("medication.voidedKept", "Voided entries are kept, not deleted — same as anywhere else in SHOS.")}</div>
+            <button onClick={onVoid} style={{ ...btnStyle(T.actionRed, "filled", false), padding: "8px 20px" }}>{tr("medication.confirmVoid", "Confirm void")}</button>
           </div>
         )}
       </div>
@@ -971,6 +973,7 @@ function LogTab({ meds, T, onOpenCorrection }) {
 // despite being the dedicated inventory screen -- every other
 // inventory-related command (refill status, edit) already lived here.
 function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
+  const { t: tr } = useTranslation();
   const isDesktopWidth = useIsDesktopWidth();
   return (
     <div style={isDesktopWidth ? { columnCount: 2, columnGap: 24, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
@@ -1005,7 +1008,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
                 {requested ? (
                   <><Clock size={11} color={T.goldText} /><span style={{ color: T.goldText }}>Refill requested {daysFromNow(m.refillRequestedAt)}</span></>
                 ) : s.needsAction ? (
-                  <><AlertTriangle size={11} color={T.actionRed} /><span style={{ color: T.actionRed }}>Refill needed, not yet requested</span></>
+                  <><AlertTriangle size={11} color={T.actionRed} /><span style={{ color: T.actionRed }}>{tr("medication.refillNeededNotRequested", "Refill needed, not yet requested")}</span></>
                 ) : (() => {
                   // CHANGED 19 Aug 2026 — generalized via
                   // effectiveDoseIntervalHours() so custom (every-N-days)
@@ -1017,7 +1020,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
                   return m.usagePattern !== "prn" && dailyConsumption > 0 ? (
                     <><Check size={11} color={T.actionGreen} /><span style={{ color: T.actionGreen }}>Refill expected in ~{Math.floor((s.currentStock - m.refillThreshold) / dailyConsumption)}d</span></>
                   ) : (
-                    <><Check size={11} color={T.actionGreen} /><span style={{ color: T.actionGreen }}>Not needed yet</span></>
+                    <><Check size={11} color={T.actionGreen} /><span style={{ color: T.actionGreen }}>{tr("medication.notNeededYet", "Not needed yet")}</span></>
                   );
                 })()}
               </div>
@@ -1231,6 +1234,7 @@ function MultiSelectRow({ label, value, onChange, options, T, onAddNew, listName
 // with just one ingredient behaves exactly like the old single-field
 // version — same inputs, same styling, just wrapped in a length-1 array.
 function DoseComponentsField({ value, onChange, T }) {
+  const { t: tr } = useTranslation();
   const components = value && value.length > 0 ? value : [{ label: "", value: "", unit: "" }];
   const setRow = (i, patch) => onChange(components.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
   const addRow = () => onChange([...components, { label: "", value: "", unit: "" }]);
@@ -1238,7 +1242,7 @@ function DoseComponentsField({ value, onChange, T }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Dose strength</div>
+      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.doseStrength", "Dose strength")}</div>
       {components.map((c, i) => (
         <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
           {components.length > 1 && (
@@ -1276,6 +1280,7 @@ function DoseComponentsField({ value, onChange, T }) {
 // comment) — now goes through formatDoseComponents(), which shows the
 // raw stored text instead of NaN for that exact legacy case.
 function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [doseComponents, setDoseComponents] = useState(getDoseComponents(med));
   const [unitsPerDose, setUnitsPerDose] = useState(med.unitsPerDose || 1);
@@ -1314,12 +1319,12 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
           </div>
           <DoseComponentsField value={doseComponents} onChange={setDoseComponents} T={T} />
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Units per dose</div>
+            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.unitsPerDose", "Units per dose")}</div>
             <input type="number" min="1" value={unitsPerDose} onChange={(e) => setUnitsPerDose(e.target.value)} aria-label="Units per dose"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
           </div>
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Note (optional — e.g. "GP increased dose")</div>
+            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.noteOptional", 'Note (optional — e.g. "GP increased dose")')}</div>
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason for the change"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
           </div>
@@ -1332,11 +1337,11 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
             <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${updateStockToo ? T.medsBlue : T.border}`, background: updateStockToo ? T.medsBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {updateStockToo && <Check size={12} color="#FFFFFF" />}
             </div>
-            <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>Also update stock now</span>
+            <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{tr("medication.updateStockNow", "Also update stock now")}</span>
           </div>
           {updateStockToo && (
             <div style={{ padding: "4px 0 8px" }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Stock change (+ for adding, − for removing)</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("medication.stockChange", "Stock change (+ for adding, − for removing)")}</div>
               <input type="number" value={stockDelta} onChange={(e) => setStockDelta(e.target.value)} placeholder="e.g. 30 or -5" aria-label="Stock change"
                 style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
             </div>
@@ -1354,6 +1359,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
 }
 
 function MedicationEditSheet({ med, onSave, onClose, T }) {
+  const { t: tr } = useTranslation();
   // FIXED 30 Sep 2026 (t036). This was the only one of the seven full-screen
   // sheets in this file with neither piece - no role="dialog" and no Escape
   // handling - so a screen reader was never told this was a dialog, and Escape
@@ -1441,10 +1447,10 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
           exactly — same full-width, accent-colored, large button. */}
       <div style={{ background: T.surface, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit medication</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{tr("medication.editMedication", "Edit medication")}</span>
           <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, padding: "0 20px 12px", flexShrink: 0 }}>Changes how stock/adherence are calculated going forward — doesn't touch past log entries.</div>
+        <div style={{ fontSize: 12, color: T.textSecondary, padding: "0 20px 12px", flexShrink: 0 }}>{tr("medication.editMedicationDesc", "Changes how stock/adherence are calculated going forward — doesn't touch past log entries.")}</div>
         {draftRestored && (
           <div style={{ margin: "0 20px 10px", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
             Restored unsaved changes from earlier.
@@ -1502,7 +1508,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         )}
 
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Usual supplier</div>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
         </div>
@@ -1511,7 +1517,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             for why this was missing despite already existing in some
             real records' raw data. */}
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Notes</div>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
@@ -1520,7 +1526,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             "same med/course" continuity, visible, not just stored. */}
         {med?.doseHistory?.length > 0 && (
           <div style={{ padding: "10px 0", borderTop: `1px solid ${T.border}`, marginTop: 8 }}>
-            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>Dose history</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{tr("medication.doseHistory", "Dose history")}</div>
             {[...med.doseHistory].reverse().map((h, i) => (
               <div key={i} style={{ padding: "6px 0", borderBottom: i < med.doseHistory.length - 1 ? `1px solid ${T.border}` : "none" }}>
                 <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{formatDoseComponents(getDoseComponents(h), h.unitsPerDose || 1) || "—"}</div>
@@ -1544,7 +1550,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         </div>
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-          <button onClick={save} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 16, fontSize: 16, fontWeight: 700 }}>Save changes</button>
+          <button onClick={save} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 16, fontSize: 16, fontWeight: 700 }}>{tr("medication.saveChanges", "Save changes")}</button>
         </div>
       </div>
     </div>
@@ -1555,6 +1561,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 // handler before. Daily/PRN only for now — Custom Schedule exists in the data model (Doc 5 §5)
 // but there's no schedule-builder UI yet, so it's not offered here rather than half-supported. ──
 function AddMedicationSheet({ onCreate, onClose, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
@@ -1638,7 +1645,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Add medication</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("medication.addMedication", "Add medication")}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         {draftRestored && (
@@ -1702,12 +1709,12 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         )}
 
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Usual supplier</div>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
         </div>
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Notes</div>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
@@ -1724,17 +1731,18 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
 }
 
 function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
+  const { t: tr } = useTranslation();
   return (
     <div style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 358, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, boxShadow: "0 8px 24px rgba(0,0,0,.18)", padding: 16, zIndex: 220 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <Pill size={16} color={T.medsBlue} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, color: T.textPrimary }}>Time for {med.name}</span>
       </div>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12 }}>Demo notification — real delivery needs native scheduling (Doc 5 §9)</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12 }}>{tr("medication.demoNotification", "Demo notification — real delivery needs native scheduling (Doc 5 §9)")}</div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onTake} style={{ ...btnStyle(T.medsBlue, "filled", false), padding: "8px 6px" }}>Take</button>
-        <button onClick={onSnooze} style={{ ...btnStyle(T.medsBlue, "outline", false), padding: "8px 6px" }}>Snooze 30m</button>
-        <button onClick={onSkip} style={{ ...btnStyle(T.textSecondary, "outline", false), padding: "8px 6px" }}>Skip</button>
+        <button onClick={onTake} style={{ ...btnStyle(T.medsBlue, "filled", false), padding: "8px 6px" }}>{tr("medication.take", "Take")}</button>
+        <button onClick={onSnooze} style={{ ...btnStyle(T.medsBlue, "outline", false), padding: "8px 6px" }}>{tr("medication.snooze30m", "Snooze 30m")}</button>
+        <button onClick={onSkip} style={{ ...btnStyle(T.textSecondary, "outline", false), padding: "8px 6px" }}>{tr("medication.skip", "Skip")}</button>
       </div>
     </div>
   );
@@ -1781,8 +1789,8 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
             <div>
-              <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>Dose reminders</div>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>Notify when a daily medication is due</div>
+              <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>{tr("medication.doseReminders", "Dose reminders")}</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{tr("medication.notifyWhenDue", "Notify when a daily medication is due")}</div>
             </div>
             <div onClick={toggleReminders} role="switch" tabIndex={0} aria-checked={prefs.doseRemindersEnabled} aria-label="Dose reminders"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleReminders(); } }}
@@ -1808,7 +1816,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
           )}
         </div>
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20, padding: "14px 16px" }}>
-          <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500, marginBottom: 2 }}>Reminder timing</div>
+          <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500, marginBottom: 2 }}>{tr("medication.reminderTiming", "Reminder timing")}</div>
           <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 10 }}>
             {prefs.reminderTimingMode === "fixed"
               ? "Reminders stay at the same time each day, even if a dose was logged late or early."
