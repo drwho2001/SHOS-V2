@@ -347,6 +347,7 @@ function ReadRow({ label, value, T, alert }) {
 }
 
 function EntrySheet({ entry, onSave, onClose, T }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   // ADDED 30 Sep 2026 (audit) — top of the component, unconditionally, because
   // a hook called further down or inside a render branch violates the rules of
@@ -425,7 +426,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? "Log symptom" : "Edit symptom entry"}</h1>
+          <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("symptomLog.logSymptom", "Log symptom") : tr("symptomLog.editSymptom", "Edit symptom entry")}</h1>
           {/* ADDED 26 Aug 2026 — real gap found while adding the
               banner: this sheet had no visible close control at all,
               only closing via a backdrop tap. */}
@@ -829,7 +830,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
 }
 
 export default function SymptomLogModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });

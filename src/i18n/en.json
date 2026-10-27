@@ -428,5 +428,9 @@
   "timeline": {
     "title": "Episodes",
     "addEpisode": "Add episode"
+  },
+  "symptomLog": {
+    "logSymptom": "Log symptom",
+    "editSymptom": "Edit symptom entry"
   }
 }
