@@ -381,7 +381,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
     <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>{tr("contacts.importSharedProfile", "Import shared profile")}</span>
       </div>
       <div style={{ padding: 16 }}>
         <SectionCard title="Import a shared profile" T={T}>
@@ -389,7 +389,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
             Creates a brand-new Contact from someone else's shared profile. Doesn't touch or merge with any existing contact.
           </div>
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Paste a shared profile</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.pasteSharedProfile", "Paste a shared profile")}</div>
             <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={4} aria-label="Paste a shared profile"
               placeholder="Paste the JSON text someone sent you"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", resize: "vertical" }} />
@@ -740,6 +740,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
 // concept actually solves that. This just makes existing entries hard
 // to miss, which should catch most real-world near-misses like this one.
 function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) {
+  const { t: tr } = useTranslation();
   const [draft, setDraft] = useState("");
   // CHANGED — real ask: "any other fuzzy matching/auto suggestions... to
   // avoid dupes." Same bug the Kink/Symptom pickers had this session:
@@ -799,9 +800,9 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.contactsTealText, cursor: "pointer" }}>Yes, use it</div>
+            style={{ fontWeight: 700, color: T.contactsTealText, cursor: "pointer" }}>{tr("contacts.yesUseIt", "Yes, use it")}</div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>{tr("contacts.noAddAsNew", "No, add as new")}</div>
         </div>
       )}
       {/* CHANGED — real ask: the `list`/`<datalist>` native browser
@@ -841,6 +842,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
 // finalizeEntry/commitDraft now await registry.findOrCreate(), and
 // commitDraft awaits analyzeEntry (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
+  const { t: tr } = useTranslation();
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term with a more specific real option. Only used when
@@ -1056,7 +1058,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       {trackRole && value.length > 1 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 11, color: T.textDisabled }}>Set all:</span>
+          <span style={{ fontSize: 11, color: T.textDisabled }}>{tr("contacts.setAll", "Set all:")}</span>
           {ROLE_POLES.map((pole) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={pole.label} onClick={() => setAllRoles(pole)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
@@ -1173,6 +1175,7 @@ function ToggleSwitch({ value, onChange, T }) {
 }
 
 function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T }) {
+  const { t: tr } = useTranslation();
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Age</div>
@@ -1182,7 +1185,7 @@ function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T }) {
           style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChangeApprox(!ageIsApprox)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
           <ToggleSwitch T={T} value={ageIsApprox} onChange={onChangeApprox} />
-          <span style={{ fontSize: 12, color: T.textSecondary }}>Approximate</span>
+          <span style={{ fontSize: 12, color: T.textSecondary }}>{tr("contacts.approximate", "Approximate")}</span>
         </div>
       </div>
     </div>
@@ -1194,6 +1197,7 @@ function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T }) {
 // or is needed, everything stays local. See contactRepository.js's
 // DEFAULT_CONTACT comment for the honest localStorage-size caveat.
 function PhotoPicker({ value, onChange, T }) {
+  const { t: tr } = useTranslation();
   const inputRef = useRef(null);
   const handleFile = (e) => {
     const file = e.target.files?.[0];
@@ -1219,7 +1223,7 @@ function PhotoPicker({ value, onChange, T }) {
           {value ? "Change photo" : "Add photo"}
         </div>
         {value && (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>Remove</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>{tr("contacts.remove", "Remove")}</div>
         )}
       </div>
       <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
@@ -1232,6 +1236,7 @@ function PhotoPicker({ value, onChange, T }) {
 // autofill" part of the user's ask: you can SEE what's already covered by
 // Phone/Snapchat/Fabguys/Fabswingers before deciding what else to add. ──
 function AutoDetectedMethods({ contact, T }) {
+  const { t: tr } = useTranslation();
   const detected = [];
   if (contact.phone) detected.push("Phone/WhatsApp");
   if (contact.snapchat) detected.push("Snapchat");
@@ -1241,7 +1246,7 @@ function AutoDetectedMethods({ contact, T }) {
   if (detected.length === 0) return null;
   return (
     <div style={{ padding: "8px 0 0" }}>
-      <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>Already covered, from the fields above:</div>
+      <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>{tr("contacts.alreadyCovered", "Already covered, from the fields above:")}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {detected.map((m) => (
           <span key={m} style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: `${T.contactsTeal}15`, color: T.contactsTealText, fontWeight: 600 }}>{m}</span>
@@ -1252,6 +1257,7 @@ function AutoDetectedMethods({ contact, T }) {
 }
 
 function AvailabilityRuleBuilder({ rules, onChange, T }) {
+  const { t: tr } = useTranslation();
   const [draft, setDraft] = useState({ type: "Unavailable", days: [], timeConstraint: "All day", time: "18:00", note: "" });
 
   const toggleDay = (day) => {
@@ -1274,7 +1280,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Availability exceptions</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("contacts.availabilityExceptions", "Availability exceptions")}</div>
 
       {rules.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
@@ -1349,6 +1355,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 // contacts, same "type or pick" pattern as kinks. See contactRepository.js
 // for why this is one shared label, not a separate role per side.
 function LinkedContactsField({ contactId, allContacts, T, refresh }) {
+  const { t: tr } = useTranslation();
   const [pickerValue, setPickerValue] = useState("");
   const [pendingLabel, setPendingLabel] = useState("");
   // CHANGED — Phase 2 encryption groundwork: ContactRepository went
@@ -1388,7 +1395,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Linked contacts (e.g. couples)</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("contacts.linkedContacts", "Linked contacts (e.g. couples)")}</div>
       {linked.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
           {linked.map((c) => (
@@ -1427,7 +1434,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
               <input value={pendingLabel} onChange={(e) => setPendingLabel(e.target.value)}
                 placeholder="Relationship (optional) — e.g. Dom/Sub, bf/gf"
                 style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 12, boxSizing: "border-box" }} />
-              <button onClick={confirmLink} style={{ ...btnStyle(T.contactsTeal, "filled"), flex: "0 0 auto", padding: "8px 14px" }}>Link</button>
+              <button onClick={confirmLink} style={{ ...btnStyle(T.contactsTeal, "filled"), flex: "0 0 auto", padding: "8px 14px" }}>{tr("contacts.link", "Link")}</button>
               </div>
             </div>
           )}
@@ -1491,6 +1498,7 @@ function contactStatusCopy(isInactive, inactiveThresholdDays) {
 }
 
 function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, showRoleOnCards = false, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
+  const { t: tr } = useTranslation();
   // ADDED 26 Aug 2026 — real ask: "show on card which field is being
   // filtered/why result is coming up... especially needed for if
   // someone uses multiple filters at once." Computes only the parts
@@ -1693,7 +1701,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
           style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none" }} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
+        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
         {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
             too small a jump, 12px vs 15px reading as a much bigger drop
@@ -1834,11 +1842,11 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           haven't been explicitly marked done. */}
       {isContactIncomplete(contact) && (
         <div style={{ marginLeft: 16, marginTop: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#926100", background: "#FFF3C4", borderRadius: radius.full, padding: "2px 8px" }}>Incomplete</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#926100", background: "#FFF3C4", borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
         </div>
       )}
       {flaggedDontMeetAgain ? (
-        <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600, marginLeft: 16, marginTop: 4 }}>Don't meet again</div>
+        <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600, marginLeft: 16, marginTop: 4 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
       ) : (
         // CHANGED 18 Aug 2026 — was a permanent stub ("not tracked
         // yet") regardless of real data. Now shows the real last
@@ -2011,7 +2019,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         </div>
         {draftRestored && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "0 20px 8px", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
-            <span>Restored unsaved changes from earlier.</span>
+            <span>{tr("contacts.draftRestored", "Restored unsaved changes from earlier.")}</span>
             {/* ADDED 19 Aug 2026 — the user's ask: a way to discard a
                 restored draft and start clean instead of continuing it. */}
             <span onClick={() => { clearDraft(draftKey); setForm(contact ? { ...contact } : { ...DEFAULT_CONTACT }); }} role="button" tabIndex={0} aria-label="Clear restored draft and start fresh" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clearDraft(draftKey); setForm(contact ? { ...contact } : { ...DEFAULT_CONTACT }); } }}
@@ -2062,8 +2070,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               be found easily, not stumbled on. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, color: T.textPrimary }}>Mark as complete</div>
-              <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Stops the "Incomplete" tag showing, even if some fields are genuinely blank — for contacts you consider as filled-in as they'll ever be.</div>
+              <div style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.markAsComplete", "Mark as complete")}</div>
+              <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>{tr("contacts.markCompleteDesc", "Stops the \"Incomplete\" tag showing, even if some fields are genuinely blank — for contacts you consider as filled-in as they'll ever be.")}</div>
             </div>
             <ToggleSwitch T={T} value={form.markedComplete} onChange={set("markedComplete")} />
           </div>
@@ -2092,8 +2100,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
                   means (a contact you're not tracking forward). */}
               <ClockCounterClockwise size={16} color={T.textSecondary} style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
-                <div style={{ fontSize: 13, color: T.textPrimary }}>One-off / never expect to recur</div>
-                <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Excludes this contact from the inactive flag entirely — for a genuine one-time encounter, not a gap you'd want flagged.</div>
+                <div style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.oneOff", "One-off / never expect to recur")}</div>
+                <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>{tr("contacts.oneOffDesc", "Excludes this contact from the inactive flag entirely — for a genuine one-time encounter, not a gap you'd want flagged.")}</div>
               </div>
             </div>
             <ToggleSwitch T={T} value={form.excludeFromActiveTracking} onChange={set("excludeFromActiveTracking")} />
@@ -2112,7 +2120,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             placeholder="Start typing an address..." onCityDetected={set("city")} />
           <ComboField T={T} label="City" value={form.city} onChange={set("city")} options={cityOptions} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
-            <span style={{ fontSize: 13, color: T.textPrimary }}>Drives</span>
+            <span style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.drives", "Drives")}</span>
             <ToggleSwitch T={T} value={form.drives} onChange={set("drives")} />
           </div>
           {form.drives && (
@@ -2159,7 +2167,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           <SelectField T={T} label="Chastity status" value={form.chastityStatus} onChange={set("chastityStatus")} options={CHASTITY_OPTIONS} />
           {/* ADDED — real ask: a short descriptor, since "N/A" alone
               doesn't explain the choice being made. */}
-          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>Only relevant if chastity is something they're genuinely into — leave as N/A otherwise.</div>
+          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>{tr("contacts.chastityNote", "Only relevant if chastity is something they're genuinely into — leave as N/A otherwise.")}</div>
           <CummerRow T={T} label="Ejaculation — frequency" form={form} set={set} options={CUMMER_FREQUENCY_OPTIONS} />
           <CummerRow T={T} label="Ejaculation — volume" form={form} set={set} options={CUMMER_VOLUME_OPTIONS} />
           <CummerRow T={T} label="Ejaculation — style" form={form} set={set} options={CUMMER_STYLE_OPTIONS} />
@@ -2476,7 +2484,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}15`, display: "flex", gap: 8, alignItems: "flex-start" }}>
           <AlertTriangle size={16} color={T.actionRed} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.actionRedText }}>Marked: don't meet again</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.actionRedText }}>{tr("contacts.markedDontMeetAgain", "Marked: don't meet again")}</div>
             {contact.dontMeetAgainReason && <div style={{ fontSize: 12, color: T.textPrimary, marginTop: 2 }}>{contact.dontMeetAgainReason}</div>}
           </div>
         </div>
@@ -2488,8 +2496,8 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             Archiving hides this contact from the list — it stays intact and can be restored later.
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={archive} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>Confirm archive</button>
-            <button onClick={() => setConfirmArchive(false)} style={{ ...btnStyle(T.textSecondary, "outline"), padding: "8px 10px" }}>Cancel</button>
+            <button onClick={archive} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>{tr("contacts.confirmArchive", "Confirm archive")}</button>
+            <button onClick={() => setConfirmArchive(false)} style={{ ...btnStyle(T.textSecondary, "outline"), padding: "8px 10px" }}>{tr("common.cancel", "Cancel")}</button>
           </div>
         </div>
       )}
@@ -2568,24 +2576,24 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                 <div style={{ display: "flex", gap: 16, padding: "8px 0 14px", flexWrap: "wrap" }}>
                   <div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.count}</div>
-                    <div style={{ fontSize: 11, color: T.textSecondary }}>Encounters</div>
+                    <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.encounters", "Encounters")}</div>
                   </div>
                   {summary.averageEnjoyment != null && (
                     <div>
                       <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{Math.round(summary.averageEnjoyment)}</div>
-                      <div style={{ fontSize: 11, color: T.textSecondary }}>Avg enjoyment</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.avgEnjoyment", "Avg enjoyment")}</div>
                     </div>
                   )}
                   {summary.highestEnjoyment != null && (
                     <div>
                       <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.highestEnjoyment}</div>
-                      <div style={{ fontSize: 11, color: T.textSecondary }}>Highest</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.highest", "Highest")}</div>
                     </div>
                   )}
                   {summary.lastInteraction && (
                     <div>
                       <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{formatRelativeDate(summary.lastInteraction)}</div>
-                      <div style={{ fontSize: 11, color: T.textSecondary }}>Last seen</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.lastSeen", "Last seen")}</div>
                     </div>
                   )}
                 </div>
@@ -2654,7 +2662,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Availability" value={contact.availability} />
           {contact.nonAvailabilityRules?.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
-              <div style={{ color: T.textSecondary, marginBottom: 4 }}>Availability exceptions</div>
+              <div style={{ color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.availabilityExceptions", "Availability exceptions")}</div>
               {contact.nonAvailabilityRules.map((r) => (
                 <div key={r.id} style={{ color: T.textPrimary, fontSize: 12, marginBottom: 2 }}>{describeAvailabilityRule(r)}</div>
               ))}
