@@ -33,6 +33,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { getVaccinationNextDue, getVaccinationDate } from "../calculations/vaccinationCalculations";
 import { isWithinClinicCardTimeframe } from "../calculations/clinicCardCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useTranslation } from "../i18n/index.js";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time —
@@ -166,6 +167,7 @@ function StubRow({ children, T }) {
 }
 
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler, onOpenGlossary }) {
+  const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
@@ -460,8 +462,8 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           after installing the APK, and it is the reason this note is here. */}
       <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</h1>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>{profile.nickname ? tr("clinicCard.titleWithName", "{name}'s clinic card", { name: profile.nickname }) : tr("clinicCard.title", "Clinic Card")}</h1>
         {/* ADDED — real ask: a real PDF export, for handing this to (or
             printing for) a clinician rather than only reading it on
             screen. Disabled mid-export rather than hidden, so a slow
@@ -471,7 +473,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         <Settings size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(true)} role="button" tabIndex={0} aria-label="Clinic card visibility settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowVisibilitySettings(true); } }} />
       </div>
       <div style={{ padding: "10px 16px 0", fontSize: 12, color: T.textSecondary }}>
-        A read-only summary — nothing here is editable from this screen, except the identity details directly below. Tap the relevant module to make other changes.
+        {tr("clinicCard.subtitle", "A read-only summary \u2014 nothing here is editable from this screen, except the identity details directly below. Tap the relevant module to make other changes.")}
       </div>
 
       {/* ADDED — real ask: one shared timeframe filter, applies to
@@ -481,11 +483,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <div style={{ padding: "12px 16px 0" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {[
-            ["all", "All time"],
-            ["sinceLastTest", "Since last test"],
-            ["30days", "Last 30 days"],
-            ["90days", "Last 90 days"],
-            ["custom", "Custom date"],
+            ["all", tr("clinicCard.allTime", "All time")],
+            ["sinceLastTest", tr("clinicCard.sinceLastTest", "Since last test")],
+            ["30days", tr("clinicCard.last30Days", "Last 30 days")],
+            ["90days", tr("clinicCard.last90Days", "Last 90 days")],
+            ["custom", tr("clinicCard.customDate", "Custom date")],
           ].map(([key, label]) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={key} onClick={() => setTimeframe(key)}
               style={{ padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${timeframe === key ? T.healthcareBlue : T.border}`, color: timeframe === key ? T.healthcareBlue : T.textSecondary, background: timeframe === key ? `${T.healthcareBlue}15` : "transparent" }}>
@@ -498,7 +500,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
         )}
         {timeframe === "sinceLastTest" && !lastTestDate && (
-          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6, fontStyle: "italic" }}>No tests logged yet — showing all time instead.</div>
+          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6, fontStyle: "italic" }}>{tr("clinicCard.noTestsShowingAll", "No tests logged yet — showing all time instead.")}</div>
         )}
       </div>
 
@@ -509,15 +511,15 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <div style={{ display: "flex", gap: 6, padding: "12px 16px 0", flexWrap: "wrap" }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "testing", { date: inDaysAsStoredDate(14), title: "Scheduled TOC 2 weeks", testingFor: ["C&S (symptomatic/treatment)"] })}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
-          <Plus size={12} /> Test of cure · 2wk
+          <Plus size={12} /> {tr("clinicCard.testOfCure", "Test of cure \u00b7 2wk")}
         </div>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
-          <Plus size={12} /> Book appointment
+          <Plus size={12} /> {tr("clinicCard.bookAppointment", "Book appointment")}
         </div>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "clinicVisits", { date: nowAsStoredDate(), reasonForVisit: ["Treatment"] })}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
-          <Plus size={12} /> Treatment given
+          <Plus size={12} /> {tr("clinicCard.treatmentGiven", "Treatment given")}
         </div>
       </div>
 
@@ -536,7 +538,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
       {visibility.identity && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T}>Identity</SectionHeader>
+      <SectionHeader T={T}>{tr("clinicCard.identity", "Identity")}</SectionHeader>
       <SectionCard T={T}>
         {editingIdentity ? (
           <div style={{ padding: 14 }}>
@@ -579,10 +581,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.medications && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <CollapsibleSectionHeader T={T} onTap={() => goTo("medication")} count={meds.length} collapsed={collapsed.medications} onToggleCollapse={() => toggleCollapsed("medications")}>Current medications</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("medication")} count={meds.length} collapsed={collapsed.medications} onToggleCollapse={() => toggleCollapsed("medications")}>{tr("clinicCard.currentMedications", "Current medications")}</CollapsibleSectionHeader>
       {!collapsed.medications && (
         <SectionCard T={T}>
-          {meds.length === 0 ? <EmptyRow T={T}>No active medications logged.</EmptyRow> : meds.map((m) => {
+          {meds.length === 0 ?           <EmptyRow T={T}>{tr("clinicCard.noActiveMedications", "No active medications logged.")}</EmptyRow> : meds.map((m) => {
             const stock = computeStock(m);
             // ADDED — real ask: "customising of fields, IE default
             // dosage amount shown (IE sertraline 100mg)... medications
@@ -609,7 +611,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.allergies && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T}>Allergies</SectionHeader>
+      <SectionHeader T={T}>{tr("clinicCard.allergies", "Allergies")}</SectionHeader>
       <SectionCard T={T}>
         {profile.allergies.length === 0 ? (
           <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
@@ -632,11 +634,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.vaccinations && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <CollapsibleSectionHeader T={T} onTap={() => goTo("healthcare", "vaccinations")} count={vaccinations.length} collapsed={collapsed.vaccinations} onToggleCollapse={() => toggleCollapsed("vaccinations")}>Vaccinations</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("healthcare", "vaccinations")} count={vaccinations.length} collapsed={collapsed.vaccinations} onToggleCollapse={() => toggleCollapsed("vaccinations")}>{tr("clinicCard.vaccinations", "Vaccinations")}</CollapsibleSectionHeader>
       {!collapsed.vaccinations && (
         <SectionCard T={T}>
           {vaccinations.length === 0 ? (
-            <EmptyRow T={T}>None recorded yet.</EmptyRow>
+            <EmptyRow T={T}>{tr("clinicCard.noneRecordedYet", "None recorded yet.")}</EmptyRow>
           ) : vaccinations.slice(0, 6).map((v) => {
             const overdue = overdueVaccinations.some((o) => o.id === v.id);
             const nextDue = getVaccinationNextDue(v);
@@ -649,10 +651,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.testing && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Recent STI testing</SectionHeader>
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>{tr("clinicCard.recentStiTesting", "Recent STI testing")}</SectionHeader>
       <SectionCard T={T}>
         {recentTests.length === 0 ? (
-          <EmptyRow T={T}>{tests.length === 0 ? "No tests logged yet." : "No tests in this timeframe."}</EmptyRow>
+          <EmptyRow T={T}>{tests.length === 0 ? tr("clinicCard.noTestsLogged", "No tests logged yet.") : tr("clinicCard.noTestsInTimeframe", "No tests in this timeframe.")}</EmptyRow>
         ) : recentTests.map((t) => (
           <Row T={T} key={t.id} title={t.title} subtitle={t.subtitle} alert={t.alert} onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
         ))}
@@ -663,9 +665,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.treatment && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Current treatment</SectionHeader>
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>{tr("clinicCard.currentTreatment", "Current treatment")}</SectionHeader>
       <SectionCard T={T}>
-        {currentTreatment.length === 0 ? <EmptyRow T={T}>Nothing currently awaiting follow-up.</EmptyRow> : currentTreatment.map((t) => (
+        {currentTreatment.length === 0 ? <EmptyRow T={T}>{tr("clinicCard.nothingAwaiting", "Nothing currently awaiting follow-up.")}</EmptyRow> : currentTreatment.map((t) => (
           <Row T={T} key={t.id} title={t.title} subtitle={t.subtitle} alert onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
         ))}
       </SectionCard>
@@ -675,12 +677,12 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.menstrualContraception && menstrualTrackingEnabled && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T} onTap={() => goTo("healthcare", "menstrualHealth")}>Menstrual & contraception</SectionHeader>
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "menstrualHealth")}>{tr("clinicCard.menstrualContraception", "Menstrual & contraception")}</SectionHeader>
       <SectionCard T={T}>
         {activePregnancy && (
           <Row T={T} title="Currently pregnant" subtitle={activePregnancy.estimatedDueDate ? `Due ${formatRelativeDate(activePregnancy.estimatedDueDate)}` : "Ongoing"} alert onTap={() => setPendingNav({ tab: "healthcare", subTab: "menstrualHealth", recordId: activePregnancy.id, label: "Pregnancy", moduleLabel: "Menstrual & contraception" })} />
         )}
-        {activeContraception.length === 0 && !lastPeriod && !activePregnancy && <EmptyRow T={T}>Nothing logged yet.</EmptyRow>}
+        {activeContraception.length === 0 && !lastPeriod && !activePregnancy && <EmptyRow T={T}>{tr("clinicCard.nothingLogged", "Nothing logged yet.")}</EmptyRow>}
         {activeContraception.map((c) => {
           const overdue = c.nextDueDate && new Date(c.nextDueDate) < new Date();
           return (
@@ -697,10 +699,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.symptoms && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T} onTap={() => goTo("healthcare", "symptomLog")}>Active symptoms</SectionHeader>
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "symptomLog")}>{tr("clinicCard.activeSymptoms", "Active symptoms")}</SectionHeader>
       <SectionCard T={T}>
         {activeSymptoms.length === 0 ? (
-          <EmptyRow T={T}>Nothing active right now.</EmptyRow>
+          <EmptyRow T={T}>{tr("clinicCard.nothingActive", "Nothing active right now.")}</EmptyRow>
         ) : activeSymptoms.map((s) => (
           <Row T={T} key={s.id} title={s.title} subtitle={[symptomNameById.get(s.symptomId) || "—", s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
         ))}
@@ -711,10 +713,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.encounters && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <CollapsibleSectionHeader T={T} onTap={() => goTo("activity")} count={recentPartners.length} collapsed={collapsed.encounters} onToggleCollapse={() => toggleCollapsed("encounters")}>Recent encounters</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("activity")} count={recentPartners.length} collapsed={collapsed.encounters} onToggleCollapse={() => toggleCollapsed("encounters")}>{tr("clinicCard.recentEncounters", "Recent encounters")}</CollapsibleSectionHeader>
       {!collapsed.encounters && (
         <SectionCard T={T}>
-          {recentPartners.length === 0 ? <EmptyRow T={T}>No encounters logged yet.</EmptyRow> : recentPartners.map((p) => (
+          {recentPartners.length === 0 ?           <EmptyRow T={T}>{tr("clinicCard.noEncounters", "No encounters logged yet.")}</EmptyRow> : recentPartners.map((p) => (
             <Row T={T} key={p.id} title={p.title} subtitle={p.subtitle} color={ACCENTS.encounters} onTap={() => setPendingNav({ tab: "activity", recordId: p.id, label: p.title, moduleLabel: "Encounter" })} />
           ))}
         </SectionCard>
@@ -724,10 +726,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.recentContacts && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <CollapsibleSectionHeader T={T} onTap={() => goTo("contacts")} count={recentContacts.length} collapsed={collapsed.recentContacts} onToggleCollapse={() => toggleCollapsed("recentContacts")}>Recent contacts</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("contacts")} count={recentContacts.length} collapsed={collapsed.recentContacts} onToggleCollapse={() => toggleCollapsed("recentContacts")}>{tr("clinicCard.recentContacts", "Recent contacts")}</CollapsibleSectionHeader>
       {!collapsed.recentContacts && (
         <SectionCard T={T}>
-          {recentContacts.length === 0 ? <EmptyRow T={T}>No encounters logged yet.</EmptyRow> : recentContacts.map((c) => (
+          {recentContacts.length === 0 ?           <EmptyRow T={T}>{tr("clinicCard.noEncounters", "No encounters logged yet.")}</EmptyRow> : recentContacts.map((c) => (
             <Row T={T} key={c.id} title={c.title} subtitle={c.subtitle} color={ACCENTS.contacts} onTap={() => setPendingNav({ tab: "contacts", recordId: c.id, label: c.title, moduleLabel: "Contact" })} />
           ))}
         </SectionCard>
@@ -737,7 +739,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.emergency && (
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
-      <SectionHeader T={T}>Emergency information</SectionHeader>
+      <SectionHeader T={T}>{tr("clinicCard.emergencyInfo", "Emergency information")}</SectionHeader>
       <SectionCard T={T}>
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
           <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
@@ -764,11 +766,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       {pendingNav && (
         <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => setPendingNav(null)}>
           <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: T.textPrimary, marginBottom: 4 }}>Open in {pendingNav.moduleLabel}?</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.textPrimary, marginBottom: 4 }}>{tr("clinicCard.openIn", "Open in {module}?", { module: pendingNav.moduleLabel })}</div>
             <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 16 }}>{pendingNav.label}</div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setPendingNav(null)} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => { goTo(pendingNav.tab, pendingNav.subTab, pendingNav.recordId); setPendingNav(null); }} style={{ flex: 1, padding: 12, borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Open</button>
+              <button onClick={() => setPendingNav(null)} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</button>
+              <button onClick={() => { goTo(pendingNav.tab, pendingNav.subTab, pendingNav.recordId); setPendingNav(null); }} style={{ flex: 1, padding: 12, borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{tr("clinicCard.open", "Open")}</button>
             </div>
           </div>
         </div>
@@ -780,11 +782,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       {showVisibilitySettings && (
         <div role="dialog" aria-label="Which sections to show" ref={visibilityDialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-            <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-            <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Which sections to show</h1>
+            <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label={tr("clinicCard.closeVisibility", "Close visibility settings")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+            <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("clinicCard.whichSections", "Which sections to show")}</h1>
           </div>
           <div style={{ padding: "8px 16px", fontSize: 12, color: T.textSecondary }}>
-            Every section shows the most detail permitted by default — these only ever narrow what's shown, never add anything.
+            {tr("clinicCard.visibilityIntro", "Every section shows the most detail permitted by default \u2014 these only ever narrow what's shown, never add anything.")}
           </div>
           <SectionCard T={T}>
             {CLINIC_CARD_SECTIONS.map((s) => (
@@ -805,14 +807,14 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
               gets emailed, printed and left on desks. So this starts OFF, and
               switching the screen toggle on above does not turn it on. */}
           <div style={{ padding: "16px 4px 4px", fontSize: 12, color: T.textSecondary }}>
-            PDF export
+            {tr("clinicCard.pdfExport", "PDF export")}
           </div>
           <SectionCard T={T}>
             <div onClick={() => toggleExportRecentContacts(!exportIncludeRecentContacts)} role="switch" tabIndex={0} aria-checked={exportIncludeRecentContacts} aria-label="Include recent contacts in the PDF"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExportRecentContacts(!exportIncludeRecentContacts); } }}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", cursor: "pointer" }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
-                <div style={{ fontSize: 14, color: T.textPrimary }}>Include recent contacts</div>
+                <div style={{ fontSize: 14, color: T.textPrimary }}>{tr("clinicCard.includeRecentContacts", "Include recent contacts")}</div>
                 <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 3 }}>
                   Adds the names and ages of people you've recently met to the exported PDF. Off by default — that file gets shared and printed, unlike this screen. Nothing else from their contact record is included.
                 </div>
