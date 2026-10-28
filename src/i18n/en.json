@@ -353,6 +353,8 @@
     "github": "GitHub",
     "webApp": "Web app (iPhone / computer)",
     "open": "Open",
+    "install": "Install / open on this device",
+    "installCta": "Get the app",
     "footer": "Local-first — nothing here leaves this device unless you choose to export or share it."
   },
   "dataNetwork": {

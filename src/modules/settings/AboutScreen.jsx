@@ -53,6 +53,18 @@ export function AboutScreen({ onClose }) {
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.build", "Build")}</span>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
           </div>
+          {/* ADDED Phase 3 — streamlined download/update: install / open
+              entry point. Points at the platform-aware landing page
+              (public/landing.html, served by the GitHub Pages deploy) so
+              new users have one clear install path and existing users have
+              a direct "go get it" route from Settings > About. Debug builds
+              stay off this page by design (direct releases link only). */}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.install", "Install / open on this device")}</span>
+            <a href="https://drwho2001.github.io/SHOS-V2/landing.html" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+              {t("about.installCta", "Get the app")}
+            </a>
+          </div>
           {/* CHANGED — real fix: pointed at the old private repo this
               project moved off of — the public repo everyone's actual
               builds/releases now come from is SHOS-V2. */}

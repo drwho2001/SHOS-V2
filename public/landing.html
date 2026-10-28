@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>SHOS — Install / Open</title>
+    <meta name="description" content="SHOS: the Sexual Health Operating System. Private, local-first. Install it on this device or open it in the browser." />
+    <meta name="theme-color" content="#0B7F79" />
+    <!-- ADDED Phase 3 — streamlined download/update: this is the static
+         install/update landing page for new users (and a manual entry for
+         existing ones via the About screen). Self-contained on purpose: the
+         repo has no CSS files by design (see CLAUDE.md), so all styling lives
+         in this page's own inline <style>, same as the privacy-policy.html
+         precedent. Relative URLs everywhere so it resolves both at the local
+         dev root ("/landing.html" -> "/version.json") and at the GitHub Pages
+         subpath ("/SHOS-V2/landing.html" -> "/SHOS-V2/version.json"). -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./pwa-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SHOS" />
+    <style>
+      html, body { margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; background: #F0F0F3; color: #1B1B1F; -webkit-font-smoothing: antialiased; }
+      main { max-width: 480px; margin: 0 auto; padding: 44px 20px 90px; }
+      .brand { text-align: center; }
+      .brand .name { font-size: 44px; font-weight: 800; color: #0B7F79; letter-spacing: -0.5px; line-height: 1; }
+      .brand .tagline { font-size: 13px; color: #6B6B73; margin-top: 6px; }
+      .brand .desc { font-size: 14px; line-height: 1.55; margin-top: 18px; color: #1B1B1F; }
+      .card { background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 18px; padding: 20px; margin-top: 26px; }
+      .version { font-size: 12px; color: #6B6B73; text-align: center; margin-bottom: 16px; font-family: "JetBrains Mono", monospace; }
+      #installBlock { text-align: center; }
+      #installCopy { font-size: 14px; line-height: 1.5; margin-bottom: 14px; color: #1B1B1F; }
+      #installBtn { display: none; background: #0B7F79; color: #FFFFFF; border: none; border-radius: 999px; padding: 13px 26px; font-size: 15px; font-weight: 700; cursor: pointer; text-decoration: none; font-family: inherit; }
+      #installBtn:disabled { opacity: 0.5; cursor: default; }
+      #iosBox { display: none; background: #F0F0F3; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.55; color: #1B1B1F; margin-top: 4px; }
+      #standaloneNote { display: none; background: #F0F0F3; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.55; color: #1B1B1F; margin-top: 4px; }
+      .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+      .btn { display: block; text-align: center; border-radius: 999px; padding: 13px 20px; font-size: 15px; font-weight: 700; text-decoration: none; }
+      .btnPrimary { background: #0B7F79; color: #FFFFFF; }
+      .btnOutline { background: transparent; color: #0B7F79; border: 1.5px solid #0B7F79; }
+      .fineprint { font-size: 11px; color: #6B6B73; text-align: center; margin-top: 22px; line-height: 1.55; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <div class="name">SHOS</div>
+        <div class="tagline">Sexual Health Operating System</div>
+        <div class="desc">A private, local-first record of your sexual-health journey — contacts, encounters, testing, medication, and clinic visits. Everything stays on your device.</div>
+      </div>
+      <div class="card">
+        <div id="versionLine" class="version">Version —</div>
+        <div id="installBlock">
+          <div id="installCopy">Install the SHOS app on this device.</div>
+          <button id="installBtn" type="button" disabled>Install app</button>
+          <div id="iosBox">On iPhone or iPad: open this page in Safari, tap the <strong>Share</strong> button, then choose <strong>Add to Home Screen</strong>. SHOS then opens full-screen, just like the app.</div>
+          <div id="standaloneNote">You are running the installed version of SHOS. Updates arrive through the normal update flow.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn btnPrimary" id="openApp" href="./">Open the web app</a>
+        <a class="btn btnOutline" href="https://github.com/drwho2001/SHOS-V2/releases/latest">Get the Android APK</a>
+      </div>
+      <p class="fineprint">Local-first — nothing here leaves this device unless you choose to export or share it.</p>
+    </main>
+    <script>
+      // ADDED Phase 3 — streamlined download/update: platform-aware install
+      // logic on this static landing page. Same policy as the app itself:
+      // debug builds are NOT offered here (direct releases link only); the
+      // standard install prompt (Chrome/Edge Android + desktop) is the path.
+      (function () {
+        const versionLine = document.getElementById("versionLine");
+        const installBlock = document.getElementById("installBlock");
+        const installBtn = document.getElementById("installBtn");
+        const installCopy = document.getElementById("installCopy");
+        const iosBox = document.getElementById("iosBox");
+        const standaloneNote = document.getElementById("standaloneNote");
+        let deferredPrompt = null;
+
+        function detect() {
+          const ua = navigator.userAgent;
+          const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+          const isAndroid = /Android/.test(ua);
+          const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+          return { isIOS: isIOS, isAndroid: isAndroid, standalone: standalone };
+        }
+
+        async function loadVersion() {
+          try {
+            const res = await fetch("./version.json", { cache: "no-store" });
+            if (!res.ok) return;
+            const d = await res.json();
+            if (versionLine) versionLine.textContent = "Version " + (d.version || "?") + " · " + (d.channel || "stable");
+          } catch (e) { /* offline: keep default label */ }
+        }
+
+        window.addEventListener("beforeinstallprompt", function (e) {
+          e.preventDefault();
+          deferredPrompt = e;
+          if (installBtn) { installBtn.style.display = "inline-block"; installBtn.disabled = false; }
+        });
+
+        if (installBtn) {
+          installBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function () { /* user decided; nothing to do on the static page */ });
+          });
+        }
+
+        const d = detect();
+        if (d.standalone) {
+          if (installBlock) installBlock.style.display = "none";
+          if (standaloneNote) { standaloneNote.style.display = "block"; standaloneNote.textContent = "You are running the installed version of SHOS. Updates arrive through the normal in-app update flow."; }
+        } else if (d.isIOS) {
+          if (installCopy) installCopy.textContent = "On iPhone or iPad: open this page in Safari, tap the Share button, then choose Add to Home Screen. SHOS then opens full-screen, just like the app.";
+          if (installBtn) installBtn.style.display = "none";
+          if (iosBox) iosBox.style.display = "block";
+        } else {
+          if (installCopy) installCopy.textContent = d.isAndroid ? "Install the SHOS app on this Android device." : "Install the SHOS app on this device.";
+          if (installBtn && !d.isAndroid) installBtn.style.display = "none";
+        }
+
+        loadVersion();
+      })();
+    </script>
+  </body>
+</html>
