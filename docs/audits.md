@@ -39,3 +39,7 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Scope: modules.
 - Finding: Home active-session border uses ACCENTS.encounters in dark mode without resolveDarkAccent.
 - Action: extracted to pool (t187).
+## Modal overlays (role=dialog)
+- Scope: modules.
+- Finding: many fixed overlays lack role=dialog (e.g., Medication 14 fixed/8 dialog, Contacts 9/3). Not all fixed overlays are modals; needs manual review.
+- Action: extracted to pool (t192 finding).
