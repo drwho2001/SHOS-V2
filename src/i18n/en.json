@@ -286,7 +286,9 @@
     "undoEdit": "Undo edit",
     "redoEdit": "Redo edit",
     "tapToUndo": "Tap to undo",
-    "tapToRedo": "Tap to redo"
+    "tapToRedo": "Tap to redo",
+    "hide": "Hide",
+    "show": "Show"
   },
   "settings": {
     "title": "Settings",
@@ -518,7 +520,10 @@
     "setDuressPin": "Set a duress PIN",
     "changeRecovery": "Change recovery string",
     "setRecovery": "Set a recovery string",
-    "savePin": "Save PIN"
+    "savePin": "Save PIN",
+    "turnOnAnonymiseMode": "Turn on Anonymise mode",
+    "yourPin": "Your PIN",
+    "hideKinksAttributes": "Also hide kinks & physical attributes"
   },
   "calendar": {
     "title": "Calendar",

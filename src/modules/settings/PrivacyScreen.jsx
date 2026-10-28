@@ -395,7 +395,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
             How much your notifications say without you opening the app. Home-screen widgets are NOT covered by this setting — each widget has its own privacy tier in Settings → Widgets, because one level for all of them would be cruder than the choice they actually need. This is separate from Anonymise mode below, which is a temporary way of hiding things from someone holding your phone right now.
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }} role="radiogroup" aria-label="Lock screen and home screen detail">
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }} role="radiogroup" aria-label={t("privacy.lockScreenDetail", "Lock screen and home screen detail")}>
             {DISCLOSURE_LEVELS.map((level) => {
               const active = disclosureLevel === level.id;
               return (
@@ -429,7 +429,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         {/* Big, clearly separated toggle button — never on by default,
             per the user's explicit instruction, and always one tap to turn
             ON regardless of any PIN. */}
-        <div onClick={settings.anonymiseModeActive ? undefined : activate} role={settings.anonymiseModeActive ? undefined : "button"} tabIndex={settings.anonymiseModeActive ? undefined : 0} aria-label={settings.anonymiseModeActive ? undefined : "Turn on Anonymise mode"} onKeyDown={settings.anonymiseModeActive ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } }}
+        <div onClick={settings.anonymiseModeActive ? undefined : activate} role={settings.anonymiseModeActive ? undefined : "button"} tabIndex={settings.anonymiseModeActive ? undefined : 0} aria-label={settings.anonymiseModeActive ? undefined : t("privacy.turnOnAnonymiseMode", "Turn on Anonymise mode")} onKeyDown={settings.anonymiseModeActive ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } }}
           style={{ padding: 18, borderRadius: RADIUS.md, background: settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.surface : NEUTRAL.surface), border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.border : NEUTRAL.border)}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />}
@@ -560,7 +560,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
                 This one needs your PIN typed out again — it's what re-wraps the vault's key, and the app doesn't keep the PIN itself any more.
               </div>
               <div style={{ position: "relative", marginBottom: pinPrompt.error ? 8 : 0 }}>
-                <input value={pinPromptValue} onChange={(e) => setPinPromptValue(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Your PIN" aria-label="Your PIN"
+                <input value={pinPromptValue} onChange={(e) => setPinPromptValue(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder={t("privacy.yourPin", "Your PIN")} aria-label={t("privacy.yourPin", "Your PIN")}
                   style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
                 {showPins ? <EyeOff role="button" tabIndex={0} aria-label="Hide PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={20} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
                   : <Eye role="button" tabIndex={0} aria-label="Show PIN" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={20} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
