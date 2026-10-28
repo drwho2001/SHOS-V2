@@ -169,7 +169,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
 // Glossary screens needed the same check for #93 — relocating
 // already-working code, no behavior change here.
 
-function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
+function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, onQuickExit, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   const { t: tr } = useTranslation();
   const isDesktopWidth = useIsDesktopWidth();
   const reducedMotion = useReducedMotion();
@@ -807,7 +807,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
-            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: (prefersReducedMotion || reducedMotion) ? "none" : "stroke-dashoffset 300ms ease" }} />
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: reducedMotion ? "none" : "stroke-dashoffset 300ms ease" }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>
