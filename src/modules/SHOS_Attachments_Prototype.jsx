@@ -130,7 +130,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
       <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("attachments.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", minHeight: 44 }} onClick={onClose} role="button" tabIndex={0} aria-label={t("attachments.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("attachments.title", "Attachments")}</h1>
       </div>
       <div style={{ padding: "10px 16px 0", fontSize: 12, color: T.textSecondary }}>
@@ -139,12 +139,12 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px" }}>
         <div role="button" tabIndex={0} aria-pressed={filterType === ""} aria-label={t("attachments.showAll", "Show all attachments")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilterType(""); } }} onClick={() => setFilterType("")}
-          style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcareBlue : T.border}`, color: filterType === "" ? T.healthcareBlue : T.textSecondary, background: filterType === "" ? `${T.healthcareBlue}15` : "transparent" }}>
+          style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${filterType === "" ? T.healthcareBlue : T.border}`, color: filterType === "" ? T.healthcareBlue : T.textSecondary, background: filterType === "" ? `${T.healthcareBlue}15` : "transparent" }}>
           {t("attachments.filterAll", "All")}
         </div>
         {TYPE_OPTIONS.map((t) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setFilterType(t)}
-            style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === t ? T.healthcareBlue : T.border}`, color: filterType === t ? T.healthcareBlue : T.textSecondary, background: filterType === t ? `${T.healthcareBlue}15` : "transparent" }}>
+            style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${filterType === t ? T.healthcareBlue : T.border}`, color: filterType === t ? T.healthcareBlue : T.textSecondary, background: filterType === t ? `${T.healthcareBlue}15` : "transparent" }}>
             {t}
           </div>
         ))}
@@ -207,7 +207,7 @@ function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }
     {a.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
         <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
       </div>
-      <Trash2 size={20} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0, padding: 4 }} onClick={() => requestDelete(a)} aria-label={t("common.removeAttachment", "Remove attachment")} title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+      <Trash2 size={20} color={T.textDisabled} style={{ cursor: "pointer", minHeight: 44, flexShrink: 0, padding: 4 }} onClick={() => requestDelete(a)} aria-label={t("common.removeAttachment", "Remove attachment")} title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
     </div>
   );
 }

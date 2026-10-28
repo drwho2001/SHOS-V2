@@ -204,7 +204,7 @@ function DateTimeField({ label, value, onChange, T }) {
         {/* ADDED — real ask: "Now" quick-fill, device's real local
             date AND time — uses the datetime variant of the same
             shared helper, same safe reasoning as the fix just above. */}
-        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(`${nowAsDateTimeLocalString()}:00.000Z`)} style={{ fontSize: 11, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>{tr("common.now", "Now")}</span>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(`${nowAsDateTimeLocalString()}:00.000Z`)} style={{ fontSize: 11, fontWeight: 700, color: T.encountersPink, cursor: "pointer", minHeight: 44 }}>{tr("common.now", "Now")}</span>
       </div>
       <input type="datetime-local" value={inputVal} aria-label="Date & time"
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
@@ -287,7 +287,7 @@ function MultiSelectChips({ label, value, onChange, options, T }) {
           return (
             <div key={optionValue(opt)} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent" }}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent" }}>
               {optionLabel(opt)}
             </div>
           );
@@ -330,7 +330,7 @@ function GivingReceivingChips({ label, value, onChange, options, T }) {
     return (
       <div onClick={() => toggle(fullValue)} role="button" tabIndex={0} aria-pressed={active}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(fullValue); } }}
-        style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent", textAlign: "center" }}>
+        style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent", textAlign: "center" }}>
         {act}
       </div>
     );
@@ -544,7 +544,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           <span style={{ fontSize: 11, color: T.textDisabled }}>Set all:</span>
           {ROLE_POLES.map((pole) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={pole.label} onClick={() => setAllRoles(pole)}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", minHeight: 44 }}>
               {pole.label}
             </div>
           ))}
@@ -558,13 +558,13 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             <div key={sel.kinkId} style={{ display: "flex", alignItems: "center", borderRadius: radius.full, border: `1px solid ${T.border}`, overflow: "hidden" }}>
               <div style={{ padding: "4px 8px", fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
                 {nameFor(sel.kinkId)}
-                <X size={20} style={{ cursor: "pointer", padding: 4 }} onClick={() => removeEntry(sel.kinkId)} aria-label="Remove kink" title="Remove kink" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                <X size={20} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={() => removeEntry(sel.kinkId)} aria-label="Remove kink" title="Remove kink" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
               </div>
               {trackRole && roleOptionsForThisKink && (
                 <div onClick={() => cycleRole(sel.kinkId)} role="button" tabIndex={0}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cycleRole(sel.kinkId); } }}
                   aria-label={`Cycle role for ${nameFor(sel.kinkId)}`}
-                  style={{ padding: "4px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer", borderLeft: `1px solid ${T.border}`, color: sel.role ? T.encountersPink : T.textDisabled }}>
+                  style={{ padding: "4px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer", minHeight: 44, borderLeft: `1px solid ${T.border}`, color: sel.role ? T.encountersPink : T.textDisabled }}>
                   {sel.role || "+ role"}
                 </div>
               )}
@@ -579,7 +579,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", minHeight: 44 }}>
               + {e.name}
             </div>
           ))}
@@ -607,12 +607,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {pendingSuggestion.specific.map((entry) => (
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name); setPendingSuggestion(null); }}
-                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: T.encountersPink, color: "#FFFFFF", cursor: "pointer" }}>
+                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: T.encountersPink, color: "#FFFFFF", cursor: "pointer", minHeight: 44 }}>
                     Use "{entry.name}"
                   </div>
                 ))}
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer", minHeight: 44 }}>
                   Keep "{pendingSuggestion.typedAs}"
                 </div>
               </div>
@@ -624,11 +624,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: T.encountersPink, color: "#FFFFFF", cursor: "pointer" }}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: T.encountersPink, color: "#FFFFFF", cursor: "pointer", minHeight: 44 }}>
                   Yes, use "{pendingSuggestion.suggestion}"
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer", minHeight: 44 }}>
                   No, add "{pendingSuggestion.typedAs}" as new
                 </div>
               </div>
@@ -852,7 +852,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
           {visibleSuggestions.map((e) => (
             <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapSuggestion(e); } }}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", minHeight: 44 }}>
               {/* FIXED 28 Sep 2026 — Anonymise mode. Masked ONLY when the entry
                   is linked to a contact, because those are exactly the entries
                   whose name embeds a third party's real name ("X's place"),
@@ -876,7 +876,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
           {!anonymise && contactSuggestions.map((c) => (
             <div key={`contact-${c.id}`} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapContactSuggestion(c)}
               role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapContactSuggestion(c); } }}
-              style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px dashed ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px dashed ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", minHeight: 44 }}>
               <Users size={11} /> {(c.nickname || c.name)}’s place
             </div>
           ))}
@@ -939,7 +939,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
           {selected.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => toggle(c.id)}
-              style={{ padding: "6px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, background: `${T.encountersPink}15` }}>
+              style={{ padding: "6px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 4, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, background: `${T.encountersPink}15` }}>
               {anonymise ? ANONYMISED : (c.nickname || c.name)} <X size={12} />
             </div>
           ))}
@@ -951,7 +951,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
         <div style={{ marginTop: 6, border: `1px solid ${T.border}`, borderRadius: radius.sm, overflow: "hidden" }}>
           {matches.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => { toggle(c.id); setQuery(""); }}
-              style={{ padding: "10px 12px", fontSize: 14, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}` }}>
+              style={{ padding: "10px 12px", fontSize: 14, color: T.textPrimary, cursor: "pointer", minHeight: 44, borderBottom: `1px solid ${T.border}` }}>
               {anonymise ? ANONYMISED : (c.nickname || c.name)}
             </div>
           ))}
@@ -959,7 +959,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
       )}
       {q && matches.length === 0 && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={handleCreate}
-          style={{ marginTop: 6, padding: "10px 12px", fontSize: 13, fontWeight: 600, color: T.encountersPink, border: `1px dashed ${T.encountersPink}`, borderRadius: radius.sm, cursor: "pointer" }}>
+          style={{ marginTop: 6, padding: "10px 12px", fontSize: 13, fontWeight: 600, color: T.encountersPink, border: `1px dashed ${T.encountersPink}`, borderRadius: radius.sm, cursor: "pointer", minHeight: 44 }}>
           + {tr("encounters.addAsNewContact", 'Add "{name}" as a new contact', { name: query.trim() })}
         </div>
       )}
@@ -1057,7 +1057,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
-      style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 14, marginBottom: 10, cursor: "pointer", display: "flex", gap: 10 }}>
+      style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 14, marginBottom: 10, cursor: "pointer", minHeight: 44, display: "flex", gap: 10 }}>
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.encountersPink : T.border}`, background: selected ? T.encountersPink : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
           {selected && <Check size={13} color="#FFFFFF" />}
@@ -1309,7 +1309,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
               matching Medication's pattern — long-press stays as an
               additional quick entry. */}
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer", minHeight: 44 }}>
             {selectMode ? "Done" : "Select"}
           </span>
         </div>
@@ -1322,7 +1322,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   rather than manual 1 by 1", scoped to whatever's
                   currently visible under the active search/filters. */}
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === visible.length ? [] : visible.map((e) => e.id))}
-                style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
+                style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer", minHeight: 44 }}>
                 {selectedIds.length === visible.length ? tr("encounters.deselectAll", "Deselect all") : tr("encounters.selectAll", "Select all")}
               </span>
 {/* ADDED 26 Aug 2026 — real ask: export/print a single
@@ -1333,7 +1333,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                  style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
                <span role="button" tabIndex={0} aria-label="Delete encounters" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
                  style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</span>
+               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer", minHeight: 44 }}>{tr("common.cancel", "Cancel")}</span>
             </div>
           </div>
         )}
@@ -1375,7 +1375,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                 tabIndex={0}
                 onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsDateTimeLocalString() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
-                style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", minHeight: 44, whiteSpace: "nowrap" }}
               >
                 Close session
               </div>
@@ -1385,7 +1385,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               tabIndex={0}
               onClick={() => onAdd(activeSession.id)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(activeSession.id); } }}
-              style={{ marginTop: 10, padding: "9px 12px", borderRadius: radius.sm, background: T.encountersPink, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}
+              style={{ marginTop: 10, padding: "9px 12px", borderRadius: radius.sm, background: T.encountersPink, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer", minHeight: 44 }}
             >
               + Add activity to this session
             </div>
@@ -1403,7 +1403,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   aria-pressed={active}
                   onClick={() => setSessionFilter(active ? "" : session.id)}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSessionFilter(active ? "" : session.id); } }}
-                  style={{ minWidth: 190, padding: 10, borderRadius: radius.md, border: `1px solid ${active ? T.encountersPink : T.border}`, background: active ? `${T.encountersPink}12` : T.surface, cursor: "pointer" }}
+                  style={{ minWidth: 190, padding: 10, borderRadius: radius.md, border: `1px solid ${active ? T.encountersPink : T.border}`, background: active ? `${T.encountersPink}12` : T.surface, cursor: "pointer", minHeight: 44 }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{session.title || "Untitled session"}</div>
                   <div style={{ marginTop: 4, fontSize: 11, color: T.textSecondary }}>
@@ -1417,11 +1417,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           </div>
         )}
         <div style={{ padding: "8px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer", minHeight: 44 }}>
             {showArchived ? "Hide archived" : "Show archived"}
           </div>
           {/* ADDED 26 Aug 2026 — real ask: filters like Contacts has. */}
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${dateFilter ? T.encountersPink : T.border}`, color: dateFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600 }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", minHeight: 44, border: `1px solid ${dateFilter ? T.encountersPink : T.border}`, color: dateFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600 }}>
             Filter{dateFilter ? " (1)" : ""}
           </div>
 
@@ -1439,7 +1439,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               const active = dateFilter === f.key;
               return (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={f.key} onClick={() => setDateFilter(active ? null : f.key)}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent" }}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent" }}>
                   {f.label}
                 </div>
               );
@@ -1489,7 +1489,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
           role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
+          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
           <span style={{ fontSize: 13 }}>
             {deleteToast.mode === "undo"
               ? `${deleteToast.records.length} activit${deleteToast.records.length > 1 ? "ies" : "y"} deleted`
@@ -1510,7 +1510,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           CHANGED 26 Aug 2026 — real audit finding: same fix as
           Contacts, wrapped for wide-viewport centering. */}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={() => onAdd()} role="button" tabIndex={0} aria-label="Add encounter" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, color: T.fabIcon, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={() => onAdd()} role="button" tabIndex={0} aria-label="Add encounter" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, color: T.fabIcon, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -1620,7 +1620,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             (Testing's TestDetail, the reference "good" screen the user
             named): T.textPrimary for plain nav, the module's own
             accent for the thing that opens edit/actions. */}
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", minHeight: 44, flexShrink: 0 }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         {/* CHANGED — real accessibility gap found via live axe testing:
             Encounters' landing and detail screens fully swap (the
             landing's own <h1> unmounts when detail is shown, confirmed
@@ -1630,14 +1630,14 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           {encounter.title || (encounter.date ? formatStoredDate(encounter.date) : tr("encounters.title", "Encounter"))}
         </h1>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label={tr("encounters.moreOptions", "More options")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
+          <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer", minHeight: 44 }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label={tr("encounters.moreOptions", "More options")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
           {menuOpen && (
             <div role="menu" style={{ position: "absolute", right: 0, top: 26, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 10, minWidth: 140 }}>
-              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>{tr("common.edit", "Edit")}</div>
-              <div onClick={archive} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); archive(); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", minHeight: 44, color: T.textPrimary }}>{tr("common.edit", "Edit")}</div>
+              <div onClick={archive} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); archive(); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", minHeight: 44, color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
                 <Archive size={14} /> {encounter.isArchived ? tr("common.unarchive", "Unarchive") : tr("common.archive", "Archive")}
               </div>
-              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); setConfirmDelete(true); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); setConfirmDelete(true); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", minHeight: 44, color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
                 <Trash2 size={14} /> {tr("common.deletePermanently", "Delete permanently")}
               </div>
             </div>
@@ -2008,7 +2008,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
           (matching Testing/Clinic Visits' own sheet-title banners). */}
       <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
-        <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <X size={22} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44 }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("encounters.addEncounter", "Add Encounter") : tr("encounters.editEncounter", "Edit Encounter")}</h1>
         <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
@@ -2022,7 +2022,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
               Contacts got, same reasoning. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER, sessionId: initialSessionId } : await EncounterRepository.getById(encounterId)); }}
-            style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
+            style={{ fontWeight: 700, cursor: "pointer", minHeight: 44, textDecoration: "underline", flexShrink: 0 }}>
             Clear & start fresh
           </span>
         </div>
@@ -2049,7 +2049,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
               tabIndex={0}
               onClick={() => setShowNewSession(true)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowNewSession(true); } }}
-              style={{ padding: "0 0 8px", color: T.encountersPink, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+              style={{ padding: "0 0 8px", color: T.encountersPink, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}
             >
               + Start a new session
             </div>
@@ -2061,7 +2061,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
                 tabIndex={0}
                 onClick={() => { setShowNewSession(false); setNewSessionTitle(""); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowNewSession(false); setNewSessionTitle(""); } }}
-                style={{ color: T.textSecondary, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}
+                style={{ color: T.textSecondary, fontSize: 11, cursor: "pointer", minHeight: 44, textDecoration: "underline" }}
               >
                 Cancel new session
               </div>
@@ -2078,13 +2078,13 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
             <>
               <DateTimeField label={tr("encounters.endDateTime", "End date & time")} value={form.dateEnd} onChange={set("dateEnd")} T={T} />
               <div style={{ padding: "0 0 8px" }}>
-                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>{tr("encounters.removeEndTime", "Remove end time")}</span>
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", minHeight: 44, textDecoration: "underline" }}>{tr("encounters.removeEndTime", "Remove end time")}</span>
               </div>
             </>
           ) : (
             <div style={{ padding: "8px 0" }}>
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")(form.date || `${nowAsDateTimeLocalString()}:00.000Z`)}
-                style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>
+                style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, cursor: "pointer", minHeight: 44 }}>
                 + {tr("encounters.addEndTime", "Add end date & time (multi-day or long encounter)")}
               </span>
             </div>
@@ -2203,7 +2203,7 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
     <div onClick={isUndo ? onUndo : onRedo}
       role="button" tabIndex={0} aria-label={isUndo ? "Undo" : "Redo"} aria-live="polite"
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
-      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.encountersPink, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.encountersPink, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
       {isUndo ? "Encounter updated — tap to undo" : "Undone — tap to redo"}
     </div>

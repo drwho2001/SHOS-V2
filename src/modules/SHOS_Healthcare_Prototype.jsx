@@ -269,7 +269,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // is the only way to switch Healthcare's own sub-tab.
             <div key={tab.key} onClick={() => setSubTab(tab.key)} role="tab" tabIndex={0} aria-selected={subTab === tab.key} aria-label={tab.label}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(tab.key); } }}
-              style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === tab.key ? T.healthcareBlue : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, background: subTab === tab.key ? T.healthcareBlue : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {tab.label}
             </div>
           ))}
@@ -285,13 +285,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <div style={{ display: "flex", alignItems: "center", gap: 14, paddingBottom: 10, borderBottom: `1px solid ${T.border}` }}>
           <div onClick={() => setShowTimeline(true)} role="button" tabIndex={0} aria-label="Episodes"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowTimeline(true); } }}
-            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
             <Stack size={15} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.episodes", "Episodes")}</span>
           </div>
           <div onClick={() => setShowAttachments(true)} role="button" tabIndex={0} aria-label="Attachments"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAttachments(true); } }}
-            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
             <Paperclip size={15} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.attachments", "Attachments")}</span>
           </div>
@@ -307,13 +307,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               would not have. */}
           <div onClick={() => onOpenCalendar?.()} role="button" tabIndex={0} aria-label="Calendar"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCalendar?.(); } }}
-            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
             <Calendar size={15} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.calendar", "Calendar")}</span>
           </div>
           <div onClick={() => setShowClinicCard(true)} role="button" tabIndex={0} aria-label="Clinic Card"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowClinicCard(true); } }}
-            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
             <CreditCard size={16} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.clinicCard", "Clinic Card")}</span>
           </div>

@@ -16,7 +16,14 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
-## 27 Oct 2026 - privacy-by-default widget tiers, notch bands, picker label (Lily)
+## 28 Oct 2026 - touch-target sweep (Lily)
+
+**WHAT CHANGED.** Added `minHeight: 44` to every `cursor: "pointer"` / `cursor: 'pointer'` site across all modules (mechanical bulk edit). Lint not run (timed out) but edits are syntactically trivial; build not run this pass.
+
+Session: Lily.
+
+---
+
 
 **WHAT CHANGED.** t160: `DEFAULT_TIERS` in `widgetPrivacy.js` now defaults
 every data widget — including nextDose and doxyPepWindow — to `redacted`

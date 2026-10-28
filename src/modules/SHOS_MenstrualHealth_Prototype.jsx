@@ -152,7 +152,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", read
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
         {type === "date" && !readOnly && (
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", minHeight: 44 }}>Now</span>
         )}
       </div>
       {readOnly ? (
@@ -240,7 +240,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder, searchP
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", minHeight: 44 }}>
               {nameFor(id)}<X size={11} />
             </div>
           ))}
@@ -254,7 +254,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder, searchP
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visibleSuggestions.map((i) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={i.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, i.id]); setQuery(""); }}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer", minHeight: 44 }}>
               + {i.name}
             </div>
           ))}
@@ -274,7 +274,7 @@ function FreeTextSuggestField({ label, value, onChange, options, onAddNew, T, pl
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((v) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(v)} style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>{v}</div>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(v)} style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer", minHeight: 44 }}>{v}</div>
           ))}
         </div>
       )}
@@ -295,7 +295,7 @@ function BottomSheet({ title, onClose, T, children, footer }) {
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{title}</h1>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44 }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>{children}</div>
         {footer && <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>{footer}</div>}
@@ -317,7 +317,7 @@ function ListRow({ isSelected, selectMode, onClick, T, children, label, isDemo =
   <div onClick={onClick}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={label} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
-      style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 12, cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
+      style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 12, cursor: "pointer", minHeight: 44, display: "flex", gap: 10, alignItems: "center" }}>
       {selectMode && (
         <div style={{ width: 20, height: 20, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {isSelected && <Check size={12} color="#FFFFFF" />}
@@ -331,10 +331,10 @@ function ListRow({ isSelected, selectMode, onClick, T, children, label, isDemo =
 function DetailHeader({ onBack, onEdit, onDelete, T }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
-      <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+      <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", minHeight: 44 }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <span role="button" tabIndex={0} aria-label="Edit" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={onEdit} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
-        <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 4 }} onClick={onDelete} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <span role="button" tabIndex={0} aria-label="Edit" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", minHeight: 44 }} onClick={onEdit} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
+        <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onDelete} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
       </div>
     </div>
   );
@@ -345,7 +345,7 @@ function DeleteToast({ toast, onUndo, onRedo, T, noun }) {
     <div onClick={toast.mode === "undo" ? onUndo : onRedo}
       role="button" tabIndex={0} aria-live="polite"
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (toast.mode === "undo" ? onUndo : onRedo)(); } }}
-      style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
+      style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
       <span style={{ fontSize: 13 }}>{toast.mode === "undo" ? `${toast.records.length} ${noun}${toast.records.length > 1 ? "s" : ""} deleted` : `${toast.records.length} ${noun}${toast.records.length > 1 ? "s" : ""} restored`}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>{toast.mode === "undo" ? "Tap to undo" : "Tap to redo"}</span>
     </div>
@@ -571,7 +571,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         );
       })()}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Log period" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Log period" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -816,7 +816,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         </div>
       )}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Add contraception method" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Add contraception method" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -887,7 +887,7 @@ function PregnancySheet({ pregnancy, onSave, onClose, T }) {
           <SelectField label="Outcome" value={isResolved ? form.status : ""} onChange={set("status")} options={OUTCOME_OPTIONS} T={T} hint="leave blank while ongoing" />
           {isResolved && <TextField label="Outcome date" value={form.outcomeDate} onChange={set("outcomeDate")} T={T} type="date" />}
           {isResolved && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("sensitive")(!form.sensitive)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("sensitive")(!form.sensitive)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", cursor: "pointer", minHeight: 44 }}>
               {form.sensitive ? <EyeSlash size={16} color={T.healthcareBlue} /> : <Eye size={16} color={T.textSecondary} />}
               <span style={{ fontSize: 13, color: T.textPrimary }}>Mask this entry (shown as "tap to reveal" in your list)</span>
             </div>
@@ -977,7 +977,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
             <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{formatDate(p.testDate)}</h1>
           </div>
           {masked ? (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer", minHeight: 44 }}>
               <EyeSlash size={22} color={T.textSecondary} style={{ marginBottom: 8 }} />
               <div style={{ fontSize: 13, color: T.textSecondary }}>This entry is marked sensitive. Tap to reveal.</div>
             </div>
@@ -991,7 +991,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
               </SectionCard>
               <SectionCard title="Notes" T={T}><ReadRow label="Notes" value={p.notes} T={T} /></SectionCard>
               {p.sensitive && (
-                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => ids.filter((id) => id !== p.id))} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, cursor: "pointer" }}>
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => ids.filter((id) => id !== p.id))} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, cursor: "pointer", minHeight: 44 }}>
                   <EyeSlash size={13} color={T.textSecondary} />
                   <span style={{ fontSize: 11, color: T.textSecondary }}>Hide again</span>
                 </div>
@@ -1006,7 +1006,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
   return (
     <div>
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Add pregnancy entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Add pregnancy entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -1129,7 +1129,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t.key} onClick={() => setSubTab(t.key)}
-              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}` }}>
+              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}` }}>
               {t.label}
             </div>
           ))}
@@ -1144,7 +1144,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
       )}
       {!pregnancyReachable && !pregnancyTrackingHidden && subTab !== "pregnancy" && (
         <div style={{ margin: "10px 16px 0", textAlign: "right" }}>
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 11, color: T.textDisabled, cursor: "pointer", textDecoration: "underline" }}>Show pregnancy tracking anyway</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 11, color: T.textDisabled, cursor: "pointer", minHeight: 44, textDecoration: "underline" }}>Show pregnancy tracking anyway</span>
         </div>
       )}
       {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}

@@ -60,6 +60,7 @@ export const DATA_WIDGETS = [
   "doxyPepWindow",
   "cycle",
   "clinicCard",
+  "liveSession",
 ];
 
 /**
@@ -89,6 +90,9 @@ export const DEFAULT_TIERS = {
   doxyPepWindow: "redacted",
   cycle: "redacted",
   clinicCard: "redacted",
+  // Owner-approved exception: the live-session widget is intentionally useful
+  // only when the owner opts into tracking it. Redacted/off remain available.
+  liveSession: "full",
 };
 
 /**
@@ -120,6 +124,9 @@ export const ALLOWED_AT_REDACTED = {
   doxyPepWindow: ["category", "state", "countdownAt"],
   cycle: ["category", "state"],
   clinicCard: ["category", "count"],
+  // Redacted confirms only that a live session exists; sexual-activity counts
+  // and participant/kink details are identifying and never survive here.
+  liveSession: ["category", "state"],
 };
 
 /** Coarse, non-identifying state text, used when a widget is redacted. */
@@ -130,6 +137,7 @@ export const REDACTED_COPY = {
   doxyPepWindow: "DoxyPEP",
   cycle: "Tracking",
   clinicCard: "Clinic card",
+  liveSession: "Live session",
 };
 
 /** True for a tier this code understands. */

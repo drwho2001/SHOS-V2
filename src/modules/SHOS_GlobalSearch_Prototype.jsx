@@ -321,7 +321,7 @@ function ResultRow({ result, onSelect }) {
   const Icon = meta.icon;
   return (
     <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onSelect(result)}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", background: T.surface }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, background: T.surface }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <div style={{ width: 34, height: 34, borderRadius: 999, background: `${meta.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon size={16} color={meta.color} />
@@ -503,7 +503,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
           placeholder={tr("globalSearch.placeholder", "Search contacts, medications, activities, tests, and more...")}
           style={{ flex: 1, border: "none", outline: "none", fontSize: 15, background: "transparent", color: T.textPrimary, fontFamily: FONT_FAMILY }}
         />
-        <X size={20} color={T.textSecondary} role="button" tabIndex={0} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onClose} aria-label={tr("globalSearch.close", "Close search")}
+        <X size={20} color={T.textSecondary} role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, flexShrink: 0 }} onClick={onClose} aria-label={tr("globalSearch.close", "Close search")}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose(); } }} />
       </div>
 
@@ -512,7 +512,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
         <div style={{ display: "flex", gap: 6, padding: "10px 16px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, paddingBottom: 10 }}>
           {[{ key: "chronological", label: tr("globalSearch.mostRecent", "Most recent") }, { key: "alphabetical", label: tr("globalSearch.aToZ", "A\u2013Z") }].map((s) => (
             <div key={s.key} onClick={() => setSortMode(s.key)} role="button" tabIndex={0} aria-pressed={sortMode === s.key} aria-label={s.label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortMode(s.key); } }}
-              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? "#FFFFFF" : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent" }}>
+              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? "#FFFFFF" : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent" }}>
               {s.label}
             </div>
           ))}

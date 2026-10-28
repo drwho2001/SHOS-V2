@@ -102,7 +102,7 @@ describe("widget tiers resolve, and fail in the safe direction", () => {
     for (const key of NO_DATA_WIDGETS) {
       expect(DATA_WIDGETS, `${key} must not be treated as a data widget`).not.toContain(key);
     }
-    expect(DATA_WIDGETS.length + NO_DATA_WIDGETS.length).toBe(9);
+    expect(DATA_WIDGETS.length + NO_DATA_WIDGETS.length).toBe(10);
   });
 
   it("resolveAllTiers covers every data widget and nothing else", () => {
@@ -178,7 +178,7 @@ describe("fieldAllowed enforces one meaning of Redacted everywhere", () => {
 describe("the settings screen offers every data widget (wiring, not behaviour)", () => {
   const screen = read("src/modules/settings/WidgetsScreen.jsx");
 
-  it("has a row for all 7 data widgets", () => {
+    it("has a row for all 7 data widgets", () => {
     // The specific half of the original defect: Test, Cycle and ClinicCard had
     // no key at all, so they could not be configured even in principle.
     const missing = DATA_WIDGETS.filter((k) => !screen.includes(`key: "${k}"`));

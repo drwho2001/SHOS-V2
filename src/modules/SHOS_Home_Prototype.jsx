@@ -72,6 +72,7 @@ import {
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
+import { SessionRepository } from "../repositories/sessionRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -149,7 +150,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
           SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{tr("home.enableNotifications", "Enable notifications")}</button>
+          <button onClick={enable} style={{ padding: "7px 14px", minHeight: 44, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{tr("home.enableNotifications", "Enable notifications")}</button>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{tr("home.notNow", "Not now")}</span>
         </div>
       </div>
@@ -214,6 +215,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().then((s) => s.appLockEnabled), [], false);
   const [lastContact, setLastContact] = useState(null);
   const [lastEncounter, setLastEncounter] = useState(null);
+  const [activeSession, setActiveSession] = useState(null);
   const [lastDose, setLastDose] = useState(null);
   const [lastTest, setLastTest] = useState(null);
   // ADDED 21 Oct 2026 (t128) - the suggested date for the "Schedule routine
@@ -241,6 +243,31 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       onConsumedClinicCardReopen?.();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The active Session is a local-only, user-controlled live view. It is
+  // intentionally shown only while active; closed sessions remain in the
+  // Encounters timeline rather than becoming a permanent dashboard metric.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [sessions, encounters] = await Promise.all([
+        SessionRepository.getAll(),
+        EncounterRepository.getAll(),
+      ]);
+      const active = sessions.find((session) => !session.isArchived && session.status === "active");
+      if (!active || cancelled) {
+        if (!cancelled) setActiveSession(null);
+        return;
+      }
+      const items = encounters.filter((encounter) => encounter.sessionId === active.id && !encounter.isArchived);
+      const people = new Set(items.flatMap((encounter) => encounter.attendeeIds || [])).size;
+      const kinks = new Set(items.flatMap((encounter) => (encounter.kinksInvolved || []).map((entry) => entry.kinkId))).size;
+      setActiveSession({ ...active, activityCount: items.length, people, kinks,
+        loads: items.reduce((sum, encounter) => sum + (Number(encounter.loadsCount) || 0), 0),
+        fists: items.reduce((sum, encounter) => sum + (Number(encounter.fistCount) || 0), 0) });
+    })();
+    return () => { cancelled = true; };
   }, []);
   const [showTimeline, setShowTimeline] = useState(false);
   // No dialog ref/effect on this wrapper: TimelineModule's own root
@@ -920,6 +947,27 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           AppPreferencesRepository's own comment on why only overdue
           gets this: still-counting-down is a short-lived countdown, not
           something worth permanently silencing. */}
+      {activeSession && (
+        <div style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${ACCENTS.encounters}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <div style={{ color: ACCENTS.encounters, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Live session</div>
+              <div style={{ marginTop: 3, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 17, fontWeight: 800 }}>{activeSession.title || "Untitled session"}</div>
+              <div style={{ marginTop: 4, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontSize: 12 }}>
+                {activeSession.activityCount} activities · {activeSession.people} people · {activeSession.kinks} kinks
+                {activeSession.loads ? ` · ${activeSession.loads} loads` : ""}
+                {activeSession.fists ? ` · ${activeSession.fists} fists` : ""}
+              </div>
+            </div>
+            <Activity size={24} color={ACCENTS.encounters} />
+          </div>
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <div role="button" tabIndex={0} onClick={() => onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: ACCENTS.encounters, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
+            <div role="button" tabIndex={0} onClick={() => onNavigateToRecord("activity")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${ACCENTS.encounters}`, color: ACCENTS.encounters, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Open log</div>
+          </div>
+        </div>
+      )}
+
       {doxyBannerVisible && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onNavigateToRecord("medication", doxyStatus.medicationId)} style={{
           display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", borderRadius: 14, marginBottom: 16, cursor: "pointer",
