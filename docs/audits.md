@@ -31,3 +31,7 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Scope: 20 settings screens with role=dialog.
 - Finding: none use useEscapeToClose.
 - Action: extracted to pool (t185).
+## Touch targets (settings)
+- Scope: settings screens.
+- Finding: ~100 cursor:pointer sites without minHeight:44.
+- Action: extracted to pool (t186).
