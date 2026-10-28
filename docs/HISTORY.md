@@ -9427,3 +9427,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (19)
 - Phase 1 streamlined download/update: added version.json and Check for updates / Report a crash links in AboutScreen.
+
+## 27 Oct 2026 - Zeus (20)
+- Phase 2: silent background update check against version.json (stable only) reuses existing update banner.

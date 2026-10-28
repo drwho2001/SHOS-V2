@@ -1393,6 +1393,25 @@ export default function App() {
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
     return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
   }, []);
+  // ADDED — streamlined update: silent background check against version.json.
+  // Only stable releases trigger the banner; debug builds stay quiet.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (data?.channel === "stable" && data?.version && data.version !== "0.2.0") {
+          setSwUpdateAvailable(true);
+        }
+      } catch {
+        // offline or no version.json — ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   // ADDED — real gap found via a total-app audit: storageAdapter.js's
   // save() has always returned true/false so a caller could notice a
   // failed write, but a full grep found every one of the ~31 real call
