@@ -9,6 +9,7 @@ export const DEFAULT_SESSION = {
   startAt: "",
   endAt: "",
   status: "active",
+  attendeeIds: [],
   notes: "",
   isArchived: false,
 };

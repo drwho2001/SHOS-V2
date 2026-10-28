@@ -615,6 +615,11 @@ function normalizeActivityDetails(arr) {
     hands: detail.hands == null ? null : detail.hands,
     depth: detail.depth == null ? null : detail.depth,
     width: detail.width == null ? null : detail.width,
+    topHands: detail.topHands == null ? null : detail.topHands,
+    topDepth: detail.topDepth == null ? null : detail.topDepth,
+    bottomFingers: detail.bottomFingers == null ? null : detail.bottomFingers,
+    bottomDepth: detail.bottomDepth == null ? null : detail.bottomDepth,
+    bottomWidth: detail.bottomWidth == null ? null : detail.bottomWidth,
     unit: detail.unit || "cm",
     notes: detail.notes || "",
   }));

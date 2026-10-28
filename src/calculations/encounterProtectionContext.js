@@ -56,9 +56,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export function findPrEPMedication(medications) {
   return (
-    (medications || []).find(
-      (m) => !m.isArchived && /prep/i.test(m.name || "") && !/doxy/i.test(m.name || "")
-    ) || null
+    (medications || []).find((m) => {
+      if (m.isArchived) return false;
+      const name = m.name || "";
+      const categories = Array.isArray(m.category) ? m.category : [];
+      const isPrEPByName = /prep|descovy|truvada|tenofovir|emtricitabine/i.test(name) && !/doxy/i.test(name);
+      const isPrEPByCategory = categories.some((category) => /prep/i.test(String(category || "")));
+      return isPrEPByName || isPrEPByCategory;
+    }) || null
   );
 }
 

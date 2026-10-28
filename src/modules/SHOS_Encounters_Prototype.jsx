@@ -80,7 +80,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
-import { sessionTally } from "../calculations/sessionTally";
+import { sessionTally, chronologicalSessionEncounters } from "../calculations/sessionTally";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -227,10 +227,12 @@ function SelectField({ label, value, onChange, options, T }) {
   );
 }
 
-function KinkDetailEditor({ detail, kinkName, contacts, onChange, T, anonymise = false }) {
+function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, anonymise = false }) {
   const pack = getKinkDetailPack(kinkName);
   const change = (key) => (value) => onChange({ [key]: value });
   const showMeasure = pack === "hands" || pack === "penetration";
+  const showTop = pack === "hands" && (role === "Top" || role === "Vers" || !role);
+  const showBottom = pack === "hands" && (role === "bottom" || role === "Vers" || !role);
   return (
     <div style={{ marginTop: 8, padding: 10, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{kinkName || "Activity details"}</div>
@@ -244,13 +246,22 @@ function KinkDetailEditor({ detail, kinkName, contacts, onChange, T, anonymise =
         contacts={contacts}
         anonymise={anonymise}
       />
-      {pack === "hands" && (
-        <>
-          <TextField label="Fingers" value={detail.fingers} onChange={change("fingers")} T={T} type="number" />
-          <TextField label="Hands" value={detail.hands} onChange={change("hands")} T={T} type="number" />
-        </>
+      {showTop && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Top</div>
+          <TextField label="Hands" value={detail.topHands} onChange={change("topHands")} T={T} type="number" />
+          <TextField label="Depth" value={detail.topDepth} onChange={change("topDepth")} T={T} type="number" />
+        </div>
       )}
-      {showMeasure && (
+      {showBottom && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Bottom</div>
+          <TextField label="Fingers" value={detail.bottomFingers} onChange={change("bottomFingers")} T={T} type="number" />
+          <TextField label="Depth" value={detail.bottomDepth} onChange={change("bottomDepth")} T={T} type="number" />
+          <TextField label="Width" value={detail.bottomWidth} onChange={change("bottomWidth")} T={T} type="number" />
+        </div>
+      )}
+      {pack !== "hands" && showMeasure && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <TextField label="Depth" value={detail.depth} onChange={change("depth")} T={T} type="number" />
           <TextField label="Width" value={detail.width} onChange={change("width")} T={T} type="number" />
@@ -1262,13 +1273,30 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
       const fistingKinkIds = [...kinkNameById.entries()].filter(([, name]) => name === "Fisting").map(([id]) => id);
       const tally = sessionTally(items, { fistingKinkIds });
+      const attendeeIds = new Set([...(session.attendeeIds || []), ...items.flatMap((encounter) => encounter.attendeeIds || [])]);
+      // ADDED 28 Oct 2026 (t211) — the live card is the one place a session is
+      // watched in progress, and it only ever showed counts. Reading back "what
+      // did we actually do, in what order" meant scrolling the full list below.
+      // Kink names come from the same map the rest of this screen resolves
+      // through; the time is the stored wall-clock text (sliced, never parsed
+      // through Date) so a late-night activity cannot drift into another slot.
+      const timeline = chronologicalSessionEncounters(items).map((encounter) => ({
+        id: encounter.id,
+        time: typeof encounter.date === "string" && encounter.date[10] === "T" ? encounter.date.slice(11, 16) : "",
+        label: (encounter.kinksInvolved || [])
+          .map((entry) => kinkNameById.get(entry.kinkId))
+          .filter(Boolean)
+          .join(", ") || "Activity",
+      }));
       return {
         ...session,
         items,
-        people: tally.people,
+        people: tally.people || attendeeIds.size,
         kinks: tally.kinks,
         loads: tally.loads,
         fists: tally.fists,
+        attendeeCount: attendeeIds.size,
+        timeline,
       };
     })
     .filter((session) => session.items.length > 0)
@@ -1375,6 +1403,18 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   {activeSession.loads ? ` · ${activeSession.loads} loads` : ""}
                   {activeSession.fists ? ` · ${activeSession.fists} fists` : ""}
                 </div>
+                {/* ADDED 28 Oct 2026 (t211) — most recent five, oldest first,
+                    so the newest activity is the last line read. */}
+                {activeSession.timeline.length > 0 && (
+                  <div style={{ marginTop: 8, display: "grid", gap: 2 }}>
+                    {activeSession.timeline.slice(-5).map((entry) => (
+                      <div key={entry.id} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, color: T.textSecondary }}>
+                        <span style={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{entry.time}</span>
+                        <span style={{ color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div
                 role="button"
@@ -1862,7 +1902,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
       const suggested = inferProtectionContext({
         myPosition: form.myPosition,
         date: form.date,
-        doseLogs: doxyLogs,
+        doseLogs: prepLogs,
         hasPrEPMedication: Boolean(prepMed),
         // Judged as of the encounter's own date when there is one, so an
         // encounter logged last week reflects last week's coverage.
@@ -1964,6 +2004,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
       const session = await SessionRepository.create({
         title: newSessionTitle.trim(),
         startAt: form.date || nowAsStoredDateTime(),
+        attendeeIds: [...(form.attendeeIds || [])],
       });
       record = { ...form, sessionId: session.id };
     }
@@ -2132,11 +2173,14 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
 
         <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>
           <RegistryTagPicker label="Kinks involved" value={form.kinksInvolved} onChange={set("kinksInvolved")} T={T} registry={KinkRegistry} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
-          {(form.activityDetails || []).map((detail) => (
+          {(form.activityDetails || []).map((detail) => {
+            const selectedKink = (form.kinksInvolved || []).find((entry) => entry.kinkId === detail.kinkId);
+            return (
             <KinkDetailEditor
               key={detail.id}
               detail={detail}
               kinkName={kinkNameById.get(detail.kinkId) || "Custom activity"}
+              role={selectedKink?.role || ""}
               contacts={contacts}
               anonymise={anonymise}
               onChange={(changes) => {
@@ -2148,7 +2192,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
               }}
               T={T}
             />
-          ))}
+          )})}
           <RegistryTagPicker label="Chems/alcohol used" value={form.chemsAlcoholUsed} onChange={set("chemsAlcoholUsed")} T={T} registry={ChemsRegistry} resolveSynonym={resolveChemSynonym} />
         </SectionCard>
 
