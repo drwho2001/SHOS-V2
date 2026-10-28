@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
@@ -279,9 +279,22 @@ function MultiSelectChips({ label, value, onChange, options, T, listName }) {
 }
 
 function ToggleSwitch({ value, onChange, T }) {
+  // CHANGED 28 Oct 2026 (Lily, t209) — 44px hit area around an unchanged 40x24
+  // pill; negative margin keeps the caller's row height, and the pill ignores
+  // pointer events so one tap toggles once.
+  const toggle = () => onChange(!value);
   return (
-    <div onClick={() => onChange(!value)} role="switch" tabIndex={0} aria-checked={value} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!value); } }} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.healthcareBlue : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease", display: "flex", alignItems: "center", justifyContent: "center"}}>
-      <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+    <div
+      onClick={toggle}
+      role="switch"
+      tabIndex={0}
+      aria-checked={value}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+      style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44, margin: "-10px 0", cursor: "pointer", flexShrink: 0 }}
+    >
+      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.healthcareBlue : T.surfaceVariant, position: "relative", pointerEvents: "none", transition: "background 150ms ease" }}>
+        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+      </div>
     </div>
   );
 }
@@ -1623,7 +1636,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
 }
 
 // ── Top-level module ──
-export default function TestingModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, onNavigateToRecord, onDataChanged, registerModuleBackHandler } = {}) {
+export default function TestingModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, onNavigateToRecord, onDataChanged, registerModuleBackHandler, onQuickExit } = {}) {
   const { t: tr } = useTranslation();
   const [screen, setScreen] = useState({ name: "landing" });
   const [darkMode] = useDarkModePreference();

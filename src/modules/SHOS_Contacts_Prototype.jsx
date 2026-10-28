@@ -9,7 +9,7 @@ import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
-  CrosshairIcon as Crosshair,
+  CrosshairIcon as Crosshair, SignOutIcon as SignOut,
   // ADDED 10 Sep 2026 — real ask: a single "how we'd meet" icon ranked
   // Car (Drives) > Cycle > Public transport > Walk, plus a distinct
   // icon for "will travel to you" now that MapPin is used for the
@@ -1167,9 +1167,23 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 }
 
 function ToggleSwitch({ value, onChange, T }) {
+  // CHANGED 28 Oct 2026 (Lily, t209) — the 40x24 pill is the right size to look
+  // at and too small to hit, and it must stay 40x24 after the shape restore. It
+  // is now wrapped in a 44px hit area; the negative margin means callers see the
+  // old footprint, and the pill takes no pointer events so the tap lands once.
+  const toggle = () => onChange(!value);
   return (
-    <div onClick={() => onChange(!value)} role="switch" tabIndex={0} aria-checked={value} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!value); } }} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease", display: "flex", alignItems: "center", justifyContent: "center"}}>
-      <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+    <div
+      onClick={toggle}
+      role="switch"
+      tabIndex={0}
+      aria-checked={value}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+      style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44, margin: "-10px 0", cursor: "pointer", flexShrink: 0 }}
+    >
+      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", pointerEvents: "none", transition: "background 150ms ease" }}>
+        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+      </div>
     </div>
   );
 }
@@ -3475,7 +3489,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
   );
 }
 
-export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, onOpenPrivacySettings, onOpenGlossary, registerModuleBackHandler } = {}) {
+export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, onOpenPrivacySettings, onOpenGlossary, registerModuleBackHandler, onQuickExit } = {}) {
   const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   // FIXED — real crash found via a live bulk-delete/bulk-archive audit:
   // loadContacts() returns ContactRepository.getAll(), async since this

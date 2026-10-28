@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon } from "@phosphor-icons/react";
+import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon, SignOutIcon as SignOut } from "@phosphor-icons/react";
 // The dashboard no longer owns its own medication/log data — it reads and
 // writes through these two repositories instead. Nothing about how the UI
 // looks or behaves changes; this just moves WHERE the facts actually live.
@@ -292,6 +292,13 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>
       <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
         {label} · {pct}%
+        {/* FIXED 28 Oct 2026 (Lily, t200) — the touch-target sweep had put
+            minHeight: 44 on this 11px icon sitting inside a fontSize: 10
+            label row, which forced the streak block to balloon and broke the
+            badge spacing. The tap area is now enlarged with padding and
+            cancelled out with an equal negative margin, so the target is a
+            real 44x44 while the icon keeps its visual size and the row keeps
+            its height. */}
         {info && (
           <InfoIcon size={11} color={T.textDisabled} style={{ cursor: "pointer", padding: 16, margin: -16, boxSizing: "content-box", flexShrink: 0 }}
             role="button" tabIndex={0} aria-label={`What does ${label} adherence mean?`}
@@ -565,10 +572,10 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
               const glowBg = sevenDayGood ? (darkMode ? "#5FD9A440" : "#1B9E7715") : (darkMode ? T.streakGlow : `${T.medsBlue}15`);
               const glowBorder = sevenDayGood ? (darkMode ? "#5FD9A466" : "#1B9E7740") : (darkMode ? "#F59E0B66" : `${T.medsBlue}40`);
               return (
-            <div style={{ display: "flex", justifyContent: "space-around", background: glowBg, border: `1px solid ${glowBorder}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-around", gap: 12, background: glowBg, border: `1px solid ${glowBorder}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 3, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
-                <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>{tr("medication.streak", "streak")}</div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
+                <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 2 }}>{tr("medication.streak", "streak")}</div>
               </div>
               <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
               {/* Labelled "this container", not "this refill", because that is what
@@ -1054,10 +1061,23 @@ function NumberField({ label, value, onChange, min = 0, step = 1, T }) {
 }
 
 function ToggleRow({ label, value, onChange, T }) {
+  // CHANGED 28 Oct 2026 (Lily, t209) — the switch pill is 40x24, which is the
+  // right size to look at and too small to hit. The row is now the control and
+  // the pill is its indicator: role/state/keyboard live on the row, and the
+  // pill takes no pointer events so a tap cannot register twice.
+  const toggle = () => onChange(!value);
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
+    <div
+      onClick={toggle}
+      role="switch"
+      tabIndex={0}
+      aria-checked={value}
+      aria-label={label}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", minHeight: 44, cursor: "pointer", borderBottom: `1px solid ${T.border}` }}
+    >
       <span style={{ fontSize: 13, color: T.textPrimary }}>{label}</span>
-      <div onClick={() => onChange(!value)} role="switch" tabIndex={0} aria-checked={value} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!value); } }} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.medsBlue : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease", display: "flex", alignItems: "center", justifyContent: "center"}}>
+      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.medsBlue : T.surfaceVariant, position: "relative", flexShrink: 0, pointerEvents: "none", transition: "background 150ms ease" }}>
         <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
       </div>
     </div>
@@ -1787,14 +1807,17 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
+          {/* CHANGED 28 Oct 2026 (Lily, t209) — same treatment as ToggleRow: the
+              row is the switch so the target is the full 44px row, and the pill
+              is a pointer-events:none indicator so a tap cannot register twice. */}
+          <div onClick={toggleReminders} role="switch" tabIndex={0} aria-checked={prefs.doseRemindersEnabled} aria-label="Dose reminders"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleReminders(); } }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", minHeight: 44, cursor: "pointer" }}>
             <div>
               <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>{tr("medication.doseReminders", "Dose reminders")}</div>
               <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{tr("medication.notifyWhenDue", "Notify when a daily medication is due")}</div>
             </div>
-            <div onClick={toggleReminders} role="switch" tabIndex={0} aria-checked={prefs.doseRemindersEnabled} aria-label="Dose reminders"
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleReminders(); } }}
-              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.doseRemindersEnabled ? T.medsBlue : T.border, position: "relative", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center"}}>
+            <div style={{ width: 44, height: 26, borderRadius: 999, background: prefs.doseRemindersEnabled ? T.medsBlue : T.border, position: "relative", flexShrink: 0, pointerEvents: "none" }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 3, left: prefs.doseRemindersEnabled ? 21 : 3, transition: "left 0.15s" }} />
             </div>
           </div>
@@ -1848,7 +1871,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 // Hoisted to module scope (a pure literal, no dependency on props/state).
 const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
-export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget } = {}) {
+export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget, onQuickExit } = {}) {
   const { t: tr } = useTranslation();
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // Declared before useEditUndo below so that call can pass a stable

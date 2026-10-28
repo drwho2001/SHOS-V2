@@ -24,7 +24,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -2270,7 +2270,7 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
 // ADDED 9 Oct 2026 (t052) - onOpenGlossary, threaded to the JargonNote bubbles
 // on the edit form. App.jsx already passes it to every ActiveModule (line 2875),
 // so this signature change is all that was needed; no new call site.
-export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, prefillData, onConsumedPrefill, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler, onOpenGlossary } = {}) {
+export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, prefillData, onConsumedPrefill, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler, onQuickExit, onOpenGlossary } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "landing" });

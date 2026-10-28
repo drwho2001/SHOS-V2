@@ -15,7 +15,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
-import { CaretLeftIcon as ChevronLeft, XIcon as X, MagnifyingGlassIcon as Search, CheckIcon as Check, PencilSimpleIcon as Edit, ExportIcon as ExportIcon, TrashIcon as Trash2 } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, XIcon as X, MagnifyingGlassIcon as Search, CheckIcon as Check, PencilSimpleIcon as Edit, ExportIcon as ExportIcon, TrashIcon as Trash2, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
@@ -142,10 +142,14 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("partnerNotification.clinicalVersion", "Clinical version")}</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds DOB, Age, and Address per contact — for handing to a clinic's own partner notification team, who need enough to actually locate someone themselves.</div>
           </div>
+          {/* CHANGED 28 Oct 2026 (Lily, t209) — 44px hit area around an unchanged
+              40x24 pill (t209); negative margin keeps the row height the same. */}
           <div onClick={() => setClinical((c) => !c)} role="switch" tabIndex={0} aria-checked={clinical} aria-label="Clinical version"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setClinical((c) => !c); } }}
-            style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? ACCENTS.healthcare : T.surfaceVariant, position: "relative", cursor: "pointer", flexShrink: 0 }}>
-            <div style={{ position: "absolute", top: 2, left: clinical ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44, margin: "-10px 0", cursor: "pointer", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? ACCENTS.healthcare : T.surfaceVariant, position: "relative", pointerEvents: "none" }}>
+              <div style={{ position: "absolute", top: 2, left: clinical ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+            </div>
           </div>
         </div>
       </div>
@@ -348,7 +352,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
   );
 }
 
-export default function PartnerNotificationSheet({ testId, onClose }) {
+export default function PartnerNotificationSheet({ testId, onClose, onQuickExit }) {
   const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
@@ -425,6 +429,9 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
             <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           ) : (
             <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label={t("common.close", "Close")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          )}
+          {onQuickExit && (
+            <SignOut size={20} weight="bold" color={T.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", marginLeft: "auto", padding: 4 }} onClick={onQuickExit} title={t("home.quickExit", "Quick exit")} aria-label={t("home.quickExit", "Quick exit")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />
           )}
           <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{editing ? (list ? t("partnerNotification.editContacts", "Edit contacts") : t("partnerNotification.contactList", "Contact list")) : t("partnerNotification.contactList", "Contact list")}</h1>
         </div>
