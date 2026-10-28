@@ -85,11 +85,13 @@ describe("module accents used as text on their own self-tint", () => {
     });
   }
 
-  // The two that genuinely FAIL on their own tint, and therefore must only ever
-  // appear as text via a TextSafe variant. This is the regression that the
+  // The three that genuinely FAIL on their own tint, and therefore must only
+  // ever appear as text via a TextSafe variant. This is the regression that the
   // 10/15 Sep work fixed at 14 sites; the assertion is the thing that stops it
-  // coming back one badge at a time.
-  for (const [rawKey, safeKey] of [["contacts", "contacts"], ["red", "red"]]) {
+  // coming back one badge at a time. menstrual joined on 28 Oct 2026 (t188):
+  // #EB4799 is 3.56:1 on white, UI-usable for the ring stroke and the icons,
+  // below AA where it is used for a label such as Home's "Last period" row.
+  for (const [rawKey, safeKey] of [["contacts", "contacts"], ["red", "red"], ["menstrual", "menstrual"]]) {
     it(`${rawKey} raw still fails on its own tint, so the TextSafe variant is genuinely required`, () => {
       const hex = ACCENTS[rawKey];
       expect(hex).toMatch(/^#[0-9A-Fa-f]{6}$/);

@@ -195,6 +195,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // ADDED 2 Sep 2026 — real ask: Menstrual's own colour, not ACTION.red
   // borrowed for module identity — see designTokens.js's comment.
   const menstrualColor = darkMode ? resolveDarkAccent("menstrual", ACCENTS.menstrual) : ACCENTS.menstrual;
+  // ADDED 28 Oct 2026 (Lily, t188) — the base menstrual accent is 3.56:1 on a
+  // light surface: fine for the ring stroke and the quick-add icons, below the
+  // 4.5:1 text threshold where the module colour is used for a label (the
+  // "Last period" summary row). Text uses the darkened stand-in; graphics keep
+  // the brighter neon.
+  const menstrualColorText = darkMode ? menstrualColor : ACCENT_TEXT_SAFE.menstrual;
   const encountersColor = darkMode ? resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7") : ACCENTS.encounters;
 
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
@@ -1167,7 +1173,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 colour (menstrualColor), same as the Cycle tab's own
                 drop icon and the "Log period" button below — no
                 longer borrowing ACTION.red, see designTokens.js. */}
-            <SummaryRow label={tr("home.lastPeriod", "Last period")} moduleColor={menstrualColor} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
+            <SummaryRow label={tr("home.lastPeriod", "Last period")} moduleColor={menstrualColorText} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
             {/* CHANGED — real ask: contraception reads as a medication
                 (something taken/administered on a schedule), not a
                 Healthcare-generic fact — same medsBlue "Log

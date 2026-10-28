@@ -1735,10 +1735,9 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           if (!TransportIcon) return null;
           const label = getTransportLabel(contact);
           return (
-            <TransportIcon size={20} color={T.textSecondary} role="button" tabIndex={0} title={label} aria-label={`${label} — tap for details`} style={{ padding: 4 }}
+            <TransportIcon size={20} color={T.textSecondary} role="button" tabIndex={0} title={label} aria-label={`${label} — tap for details`} style={{ padding: 4, cursor: "pointer" }}
               onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-              style={{ cursor: "pointer"}} />
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }} />
           );
         })()}
         {/* ADDED 18 Aug 2026 — hosts/travels indicator, the user's ask:
