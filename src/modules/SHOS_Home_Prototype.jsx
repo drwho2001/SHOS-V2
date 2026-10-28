@@ -68,7 +68,7 @@ import {
   TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
-  BellIcon as Bell, XIcon as X,
+  BellIcon as Bell, XIcon as X, SignOutIcon as SignOut,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -926,6 +926,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               stroke, color darkened from grey to near-black. */}
           <SettingsIcon data-tour="settings-icon" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onOpenSettings} title="Settings" aria-label="Settings"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenSettings(); } }} />
+          {onQuickExit && (
+            <SignOut size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} title={tr("home.quickExit", "Quick exit")} aria-label={tr("home.quickExit", "Quick exit")}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />
+          )}
         </div>
       </h1>
       {/* ADDED — real ask: "dashboard needs teal header bar under

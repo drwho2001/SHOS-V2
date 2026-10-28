@@ -3015,7 +3015,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           matches the `<div>` it replaces. */}
       <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)}
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={() => {}}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
           <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif" }}>Loading...</div>}>
@@ -3023,6 +3023,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
               onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler}
+              onQuickExit={() => {}}
               markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)}
               openClinicCardOnDeepLink={pendingOpenClinicCard} onConsumedClinicCardDeepLink={() => setPendingOpenClinicCard(false)} />
           </Suspense>
