@@ -43,3 +43,6 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Scope: modules.
 - Finding: many fixed overlays lack role=dialog (e.g., Medication 14 fixed/8 dialog, Contacts 9/3). Not all fixed overlays are modals; needs manual review.
 - Action: extracted to pool (t192 finding).
+## ARIA labels (settings)
+- Scope: settings screens.
+- Finding: role=button elements without aria-label all have visible text. No gaps.
