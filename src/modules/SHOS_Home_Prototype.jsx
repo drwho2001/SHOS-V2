@@ -1,6 +1,7 @@
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 // ADDED 9 Oct 2026 (t052) - tap-to-reveal explanation for "BASHH" on the
 // testing ring. See JargonNote.jsx for why it is a bubble and not permanent
 // text. Home has no per-module `T` object of its own (it resolves accents
@@ -171,6 +172,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   const { t: tr } = useTranslation();
   const isDesktopWidth = useIsDesktopWidth();
+  const reducedMotion = useReducedMotion();
   // ADDED 30 Sep 2026 (audit) — hooks must be called unconditionally at the top
   // of a component, which is why this sits here rather than next to the row it
   // serves. Calling it lower down, or inside the JSX, would be a rules-of-hooks
@@ -805,7 +807,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
-            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 300ms ease" }} />
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: (prefersReducedMotion || reducedMotion) ? "none" : "stroke-dashoffset 300ms ease" }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>

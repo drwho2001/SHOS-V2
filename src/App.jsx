@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
+import { useReducedMotion } from "./calculations/useReducedMotion";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { syncAllWidgets } from "./calculations/syncAllWidgets";
 import { useDarkModePreference } from "./calculations/darkModePreference";
@@ -937,6 +938,7 @@ function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose 
 
 export default function App() {
   const [darkMode] = useDarkModePreference();
+  const reducedMotion = useReducedMotion();
 
   // ADDED — real bug found in real device testing: the actual HTML
   // <body> behind the app never had its own background set (no CSS
@@ -1296,6 +1298,7 @@ export default function App() {
   // exit warning below. The existing `status` state only renders
   // inside SettingsScreen, so it would've been invisible here.
   const [backExitToast, setBackExitToast] = useState(false);
+  const reduceMotion = reducedMotion;
 
   // ADDED 3 Sep 2026 — real ask: "clear notification awareness" across
   // all three real app states — foreground, backgrounded (app open but
