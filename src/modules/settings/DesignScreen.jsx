@@ -190,7 +190,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isOverridden && (
-            <ResetIcon role="button" tabIndex={0} aria-label="Reset to default" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
+            <ResetIcon role="button" tabIndex={0} aria-label="Reset to default" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={20} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer", padding: 4 }} onClick={onReset} title="Reset to default" />
           )}
           {/* REMOVED 1 Sep 2026 — real ask: "colour buttons sit on a
               white background... looks visually out of place." That

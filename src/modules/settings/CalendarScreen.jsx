@@ -255,7 +255,7 @@ function CalendarSyncSheet({ onClose }) {
       <div tabIndex={0} style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.phoneSync", "Phone calendar sync")}</h1>
-          <X size={18} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label={t("calendar.closeSync", "Close calendar sync settings")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <X size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer", padding: 4 }} onClick={onClose} aria-label={t("calendar.closeSync", "Close calendar sync settings")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
 
         <div onClick={calendarSyncing ? undefined : toggleCalendarSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncEnabled} aria-label={t("calendar.syncToPhone", "Sync to phone calendar")}
