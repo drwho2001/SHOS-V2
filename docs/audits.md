@@ -35,3 +35,7 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Scope: settings screens.
 - Finding: ~100 cursor:pointer sites without minHeight:44.
 - Action: extracted to pool (t186).
+## Dark-mode accent resolution
+- Scope: modules.
+- Finding: Home active-session border uses ACCENTS.encounters in dark mode without resolveDarkAccent.
+- Action: extracted to pool (t187).
