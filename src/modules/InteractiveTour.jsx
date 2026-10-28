@@ -187,18 +187,18 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
     <div ref={cardRef} style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div style={{ ...TYPE.subScreenTitle, color: textPrimary }}>{step.title}</div>
-        <X size={20} weight="bold" color={textSecondary} role="button" aria-label="Skip tour" style={{ cursor: "pointer", minHeight: 44, flexShrink: 0, marginTop: 2, padding: 4 }} onClick={() => onDone("skipped")} />
+        <X size={20} weight="bold" color={textSecondary} role="button" aria-label="Skip tour" style={{ cursor: "pointer", flexShrink: 0, marginTop: 2, padding: 12, boxSizing: "content-box", marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => onDone("skipped")} />
       </div>
       <div style={{ fontSize: 13.5, color: textSecondary, lineHeight: 1.5, marginTop: 8 }}>{step.body}</div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
         <div style={{ fontSize: 12, color: textSecondary }}>{index + 1} / {steps.length}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {!isFirst && (
-            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer", minHeight: 44 }}>
+            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer"}}>
               <ChevronLeft size={14} weight="bold" /> Back
             </button>
           )}
-          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer", minHeight: 44 }}>
+          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer"}}>
             {isLast ? "Done" : "Next"} {!isLast && <ChevronRight size={14} weight="bold" />}
           </button>
         </div>

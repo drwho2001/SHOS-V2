@@ -152,7 +152,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
           SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={enable} style={{ padding: "7px 14px", minHeight: 44, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{tr("home.enableNotifications", "Enable notifications")}</button>
+          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>{tr("home.enableNotifications", "Enable notifications")}</button>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{tr("home.notNow", "Not now")}</span>
         </div>
       </div>

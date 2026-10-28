@@ -190,10 +190,10 @@ function PartnerMessageHelper({ infectionNames, T }) {
       <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5} aria-label="Message draft"
         style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
+        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
           <Copy size={13} /> Copy
         </button>
-        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer", minHeight: 44 }}>Close</span>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(false)} style={{ fontSize: 13, color: T.textSecondary, cursor: "pointer"}}>Close</span>
         {status && <span style={{ fontSize: 11, color: status.ok ? T.actionGreen : T.actionRed }}>{status.msg}</span>}
       </div>
     </div>
@@ -284,7 +284,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {linkedIds.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(linkedIds.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer", minHeight: 44 }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer"}}>
               {nameFor(id)}<X size={11} />
             </div>
           ))}
@@ -294,7 +294,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {candidates.slice(0, 6).map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onChange([...linkedIds, c.id])}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer", minHeight: 44 }}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer"}}>
               {/* FIXED 28 Sep 2026 — Anonymise mode. These are contact-name
                   suggestion chips inside an Episode, and they rendered real
                   names unconditionally: one of the seven screens the 28 Sep
@@ -549,10 +549,10 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", minHeight: 44 }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <Archive size={20} color={T.textSecondary} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={toggleArchive} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleArchive(); } }} title={episode.isArchived ? "Unarchive" : "Archive"} aria-label={episode.isArchived ? "Unarchive" : "Archive"} />
-          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", minHeight: 44 }} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {episode.isArchived && (
@@ -680,7 +680,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
               {RESOLUTION_OPTIONS.map((opt) => (
                 <button key={opt} onClick={() => resolve(opt)}
-                  style={{ padding: 12, borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: "transparent", color: T.healthcareBlue, fontWeight: 600, cursor: "pointer", minHeight: 44 }}>
+                  style={{ padding: 12, borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: "transparent", color: T.healthcareBlue, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
                   Mark resolved — {opt}
                 </button>
               ))}
@@ -696,7 +696,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                   style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
               </div>
               {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (
-                <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer", minHeight: 44 }}>Save</button>
+                <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Save</button>
               )}
             </div>
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={reopen} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.textSecondary, cursor: "pointer", minHeight: 44 }}>
@@ -759,7 +759,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", minHeight: 44 }} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>{tr("timeline.title", "Episodes")}</h1>
       </div>
       {/* CHANGED — real gap found: every other Healthcare-domain
@@ -783,7 +783,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
             <span style={{ fontSize: 12, color: T.textSecondary, flex: 1 }}>
               {neverResolved.length} episode{neverResolved.length > 1 ? "s" : ""} still open after {NEVER_RESOLVED_DAYS}+ days
             </span>
-            <span role="button" tabIndex={0} aria-label="Dismiss" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDismissedNeverResolved(true); } }} onClick={() => setDismissedNeverResolved(true)} style={{ fontSize: 12, fontWeight: 700, color: T.textDisabled, cursor: "pointer", minHeight: 44, padding: "2px 4px" }}>
+            <span role="button" tabIndex={0} aria-label="Dismiss" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDismissedNeverResolved(true); } }} onClick={() => setDismissedNeverResolved(true)} style={{ fontSize: 13, fontWeight: 700, color: T.textDisabled, cursor: "pointer", padding: "2px 4px"}}>
               Dismiss
             </span>
           </div>
@@ -836,7 +836,7 @@ function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
   // row never did. Mirrored that same text here.
   return (
     <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onOpen(e.id)}
-      style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", minHeight: 44 }}>
+      style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>{e.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}

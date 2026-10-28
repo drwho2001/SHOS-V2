@@ -16,6 +16,34 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 28 Oct 2026 - touch-target sweep, corrected (Lily)
+
+**WHAT CHANGED.** Reverted the shape damage from the sweep above. `minHeight: 44`
+on an inline `<svg size={20}>` does not grow the tap target around the glyph, it
+grows the *glyph* to 44px, because the viewBox scales to fit — so every back
+chevron, close X and trash icon in the app rendered at more than twice its
+intended size, and rows grew around them. Icon controls now get their touch area
+from `padding` plus an equal negative longhand margin, which leaves both the
+glyph and the row height exactly as they were. 56 icons across 17 modules.
+
+Chips, filters and segmented options are back to their original compact box, with
+the label one point larger (11 -> 12, 12 -> 13, capped at 13) — the owner's own
+direction: "the chips/bubbles looked fine previously. increase text size from
+original slightly maybe but dont need to make bigger by much." 101 of them.
+
+Small text affordances ("Now", "Edit", "Mark as requested") likewise go back to
+natural height with the text one point larger; filled buttons keep their 44px
+target and gain vertical centring so the label is not stuck at the top.
+
+**WHY NOT 44 EVERYWHERE.** The compact controls are now below the 44px guideline,
+deliberately. A 44px pill containing 12pt text reads as a broken layout rather
+than a control, and the owner rejected that trade twice. Real buttons, list rows
+and dialog actions still carry the full target.
+
+Session: Lily.
+
+---
+
 ## 28 Oct 2026 - touch-target sweep (Lily)
 
 **WHAT CHANGED.** Added `minHeight: 44` to every `cursor: "pointer"` / `cursor: 'pointer'` site across all modules (mechanical bulk edit). Lint not run (timed out) but edits are syntactically trivial; build not run this pass.
@@ -9430,3 +9458,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (20)
 - Phase 2: silent background update check against version.json (stable only) reuses existing update banner.
+
+## 27 Oct 2026 - Zeus (21)
+- Phase 3: platform-aware install/update landing page (public/landing.html) + About screen "Install / open" entry (new about.install / about.installCta strings). Debug builds stay off the landing page (direct releases link only).

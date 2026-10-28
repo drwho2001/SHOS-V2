@@ -153,7 +153,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
                 after deselecting some meant tapping every group's own
                 checkbox one at a time. One tap for the whole list now. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
-              style={{ fontSize: 12, fontWeight: 600, color: healthcareColor, cursor: "pointer", minHeight: 44, whiteSpace: "nowrap", flexShrink: 0, marginTop: 2 }}>
+              style={{ fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2}}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
@@ -197,7 +197,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
               </div>
             </div>
             {(dateFrom || dateTo) && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: healthcareColor, marginTop: 8, cursor: "pointer", minHeight: 44 }}>Clear date range</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 12, color: healthcareColor, marginTop: 8, cursor: "pointer"}}>Clear date range</div>
             )}
           </div>
         </div>
@@ -212,7 +212,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer", minHeight: 44, padding: "10px 0 0" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer", padding: "10px 0 0"}}>
               Choose a folder instead…
             </div>
           )}
@@ -279,7 +279,7 @@ function CSVExportSheet({ onClose }) {
               </div>
             </div>
             {(dateFrom || dateTo) && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: healthcareColor, marginTop: 8, cursor: "pointer", minHeight: 44 }}>Clear date range</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 12, color: healthcareColor, marginTop: 8, cursor: "pointer"}}>Clear date range</div>
             )}
           </div>
           {CSV_EXPORT_GROUPS.map((group) => (
@@ -419,7 +419,7 @@ function EncryptedExportSheet({ onClose }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
             <span style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>What to include</span>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
-              style={{ fontSize: 12, fontWeight: 600, color: healthcareColor, cursor: "pointer", minHeight: 44 }}>
+              style={{ fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer"}}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
@@ -461,7 +461,7 @@ function EncryptedExportSheet({ onClose }) {
               </div>
             </div>
             {(dateFrom || dateTo) && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: healthcareColor, marginTop: 8, cursor: "pointer", minHeight: 44 }}>Clear date range</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 12, color: healthcareColor, marginTop: 8, cursor: "pointer"}}>Clear date range</div>
             )}
           </div>
         </div>
@@ -752,7 +752,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
           Dashboard, rolled out here for consistency. */}
       <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer", minHeight: 44 }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Settings</h1>
       </div>
 
