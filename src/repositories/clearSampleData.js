@@ -55,6 +55,7 @@ import { MeasurementRepository, SEED_MEASUREMENT_IDS } from "./measurementReposi
 import { SymptomLogRepository, SEED_SYMPTOM_LOG_IDS } from "./symptomLogRepository";
 import { LocationsRepository, SEED_LOCATION_IDS } from "./locationsRepository";
 import { EpisodeRepository, SEED_EPISODE_IDS } from "./episodeRepository";
+import { SessionRepository, SEED_SESSION_IDS } from "./sessionRepository";
 import { LogRepository, SEED_MEDICATION_LOG_IDS } from "./logRepository";
 import { MenstrualCycleRepository, SEED_MENSTRUAL_CYCLE_IDS } from "./menstrualCycleRepository";
 import { ContraceptionRepository, SEED_CONTRACEPTION_IDS } from "./contraceptionRepository";
@@ -105,6 +106,7 @@ const SAMPLE_REPOSITORIES = [
   ["Symptom log entries", SymptomLogRepository, SEED_SYMPTOM_LOG_IDS, (r) => r.title || "Symptom entry"],
   ["Locations", LocationsRepository, SEED_LOCATION_IDS, (r) => r.name || "Location"],
   ["Episodes", EpisodeRepository, SEED_EPISODE_IDS, (r) => r.title || "Episode"],
+  ["Sessions", SessionRepository, SEED_SESSION_IDS, (r) => r.title || "Session"],
   // A medication log has no name of its own - it is a dose or a refill
   // AGAINST a medication, so it is named by that medication, which is why
   // this label needs the medication names the caller passes in.

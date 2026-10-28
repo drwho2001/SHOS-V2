@@ -70,6 +70,11 @@ export function WidgetsScreen({ onClose }) {
 
     },
     {
+      key: "liveSession",
+      label: t("widgets.liveSession", "Live Session"),
+      description: t("widgets.liveSessionDesc", "Shows the active session tally you choose"),
+    },
+    {
       key: "quickAddEncounter",
       label: t("widgets.quickAddEncounter","Quick Add: Encounter"),
       description: t("widgets.quickAddEncounterDesc","Tap to open Add Encounter form"),

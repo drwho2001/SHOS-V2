@@ -110,7 +110,7 @@ const ALWAYS_HIDDEN_BY_DESIGN = {
 
 describe("a view hidden in one branch is restored in another", () => {
   it("found the providers - otherwise every check below is vacuous", () => {
-    expect(providers.length, "no widget providers discovered").toBe(9);
+    expect(providers.length, "no widget providers discovered").toBe(10);
   });
 
   it("every view set GONE anywhere is also set VISIBLE somewhere", () => {

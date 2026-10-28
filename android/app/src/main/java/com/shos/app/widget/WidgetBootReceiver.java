@@ -92,6 +92,7 @@ public class WidgetBootReceiver extends BroadcastReceiver {
         blank(manager, new ComponentName(context, DoxyPEPWidgetProvider.class), R.layout.doxy_pep_widget);
         blank(manager, new ComponentName(context, CycleWidgetProvider.class), R.layout.cycle_widget);
         blank(manager, new ComponentName(context, ClinicCardWidgetProvider.class), R.layout.clinic_card_widget);
+        blank(manager, new ComponentName(context, LiveSessionWidgetProvider.class), R.layout.live_session_widget);
     }
 
     /**

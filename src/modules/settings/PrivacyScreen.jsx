@@ -14,8 +14,10 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../../repos
 import { enablePinProtection, disablePinProtectionWithPin, changePin, enableBiometricSlot, disableBiometricSlot, setRecoveryString as setRecoveryStringVault, hasRecoveryString, clearRecoveryString as clearRecoveryStringVault } from "../../storage/cryptoService";
 import { checkBiometryAvailable } from "../../storage/biometricAuthService";
 import { isScreenSecurityAvailable, setScreenshotsAllowed } from "../../storage/screenSecurityService";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 export function PrivacyScreen({ onClose }) {
+  useEscapeToClose(onClose);
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   // ADDED — real audit finding (desktop full-width sweep): a real
@@ -492,7 +494,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           <div onClick={settings.anonymiseModeActive ? async () => { await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
             role="switch" tabIndex={settings.anonymiseModeActive ? 0 : -1} aria-checked={settings.hideFurtherEnabled} aria-label="Also hide kinks & physical attributes"
             onKeyDown={settings.anonymiseModeActive ? async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.hideKinks", "Also hide kinks & physical attributes")}</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
@@ -519,7 +521,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
           <div onClick={toggleAppLock} role="switch" tabIndex={0} aria-checked={settings.appLockEnabled} aria-label="App Lock"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAppLock(); } }}
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.appLock", "App Lock")}</div>
               {/* FIXED 27 Sep 2026 - the description implied App Lock is what
@@ -580,7 +582,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               checkBiometryAvailable() call) — that's expected, not a
               bug, the native plugin only exists in the installed app. */}
           {settings.appLockEnabled && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} onClick={toggleBiometric}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} onClick={toggleBiometric}
               role="switch" tabIndex={0} aria-checked={settings.biometricUnlockEnabled} aria-label="Unlock with biometrics"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleBiometric(); } }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
@@ -604,7 +606,7 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               <div onClick={async () => { await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
                 role="switch" tabIndex={0} aria-checked={settings.appLockGraceMinutes > 0} aria-label="Skip re-verification briefly"
                 onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: "pointer" }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.skipReverify", "Skip re-verification briefly")}</div>
                   <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>

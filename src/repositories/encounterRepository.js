@@ -160,6 +160,15 @@ export const DEFAULT_ENCOUNTER = {
   notes: "",
   enjoymentRating: null,
   symptomsNoted: [],
+  // ADDED (Session feature) - grouping id for a live Session; empty when
+  // the encounter is standalone. Loads/fists are facts; distinct people and
+  // kinks are derived from the linked encounters.
+  sessionId: "",
+  loadsCount: 0,
+  fistCount: 0,
+  // Optional per-kink facts. Each entry is attributed to the encounter's
+  // selected participants and remains invisible to widgets by default.
+  activityDetails: [],
 };
 
 // ---------------------------------------------------------------------
@@ -594,6 +603,23 @@ function normalizeKinkSelections(arr) {
   }).filter(Boolean);
 }
 
+function normalizeActivityDetails(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(Boolean).map((detail, index) => ({
+    id: detail.id || `activity_detail_${detail.kinkId || index}_${index}`,
+    kinkId: detail.kinkId || "",
+    participantIds: Array.isArray(detail.participantIds) ? detail.participantIds : [],
+    count: detail.count == null ? 0 : detail.count,
+    durationMinutes: detail.durationMinutes == null ? null : detail.durationMinutes,
+    fingers: detail.fingers == null ? null : detail.fingers,
+    hands: detail.hands == null ? null : detail.hands,
+    depth: detail.depth == null ? null : detail.depth,
+    width: detail.width == null ? null : detail.width,
+    unit: detail.unit || "cm",
+    notes: detail.notes || "",
+  }));
+}
+
 export const EncounterRepository = {
   // CHANGED 18 Aug 2026 — same defensive-merge fix applied across every
   // repository this session: an encounter saved before some future
@@ -606,7 +632,7 @@ export const EncounterRepository = {
     return structuredClone(
       encounters.map((e) => {
         const merged = { ...DEFAULT_ENCOUNTER, ...e };
-        return { ...merged, kinksInvolved: normalizeKinkSelections(merged.kinksInvolved), myRole: normalizeRoleCasing(merged.myRole) };
+        return { ...merged, kinksInvolved: normalizeKinkSelections(merged.kinksInvolved), activityDetails: normalizeActivityDetails(merged.activityDetails), myRole: normalizeRoleCasing(merged.myRole) };
       })
     );
   },
@@ -616,7 +642,7 @@ export const EncounterRepository = {
     const found = encounters.find((e) => e.id === id);
     if (!found) return null;
     const merged = { ...DEFAULT_ENCOUNTER, ...found };
-    return structuredClone({ ...merged, kinksInvolved: normalizeKinkSelections(merged.kinksInvolved), myRole: normalizeRoleCasing(merged.myRole) });
+    return structuredClone({ ...merged, kinksInvolved: normalizeKinkSelections(merged.kinksInvolved), activityDetails: normalizeActivityDetails(merged.activityDetails), myRole: normalizeRoleCasing(merged.myRole) });
   },
 
   // Every encounter that lists this contact as an attendee — the read
@@ -629,7 +655,7 @@ export const EncounterRepository = {
         .filter((e) => e.attendeeIds.includes(contactId))
         .map((e) => {
           const merged = { ...DEFAULT_ENCOUNTER, ...e };
-          return { ...merged, kinksInvolved: normalizeKinkSelections(merged.kinksInvolved), myRole: normalizeRoleCasing(merged.myRole) };
+          return { ...merged, kinksInvolved: normalizeKinkSelections(merged.kinksInvolved), activityDetails: normalizeActivityDetails(merged.activityDetails), myRole: normalizeRoleCasing(merged.myRole) };
         })
     );
   },
@@ -692,6 +718,12 @@ export const EncounterRepository = {
   async unlinkContact(contactId) {
     await ensureLoaded();
     encounters = encounters.map((e) => ({ ...e, attendeeIds: (e.attendeeIds || []).filter((id) => id !== contactId) }));
+    await persist();
+  },
+
+  async unlinkSession(sessionId) {
+    await ensureLoaded();
+    encounters = encounters.map((e) => (e.sessionId === sessionId ? { ...e, sessionId: "" } : e));
     await persist();
   },
 

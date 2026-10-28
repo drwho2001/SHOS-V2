@@ -67,6 +67,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
 import { LocationsRepository } from "../repositories/locationsRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
+import { SessionRepository } from "../repositories/sessionRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
 
@@ -212,6 +213,7 @@ const REPOSITORIES = [
   ["menstrual cycles", MenstrualCycleRepository],
   ["locations", LocationsRepository],
   ["episodes", EpisodeRepository],
+  ["sessions", SessionRepository],
   ["medication logs", LogRepository],
   ["pregnancies", PregnancyRepository],
 ];

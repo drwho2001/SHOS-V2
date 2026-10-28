@@ -131,7 +131,7 @@ describe("widget bridge argument order (live bug: two providers declared the wro
   it("finds the providers - otherwise every check below is vacuous", () => {
     // Same anti-vacuity rule widgetTapAndFallbackGuard uses: a guard that matches
     // zero files passes every assertion it makes.
-    expect(updaters.length, "no widget update methods discovered").toBe(6);
+    expect(updaters.length, "no widget update methods discovered").toBe(7);
     for (const u of updaters) {
       expect(u.passed, `no call site found for ${named(u)}`).not.toBeNull();
     }

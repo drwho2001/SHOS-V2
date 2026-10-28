@@ -199,8 +199,10 @@ it has been re-affirmed multiple times, not an oversight.
   facts it exists to stop being re-derived: the OpenCode **Go** account is the
   paid one (Zen returns `402 Insufficient account funds`, which is expected,
   not a fault), and the free models are **not equally private** —
-  `space-bunny-free` and `longcat-2.5-preview-free` are documented
-  zero-retention, while Nemotron's free tier explicitly forbids submitting
+  the three opencode zero-retention models (`space-bunny-free`,
+  `longcat-2.5-preview-free`, `step-5-preview-free`) are all dead upstream as
+  of 27 Oct 2026. The current default `opencode-go/beam-free` has an
+  unverified privacy tier. Nemotron's free tier explicitly forbids submitting
   personal or confidential data, which matters unusually much for this app.
 - `docs/DEVICE-TESTING.md` — the items that can only be verified on real
   hardware (safe-area / notch / status-bar spacing).
@@ -369,6 +371,8 @@ forcing it.
 
 **Write to the session bus as you go.** Logging is not optional courtesy; it is
 the only reason the next session inherits anything.
+
+Prompt/plan/context logs live in `~/.shos-session-bus/` (`prompts.md`, `plans.md`, `backlog.md`). Append the user's prompt to `prompts.md` when received; append a settled plan to `plans.md` when agreed. Context is `backlog.md` via `session-bridge.mjs log`.
 
 ```powershell
 node scripts\session-bridge.mjs log "<what you decided, tried, or found>" --kind=decision

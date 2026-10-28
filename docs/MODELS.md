@@ -46,18 +46,25 @@ wrong side of it until 9 Oct.
 
 | Tier | Models | Verdict for this repo |
 |---|---|---|
-| **Zero-retention, not used for training** | `space-bunny-free`, `longcat-2.5-preview-free`, `step-5-preview-free` | **Safe.** The only three that may see this repo's data. |
+| **Zero-retention, not used for training** | `space-bunny-free` (dead), `longcat-2.5-preview-free` (dead), `step-5-preview-free` (dead) | **None currently available.** All three were deprecated/removed upstream by 27 Oct 2026 (space-bunny-free: "Model ... has been deprecated. Use minimax-m3.1-flash-free instead."; longcat-2.5-preview-free: "Model not found"; step-5-preview-free: "Unexpected server error"). minimax-m3.1-flash-free is the suggested replacement but is training-on and not permitted for this repo's data. |
 | Collected data **may be used to improve the model** during the free period | `big-pickle`, `mimo-v2.6-flash-free`, `mimo-v2.5-free`, `ling-3.1-flash-free`, `ling-3.0-flash-fin-free` | **Not permitted.** Usable for throwaway work; never for this repo's code, seed data or session bus. |
+| Zero-retention, access-disabled (403) as of 27 Oct 2026 | `glm-5.3-flash-free`, `deepseek-v4.1-flash-free`, `flint-40b-free` | **Not callable.** Documented zero-retention but return "Model access is disabled" for this account; not usable until enabled in the console. |
 | **NVIDIA trial endpoints** — use logged for security and product improvement | `nemotron-3-ultra-free`, `nemotron-3.5-lightning-free` | **Not permitted.** Upstream terms say *"Trial use only — do not submit personal or confidential data."* |
 | **Trains future Meta models** | `muse-spark-1.3-contributor-free` | **Not permitted.** It trades prompt/completion rights for discounted pricing. |
 | Paid Zen models | — | **`402 Insufficient account funds`.** Zen is not subscribed. Expected, not a fault. |
 
-`step-5-preview-free` sits in the safe tier because it is absent from the
-documented exception list — not because it is permanently free. It is a
-one-week preview offer, so it may vanish without notice. The two durable
-choices are `space-bunny-free` and `longcat-2.5-preview-free`.
+`step-5-preview-free` sat in the safe tier because it was absent from the
+documented exception list — not because it was permanently free. It was a
+one-week preview offer and has since vanished (dead as of 27 Oct 2026).
+**All three zero-retention opencode models are now dead upstream**, so there
+is no documented zero-retention opencode model available as of 27 Oct 2026.
+The only confirmed-working free model is `opencode-go/beam-free` (used as the
+current default), but its privacy tier is **unverified** — it is not listed in
+opencode's documented zero-retention exception set, so it must be treated as
+training-on until proven otherwise. Do not send this repo's code, seed data or
+session bus to it until verified.
 
-## Measured 9 Oct 2026 — the eight free models that actually reply
+## Measured 27 Oct 2026 — re-check of the free models that actually reply
 
 Each row is one `opencode run --model <model> "Reply with exactly: OK" --format
 json`, run **sequentially** (the free tier is contended, so parallel calls would
@@ -66,9 +73,9 @@ read.
 
 | Model | Verdict | Latency | Tier |
 |---|---|---|---|
-| `opencode/space-bunny-free` | **REPLIES** — `OK` | 45s | zero-retention |
-| `opencode/longcat-2.5-preview-free` | **REPLIES** — `OK` | 34s | zero-retention |
-| `opencode/step-5-preview-free` | **REPLIES** — `OK` | 44s | zero-retention (ephemeral) |
+| `opencode/space-bunny-free` | **DEAD** — "Model space-bunny-free has been deprecated. Use minimax-m3.1-flash-free instead." | — | zero-retention (dead) |
+| `opencode/longcat-2.5-preview-free` | **DEAD** — "Model not found: opencode/longcat-2.5-preview-free" | — | zero-retention (dead) |
+| `opencode/step-5-preview-free` | **DEAD** — "Unexpected server error" | — | zero-retention (dead) |
 | `opencode/ling-3.1-flash-free` | REPLIES — `OK` | 79s | training-on |
 | `opencode/mimo-v2.6-flash-free` | REPLIES — `OK` | 47s | training-on |
 | `opencode/nemotron-3.5-lightning-free` | REPLIES — `OK` | 29s | NVIDIA trial |
@@ -77,9 +84,12 @@ read.
 | `opencode/exo-free` | **DEAD** — `Model exo-free has been deprecated.` | 33s | — |
 | `opencode/ling-3.0-flash-fin-free` | **DEAD** — `Upstream request failed: Model is unavailable.` | 100s | training-on |
 
-So **8 of the 10 free models opencode advertises are callable**, and both
-zero-retention choices are among them. The two dead ones are dead upstream, not
-misconfigured: the error names the model, not the credential.
+So as of 27 Oct 2026 **all three zero-retention opencode models are dead
+upstream** (space-bunny-free deprecated, longcat-2.5-preview-free not found,
+step-5-preview-free server error). The remaining free models still reply but
+are training-on / trial / Meta-training and are not permitted for this repo's
+data. The only confirmed-working free model is `opencode-go/beam-free`, whose
+privacy tier is unverified.
 
 ## Credentials, measured 9 Oct 2026
 

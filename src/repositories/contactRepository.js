@@ -220,6 +220,20 @@ export const DEFAULT_CONTACT = {
   // ones could genuinely fill it up. No compression/resizing built yet;
   // worth adding if this becomes a real problem, not before.
   profilePicture: "",
+  // ADDED (Session feature) - hideable fisting profile facts. Stored on the
+  // contact; units are kept alongside values. Informational only, not a
+  // clinical assessment.
+  fistingProfile: {
+    role: "",
+    handSize: "",
+    maxDepth: null,
+    maxDepthUnit: "cm",
+    maxWidth: null,
+    maxWidthUnit: "cm",
+    maxFingers: null,
+    canTakeDoubles: false,
+    notes: "",
+  },
   phone: "", snapchat: "", fabguys: "", fabswingers: "", recon: "", contactableVia: [],
   city: "", address: "",
   hosts: "", travels: "", travelMode: [],

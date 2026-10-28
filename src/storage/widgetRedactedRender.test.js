@@ -275,7 +275,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
   it("discovered the seven data widgets, or the inventory below is meaningless", () => {
     // NON-VACUITY. If this filter ever matched nothing, every test after it
     // would pass on an empty set and report a fully-wired privacy system.
-    expect(dataProviders.length, "no data-rendering providers discovered").toBe(6);
+    expect(dataProviders.length, "no data-rendering providers discovered").toBe(7);
   });
 
   it("DoxyPEP, the widget that was lying, is wired", () => {

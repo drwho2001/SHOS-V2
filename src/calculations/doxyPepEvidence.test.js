@@ -91,6 +91,11 @@ describe("DoxyPEP evidence across the bridge (t093)", () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    vi.doMock("../repositories/appPreferencesRepository.js", () => ({
+      AppPreferencesRepository: {
+        getPreferences: async () => ({ widgetPrivacy: { doxyPepWindow: "full" } }),
+      },
+    }));
     const wp = await import("./widgetPrivacy.js");
     const wbu = await import("./widgetBridgeUpdate.js");
     fieldAllowed = wp.fieldAllowed;

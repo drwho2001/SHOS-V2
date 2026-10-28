@@ -73,6 +73,8 @@ import { PrivacySettingsRepository } from "../repositories/privacySettingsReposi
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { SessionRepository } from "../repositories/sessionRepository";
+import { KinkRegistry } from "../registries/kinkRegistry";
+import { sessionTally } from "../calculations/sessionTally";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -193,6 +195,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // ADDED 2 Sep 2026 — real ask: Menstrual's own colour, not ACTION.red
   // borrowed for module identity — see designTokens.js's comment.
   const menstrualColor = darkMode ? resolveDarkAccent("menstrual", ACCENTS.menstrual) : ACCENTS.menstrual;
+  const encountersColor = darkMode ? resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7") : ACCENTS.encounters;
 
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
   // bare "Home". My Profile only has `nickname`, no separate name
@@ -250,24 +253,29 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // Encounters timeline rather than becoming a permanent dashboard metric.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const [sessions, encounters] = await Promise.all([
-        SessionRepository.getAll(),
+    const refreshActiveSession = async () => {
+      const [sessions, encounters, kinks] = await Promise.all([
+        SessionRepository.getActive(),
         EncounterRepository.getAll(),
+        KinkRegistry.getAll(),
       ]);
-      const active = sessions.find((session) => !session.isArchived && session.status === "active");
+      const active = sessions[0] || null;
       if (!active || cancelled) {
         if (!cancelled) setActiveSession(null);
         return;
       }
       const items = encounters.filter((encounter) => encounter.sessionId === active.id && !encounter.isArchived);
-      const people = new Set(items.flatMap((encounter) => encounter.attendeeIds || [])).size;
-      const kinks = new Set(items.flatMap((encounter) => (encounter.kinksInvolved || []).map((entry) => entry.kinkId))).size;
-      setActiveSession({ ...active, activityCount: items.length, people, kinks,
-        loads: items.reduce((sum, encounter) => sum + (Number(encounter.loadsCount) || 0), 0),
-        fists: items.reduce((sum, encounter) => sum + (Number(encounter.fistCount) || 0), 0) });
-    })();
-    return () => { cancelled = true; };
+      const tally = sessionTally(items, { fistingKinkIds: kinks.filter((kink) => kink.name === "Fisting").map((kink) => kink.id) });
+      setActiveSession({ ...active, ...tally });
+    };
+    refreshActiveSession();
+    window.addEventListener("shos-session-changed", refreshActiveSession);
+    document.addEventListener("visibilitychange", refreshActiveSession);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("shos-session-changed", refreshActiveSession);
+      document.removeEventListener("visibilitychange", refreshActiveSession);
+    };
   }, []);
   const [showTimeline, setShowTimeline] = useState(false);
   // No dialog ref/effect on this wrapper: TimelineModule's own root
@@ -948,10 +956,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           gets this: still-counting-down is a short-lived countdown, not
           something worth permanently silencing. */}
       {activeSession && (
-        <div style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${ACCENTS.encounters}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
+        <div style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
-              <div style={{ color: ACCENTS.encounters, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Live session</div>
+              <div style={{ color: encountersColor, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Live session</div>
               <div style={{ marginTop: 3, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 17, fontWeight: 800 }}>{activeSession.title || "Untitled session"}</div>
               <div style={{ marginTop: 4, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontSize: 12 }}>
                 {activeSession.activityCount} activities · {activeSession.people} people · {activeSession.kinks} kinks
@@ -959,11 +967,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 {activeSession.fists ? ` · ${activeSession.fists} fists` : ""}
               </div>
             </div>
-            <Activity size={24} color={ACCENTS.encounters} />
+            <Activity size={24} color={encountersColor} />
           </div>
           <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-            <div role="button" tabIndex={0} onClick={() => onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: ACCENTS.encounters, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
-            <div role="button" tabIndex={0} onClick={() => onNavigateToRecord("activity")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${ACCENTS.encounters}`, color: ACCENTS.encounters, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Open log</div>
+            <div role="button" tabIndex={0} onClick={() => onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: encountersColor, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
+            <div role="button" tabIndex={0} onClick={() => onNavigateToRecord("activity")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${encountersColor}`, color: encountersColor, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Open log</div>
           </div>
         </div>
       )}
@@ -1114,7 +1122,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.recentActivity", "Recent activity")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
-        <SummaryRow label={tr("home.lastEncounter", "Last encounter")} moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
+        <SummaryRow label={tr("home.lastEncounter", "Last encounter")} moduleColor={encountersColor} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         {/* ADDED 26 Sep 2026 — this row's query has existed since the
             "Recent activity" list was first built (lastContact is set from
             ContactRepository further up this same effect) but was never
@@ -1245,7 +1253,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             the earlier Flame decision above: back to the same Pulse/
             Activity glyph the bottom nav and Global Search already use
             for Encounters everywhere else, for consistency. */}
-        <QuickAddButton icon={Activity} label="New encounter" color={ACCENTS.encounters} onClick={() => onQuickAdd("activity")} />
+        <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} />
         {/* CHANGED 20 Aug 2026 — real bug found in the design-
             unification pass: this was #3B82F6, a different, lighter
             blue than Medication Dashboard's own accent (medsBlue,

@@ -3088,6 +3088,19 @@ function demoComparable(record, fallbackReference) {
   for (const k of Object.keys(record).sort()) {
     if (k === "isSeed" || k === "isDemo" || k === "createdAt" || k === "updatedAt") continue;
     if (k === "collection") continue;
+    // New optional fields are merged into live seed records by repository
+    // defaults, but older frozen seed snapshots do not contain them. Ignore
+    // only their empty default values; a meaningful user edit still makes the
+    // seed diverge and therefore remain protected from Clear Sample Data.
+    if (k === "sessionId" && record[k] === "") continue;
+    if (["loadsCount", "fistCount"].includes(k) && (record[k] === 0 || record[k] === "0" || record[k] == null)) continue;
+    if (k === "activityDetails" && Array.isArray(record[k]) && record[k].length === 0) continue;
+    if (k === "fistingProfile" && record[k] &&
+      record[k].role === "" && record[k].handSize === "" &&
+      record[k].maxDepth == null && record[k].maxDepthUnit === "cm" &&
+      record[k].maxWidth == null && record[k].maxWidthUnit === "cm" &&
+      record[k].maxFingers == null && record[k].canTakeDoubles === false &&
+      record[k].notes === "") continue;
     if (k === "id") {
       out[k] = normaliseLegacyId(record[k]);
       continue;

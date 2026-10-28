@@ -35,6 +35,7 @@ import { ClinicVisitsRepository, DEFAULT_CLINIC_VISIT } from "../repositories/cl
 import { SymptomLogRepository, DEFAULT_SYMPTOM_ENTRY } from "../repositories/symptomLogRepository.js";
 import { VaccinationRepository, DEFAULT_VACCINATION } from "../repositories/vaccinationRepository.js";
 import { EpisodeRepository, DEFAULT_EPISODE } from "../repositories/episodeRepository.js";
+import { SessionRepository, DEFAULT_SESSION } from "../repositories/sessionRepository.js";
 import { LocationsRepository, DEFAULT_LOCATION } from "../repositories/locationsRepository.js";
 import { LogRepository } from "../repositories/logRepository.js";
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository.js";
@@ -88,6 +89,7 @@ const TARGET_SOURCES = {
   "Symptoms Registry": { getAll: () => SymptomsRegistry.getAll(), label: (s) => s.name },
   "Organism Registry": { getAll: () => OrganismRegistry.getAll(), label: (o) => o.name },
   "Results Registry": { getAll: () => ResultsRegistry.getAll(), label: (r) => r.name },
+  Session: { getAll: () => SessionRepository.getAll(), label: (s) => s.title || "Session" },
 };
 
 // Fields whose ENTRIES are objects carrying a foreign key. This is the only
@@ -123,6 +125,7 @@ const DECLARED_DEFAULTS = {
   "Clinic Visit": DEFAULT_CLINIC_VISIT,
   Vaccination: DEFAULT_VACCINATION,
   Episode: DEFAULT_EPISODE,
+  Session: DEFAULT_SESSION,
   Location: DEFAULT_LOCATION,
   "Symptom Log entry": DEFAULT_SYMPTOM_ENTRY,
   Measurement: DEFAULT_MEASUREMENT,

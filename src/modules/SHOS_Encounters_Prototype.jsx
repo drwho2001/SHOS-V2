@@ -30,7 +30,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { syncAllWidgets } from "../calculations/syncAllWidgets";
-import { nowAsDateTimeLocalString, formatStoredDate, formatStoredDateTime, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateTimeLocalString, nowAsStoredDateTime, formatStoredDate, formatStoredDateTime, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import {
@@ -80,6 +80,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+import { sessionTally } from "../calculations/sessionTally";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -1128,6 +1129,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const [sessionVersion, setSessionVersion] = useState(0);
   const sessions = useLoadedMemo(loadSessions, [sessionVersion], []);
   const [sessionFilter, setSessionFilter] = useState("");
+  useEffect(() => {
+    const refreshSessions = () => setSessionVersion((version) => version + 1);
+    window.addEventListener("shos-session-changed", refreshSessions);
+    return () => window.removeEventListener("shos-session-changed", refreshSessions);
+  }, []);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
@@ -1254,19 +1260,19 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       const items = encounters
         .filter((encounter) => encounter.sessionId === session.id && !encounter.isArchived)
         .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
-      const attendeeIds = new Set(items.flatMap((encounter) => encounter.attendeeIds || []));
-      const kinkIds = new Set((items.flatMap((encounter) => encounter.kinksInvolved || [])).map((entry) => entry.kinkId));
+      const fistingKinkIds = [...kinkNameById.entries()].filter(([, name]) => name === "Fisting").map(([id]) => id);
+      const tally = sessionTally(items, { fistingKinkIds });
       return {
         ...session,
         items,
-        people: attendeeIds.size,
-        kinks: kinkIds.size,
-        loads: items.reduce((sum, encounter) => sum + (Number(encounter.loadsCount) || 0), 0),
-        fists: items.reduce((sum, encounter) => sum + (Number(encounter.fistCount) || 0), 0),
+        people: tally.people,
+        kinks: tally.kinks,
+        loads: tally.loads,
+        fists: tally.fists,
       };
     })
     .filter((session) => session.items.length > 0)
-    .sort((a, b) => String(b.startAt || b.items.at(-1)?.date || "").localeCompare(String(a.startAt || a.items.at(-1)?.date || ""))), [sessions, encounters]);
+    .sort((a, b) => String(b.startAt || b.items.at(-1)?.date || "").localeCompare(String(a.startAt || a.items.at(-1)?.date || ""))), [sessions, encounters, kinkNameById]);
   const activeSession = sessionSummaries.find((session) => session.status === "active") || null;
   // ADDED — real ask: desktop grid grouped consecutively by month, since
   // "visible" is already newest-first this is a plain contiguous grouping,
@@ -1373,7 +1379,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               <div
                 role="button"
                 tabIndex={0}
-                onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsDateTimeLocalString() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
+                onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsStoredDateTime() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
                 style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", minHeight: 44, whiteSpace: "nowrap" }}
               >
@@ -1948,10 +1954,16 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   const save = async () => {
     clearDraft(draftKey);
     let record = form;
+    if (isNew && record.sessionId) {
+      const linkedSession = await SessionRepository.getById(record.sessionId);
+      if (!linkedSession || linkedSession.isArchived || linkedSession.status !== "active") {
+        record = { ...record, sessionId: "" };
+      }
+    }
     if (newSessionTitle.trim()) {
       const session = await SessionRepository.create({
         title: newSessionTitle.trim(),
-        startAt: form.date || nowAsDateTimeLocalString(),
+        startAt: form.date || nowAsStoredDateTime(),
       });
       record = { ...form, sessionId: session.id };
     }
@@ -1974,6 +1986,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
     // immediately rather than waiting for the next app open.
     syncDoxyPepAlert();
     syncAllWidgets();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed"));
     // ADDED 26 Aug 2026 — real ask: push straight to finishing the
     // placeholder contact's profile right after the Activity saves,
     // if one was created this session. Only the most recent one if
@@ -2040,7 +2053,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
             label={tr("encounters.session", "Session (optional)")}
             value={form.sessionId}
             onChange={set("sessionId")}
-            options={sessions.filter((session) => !session.isArchived).map((session) => ({ value: session.id, label: session.title || "Untitled session" }))}
+            options={sessions.filter((session) => !session.isArchived && (session.status === "active" || session.id === form.sessionId)).map((session) => ({ value: session.id, label: `${session.title || "Untitled session"}${session.status === "active" ? "" : " (closed)"}` }))}
             T={T}
           />
           {!showNewSession ? (
@@ -2234,6 +2247,8 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
     if (!deleteToast) return;
     for (const record of deleteToast.records) await EncounterRepository.restore(record);
     refresh();
+    await syncAllWidgets();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed"));
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -2243,12 +2258,16 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
     await TrashRepository.add("encounters", deleteToast.records);
     for (const r of deleteToast.records) await EncounterRepository.delete(r.id);
     refresh();
+    await syncAllWidgets();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed"));
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("encounters", records);
     for (const r of records) await EncounterRepository.delete(r.id);
+    await syncAllWidgets();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed"));
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);

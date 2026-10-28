@@ -12,6 +12,7 @@ import com.shos.app.widget.DoxyPEPWidgetProvider;
 import com.shos.app.widget.NextDoseWidgetProvider;
 import com.shos.app.widget.RefillWidgetProvider;
 import com.shos.app.widget.TestWidgetProvider;
+import com.shos.app.widget.LiveSessionWidgetProvider;
 import com.shos.app.widget.WidgetBootReceiver;
 
 /**
@@ -225,6 +226,28 @@ public class WidgetBridgePlugin extends Plugin {
       // null case and a stale value cannot survive a change back to full.
       opt(call, "redactedText")
     );
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void updateLiveSession(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), LiveSessionWidgetProvider.class, R.layout.live_session_widget);
+            call.resolve();
+            return;
+        }
+        LiveSessionWidgetProvider.updateLiveSession(
+                getContext(),
+                opt(call, "title"),
+                opt(call, "category"),
+                opt(call, "state"),
+                call.getInt("activityCount", 0),
+                call.getInt("people", 0),
+                call.getInt("kinks", 0),
+                call.getInt("loads", 0),
+                call.getInt("fists", 0),
+                opt(call, "redactedText")
+        );
         call.resolve();
     }
 

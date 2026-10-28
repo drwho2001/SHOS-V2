@@ -440,3 +440,24 @@ export function getKinkRoleOptions(kinkName) {
   if (style === "anatomical") return KINK_ROLE_OPTIONS;
   return [...KINK_ROLE_OPTIONS, ...DYNAMIC_ROLE_OPTIONS];
 }
+
+// Optional detail packs keep the encounter form small while allowing a
+// selected activity to carry the facts that matter for it. The pack is a UI
+// hint, not a clinical classification, and unknown/custom kinks deliberately
+// fall back to the generic count/duration/notes fields.
+export const KINK_DETAIL_PACKS = {
+  hands: ["Fisting", "Fingering"],
+  penetration: ["Gaping", "Double penetration", "Toys", "Sounding"],
+  oral: ["Deep throating", "Face fucking", "Gagging", "Rimming"],
+  restraint: ["Rope bondage", "Suspension", "Bondage", "Chastity"],
+  power: ["CBT", "Choking", "CNC", "Degradation", "Edging", "Extreme pain", "Spanking", "Whipping"],
+  fluids: ["Breeding", "Cum play", "Felching", "Piss", "Scat", "Snowballing"],
+};
+
+export function getKinkDetailPack(kinkName) {
+  if (!kinkName) return "generic";
+  for (const [pack, names] of Object.entries(KINK_DETAIL_PACKS)) {
+    if (names.includes(kinkName)) return pack;
+  }
+  return "generic";
+}

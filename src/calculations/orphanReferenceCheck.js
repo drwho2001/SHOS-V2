@@ -45,6 +45,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository.j
 import { SymptomLogRepository } from "../repositories/symptomLogRepository.js";
 import { VaccinationRepository } from "../repositories/vaccinationRepository.js";
 import { EpisodeRepository } from "../repositories/episodeRepository.js";
+import { SessionRepository } from "../repositories/sessionRepository.js";
 import { LocationsRepository } from "../repositories/locationsRepository.js";
 import { LogRepository } from "../repositories/logRepository.js";
 import { MyProfileRepository } from "../repositories/myProfileRepository.js";
@@ -134,6 +135,7 @@ export async function findOrphanReferences() {
   const clinicVisitExists = async (id) => !!(await ClinicVisitsRepository.getById(id));
   const symptomLogExists = async (id) => !!(await SymptomLogRepository.getById(id));
   const encounterExists = async (id) => !!(await EncounterRepository.getById(id));
+  const sessionExists = async (id) => !!(await SessionRepository.getById(id));
   const vaccinationExists = async (id) => !!(await VaccinationRepository.getById(id));
   const kinkExists = async (id) => !!(await KinkRegistry.getById(id));
   const chemExists = async (id) => !!(await ChemsRegistry.getById(id));
@@ -184,6 +186,7 @@ export async function findOrphanReferences() {
     await checkArray(results, protectionExists, e.protectionUsed, { ...ctx, field: "protectionUsed", targetType: "Protection Registry" });
     await checkArray(results, chemExists, e.chemsAlcoholUsed, { ...ctx, field: "chemsAlcoholUsed", targetType: "Chems Registry" });
     await checkArray(results, symptomExists, e.symptomsNoted, { ...ctx, field: "symptomsNoted", targetType: "Symptoms Registry" });
+    await checkSingle(results, sessionExists, e.sessionId, { ...ctx, field: "sessionId", targetType: "Session" });
   }
 
   for (const t of await TestingRepository.getAll()) {

@@ -28,6 +28,7 @@
     <string name="widget_desc_quick_add_encounter">Jump straight to logging an encounter</string>
     <string name="widget_desc_quick_add_medication">Jump straight to adding a medication</string>
     <string name="widget_desc_clinic_card">Your next appointment</string>
+    <string name="widget_desc_live_session">Your active live session</string>
     <string name="receiver_label_next_dose">Next Dose</string>
     <string name="receiver_label_refill">Refills due</string>
         <string name="receiver_label_test">Last test</string>

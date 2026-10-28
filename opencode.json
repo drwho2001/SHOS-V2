@@ -1,5 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/space-bunny-free",
-  "small_model": "opencode/space-bunny-free"
+  "model": "opencode-go/beam-free",
+  "small_model": "opencode-go/beam-free"
 }

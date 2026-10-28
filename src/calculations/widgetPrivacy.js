@@ -90,9 +90,9 @@ export const DEFAULT_TIERS = {
   doxyPepWindow: "redacted",
   cycle: "redacted",
   clinicCard: "redacted",
-  // Owner-approved exception: the live-session widget is intentionally useful
-  // only when the owner opts into tracking it. Redacted/off remain available.
-  liveSession: "full",
+  // Privacy-by-default after audit: live sexual-activity tallies are identifying.
+  // Full is an explicit per-widget opt-in.
+  liveSession: "redacted",
 };
 
 /**

@@ -268,7 +268,11 @@ export const ACTION = {
 export const ACCENT_TEXT_SAFE = {
   contacts: "#9D5604",
   home: "#007373",
-  // ADDED 16 Sep 2026 — Registry Management's own sort-chip row (see
+  // ADDED 28 Oct 2026 (Lily, t188): menstrual accent #EB4799 measures
+  // ~3.56:1 against a light surface, UI-only acceptable but below the 4.5:1
+  // text threshold. Darkened stand-in for text use only; the base accent
+  // stays for icons/backgrounds. Mirrors the pattern used for contacts/home.
+  menstrual: "#B33370",  // ADDED 16 Sep 2026 — Registry Management's own sort-chip row (see
   // above), computed the same way: darkened while preserving hue until
   // clearing 4.5:1 with real margin (4.8:1+, not razor-thin) against a
   // white/near-white background. `locations` reuses `protection`'s
