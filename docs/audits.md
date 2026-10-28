@@ -55,3 +55,8 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Orphan reference coverage: 17/17 pass.
 - Backup preference/migrations/seed-import: 36/36 pass.
 - Icon-only UI audit: 5/5 pass.
+## Large audits
+- Widget privacy: 22/22 pass.
+- Seed id collision/routing: 57/57 pass.
+- Disclosure copy guard: 9/9 pass.
+- Widget visibility restored: 9/9 pass.
