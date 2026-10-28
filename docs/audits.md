@@ -65,3 +65,6 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Smoke test: 32 flows; CRUD gaps for encounter, testing, clinic visit, medication. Action: t194.
 - Native/device validation: requires CI build-apk + real device; not runnable locally.
 - Accessibility contrast/live regions: manual audit pending.
+## Remaining audits
+- Accessibility contrast/live regions: manual audit pending. Action: t195.
+- Native/device validation: CI build-apk + real device. Action: t196.
