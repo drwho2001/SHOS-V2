@@ -46,3 +46,8 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 ## ARIA labels (settings)
 - Scope: settings screens.
 - Finding: role=button elements without aria-label all have visible text. No gaps.
+## Quick audits (batch)
+- Dark-mode accent: only Home active-session border uses ACCENTS.encounters without resolveDarkAccent (line 958). Action: t187.
+- Modal overlays: many fixed overlays lack role=dialog (Medication 14/8, Contacts 9/3). Needs manual review. Action: t192 finding.
+- Escape-to-close: modules complete (only Home/Healthcare lack, no dialogs); settings 20 screens with dialogs lack it. Action: t185.
+- ARIA labels: settings role=button elements without aria-label all have visible text. No gaps.
