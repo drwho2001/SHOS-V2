@@ -696,7 +696,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span role="button" tabIndex={0} aria-label="Edit measurement" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(measurementId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 4 }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {confirmDelete && (
@@ -862,7 +862,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
           {/* ADDED — real ask: default unit preferences + manage
               groups, same "gear icon within the module itself" pattern
               already used by Medication's own preferences. */}
-          <Gear size={16} color={T.healthcareBlue} style={{ cursor: "pointer" }} onClick={onOpenPreferences} role="button" tabIndex={0} aria-label="Measurement preferences" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPreferences(); } }} />
+          <Gear size={20} color={T.healthcareBlue} style={{ cursor: "pointer", padding: 4 }} onClick={onOpenPreferences} role="button" tabIndex={0} aria-label="Measurement preferences" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPreferences(); } }} />
            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit select mode" : "Enter select mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
              {selectMode ? "Done" : "Select"}
            </span>

@@ -29,6 +29,7 @@ import { getCurrentLocationPlace, summarizePlaceName } from "../storage/location
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
+import { syncAllWidgets } from "../calculations/syncAllWidgets";
 import { nowAsDateTimeLocalString, formatStoredDate, formatStoredDateTime, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -49,7 +50,7 @@ import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { TestingRepository } from "../repositories/testingRepository";
 // New 18 Aug 2026: real registries now exist for these fields — replaces
 // the free-text TagField stubs used until this session.
-import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
+import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions, getKinkDetailPack } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts already uses, imported
 // here rather than duplicated — it's a pure, generic text utility, not
 // Contacts-specific, matching how other pure calculation helpers
@@ -60,6 +61,7 @@ import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 import { ProtectionRegistry } from "../registries/protectionRegistry";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { LocationsRepository } from "../repositories/locationsRepository";
+import { SessionRepository } from "../repositories/sessionRepository";
 // ADDED — real bug report: Anonymise mode (see privacySettingsRepository.js)
 // masked Contacts' own name/address/etc. but Encounters still showed the
 // real linked-attendee name on cards and in the detail view — the same
@@ -142,6 +144,9 @@ function loadEncounters() {
 function loadContacts() {
   return ContactRepository.getAll();
 }
+function loadSessions() {
+  return SessionRepository.getAll();
+}
 // FIXED 28 Sep 2026 — Anonymise mode. The local `MASKED` constant and its
 // "not exported from there, so duplicated here" comment are gone: the shared
 // `anonymiseDisplay` module now exports the placeholder and the name rule in
@@ -217,6 +222,44 @@ function SelectField({ label, value, onChange, options, T }) {
         <option value="">—</option>
         {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
+    </div>
+  );
+}
+
+function KinkDetailEditor({ detail, kinkName, contacts, onChange, T, anonymise = false }) {
+  const pack = getKinkDetailPack(kinkName);
+  const change = (key) => (value) => onChange({ [key]: value });
+  const showMeasure = pack === "hands" || pack === "penetration";
+  return (
+    <div style={{ marginTop: 8, padding: 10, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{kinkName || "Activity details"}</div>
+      <div style={{ fontSize: 11, color: T.textSecondary, margin: "3px 0 6px" }}>
+        Optional details. They stay on this activity and are not sent to widgets.
+      </div>
+      <AttendeePicker
+        value={detail.participantIds || []}
+        onChange={change("participantIds")}
+        T={T}
+        contacts={contacts}
+        anonymise={anonymise}
+      />
+      {pack === "hands" && (
+        <>
+          <TextField label="Fingers" value={detail.fingers} onChange={change("fingers")} T={T} type="number" />
+          <TextField label="Hands" value={detail.hands} onChange={change("hands")} T={T} type="number" />
+        </>
+      )}
+      {showMeasure && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <TextField label="Depth" value={detail.depth} onChange={change("depth")} T={T} type="number" />
+          <TextField label="Width" value={detail.width} onChange={change("width")} T={T} type="number" />
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <TextField label="Count" value={detail.count} onChange={change("count")} T={T} type="number" />
+        <TextField label="Minutes" value={detail.durationMinutes} onChange={change("durationMinutes")} T={T} type="number" />
+      </div>
+      <TextField label="Notes" value={detail.notes} onChange={change("notes")} T={T} />
     </div>
   );
 }
@@ -515,7 +558,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             <div key={sel.kinkId} style={{ display: "flex", alignItems: "center", borderRadius: radius.full, border: `1px solid ${T.border}`, overflow: "hidden" }}>
               <div style={{ padding: "4px 8px", fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
                 {nameFor(sel.kinkId)}
-                <X size={11} style={{ cursor: "pointer" }} onClick={() => removeEntry(sel.kinkId)} aria-label="Remove kink" title="Remove kink" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                <X size={20} style={{ cursor: "pointer", padding: 4 }} onClick={() => removeEntry(sel.kinkId)} aria-label="Remove kink" title="Remove kink" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
               </div>
               {trackRole && roleOptionsForThisKink && (
                 <div onClick={() => cycleRole(sel.kinkId)} role="button" tabIndex={0}
@@ -884,6 +927,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
   // yet in Contacts, right from here, instead of blocking the whole
   // Activity on a separate trip to Contacts first.
   const handleCreate = async () => {
+    if (!onCreatePlaceholder) return;
     const created = await onCreatePlaceholder(query.trim());
     onChange([...value, created.id]);
     setQuery("");
@@ -1081,6 +1125,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
   const [showArchived, setShowArchived] = useState(false);
+  const [sessionVersion, setSessionVersion] = useState(0);
+  const sessions = useLoadedMemo(loadSessions, [sessionVersion], []);
+  const [sessionFilter, setSessionFilter] = useState("");
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
@@ -1137,7 +1184,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
 
   const visible = useMemo(() => {
-    const base = encounters.filter((e) => (showArchived ? true : !e.isArchived));
+    const base = encounters.filter((e) => (showArchived ? true : !e.isArchived) && (!sessionFilter || e.sessionId === sessionFilter));
     let filtered = base;
     if (dateFilter) {
       const dated = base.filter((e) => e.date);
@@ -1179,7 +1226,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
     }
-    return sortByDateDesc(filtered);
+    return sessionFilter
+      ? [...filtered].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")))
+      : sortByDateDesc(filtered);
     // FIXED 10 Sep 2026 — real ESLint finding: kinkNameById (used above
     // for kink-name search matches) starts as an empty fallback Map()
     // and resolves asynchronously (useLoadedMemo) — without it in this
@@ -1198,7 +1247,27 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     // defect as the one found in Symptom Log in the same round, in the sibling
     // module — which is why it is worth stating that the 28 Sep audit fixed the
     // expression without fixing the dependency.
-  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise]);
+  }, [encounters, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise]);
+  const sessionSummaries = useMemo(() => sessions
+    .filter((session) => !session.isArchived)
+    .map((session) => {
+      const items = encounters
+        .filter((encounter) => encounter.sessionId === session.id && !encounter.isArchived)
+        .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+      const attendeeIds = new Set(items.flatMap((encounter) => encounter.attendeeIds || []));
+      const kinkIds = new Set((items.flatMap((encounter) => encounter.kinksInvolved || [])).map((entry) => entry.kinkId));
+      return {
+        ...session,
+        items,
+        people: attendeeIds.size,
+        kinks: kinkIds.size,
+        loads: items.reduce((sum, encounter) => sum + (Number(encounter.loadsCount) || 0), 0),
+        fists: items.reduce((sum, encounter) => sum + (Number(encounter.fistCount) || 0), 0),
+      };
+    })
+    .filter((session) => session.items.length > 0)
+    .sort((a, b) => String(b.startAt || b.items.at(-1)?.date || "").localeCompare(String(a.startAt || a.items.at(-1)?.date || ""))), [sessions, encounters]);
+  const activeSession = sessionSummaries.find((session) => session.status === "active") || null;
   // ADDED — real ask: desktop grid grouped consecutively by month, since
   // "visible" is already newest-first this is a plain contiguous grouping,
   // see dateGrouping.js.
@@ -1289,6 +1358,64 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search encounters"
             style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
         </div>
+        {activeSession && (
+          <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 11, color: T.encountersPink, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>Live session</div>
+                <div style={{ marginTop: 3, fontSize: 15, color: T.textPrimary, fontWeight: 800 }}>{activeSession.title || "Untitled session"}</div>
+                <div style={{ marginTop: 3, fontSize: 12, color: T.textSecondary }}>
+                  {activeSession.items.length} activities · {activeSession.people} people · {activeSession.kinks} kinks
+                  {activeSession.loads ? ` · ${activeSession.loads} loads` : ""}
+                  {activeSession.fists ? ` · ${activeSession.fists} fists` : ""}
+                </div>
+              </div>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsDateTimeLocalString() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
+                style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Close session
+              </div>
+            </div>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onAdd(activeSession.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(activeSession.id); } }}
+              style={{ marginTop: 10, padding: "9px 12px", borderRadius: radius.sm, background: T.encountersPink, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}
+            >
+              + Add activity to this session
+            </div>
+          </div>
+        )}
+        {sessionSummaries.length > 0 && (
+          <div style={{ padding: "8px 16px 0", display: "flex", gap: 8, overflowX: "auto" }}>
+            {sessionSummaries.map((session) => {
+              const active = sessionFilter === session.id;
+              return (
+                <div
+                  key={session.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={active}
+                  onClick={() => setSessionFilter(active ? "" : session.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSessionFilter(active ? "" : session.id); } }}
+                  style={{ minWidth: 190, padding: 10, borderRadius: radius.md, border: `1px solid ${active ? T.encountersPink : T.border}`, background: active ? `${T.encountersPink}12` : T.surface, cursor: "pointer" }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{session.title || "Untitled session"}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: T.textSecondary }}>
+                    {session.items.length} activities · {session.people} people · {session.kinks} kinks
+                    {session.loads ? ` · ${session.loads} loads` : ""}
+                    {session.fists ? ` · ${session.fists} fists` : ""}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
         <div style={{ padding: "8px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
             {showArchived ? "Hide archived" : "Show archived"}
@@ -1383,7 +1510,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           CHANGED 26 Aug 2026 — real audit finding: same fix as
           Contacts, wrapped for wide-viewport centering. */}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add encounter" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, color: T.fabIcon, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={() => onAdd()} role="button" tabIndex={0} aria-label="Add encounter" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, color: T.fabIcon, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -1622,7 +1749,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 // before, because nothing on this screen linked out; the Glossary link is
 // optional on JargonNote (the one-sentence note is the point of it), so this is
 // the only wiring that was needed and there is no dead-link risk if it is absent.
-function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, onOpenGlossary }) {
+function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, onOpenGlossary }) {
   const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const isNew = !encounterId;
@@ -1630,6 +1757,11 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
   const [contacts, setContacts] = useLoadedState(loadContacts, [], []);
+  const [sessions] = useLoadedState(loadSessions, [], []);
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((kink) => [kink.id, kink.name])), [], new Map());
+  const anonymise = useAnonymiseMode();
+  const [showNewSession, setShowNewSession] = useState(false);
+  const [newSessionTitle, setNewSessionTitle] = useState("");
   // ADDED 26 Aug 2026 — real ask, decided: can't add an Activity for
   // someone not yet in Contacts, since AttendeePicker only searches
   // existing contacts. Rather than blocking with a warning, allow a
@@ -1658,7 +1790,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // instead of the useState initializer, with form falling back to
   // DEFAULT_ENCOUNTER for the one render before it resolves rather than
   // undefined (nothing here null-guards form before rendering fields).
-  const [form, setForm] = useState(() => ({ ...DEFAULT_ENCOUNTER }));
+  const [form, setForm] = useState(() => ({ ...DEFAULT_ENCOUNTER, sessionId: initialSessionId }));
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -1760,6 +1892,34 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
     // directive was here.
   }, [form.myPosition, form.date]);
   useEffect(() => {
+    const selections = Array.isArray(form.kinksInvolved) ? form.kinksInvolved : [];
+    if (!selections.length) {
+      if ((form.activityDetails || []).length) setForm((current) => ({ ...current, activityDetails: [] }));
+      return;
+    }
+    setForm((current) => {
+      const currentDetails = Array.isArray(current.activityDetails) ? current.activityDetails : [];
+      const nextDetails = selections.map((selection, index) => {
+        const existing = currentDetails.find((detail) => detail.kinkId === selection.kinkId);
+        return existing || {
+          id: `activity_detail_${selection.kinkId}_${index}`,
+          kinkId: selection.kinkId,
+          participantIds: [...(current.attendeeIds || [])],
+          count: 0,
+          durationMinutes: null,
+          fingers: null,
+          hands: null,
+          depth: null,
+          width: null,
+          unit: "cm",
+          notes: "",
+        };
+      });
+      const unchanged = JSON.stringify(currentDetails) === JSON.stringify(nextDetails);
+      return unchanged ? current : { ...current, activityDetails: nextDetails };
+    });
+  }, [form.kinksInvolved, form.activityDetails, form.attendeeIds]);
+  useEffect(() => {
     if (isNew) return;
     let cancelled = false;
     // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
@@ -1787,8 +1947,16 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
 
   const save = async () => {
     clearDraft(draftKey);
+    let record = form;
+    if (newSessionTitle.trim()) {
+      const session = await SessionRepository.create({
+        title: newSessionTitle.trim(),
+        startAt: form.date || nowAsDateTimeLocalString(),
+      });
+      record = { ...form, sessionId: session.id };
+    }
     if (isNew) {
-      await EncounterRepository.create(form);
+      await EncounterRepository.create(record);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo: snapshot taken right
       // before the update actually happens, so undo has the genuine
@@ -1797,7 +1965,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       // and now EncounterRepository itself (Phase 2 encryption
       // groundwork), are all async — every step here awaited.
       await onBeforeEdit?.(encounterId);
-      await EncounterRepository.update(encounterId, form);
+      await EncounterRepository.update(encounterId, record);
       await onAfterEdit?.(encounterId);
     }
     // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h notification. A new or
@@ -1805,6 +1973,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
     // edited to no longer qualify, clear) a countdown — re-sync
     // immediately rather than waiting for the next app open.
     syncDoxyPepAlert();
+    syncAllWidgets();
     // ADDED 26 Aug 2026 — real ask: push straight to finishing the
     // placeholder contact's profile right after the Activity saves,
     // if one was created this session. Only the most recent one if
@@ -1852,7 +2021,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <span>{tr("encounters.draftRestored", "Restored unsaved changes from earlier.")}</span>
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
               Contacts got, same reasoning. */}
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER } : await EncounterRepository.getById(encounterId)); }}
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER, sessionId: initialSessionId } : await EncounterRepository.getById(encounterId)); }}
             style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
             Clear & start fresh
           </span>
@@ -1867,6 +2036,37 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         <SectionCard title={tr("encounters.overview", "Overview")} T={T}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder={tr("encounters.titlePlaceholder", "e.g. Alex — coffee then back to theirs")} />
           <DateTimeField label={tr("encounters.dateTime", "Date & time")} value={form.date} onChange={set("date")} T={T} />
+          <SelectField
+            label={tr("encounters.session", "Session (optional)")}
+            value={form.sessionId}
+            onChange={set("sessionId")}
+            options={sessions.filter((session) => !session.isArchived).map((session) => ({ value: session.id, label: session.title || "Untitled session" }))}
+            T={T}
+          />
+          {!showNewSession ? (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowNewSession(true)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowNewSession(true); } }}
+              style={{ padding: "0 0 8px", color: T.encountersPink, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            >
+              + Start a new session
+            </div>
+          ) : (
+            <div style={{ padding: "0 0 8px" }}>
+              <TextField label="New session name" value={newSessionTitle} onChange={setNewSessionTitle} T={T} placeholder="e.g. Saturday night" />
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => { setShowNewSession(false); setNewSessionTitle(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowNewSession(false); setNewSessionTitle(""); } }}
+                style={{ color: T.textSecondary, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}
+              >
+                Cancel new session
+              </div>
+            </div>
+          )}
           {/* ADDED — real ask: "optional end time for encounter (ie if
               multiday or particularly long)". `dateEnd` already existed
               on the data model (DEFAULT_ENCOUNTER) but had no UI
@@ -1913,10 +2113,29 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <GivingReceivingChips label="My position" value={form.myPosition} onChange={set("myPosition")} options={MY_POSITION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did I cum?" value={form.whereICame} onChange={set("whereICame")} options={CUM_LOCATION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did my partner cum?" value={form.whereHeCame} onChange={set("whereHeCame")} options={CUM_LOCATION_OPTIONS} T={T} />
+          <TextField label="Loads during this encounter" value={form.loadsCount} onChange={set("loadsCount")} T={T} type="number" />
+          <TextField label="Fisting acts during this encounter" value={form.fistCount} onChange={set("fistCount")} T={T} type="number" />
         </SectionCard>
 
         <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>
           <RegistryTagPicker label="Kinks involved" value={form.kinksInvolved} onChange={set("kinksInvolved")} T={T} registry={KinkRegistry} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
+          {(form.activityDetails || []).map((detail) => (
+            <KinkDetailEditor
+              key={detail.id}
+              detail={detail}
+              kinkName={kinkNameById.get(detail.kinkId) || "Custom activity"}
+              contacts={contacts}
+              anonymise={anonymise}
+              onChange={(changes) => {
+                isDirty.current = true;
+                setForm((current) => ({
+                  ...current,
+                  activityDetails: (current.activityDetails || []).map((item) => item.id === detail.id ? { ...item, ...changes } : item),
+                }));
+              }}
+              T={T}
+            />
+          ))}
           <RegistryTagPicker label="Chems/alcohol used" value={form.chemsAlcoholUsed} onChange={set("chemsAlcoholUsed")} T={T} registry={ChemsRegistry} resolveSynonym={resolveChemSynonym} />
         </SectionCard>
 
@@ -1994,7 +2213,7 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
 // ADDED 9 Oct 2026 (t052) - onOpenGlossary, threaded to the JargonNote bubbles
 // on the edit form. App.jsx already passes it to every ActiveModule (line 2875),
 // so this signature change is all that was needed; no new call site.
-export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler, onOpenGlossary } = {}) {
+export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, prefillData, onConsumedPrefill, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler, onOpenGlossary } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "landing" });
@@ -2066,8 +2285,9 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   // see that file for the fuller reasoning on why mount-only is enough.
   useEffect(() => {
     if (openAddOnMount) {
-      setScreen({ name: "edit", id: null });
+      setScreen({ name: "edit", id: null, sessionId: prefillData?.sessionId || "" });
       onConsumedQuickAdd?.();
+      if (prefillData) onConsumedPrefill?.();
     }
     // ADDED — real ask: real cross-module navigation, same mount-time
     // pattern as Contacts' own version — deep-links straight to a
@@ -2096,7 +2316,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
     screenContent = (
       <ActivityLanding T={T}
         onOpenEncounter={(id) => setScreen({ name: "detail", id })}
-        onAdd={() => setScreen({ name: "edit", id: null })}
+        onAdd={(sessionId = "") => setScreen({ name: "edit", id: null, sessionId })}
         encounters={encounters} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
     );
   } else if (screen.name === "detail") {
@@ -2108,7 +2328,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
     );
   } else if (screen.name === "edit") {
     screenContent = (
-      <EncounterEditSheet T={T} encounterId={screen.id} onOpenGlossary={onOpenGlossary}
+      <EncounterEditSheet T={T} encounterId={screen.id} initialSessionId={screen.sessionId || ""} onOpenGlossary={onOpenGlossary}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
         onSaved={(placeholderContactId) => {
           // FIXED 27 Sep 2026 - the list was not re-read after a save, so a

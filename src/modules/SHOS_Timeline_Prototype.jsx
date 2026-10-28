@@ -551,7 +551,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <Archive size={19} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={toggleArchive} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleArchive(); } }} title={episode.isArchived ? "Unarchive" : "Archive"} aria-label={episode.isArchived ? "Unarchive" : "Archive"} />
+          <Archive size={20} color={T.textSecondary} style={{ cursor: "pointer", padding: 4 }} onClick={toggleArchive} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleArchive(); } }} title={episode.isArchived ? "Unarchive" : "Archive"} aria-label={episode.isArchived ? "Unarchive" : "Archive"} />
           <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>

@@ -9412,3 +9412,5 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (16)
 - Attachments: enlarged the delete-attachment Trash2 touch target (15 to 20, with 4px padding) on both desktop and mobile list rows.
+## 27 Oct 2026 - Zeus (17)
+- Batch fix: enlarged all interactive icon touch targets (<20px) to 20px + padding across 12 modules.

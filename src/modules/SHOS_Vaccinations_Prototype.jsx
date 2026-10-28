@@ -354,7 +354,7 @@ function DoseByDose({ doses, onChange, vaccineName, T }) {
         <div key={index} style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "12px", marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>Dose {dose.doseNumber}</span>
-            <X size={16} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => removeDose(index)} aria-label="Remove dose" title="Remove dose" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+            <X size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 4 }} onClick={() => removeDose(index)} aria-label="Remove dose" title="Remove dose" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 120 }}>
@@ -672,7 +672,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span role="button" tabIndex={0} aria-label="Edit vaccination" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => { if (!v.isDemo) onEdit(vaccinationId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 4 }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {confirmDelete && (

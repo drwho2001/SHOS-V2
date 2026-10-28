@@ -187,7 +187,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
     <div ref={cardRef} style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div style={{ ...TYPE.subScreenTitle, color: textPrimary }}>{step.title}</div>
-        <X size={18} weight="bold" color={textSecondary} role="button" aria-label="Skip tour" style={{ cursor: "pointer", flexShrink: 0, marginTop: 2 }} onClick={() => onDone("skipped")} />
+        <X size={20} weight="bold" color={textSecondary} role="button" aria-label="Skip tour" style={{ cursor: "pointer", flexShrink: 0, marginTop: 2, padding: 4 }} onClick={() => onDone("skipped")} />
       </div>
       <div style={{ fontSize: 13.5, color: textSecondary, lineHeight: 1.5, marginTop: 8 }}>{step.body}</div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>

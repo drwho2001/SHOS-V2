@@ -808,7 +808,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
                   <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
                   {m.notes && <div style={{ fontSize: 11, color: T.textSecondary }}>{m.notes}</div>}
                 </div>
-                <X size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(m.id)} aria-label={`Remove ${m.name}`} title="Remove medication" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                <X size={20} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0, padding: 4 }} onClick={() => remove(m.id)} aria-label={`Remove ${m.name}`} title="Remove medication" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
               </div>
               {promoting === m.id ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7, flexWrap: "wrap" }}>
@@ -932,7 +932,7 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
                 <Paperclip size={13} color={T.textSecondary} />
                 <div style={{ fontSize: 12, color: T.textPrimary, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
               </div>
-              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setPendingRemove(a)} aria-label="Remove attachment" title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0, padding: 4 }} onClick={() => setPendingRemove(a)} aria-label="Remove attachment" title="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
           ))}
         </div>
@@ -1523,7 +1523,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span role="button" tabIndex={0} aria-label={tr("clinicVisits.editVisit", "Edit clinic visit")} style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(visitId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>{tr("common.edit", "Edit")}</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 4 }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {confirmDelete && (

@@ -865,7 +865,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           {rules.map((r) => (
             <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
               <span>{describeRule(r)}</span>
-              <X size={14} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              <X size={20} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8, padding: 4 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
           ))}
         </div>
@@ -1779,7 +1779,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
           {onClose && <ChevronLeft size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />}
           <User size={18} color={T.contactsTeal} />
           <span style={{ ...TYPE.sectionLabel, color: T.contactsTeal, flex: 1 }}>My Profile</span>
-          <Share size={18} color={T.contactsTeal} style={{ cursor: "pointer" }} onClick={() => setShowShare((s) => !s)} title="Share profile" role="button" tabIndex={0} aria-label="Share profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <Share size={20} color={T.contactsTeal} style={{ cursor: "pointer", padding: 4 }} onClick={() => setShowShare((s) => !s)} title="Share profile" role="button" tabIndex={0} aria-label="Share profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
 
         <ProfileSummary profile={profile} T={T} onEdit={() => setEditing(true)} />

@@ -216,7 +216,7 @@ export function OptionListDetail({ listName, onClose }) {
                   <>
                     <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
                     <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
-                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                    <X size={20} color={ACTION.red} style={{ cursor: "pointer", padding: 4 }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
                   </>
                 )}
               </div>
@@ -251,7 +251,7 @@ export function OptionListDetail({ listName, onClose }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                     <SwapIcon size={14} color={ACCENTS.healthcare} style={{ cursor: "pointer" }} onClick={() => setReassociatingValue(reassociatingValue === value ? null : value)} title="Reassociate its records with a different value" aria-label="Reassociate its records with a different value" />
                     <RestoreIcon size={14} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => restoreArchived(value)} title="Restore to the live list" aria-label="Restore to the live list" />
-                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => setConfirmDeleteForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                    <X size={20} color={ACTION.red} style={{ cursor: "pointer", padding: 4 }} onClick={() => setConfirmDeleteForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
                   </div>
                 </div>
                 <div style={{ marginTop: 4 }}>
