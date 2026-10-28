@@ -26,3 +26,8 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 
 ## Meta
 - All findings also logged in session bus (notices #511-#538).
+
+## Escape-to-close (settings)
+- Scope: 20 settings screens with role=dialog.
+- Finding: none use useEscapeToClose.
+- Action: extracted to pool (t185).
