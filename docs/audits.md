@@ -60,3 +60,8 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Seed id collision/routing: 57/57 pass.
 - Disclosure copy guard: 9/9 pass.
 - Widget visibility restored: 9/9 pass.
+## Large audits (remaining)
+- i18n: Settings module has 0 t()/tr() calls; adoption uneven. Action: t193.
+- Smoke test: 32 flows; CRUD gaps for encounter, testing, clinic visit, medication. Action: t194.
+- Native/device validation: requires CI build-apk + real device; not runnable locally.
+- Accessibility contrast/live regions: manual audit pending.
