@@ -51,3 +51,7 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Modal overlays: many fixed overlays lack role=dialog (Medication 14/8, Contacts 9/3). Needs manual review. Action: t192 finding.
 - Escape-to-close: modules complete (only Home/Healthcare lack, no dialogs); settings 20 screens with dialogs lack it. Action: t185.
 - ARIA labels: settings role=button elements without aria-label all have visible text. No gaps.
+## Medium audits
+- Orphan reference coverage: 17/17 pass.
+- Backup preference/migrations/seed-import: 36/36 pass.
+- Icon-only UI audit: 5/5 pass.
