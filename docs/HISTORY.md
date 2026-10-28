@@ -9461,3 +9461,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (21)
 - Phase 3: platform-aware install/update landing page (public/landing.html) + About screen "Install / open" entry (new about.install / about.installCta strings). Debug builds stay off the landing page (direct releases link only).
+
+## 27 Oct 2026 - Zeus (22)
+- t210: CI now stamps version.json per release (web-alpha + build-apk workflows); web silent update check compares release buildSha vs running build SHA instead of hardcoded version. Closes the dead-update-check gap from Phase 2.

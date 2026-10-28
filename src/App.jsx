@@ -1403,7 +1403,12 @@ export default function App() {
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        if (data?.channel === "stable" && data?.version && data.version !== "0.2.0") {
+        // t210 (Zeus): compare the release's buildSha against this build's own
+        // baked-in SHA (the same identity the About screen shows) rather than a
+        // hardcoded version string. The version field is stamped from
+        // package.json in CI, so a hardcoded-version compare can never fire.
+        const currentSha = typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev";
+        if (data?.channel === "stable" && data?.buildSha && currentSha && currentSha !== "dev" && data.buildSha !== currentSha) {
           setSwUpdateAvailable(true);
         }
       } catch {

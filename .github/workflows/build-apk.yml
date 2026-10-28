@@ -121,6 +121,15 @@ jobs:
       - name: Build the web app
         run: npm run build
 
+      # ADDED t210 (Zeus): stamp version.json for the release build so the
+      # in-app update identity is generated per-release rather than hand-written.
+      - name: Stamp version.json
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          SHA="${GITHUB_SHA::7}"
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          printf '{\n  "version": "%s",\n  "channel": "stable",\n  "buildSha": "%s",\n  "releasedAt": "%s"\n}\n' "$VERSION" "$SHA" "$TS" > public/version.json
+
       - name: Sync Capacitor Android project
         run: npx cap sync android
 

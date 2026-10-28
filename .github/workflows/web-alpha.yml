@@ -46,6 +46,18 @@ jobs:
       - name: Build web app
         run: npm run build -- --base=/SHOS-V2/
 
+      # ADDED t210 (Zeus): stamp version.json for the web deploy so the in-app
+      # silent update check (App.jsx) has a real per-release buildSha to compare
+      # against. The value was previously hand-written (public/version.json) and
+      # is now generated from the actual release commit on every deploy.
+      - name: Stamp version.json
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          SHA="${GITHUB_SHA::7}"
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          printf '{\n  "version": "%s",\n  "channel": "stable",\n  "buildSha": "%s",\n  "releasedAt": "%s"\n}\n' "$VERSION" "$SHA" "$TS" > public/version.json
+          cat public/version.json
+
       - name: Upload web build
         uses: actions/upload-pages-artifact@v3
         with:
