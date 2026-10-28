@@ -65,13 +65,25 @@ export function AboutScreen({ onClose }) {
           {/* ADDED — real ask: link the no-install web version alongside
               the native app's own version/repo info, for anyone on iOS
               or a computer who can't install the APK. */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.webApp", "Web app (iPhone / computer)")}</span>
-            <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
-              {t("about.open", "Open")}
-            </a>
-          </div>
-        </div>
+           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
+             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.webApp", "Web app (iPhone / computer)")}</span>
+             <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+               {t("about.open", "Open")}
+             </a>
+           </div>
+           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.checkUpdates", "Check for updates")}</span>
+             <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+               {t("about.latest", "Latest")}
+             </a>
+           </div>
+           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.reportCrash", "Report a crash")}</span>
+             <a href="https://github.com/drwho2001/SHOS-V2/issues/new" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+               {t("about.report", "Report")}
+             </a>
+           </div>
+         </div>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", marginTop: 16 }}>
           {t("about.footer", "Local-first — nothing here leaves this device unless you choose to export or share it.")}
         </div>

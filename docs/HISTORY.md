@@ -9424,3 +9424,6 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (18)
 - App.jsx + settings touch targets: enlarged all interactive icons <20px to 20px.
+
+## 27 Oct 2026 - Zeus (19)
+- Phase 1 streamlined download/update: added version.json and Check for updates / Report a crash links in AboutScreen.
