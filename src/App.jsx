@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { useReducedMotion } from "./calculations/useReducedMotion";
+import { resolveQuickExitPlan } from "./calculations/quickExit";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { syncAllWidgets } from "./calculations/syncAllWidgets";
 import { useDarkModePreference } from "./calculations/darkModePreference";
@@ -2293,6 +2294,35 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     handleQuickAdd(tabKey, target);
     setPendingPrefillData(prefillData);
   };
+  // Quick exit (t216): the panic control on Home's header (and the module
+  // headers that render it) must actually leave. Previously `() => {}` shipped,
+  // so the control focused, announced "Quick exit", and did nothing. Lock the
+  // vault first when App Lock is on, then leave: native exitApp on Capacitor,
+  // about:blank on web (no third-party request, reversible with Back).
+  const handleQuickExit = useCallback(async () => {
+    setShowSettings(false);
+    setShowSearch(false);
+    selectTab("home");
+    let native = false;
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      native = Capacitor.isNativePlatform();
+    } catch {
+      native = false;
+    }
+    const plan = resolveQuickExitPlan({ appLockEnabled, nativeApp: native });
+    if (plan.lockVault) setLocked(true);
+    if (plan.leave === "exit-app") {
+      try {
+        const { App: CapacitorApp } = await import("@capacitor/app");
+        CapacitorApp.exitApp();
+        return;
+      } catch {
+        // fall through to the web fallback
+      }
+    }
+    window.location.replace("about:blank");
+  }, [appLockEnabled, selectTab]);
 
   // ADDED — real ask: Android App Shortcuts (long-press the app icon
   // for "Log dose"/"Add encounter"). Each shortcut launches this same
@@ -3015,7 +3045,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           matches the `<div>` it replaces. */}
       <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={() => {}}
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
           <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif" }}>Loading...</div>}>
@@ -3023,7 +3053,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
               onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler}
-              onQuickExit={() => {}}
+              onQuickExit={handleQuickExit}
               markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)}
               openClinicCardOnDeepLink={pendingOpenClinicCard} onConsumedClinicCardDeepLink={() => setPendingOpenClinicCard(false)} />
           </Suspense>
