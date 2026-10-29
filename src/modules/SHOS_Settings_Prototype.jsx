@@ -17,7 +17,7 @@
 // the three export sheets, and the lazy wiring. Behavior unchanged.
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback } from "react";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
-import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor } from "@phosphor-icons/react";
+import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor, ShareNetworkIcon as ShareNetwork } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
@@ -50,6 +50,7 @@ const StatsScreen = lazy(() => import("./settings/StatsScreen"));
 const CalendarScreen = lazy(() => import("./settings/CalendarScreen"));
 const TrashScreen = lazy(() => import("./settings/TrashScreen"));
 const AboutScreen = lazy(() => import("./settings/AboutScreen"));
+const ShareScreen = lazy(() => import("./settings/ShareScreen"));
 
 function SelectiveExportSheet({ onClose, onExported }) {
   const [darkMode] = useDarkModePreference();
@@ -515,7 +516,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // that row falls back to loading on tap, exactly as without this.
   useEffect(() => {
     const warm = (name) => import(`./settings/${name}Screen.jsx`).catch(() => {});
-    ["DeveloperTools", "ManageLists", "Resources", "Privacy", "Preferences", "Notifications", "NotificationHistory", "ErrorLog", "AutomaticBackups", "BackupExport", "DataNetwork", "Widgets", "Glossary", "Guide", "Design", "Stats", "Calendar", "Trash", "About"].forEach(warm);
+    ["DeveloperTools", "ManageLists", "Resources", "Privacy", "Preferences", "Notifications", "NotificationHistory", "ErrorLog", "AutomaticBackups", "BackupExport", "DataNetwork", "Widgets", "Glossary", "Guide", "Design", "Stats", "Calendar", "Trash", "About", "Share"].forEach(warm);
   }, []);
 
   const [showMyProfile, setShowMyProfile] = useState(false);
@@ -613,6 +614,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // builds now flowing through GitHub Actions, there was no way to
   // confirm which build is actually installed.
   const [showAbout, setShowAbout] = useState(false);
+  // ADDED 29 Oct 2026 — in-app share card (QR codes + link), mirrors public/share.html.
+  const [showShare, setShowShare] = useState(false);
   // ADDED 22 Sep 2026 — Home-screen widgets privacy settings
   const [showWidgets, setShowWidgets] = useState(false);
 
@@ -632,6 +635,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const goBackOneLevel = useCallback(() => {
     if (showCalendar) { setShowCalendar(false); return true; }
     if (showAbout) { setShowAbout(false); return true; }
+    if (showShare) { setShowShare(false); return true; }
     if (showTrash) { setShowTrash(false); return true; }
     if (showStats) { setShowStats(false); return true; }
     if (showDesign) { setShowDesign(false); return true; }
@@ -656,7 +660,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     if (showBackupExport) { setShowBackupExport(false); return true; }
     if (showMyProfile) { setShowMyProfile(false); return true; }
     return false; // nothing open on top — let App.jsx's own fallback close all of Settings
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets]);
+  }, [showCalendar, showAbout, showShare, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets]);
 
   // Escape mirrors the back button exactly, including the fall-through: if a
   // sub-screen is open it steps back one level, and only if nothing is open on
@@ -878,8 +882,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             overview + reset), moved out of the "Not built yet" group
             below. */}
         <SettingsRow icon={Database} label="Developer tools" onClick={() => setShowDevTools(true)} />
-        {/* ADDED 26 Aug 2026 — real ask: About/version screen. */}
+        {/* ADDED 26 Aug 2026 - real ask: About/version screen. */}
         <SettingsRow icon={Info} label="About" onClick={() => setShowAbout(true)} />
+        <SettingsRow icon={ShareNetwork} label="Share SHOS" onClick={() => setShowShare(true)} />
       </div>
 
       {showMyProfile && (
@@ -978,6 +983,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showAbout && (
         <AboutScreen onClose={() => setShowAbout(false)} />
+      )}
+      {showShare && (
+        <ShareScreen onClose={() => setShowShare(false)} />
       )}
       </Suspense>
       </div>

@@ -1841,6 +1841,8 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged at ${timeStr}` : `Logged at ${timeStr}`);
     await checkDueMeds();
   };
+  const onDueMedsTakeRef = useRef(onDueMedsTake);
+  useEffect(() => { onDueMedsTakeRef.current = onDueMedsTake; });
   const onDueMedsSkip = async () => {
     await handleSkipToday();
     showNotifToast("Skipped until tomorrow");
@@ -2185,20 +2187,24 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       // notification and acting from inside the app both give the same
       // real, visible acknowledgment.
       listenerHandle = await addNotificationActionListener(async (action) => {
-        if (action.actionId === MEDICATION_ACTIONS.takeAll) await onDueMedsTake();
-        else if (action.actionId === MEDICATION_ACTIONS.skipToday) await onDueMedsSkip();
-        else if (action.actionId === MEDICATION_ACTIONS.snooze) await onDueMedsSnooze();
-        else if (action.actionId === DOXYPEP_ACTIONS.takeDose) {
-          const result = await handleTakeDoxyDose();
-          showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
-        } else if (action.actionId === DOXYPEP_ACTIONS.snooze) {
-          const result = handleSnoozeDoxy();
-          showNotifToast(`Snoozed ${result.minutes} min`);
-        } else if (action.actionId === REFILL_ACTIONS.markRequested) onRefillRequested();
-        else if (action.actionId === REFILL_ACTIONS.snooze) onRefillSnooze();
-        else if (action.actionId === TESTING_ACTIONS.snooze) onTestingSnooze();
-        else if (action.actionId === CLINIC_VISIT_ACTIONS.snooze) onClinicVisitSnooze();
-        else if (action.actionId === VACCINATION_ACTIONS.snooze) onVaccinationSnooze();
+        try {
+          if (action.actionId === MEDICATION_ACTIONS.takeAll) await onDueMedsTakeRef.current();
+          else if (action.actionId === MEDICATION_ACTIONS.skipToday) await onDueMedsSkip();
+          else if (action.actionId === MEDICATION_ACTIONS.snooze) await onDueMedsSnooze();
+          else if (action.actionId === DOXYPEP_ACTIONS.takeDose) {
+            const result = await handleTakeDoxyDose();
+            showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
+          } else if (action.actionId === DOXYPEP_ACTIONS.snooze) {
+            const result = handleSnoozeDoxy();
+            showNotifToast(`Snoozed ${result.minutes} min`);
+          } else if (action.actionId === REFILL_ACTIONS.markRequested) onRefillRequested();
+          else if (action.actionId === REFILL_ACTIONS.snooze) onRefillSnooze();
+          else if (action.actionId === TESTING_ACTIONS.snooze) onTestingSnooze();
+          else if (action.actionId === CLINIC_VISIT_ACTIONS.snooze) onClinicVisitSnooze();
+          else if (action.actionId === VACCINATION_ACTIONS.snooze) onVaccinationSnooze();
+        } catch (err) {
+          showNotifToast("Couldn't complete that action - open the app to retry");
+        }
       });
     })();
     return () => { listenerHandle?.remove(); };
