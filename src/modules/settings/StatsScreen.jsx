@@ -1,6 +1,7 @@
 // StatsScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useTranslation } from "../../i18n/index.js";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
@@ -80,6 +81,7 @@ function TrendInsight({ text, tone, T }) {
 // clickable info explaining the calculation and citing real clinical
 // guidance where relevant (BASHH), not just internal app logic.
 export function StatsScreen({ onClose }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
