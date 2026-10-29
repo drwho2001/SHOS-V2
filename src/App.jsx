@@ -1392,16 +1392,33 @@ export default function App() {
   // someone mid-form would be a worse bug than the staleness itself.
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    const onControllerChange = () => setSwUpdateAvailable(true);
-    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-    return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    // Web/PWA only: Capacitor WebViews have no service worker to swap,
+    // and the native app has its own update checker (updateCheckService)
+    // that links to the latest release. Running this on native just
+    // reloaded the same APK and confused users.
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (Capacitor.isNativePlatform()) return;
+      } catch { /* web: fall through */ }
+      if (!("serviceWorker" in navigator)) return;
+      const onControllerChange = () => setSwUpdateAvailable(true);
+      navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+      // store cleanup handle
+      window.__shosSwCleanup = () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    })();
+    return () => { if (window.__shosSwCleanup) { window.__shosSwCleanup(); delete window.__shosSwCleanup; } };
   }, []);
   // ADDED — streamlined update: silent background check against version.json.
   // Only stable releases trigger the banner; debug builds stay quiet.
+  // Web-only: native uses updateCheckService (see above).
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (Capacitor.isNativePlatform()) return;
+      } catch { /* web: fall through */ }
       try {
         const res = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: "no-store" });
         if (!res.ok) return;
@@ -2864,7 +2881,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                       checkDueMeds();
                     }}
                     aria-label="Undo: these refills were not ordered after all"
-                    style={{ background: "none", border: "none", padding: 0, marginTop: 3, color: "inherit", textDecoration: "underline", fontSize: 11, cursor: "pointer" }}
+                    style={{ background: "none", border: "none", padding: 0, marginTop: 3, color: "#FFFFFF", textDecoration: "underline", fontSize: 11, cursor: "pointer" }}
                   >
                     I didn&apos;t order these
                   </button>
@@ -3020,7 +3037,8 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               text-link pattern already used for AppLockScreen's own
               "Back to PIN entry" link) distinguishes it as the tappable
               action without needing a new colour. */}
-          <span onClick={() => window.location.reload()} role="button" tabIndex={0} aria-label="Refresh page" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.location.reload(); } }} style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0 }}>Refresh</span>
+          <button onClick={() => window.location.reload()} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit" }}>Refresh</button>
+          <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px" }}>Download APK</a>
           <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4 }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSwUpdateAvailable(false); } }} />
         </div>
       )}
