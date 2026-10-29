@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, FilePdfIcon as FilePdf } from "@phosphor-icons/react";
 import { exportClinicCardPdf } from "../storage/clinicCardPdfService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
@@ -125,7 +126,7 @@ function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleC
       </div>
       <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onToggleCollapse} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "2px 4px" }}>
         {count != null && <span style={{ fontSize: 11, color: T.textDisabled }}>{count}</span>}
-        <CaretDown size={13} color={T.textSecondary} style={{ transform: collapsed ? "none" : "rotate(180deg)", transition: "transform 150ms ease" }} />
+        <CaretDown size={13} color={T.textSecondary} style={{ transform: collapsed ? "none" : "rotate(180deg)", transition: reducedMotion ? "none" : "transform 150ms ease" }} />
       </div>
     </div>
   );
@@ -168,6 +169,7 @@ function StubRow({ children, T }) {
 
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler, onOpenGlossary }) {
   const { t: tr } = useTranslation();
+  const reducedMotion = useReducedMotion();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
