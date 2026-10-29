@@ -457,19 +457,34 @@ async function dismissTransientBanners(page) {
 // is why this only ever failed in CI. Dismiss first, and verify Settings
 // actually opened afterward, retrying once — closes the whole class of
 // silent coordinate-click misses at every call site, not just test 3.
+// CHANGED 29 Oct 2026 (t215) — real CI failure, flow [5/32] "Locations
+// registry": `locator.click: Timeout 5000ms exceeded ... waiting for
+// locator('text=Manage lists')`, with Settings never opening. Cause: the
+// gear was found by a FIXED coordinate (356,40), which was correct only
+// while the gear was the LAST icon in Home's header row. t191 added a
+// quick-exit (SignOut) icon AFTER the gear in that same right-aligned
+// flex row, so every icon in front of it shifted left by the new icon's
+// width — (356,40) now lands on the space next to the gear, or on the
+// quick-exit control itself. The coordinates were never a fact about the
+// app, only about one layout; `[data-tour="settings-icon"]` is a fact
+// the app maintains (the same attribute the interactive tour relies on),
+// and it is what this click should always have used. The retry stays:
+// a banner can still cover the gear, and the retry is what distinguishes
+// "covered" from "moved".
 async function goHomeThenOpenSettings(page) {
   await dismissTransientBanners(page);
   await page.mouse.click(195, 800);
   await page.waitForTimeout(500);
   await page.evaluate(() => window.scrollTo(0, 0));
   await dismissTransientBanners(page);
-  await page.mouse.click(356, 40);
+  const gear = page.locator('[data-tour="settings-icon"]');
+  await gear.click({ timeout: 5000 });
   await page.waitForTimeout(600);
   const opened = await page.locator("text=Manage lists").waitFor({ timeout: 2500 }).then(() => true).catch(() => false);
   if (!opened) {
     await dismissTransientBanners(page);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.mouse.click(356, 40);
+    await gear.click({ timeout: 5000 });
     await page.waitForTimeout(600);
   }
 }
