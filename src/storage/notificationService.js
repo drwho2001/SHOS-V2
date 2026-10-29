@@ -281,7 +281,7 @@ async function primeEarlyNativeActionBuffer() {
 // earliest moment this app's code executes, closing the registration gap
 // as far as JS can. The remaining gap (event fires before JS loads at
 // all) is an upstream Capacitor limitation, not something JS can close.
-primeEarlyNativeActionBuffer();
+queueMicrotask(primeEarlyNativeActionBuffer);
 
 export async function addNotificationActionListener(handler) {
   const platform = await getPlatform();
