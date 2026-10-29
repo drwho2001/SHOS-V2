@@ -759,7 +759,7 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
 // silently swallowed by quiet hours or a vacation pause — that would
 // make the one tool for verifying notifications work itself
 // unreliable during the exact windows someone might want to check it.
-export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor, bypassGlobalGates = false, kind }) {
+export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor, url, bypassGlobalGates = false, kind }) {
     // ADDED 29 Sep 2026 - the disclosure level is applied HERE, in the one
     // function every notification goes through, rather than at each of the ~15
     // call sites that build the text.
@@ -818,7 +818,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
       // chase further; this just stops the app from making Doze worse
       // than the OS already allows.
       await withTimeout(plugin.schedule({
-        notifications: [{ id, title: disclosed.title, body: disclosed.body, schedule: { at: effectiveAt, allowWhileIdle: true }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
+        notifications: [{ id, title: disclosed.title, body: disclosed.body, schedule: { at: effectiveAt, allowWhileIdle: true }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}), ...(url ? { url } : {}) }],
       }), 8000, "schedule()");
       return true;
     } catch (err) {

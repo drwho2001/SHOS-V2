@@ -2174,6 +2174,37 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // more pair of actionIds to dispatch, since both action groups fire
   // through this exact same native event regardless of which
   // notification they came from.
+  // ADDED — cold-start fallback for notification "Take" actions. Capacitor's
+  // localNotificationActionPerformed event is unreliable when the app was
+  // fully killed (it can fire before JS loads). The medication notification
+  // now carries a deep-link URL (shos://medication/take) which Android
+  // delivers to the launched activity reliably, so tapping "Take" (or the
+  // notification body) on a cold start opens the app at that URL and logs
+  // the dose without the user having to tap "Take all" in-app.
+  const medicationTakeHandledAtRef = useRef(0);
+  useEffect(() => {
+    let handle = null;
+    (async () => {
+      try {
+        const { App: CapacitorApp } = await import("@capacitor/app");
+        const handleUrl = (url) => {
+          if (typeof url !== "string" || !url.includes("com.shos.app://medication/take")) return;
+          if (Date.now() - medicationTakeHandledAtRef.current < 5000) return;
+          medicationTakeHandledAtRef.current = Date.now();
+          onDueMedsTakeRef.current?.().catch(() => {});
+        };
+        try {
+          const launch = await CapacitorApp.getLaunchUrl();
+          if (launch?.url) handleUrl(launch.url);
+        } catch { /* no launch url */ }
+        handle = await CapacitorApp.addListener("appUrlOpen", (data) => handleUrl(data?.url));
+      } catch {
+        // web or plugin unavailable — the action-button path still works
+      }
+    })();
+    return () => { handle?.remove(); };
+  }, []);
+
   useEffect(() => {
     let listenerHandle = null;
     (async () => {

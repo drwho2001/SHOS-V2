@@ -138,6 +138,7 @@ export async function syncMedicationReminders() {
       kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
+      url: "com.shos.app://medication/take",
     });
     await updateRefillWidget();
     return { scheduled: true, due };
@@ -154,6 +155,7 @@ export async function syncMedicationReminders() {
       kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
+      url: "com.shos.app://medication/take",
     });
     await updateRefillWidget();
     return { scheduled: true, upcoming: earliest };
