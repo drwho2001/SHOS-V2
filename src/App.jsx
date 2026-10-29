@@ -1418,8 +1418,12 @@ export default function App() {
         return;
       }
       const onControllerChange = () => { try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ } setSwUpdateAvailable(true); };
-      navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-      window.__shosSwCleanup = () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      // Delay registration so controllerchange during initial SW activation
+      // doesn't immediately re-show the banner after a reload.
+      const regTimer = setTimeout(() => {
+        navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+        window.__shosSwCleanup = () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      }, 3000);
     })();
     return () => { if (window.__shosSwCleanup) { window.__shosSwCleanup(); delete window.__shosSwCleanup; } };
   }, []);
