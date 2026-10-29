@@ -498,8 +498,8 @@
     "reloadNow": "Reload now",
     "navigation": "Navigation",
     "healthcare": "Healthcare",
-    "moveLeft": "Move left",
-    "moveRight": "Move right"
+    "moveLeft": "Move {tab} left",
+    "moveRight": "Move {tab} right"
   },
   "privacy": {
     "title": "Privacy & Security",
