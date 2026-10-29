@@ -742,5 +742,39 @@
     "notifyWhenDue": "Notify when a daily medication is due",
     "reminderTiming": "Reminder timing",
     "archivedHistoryKept": "Archived — history kept in Log tab"
+  },
+  "design": {
+    "module": {
+      "contacts": "Contacts",
+      "encounters": "Encounter",
+      "medication": "Medication",
+      "healthcare": "Healthcare",
+      "home": "Home",
+      "menstrual": "Menstrual"
+    },
+    "actionColor": {
+      "actionRed": "Negative / alert (red)",
+      "actionGreen": "Positive / success (green)"
+    },
+    "colourWheel": "Colour wheel",
+    "hexRgb": "Hex/RGB",
+    "darkMode": "Dark mode",
+    "cvdPalette": "Colour-blind friendly palette",
+    "resetToDefault": "Reset to default",
+    "colourScheme": "Colour scheme",
+    "customiseColour": "Customise {label} colour"
+  },
+  "stats": {
+    "moreInfo": "More information",
+    "title": "Stats",
+    "testsLogged": "Tests logged",
+    "explTestsLogged": "Total non-archived tests with a real (not future-scheduled) date.",
+    "avgInterval": "Average interval between tests",
+    "explAvgInterval": "Average days between consecutive tests. Needs at least 2 real tests to calculate.",
+    "withinBashh": "Within BASHH-recommended interval?",
+    "daysSinceLastVisit": "Days since last visit",
+    "explDaysSinceVisit": "Days since your most recent real (already happened, not a future booking) clinic visit.",
+    "explAdherence": "Average of each daily/scheduled medication own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications are not included.",
+    "doxyPepCompliance": "DoxyPEP compliance"
   }
 }
