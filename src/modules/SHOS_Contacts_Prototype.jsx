@@ -112,6 +112,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 import { useTranslation } from "../i18n/index.js";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -1181,8 +1182,8 @@ function ToggleSwitch({ value, onChange, T }) {
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44, margin: "-10px 0", cursor: "pointer", flexShrink: 0 }}
     >
-      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", pointerEvents: "none", transition: "background 150ms ease" }}>
-        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", pointerEvents: "none", transition: reducedMotion ? "none" : "background 150ms ease" }}>
+        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: reducedMotion ? "none" : "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
       </div>
     </div>
   );
@@ -3491,6 +3492,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
 }
 
 export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, onOpenPrivacySettings, onOpenGlossary, registerModuleBackHandler, onQuickExit } = {}) {
+  const reducedMotion = useReducedMotion();
   const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   // FIXED — real crash found via a live bulk-delete/bulk-archive audit:
   // loadContacts() returns ContactRepository.getAll(), async since this
