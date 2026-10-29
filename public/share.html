@@ -52,7 +52,7 @@
       <h2>Android APK</h2>
       <div class="sub">Scan to download and install on Android</div>
       <img class="qr" src="./share-qr-apk.png" alt="QR code for APK download" />
-      <a class="link" id="apkLink" href="https://github.com/drwho2001/SHOS-V2/releases/tag/latest" target="_blank" rel="noopener">Download APK</a>
+      <a class="link" id="apkLink" href="https://github.com/drwho2001/SHOS-V2/releases/download/latest/SHOS-debug.apk" target="_blank" rel="noopener">Download APK</a>
     </div>
     <div class="card">
       <h2>Web App</h2>
@@ -138,7 +138,7 @@
     }
   };
   window.shareLink = function () {
-    const url = 'https://github.com/drwho2001/SHOS-V2/releases/tag/latest';
+    const url = 'https://drwho2001.github.io/SHOS-V2/';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { alert('Link copied to clipboard.'); }).catch(function () { window.prompt('Copy this link:', url); });
     } else {
