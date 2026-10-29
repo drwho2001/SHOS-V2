@@ -968,7 +968,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           gets this: still-counting-down is a short-lived countdown, not
           something worth permanently silencing. */}
       {activeSession && (
-        <div style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
+        <div role="status" aria-live="polite" style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ color: encountersColor, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Live session</div>
@@ -989,7 +989,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       {doxyBannerVisible && (
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onNavigateToRecord("medication", doxyStatus.medicationId)} style={{
+        <div role="status" aria-live="polite" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onNavigateToRecord("medication", doxyStatus.medicationId)} style={{
           display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", borderRadius: 14, marginBottom: 16, cursor: "pointer",
           background: doxyStatus.overdue ? `${actionRedColor}18` : `${medsBlue}12`,
           border: `1px solid ${doxyStatus.overdue ? actionRedColor : medsBlue}`,
@@ -1099,6 +1099,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         return (
           <>
             <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.statusAtAGlance", "Status at a glance")}</div>
+            <section aria-live="polite" aria-label={tr("home.statusAtAGlance", "Status at a glance")}>
             {isDesktopWidth ? (
               // FIXED 16 Sep 2026, later still — real report: "desktop
               // at a glance section still has lots of dead space left
@@ -1128,8 +1129,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 {testingRing}{adherenceRing}{containerRing}{cycleRing}{contraRing}
               </div>
             )}
-          </>
-        );
+            </section>
+          </>);
       })()}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.recentActivity", "Recent activity")}</div>
@@ -1438,7 +1439,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           a navigation shortcut, and shouldn't visually blend in with
           them. */}
       {backupInfo.dueForReminder && (
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${ACTION.amber}40`, background: darkMode ? DARK.surface : "#FFF7ED", cursor: "pointer" }}>
+        <div role="status" aria-live="polite" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${ACTION.amber}40`, background: darkMode ? DARK.surface : "#FFF7ED", cursor: "pointer" }}>
           <Database size={15} color={ACTION.gold} />
           <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.gold }}>
             {backupInfo.lastAt ? `No backup in ${backupInfo.daysSince} days — export one` : "You've never exported a backup — do it now"}
