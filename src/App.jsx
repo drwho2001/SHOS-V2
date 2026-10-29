@@ -1408,9 +1408,13 @@ export default function App() {
         if (Capacitor.isNativePlatform()) return;
       } catch { /* web: fall through */ }
       if (!("serviceWorker" in navigator)) return;
+      // If we just reloaded for an update, suppress the banner on this load.
+      if (sessionStorage.getItem("shos-sw-reloaded") === "1") {
+        sessionStorage.removeItem("shos-sw-reloaded");
+        return;
+      }
       const onControllerChange = () => setSwUpdateAvailable(true);
       navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-      // store cleanup handle
       window.__shosSwCleanup = () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
     })();
     return () => { if (window.__shosSwCleanup) { window.__shosSwCleanup(); delete window.__shosSwCleanup; } };
@@ -3080,7 +3084,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               text-link pattern already used for AppLockScreen's own
               "Back to PIN entry" link) distinguishes it as the tappable
               action without needing a new colour. */}
-          <button onClick={() => window.location.reload()} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Refresh</button>
+          <button onClick={() => { sessionStorage.setItem("shos-sw-reloaded", "1"); window.location.reload(); }} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Refresh</button>
           <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px", pointerEvents: "auto" }}>Download APK</a>
           <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSwUpdateAvailable(false); } }} />
         </div>
