@@ -89,11 +89,11 @@ function TabOrderCard({ T, onChanged }) {
         <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none" }}>
           <span style={{ fontSize: 13, color: T.textPrimary }}>{NON_HOME_TAB_LABELS[key]}</span>
           <div style={{ display: "flex", gap: 6 }}>
-            <div role="button" aria-label={`Move ${NON_HOME_TAB_LABELS[key]} left`} onClick={() => move(i, -1)}
+            <div role="button" aria-label={t(" preferences.moveLeft,Move left)} onClick={() => move(i, -1)}
               style={{ padding: 6, borderRadius: 8, cursor: i === 0 ? "default" : "pointer", opacity: i === 0 ? 0.3 : 1, border: `1px solid ${T.border}` }}>
               <ChevronLeft size={14} color={T.textPrimary} />
             </div>
-            <div role="button" aria-label={`Move ${NON_HOME_TAB_LABELS[key]} right`} onClick={() => move(i, 1)}
+            <div role="button" aria-label={t(" preferences.moveRight,Move right)} onClick={() => move(i, 1)}
               style={{ padding: 6, borderRadius: 8, cursor: i === order.length - 1 ? "default" : "pointer", opacity: i === order.length - 1 ? 0.3 : 1, border: `1px solid ${T.border}` }}>
               <ChevronRight size={14} color={T.textPrimary} />
             </div>
