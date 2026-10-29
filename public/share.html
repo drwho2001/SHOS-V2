@@ -64,6 +64,7 @@
   <div class="ios-note"><strong>iPhone / iPad:</strong> Open the Web App link above in Safari, then tap Share → Add to Home Screen to install.</div>
   <div class="changelog">
     <h3>What's New <span class="date" id="changelogDate"></span></h3>
+    <p id="changelogVersion" style="font-size: 11px; color: #0B7F79; font-weight: 600; margin: 0 0 8px;"></p>
     <p>Quick-exit button on all screens for privacy.</p>
     <p>i18n support across settings.</p>
     <p>Reduced motion and contrast accessibility.</p>
@@ -99,6 +100,13 @@
         if (apkLink && d.apkUrl) { apkLink.href = d.apkUrl; }
         if (webLink && d.webUrl) { webLink.href = d.webUrl; }
         if (changelogDate && d.buildSha) { changelogDate.textContent = '(' + (d.buildSha || '').slice(0, 7) + ')'; }
+        var cv = document.getElementById('changelogVersion');
+        if (cv) {
+          var parts = [];
+          if (d.releasedAt) parts.push('Released ' + new Date(d.releasedAt).toLocaleDateString());
+          if (d.buildSha) parts.push('build ' + d.buildSha.slice(0, 7));
+          cv.textContent = parts.join(' · ');
+        }
       })
       .catch(function () { clearTimeout(timer); if (versionLine) versionLine.textContent = 'Version unknown'; });
   }
