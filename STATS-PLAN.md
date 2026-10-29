@@ -1,45 +1,55 @@
-# Customizable Stats Plan — SHOS-V2 (revised v2)
+# Customizable Stats Plan — SHOS-V2 (revised v3)
+
+## High-demand stats (40%+ users want these)
+- Total encounters + unique partners
+- Days since last test + BASHH compliance
+- 7-day medication adherence
+- Last encounter (partner, date, type)
+- Next clinic visit
+- Active session summary (if any)
+- Contraception due date
+- Cycle day (if tracked)
+
+## Slut mode (risque/kinky data, toggle in settings)
+- Total loads, fists, kinks tallies
+- Top kinks by frequency
+- Top partners by encounter count
+- Top locations
+- Chem usage frequency
+- Bottoming/topping ratio
+- Encounter type breakdown (solo/duo/group)
+- Average encounter duration
+- Most active day of week/month
 
 ## Structure: single Stats page under Settings
-Like other settings screens (StatsScreen already exists). One central "Stats" screen aggregating data from all modules. Not per-module tabs.
-
-- Location: src/modules/settings/StatsScreen.jsx (already exists, currently shows testing/medication/clinic visit stats)
-- Expand to include encounters, menstrual, vaccination, symptom stats
-- Add customizable metric picker + date range
-- Add chart visualizations (CSS bars, no external lib)
+One central "Stats" screen. Toggle "Slut mode" in settings to show risque section.
 
 ## Architecture
-- Extend StatsScreen.jsx (already has useTranslation, dialog, StatRow)
-- Add statsAggregator.js (pure functions) — aggregates across modules
-- Metric picker: checkboxes to show/hide metrics
-- Date range: 7d/30d/90d/all/custom
+- Extend StatsScreen.jsx
+- Add statsAggregator.js (pure functions)
+- Metric picker: checkboxes to show/hide
+- Date range: 7d/30d/90d/all
 - Group by: none/partner/location/month
 - Persist layout in appPreferencesRepository
-
-## Metrics catalog
-Encounters: total, unique partners, loads, fists, kinks, top kink, top partner, top location, avg duration, trend by month
-Medication: 7d/30d/all-time adherence, missed doses, top med
-Testing: tests/month, avg interval, positive ratio, BASHH compliance
-Healthcare: visits/year, vaccinations, symptoms, menstrual cycle avg
-Chemicals: usage frequency, trend
-
-## Brutal critique
-- Privacy: stats on screen = exposure. Mitigate: anonymise mode, quick-exit.
-- Performance: aggregation on render. Mitigate: useMemo, caching.
-- Scope creep: keep phases small.
+- Slut mode toggle in privacy/settings
 
 ## Phased plan
-Phase 1: Add encounters + menstrual + vaccination stats to StatsScreen — 4h
-Phase 2: Add metric picker (show/hide) — 3h
-Phase 3: Add date range selector — 3h
-Phase 4: Add group-by (partner/location/month) — 4h
+Phase 1: High-demand stats (encounters total, partners, last test, adherence, last encounter, next visit, contraception, cycle) — 4h
+Phase 2: Slut mode section (loads, fists, kinks, top kink/partner/location, chems) — 4h
+Phase 3: Metric picker + date range — 3h
+Phase 4: Group-by (partner/location/month) — 4h
 Phase 5: Simple charts (CSS bars) — 3h
 Phase 6: Export to CSV — 2h
-Total: ~19h
+Total: ~20h
+
+## Brutal critique
+- Privacy: stats on screen = exposure. Mitigate: anonymise mode, quick-exit, slut mode toggle.
+- Performance: aggregation on render. Mitigate: useMemo, caching.
+- Scope creep: keep phases small.
 
 ## Dependencies
 - sessionTally, getTestingFrequencyStats, getOverallAdherence (exist)
 - No new repos; aggregate from existing.
 
 ## Start
-Phase 1: extend StatsScreen with encounters/menstrual/vaccination stats.
+Phase 1: extend StatsScreen with high-demand stats.
