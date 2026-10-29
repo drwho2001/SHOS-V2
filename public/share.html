@@ -44,8 +44,8 @@
     <div class="logo">S</div>
     <div class="name">SHOS</div>
     <div class="tagline">Sexual Health Operating System</div>
-    <div class="desc">Your own sexual health record — contacts, encounters, testing, medication, and clinic visits. All in one private place on this device. Nothing leaves your phone unless you choose to export or share it.</div>
-    <div class="version" id="versionLine">Version loading…</div>
+    <div class="desc">Your own sexual health record - contacts, encounters, testing, medication, and clinic visits. All in one private place on this device. Nothing leaves your phone unless you choose to export or share it.</div>
+    <div class="version" id="versionLine">Version loading...</div>
   </div>
   <div class="cards">
     <div class="card">
@@ -61,7 +61,7 @@
       <a class="link" id="webLink" href="#" target="_blank" rel="noopener">Open Web App</a>
     </div>
   </div>
-  <div class="ios-note"><strong>iPhone / iPad:</strong> Open the Web App link above in Safari, then tap Share → Add to Home Screen to install.</div>
+  <div class="ios-note"><strong>iPhone / iPad:</strong> Open the Web App link above in Safari, then tap Share - Add to Home Screen to install.</div>
   <div class="changelog">
     <h3>What's New <span class="date" id="changelogDate"></span></h3>
     <p id="changelogVersion" style="font-size: 11px; color: #0B7F79; font-weight: 600; margin: 0 0 8px;"></p>
@@ -94,7 +94,7 @@
       .then(function (res) { if (!res.ok) throw new Error('bad'); return res.json(); })
       .then(function (d) {
         clearTimeout(timer);
-        if (versionLine) versionLine.textContent = 'Version ' + (d.version || '?') + ' · ' + (d.channel || 'stable') + ' · build ' + (d.buildSha || '').slice(0, 7);
+        if (versionLine) versionLine.textContent = 'Version ' + (d.version || '?') + ' - ' + (d.channel || 'stable') + ' - build ' + (d.buildSha || '').slice(0, 7);
         if (apkLink && d.apkUrl) { apkLink.href = d.apkUrl; }
         if (webLink && d.webUrl) { webLink.href = d.webUrl; }
         if (changelogDate && d.buildSha) { changelogDate.textContent = '(' + (d.buildSha || '').slice(0, 7) + ')'; }
@@ -103,7 +103,7 @@
           var parts = [];
           if (d.releasedAt) parts.push('Released ' + new Date(d.releasedAt).toLocaleDateString());
           if (d.buildSha) parts.push('build ' + d.buildSha.slice(0, 7));
-          cv.textContent = parts.join(' · ');
+          cv.textContent = parts.join(' - ');
         }
       })
       .catch(function () { clearTimeout(timer); if (versionLine) versionLine.textContent = 'Version unknown'; });
