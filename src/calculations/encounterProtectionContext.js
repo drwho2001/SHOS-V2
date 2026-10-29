@@ -60,8 +60,13 @@ export function findPrEPMedication(medications) {
       if (m.isArchived) return false;
       const name = m.name || "";
       const categories = Array.isArray(m.category) ? m.category : [];
-      const isPrEPByName = /prep|descovy|truvada|tenofovir|emtricitabine/i.test(name) && !/doxy/i.test(name);
-      const isPrEPByCategory = categories.some((category) => /prep/i.test(String(category || "")));
+      const isPrEPByName = /prep|descovy|truvada|emtricitabine|tenofovir\s*disoproxil|t\w*f\b/i.test(name) && !/doxy/i.test(name);
+      const isPrEPByCategory = categories.some((category) => {
+        const c = String(category || "").toLowerCase();
+        if (/prep/i.test(c)) return true;
+        if (/anti-retroviral|arv|hiv.*prevention|pre-exposure/i.test(c)) return true;
+        return false;
+      });
       return isPrEPByName || isPrEPByCategory;
     }) || null
   );
@@ -123,11 +128,13 @@ export function inferDoxyPepStatus({ myPosition = [], date, doseLogs = [], now =
  *
  * @returns {{value: string, reason: string} | null}
  */
-export function inferPrepCoverage({ doseLogs = [], hasPrEPMedication = false, at, now: nowArg } = {}) {
+export function inferPrepCoverage({ doseLogs = [], hasPrEPMedication = false, at, now: nowArg, prepOverride = null, forcePrEP = null, manualPrEP = null } = {}) {
   // `at` is the encounter's own date; `now` is accepted as an alias so a
   // caller (or a test) can say which instant it means without both.
   const now = at ? new Date(at) : (nowArg ? new Date(nowArg) : new Date());
-  if (!hasPrEPMedication) {
+  const manual = prepOverride != null ? prepOverride : (forcePrEP != null ? forcePrEP : manualPrEP);
+  const effectiveHasPrEP = manual != null ? Boolean(manual) : Boolean(hasPrEPMedication);
+  if (!effectiveHasPrEP) {
     return { value: "Not on PrEP", reason: "there is no PrEP medication in your list" };
   }
   const doses = (doseLogs || []).filter((l) => l && l.type === "dose" && !l.voided && l.date);
