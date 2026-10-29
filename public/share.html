@@ -48,13 +48,13 @@
       <h2>Android APK</h2>
       <div class="sub">Scan to download and install on Android</div>
       <img class="qr" src="./share-qr-apk.png" alt="QR code for APK download" />
-      <a class="link" id="apkLink" href="#" target="_blank" rel="noopener">Loading…</a>
+      <a class="link" id="apkLink" href="#" target="_blank" rel="noopener">Tap to download APK</a>
     </div>
     <div class="card">
       <h2>Web App</h2>
       <div class="sub">Scan to open in browser (works on any device)</div>
       <img class="qr" src="./share-qr-web.png" alt="QR code for web app" />
-      <a class="link" id="webLink" href="#" target="_blank" rel="noopener">Loading…</a>
+      <a class="link" id="webLink" href="#" target="_blank" rel="noopener">Tap to open web app</a>
     </div>
   </div>
   <div class="changelog">
@@ -76,15 +76,20 @@
   const versionLine = document.getElementById('versionLine');
   const apkLink = document.getElementById('apkLink');
   const webLink = document.getElementById('webLink');
-  async function loadVersion() {
-    try {
-      const res = await fetch('./version.json', { cache: 'no-store' });
-      if (!res.ok) return;
-      const d = await res.json();
-      if (versionLine) versionLine.textContent = 'Version ' + (d.version || '?') + ' · ' + (d.channel || 'stable') + ' · ' + (d.buildSha || '').slice(0, 7);
-      if (apkLink && d.apkUrl) { apkLink.href = d.apkUrl; apkLink.textContent = d.apkUrl; }
-      if (webLink && d.webUrl) { webLink.href = d.webUrl; webLink.textContent = d.webUrl; }
-    } catch (e) { if (versionLine) versionLine.textContent = 'Version unknown'; }
+  function loadVersion() {
+    // Non-blocking: set defaults immediately, update when version.json loads.
+    if (versionLine) versionLine.textContent = 'Version loading...';
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () { ctrl.abort(); }, 3000);
+    fetch('./version.json', { cache: 'no-store', signal: ctrl.signal })
+      .then(function (res) { if (!res.ok) throw new Error('bad'); return res.json(); })
+      .then(function (d) {
+        clearTimeout(timer);
+        if (versionLine) versionLine.textContent = 'Version ' + (d.version || '?') + ' · ' + (d.channel || 'stable') + ' · ' + (d.buildSha || '').slice(0, 7);
+        if (apkLink && d.apkUrl) { apkLink.href = d.apkUrl; apkLink.textContent = d.apkUrl; }
+        if (webLink && d.webUrl) { webLink.href = d.webUrl; webLink.textContent = d.webUrl; }
+      })
+      .catch(function () { clearTimeout(timer); if (versionLine) versionLine.textContent = 'Version unknown'; });
   }
   window.saveImage = function () {
     const card = document.getElementById('card');
