@@ -1293,6 +1293,8 @@ export default function App() {
   const [pendingTourOffer, setPendingTourOffer] = useState(false);
   const finishTour = async () => {
     setShowTour(false);
+    setShowSettings(false);
+    setSettingsInitialScreen(null);
     selectTab("home");
     await AppPreferencesRepository.update({ hasCompletedTour: true });
   };
@@ -3354,7 +3356,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           selectTab("home"); setShowSettings(false); setSettingsInitialScreen(null); setShowTour(true);
         }} />
       )}
-      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} darkMode={darkMode} />}
+      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} onOpenSettings={() => { selectTab("home"); setShowSettings(true); setSettingsInitialScreen(null); }} onCloseSettings={() => { setShowSettings(false); setSettingsInitialScreen(null); }} darkMode={darkMode} />}
       {showSearch && (
         // initialQuery/initialSortMode are the Phase 2b back-navigation
         // restore. They are read as useState initialisers, which is only

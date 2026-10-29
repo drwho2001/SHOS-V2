@@ -42,11 +42,13 @@ export const TOUR_STEPS = [
   { id: "live-session", navigate: "home", target: "live-session", title: "Live session", body: "When a session is running, this card counts it down and shows who's there. Tap to open the full session." },
   { id: "search-icon", navigate: "home", target: "search-icon", title: "Search everything", body: "One search box across contacts, encounters, tests, symptoms — everything, in one place." },
   { id: "settings-icon", navigate: "home", target: "settings-icon", title: "Settings", body: "Backups, App Lock & privacy, preferences, and colour customisation all live here — including a full written Guide to every section, if you want more detail than this tour." },
+  { id: "settings-about", target: "settings-about", navigate: "settings", title: "About & version", body: "Version, build, install link, and privacy info live here. The Guide tab next to it is the full written manual." },
   { id: "quick-exit", navigate: "home", target: "quick-exit", title: "Quick exit", body: "The discreet control that leaves the app immediately — and locks the vault first if App Lock is on. Use it when you need to get off the screen fast." },
   { id: "closing", navigate: "home", target: null, title: "That's it!", body: "Replay this tour anytime from Settings → Guide → \"Take the interactive tour\"." },
 ];
 
 function isStepAvailable(step) {
+  if (step.navigate) return true;
   return !step.target || !!document.querySelector(`[data-tour="${step.target}"]`);
 }
 
@@ -59,7 +61,7 @@ function findValidIndex(steps, fromIndex, direction) {
   return direction > 0 ? steps.length : -1;
 }
 
-export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, darkMode }) {
+export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, onOpenSettings, onCloseSettings, darkMode }) {
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const [index, setIndex] = useState(() => {
@@ -86,6 +88,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, da
   // accurately) makes the same real clamp possible vertically too.
   const cardRef = useRef(null);
   const [cardHeight, setCardHeight] = useState(160);
+  const prevNavigateRef = useRef(null);
 
   const step = index >= 0 && index < steps.length ? steps[index] : null;
 
@@ -121,15 +124,25 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, da
     return () => window.removeEventListener("resize", recalc);
   }, [recalc]);
 
-  // ADDED - tour deep-link: switch the active tab to match the step being
-  // shown, so the user sees each screen's content as the tour explains it
-  // rather than staring at Home for the whole tour. The bottom-nav targets
-  // (tab-*) exist in the DOM regardless of the active tab, so isStepAvailable
-  // is unaffected; this only changes what's visible behind the spotlight.
+  // ADDED - tour deep-link: switch the active tab / open Settings to match
+  // the step being shown, so the user sees each screen's content as the
+  // tour explains it rather than staring at Home for the whole tour.
   useEffect(() => {
-    if (!step || !step.navigate || !onNavigate) return;
-    onNavigate(step.navigate);
-  }, [step, onNavigate]);
+    if (!step) return;
+    if (step.navigate && step.navigate !== "home" && step.navigate !== "settings" && onNavigate) {
+      onNavigate(step.navigate);
+    }
+    if (step.navigate === "settings" && onOpenSettings) {
+      onOpenSettings();
+      // Settings is lazy-loaded; wait for it to render before measuring.
+      setTimeout(() => recalc(), 600);
+    }
+    // Close settings when leaving a settings step.
+    if (step.navigate !== "settings" && prevNavigateRef.current === "settings" && onCloseSettings) {
+      onCloseSettings();
+    }
+    prevNavigateRef.current = step.navigate;
+  }, [step, onNavigate, onOpenSettings, onCloseSettings, recalc]);
 
   // Real anchors (bottom nav tabs in particular) can shift slightly as
   // other transient UI (a due-reminder banner, an update-available

@@ -697,10 +697,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // 5 siblings. No section is actually more "important" than any
   // other, so every row now renders identically instead of some
   // looking bold/dark and others muted at random.
-  const SettingsRow = ({ icon: Icon, label, onClick, disabled }) => {
+  const SettingsRow = ({ icon: Icon, label, onClick, disabled, dataTour }) => {
     const resolvedIconColor = darkMode ? DARK.textDisabled : "#5B5B62";
     return (
-    <div onClick={disabled ? undefined : onClick} role={disabled ? undefined : "button"} tabIndex={disabled ? -1 : 0} aria-disabled={disabled} aria-label={label} onKeyDown={disabled ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
+    <div data-tour={dataTour} onClick={disabled ? undefined : onClick} role={disabled ? undefined : "button"} tabIndex={disabled ? -1 : 0} aria-disabled={disabled} aria-label={label} onKeyDown={disabled ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Icon size={24} weight="regular" color={resolvedIconColor} />
@@ -883,7 +883,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             below. */}
         <SettingsRow icon={Database} label="Developer tools" onClick={() => setShowDevTools(true)} />
         {/* ADDED 26 Aug 2026 - real ask: About/version screen. */}
-        <SettingsRow icon={Info} label="About" onClick={() => setShowAbout(true)} />
+        <SettingsRow icon={Info} label="About" onClick={() => setShowAbout(true)} dataTour="settings-about" />
         <SettingsRow icon={ShareNetwork} label="Share SHOS" onClick={() => setShowShare(true)} />
       </div>
 
