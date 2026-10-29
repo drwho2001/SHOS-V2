@@ -316,6 +316,7 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
 
 function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStock, onMarkRequested, onOpenCorrection, onEditMedication, onUpdateDose, onMoveUp, onMoveDown, onArchive, onDelete, isFirst, isLast, justCompleted, T, darkMode, cardRef, highlighted, searchHighlighted, menuOpen, onToggleMenu, snoozedUntil, reminderTimingMode = "adaptive" }) {
   const { t: tr } = useTranslation();
+  const reducedMotion = useReducedMotion();
   // ADDED — real ask: local to this card, gated behind the menu
   // already being open for this specific medication — doesn't need
   // the app-wide single-open tracking `menuOpen` uses.
@@ -1066,6 +1067,7 @@ function ToggleRow({ label, value, onChange, T }) {
   // right size to look at and too small to hit. The row is now the control and
   // the pill is its indicator: role/state/keyboard live on the row, and the
   // pill takes no pointer events so a tap cannot register twice.
+  const reducedMotion = useReducedMotion();
   const toggle = () => onChange(!value);
   return (
     <div
@@ -1776,6 +1778,7 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
 // Design's dark mode toggle, for visual consistency across the app's
 // two settings surfaces.
 function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
+  const reducedMotion = useReducedMotion();
   const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const [prefs, setPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);

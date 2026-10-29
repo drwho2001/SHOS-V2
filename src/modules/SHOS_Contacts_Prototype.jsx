@@ -1172,6 +1172,7 @@ function ToggleSwitch({ value, onChange, T }) {
   // at and too small to hit, and it must stay 40x24 after the shape restore. It
   // is now wrapped in a 44px hit area; the negative margin means callers see the
   // old footprint, and the pill takes no pointer events so the tap lands once.
+  const reducedMotion = useReducedMotion();
   const toggle = () => onChange(!value);
   return (
     <div

@@ -118,6 +118,7 @@ function SectionHeader({ children, onTap, T }) {
 // the two real interactions (navigate vs collapse) don't fight over
 // the same tap target.
 function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleCollapse, T }) {
+  const reducedMotion = useReducedMotion();
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 6px" }}>
       <div onClick={onTap} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined} aria-label={onTap ? (typeof children === "string" ? children : "Section") : undefined} onKeyDown={onTap ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ ...TYPE.sectionLabel, color: T.textSecondary, cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>

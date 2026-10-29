@@ -152,6 +152,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
   const [includeInfection, setIncludeInfection] = useState(false);
   const [draft, setDraft] = useState(() => buildPartnerMessage(false, infectionNames));
   const [status, setStatus] = useState(null);
+  const reducedMotion = useReducedMotion();
 
   const regenerate = (nextIncludeInfection) => {
     setIncludeInfection(nextIncludeInfection);

@@ -160,6 +160,7 @@ function ColorWheelPicker({ currentValue, onPick, darkMode }) {
 }
 
 function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onReset, label }) {
+  const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
 
   const [expanded, setExpanded] = useState(false);

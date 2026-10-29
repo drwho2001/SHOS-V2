@@ -283,6 +283,7 @@ function ToggleSwitch({ value, onChange, T }) {
   // CHANGED 28 Oct 2026 (Lily, t209) — 44px hit area around an unchanged 40x24
   // pill; negative margin keeps the caller's row height, and the pill ignores
   // pointer events so one tap toggles once.
+  const reducedMotion = useReducedMotion();
   const toggle = () => onChange(!value);
   return (
     <div

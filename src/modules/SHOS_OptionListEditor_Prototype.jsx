@@ -63,6 +63,7 @@ export const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, Calendar
 // rename/remove is the real, immediate need this closes.
 function UsageDisclosure({ listName, value, T }) {
   const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const records = useLoadedMemo(() => (open ? findRecordsUsingOptionValue(listName, value) : Promise.resolve(null)), [listName, value, open], null);
 

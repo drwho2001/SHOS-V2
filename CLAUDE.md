@@ -575,7 +575,9 @@ one free call, so the instinct to push on is the expensive one.
   `addEventListener`). The hook gates *decorative* transition — Home's progress
   ring stops animating — and never the state change itself: the ring still
   renders the right arc, it just arrives without the 300ms sweep. Use it for the
-  next such transition rather than a second media-query reader.
+  next such transition rather than a second media-query reader. As of this
+  writing it gates transitions in Home, Contacts, Medication Dashboard, Testing,
+  Timeline, ClinicCard, and OptionListEditor.
 - **User-facing strings go through `useTranslation`, with the English default
   inline** — `t("home.quickExit", "Quick exit")`, keys in `src/i18n/en.json`.
   The default is what makes a missing key degrade to readable English rather
