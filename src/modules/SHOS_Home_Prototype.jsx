@@ -1267,6 +1267,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             Activity glyph the bottom nav and Global Search already use
             for Encounters everywhere else, for consistency. */}
         <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} />
+        <QuickAddButton icon={Activity} label="New session" color={encountersColor} onClick={() => onQuickAdd("activity")} />
         {/* CHANGED 20 Aug 2026 — real bug found in the design-
             unification pass: this was #3B82F6, a different, lighter
             blue than Medication Dashboard's own accent (medsBlue,
