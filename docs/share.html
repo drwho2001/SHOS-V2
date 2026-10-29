@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SHOS - Share / Install</title>
+<meta name="description" content="Share SHOS: scan to install the Android APK or open the web app." />
+<meta name="theme-color" content="#0B7F79" />
+<link rel="icon" type="image/png" href="./pwa-192.png" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; background: #E0F2F1; color: #1B1B1F; -webkit-font-smoothing: antialiased; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
+  .brand { text-align: center; }
+  .logo { width: 72px; height: 72px; margin: 0 auto 10px; background: #0B7F79; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 32px; font-weight: 800; box-shadow: 0 4px 12px rgba(11,127,121,0.3); }
+  .brand .name { font-size: 40px; font-weight: 800; color: #0B7F79; letter-spacing: -0.5px; line-height: 1; }
+  .brand .tagline { font-size: 13px; color: #6B6B73; margin-top: 6px; }
+  .brand .desc { font-size: 14px; line-height: 1.55; margin-top: 14px; color: #1B1B1F; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .version { font-size: 12px; color: #6B6B73; text-align: center; margin-top: 10px; font-family: monospace; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 26px; }
+  @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: #FFFFFF; border: 2px solid #0B7F79; border-radius: 18px; padding: 20px; text-align: center; }
+  .card h2 { font-size: 16px; font-weight: 700; color: #0B7F79; margin: 0 0 4px; }
+  .card .sub { font-size: 12px; color: #6B6B73; margin-bottom: 14px; line-height: 1.4; }
+  .card img.qr { width: 100%; max-width: 260px; height: auto; border-radius: 10px; }
+  .card .link { display: block; margin-top: 12px; font-size: 11px; color: #0B7F79; word-break: break-all; text-decoration: none; font-family: monospace; }
+  .ios-note { margin-top: 16px; padding: 12px; background: #FFFFFF; border: 1px solid #0B7F79; border-radius: 10px; font-size: 12px; color: #1B1B1F; text-align: center; }
+  .ios-note strong { color: #0B7F79; }
+  .changelog { margin-top: 24px; padding: 16px; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.07); border-radius: 12px; }
+  .changelog h3 { font-size: 14px; font-weight: 700; color: #0B7F79; margin: 0 0 8px; }
+  .changelog p { font-size: 12px; color: #6B6B73; line-height: 1.5; margin: 4px 0; }
+  .changelog .date { font-size: 10px; color: #0B7F79; font-weight: 700; }
+  .fineprint { font-size: 11px; color: #6B6B73; text-align: center; margin-top: 20px; line-height: 1.55; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .btnrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+  .btn { background: #0B7F79; color: #fff; border: none; border-radius: 999px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn.secondary { background: transparent; color: #0B7F79; border: 1.5px solid #0B7F79; }
+  .btn.pdf { background: #0B7F79; }
+  @media print { body { background: #fff; } .btnrow { display: none; } }
+</style>
+</head>
+<body>
+<main id="card">
+  <div class="brand">
+    <div class="logo">S</div>
+    <div class="name">SHOS</div>
+    <div class="tagline">Sexual Health Operating System</div>
+    <div class="desc">Your own sexual health record — contacts, encounters, testing, medication, and clinic visits. All in one private place on this device. Nothing leaves your phone unless you choose to export or share it.</div>
+    <div class="version" id="versionLine">Version loading…</div>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <h2>Android APK</h2>
+      <div class="sub">Scan to download and install on Android</div>
+      <img class="qr" src="./share-qr-apk.png" alt="QR code for APK download" />
+      <a class="link" id="apkLink" href="#" target="_blank" rel="noopener">Download APK</a>
+    </div>
+    <div class="card">
+      <h2>Web App</h2>
+      <div class="sub">Scan to open in browser (works on any device)</div>
+      <img class="qr" src="./share-qr-web.png" alt="QR code for web app" />
+      <a class="link" id="webLink" href="#" target="_blank" rel="noopener">Open Web App</a>
+    </div>
+  </div>
+  <div class="ios-note"><strong>iPhone / iPad:</strong> Open the Web App link above in Safari, then tap Share → Add to Home Screen to install.</div>
+  <div class="changelog">
+    <h3>What's New <span class="date" id="changelogDate"></span></h3>
+    <p id="changelogVersion" style="font-size: 11px; color: #0B7F79; font-weight: 600; margin: 0 0 8px;"></p>
+    <p>Quick-exit button on all screens for privacy.</p>
+    <p>i18n support across settings.</p>
+    <p>Reduced motion and contrast accessibility.</p>
+    <p>Home dashboard with status rings.</p>
+  </div>
+  <div class="btnrow">
+    <button class="btn" onclick="saveImage()">Save as PNG</button>
+    <button class="btn secondary" onclick="shareLink()">Share Link</button>
+    <button class="btn pdf" onclick="window.print()">Save as PDF</button>
+  </div>
+  <div class="fineprint">SHOS is a personal record-keeping app. It does not provide medical advice. Always consult a healthcare professional.</div>
+  <div class="fineprint" style="margin-top: 12px;">
+    <a href="https://github.com/drwho2001/SHOS-V2" style="color: #0B7F79; text-decoration: none; font-weight: 600;">GitHub Repository</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/drwho2001/SHOS-V2/blob/main/public/share.html" style="color: #0B7F79; text-decoration: none; font-weight: 600;">This page on GitHub</a>
+  </div>
+</main>
+<script>
+(function () {
+  const versionLine = document.getElementById('versionLine');
+  const apkLink = document.getElementById('apkLink');
+  const webLink = document.getElementById('webLink');
+  const changelogDate = document.getElementById('changelogDate');
+  function loadVersion() {
+    if (versionLine) versionLine.textContent = 'Version loading...';
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () { ctrl.abort(); }, 3000);
+    fetch('./version.json', { cache: 'no-store', signal: ctrl.signal })
+      .then(function (res) { if (!res.ok) throw new Error('bad'); return res.json(); })
+      .then(function (d) {
+        clearTimeout(timer);
+        if (versionLine) versionLine.textContent = 'Version ' + (d.version || '?') + ' · ' + (d.channel || 'stable') + ' · build ' + (d.buildSha || '').slice(0, 7);
+        if (apkLink && d.apkUrl) { apkLink.href = d.apkUrl; }
+        if (webLink && d.webUrl) { webLink.href = d.webUrl; }
+        if (changelogDate && d.buildSha) { changelogDate.textContent = '(' + (d.buildSha || '').slice(0, 7) + ')'; }
+        var cv = document.getElementById('changelogVersion');
+        if (cv) {
+          var parts = [];
+          if (d.releasedAt) parts.push('Released ' + new Date(d.releasedAt).toLocaleDateString());
+          if (d.buildSha) parts.push('build ' + d.buildSha.slice(0, 7));
+          cv.textContent = parts.join(' · ');
+        }
+      })
+      .catch(function () { clearTimeout(timer); if (versionLine) versionLine.textContent = 'Version unknown'; });
+  }
+  window.saveImage = function () {
+    const card = document.getElementById('card');
+    function doSave() {
+      try {
+        html2canvas(card, { backgroundColor: '#E0F2F1', scale: 2, useCORS: true, allowTaint: true }).then(function (canvas) {
+          canvas.toBlob(function (blob) {
+            if (!blob) { alert('Image generation failed. Use Save as PDF instead.'); return; }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shos-share-card.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          }, 'image/png');
+        }).catch(function () { alert('Image generation failed. Use Save as PDF instead.'); });
+      } catch (e) { alert('Image generation failed. Use Save as PDF instead.'); }
+    }
+    if (typeof html2canvas === 'undefined') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      s.onload = function () { doSave(); };
+      s.onerror = function () { alert('Image renderer unavailable. Use Save as PDF instead.'); };
+      document.head.appendChild(s);
+    } else {
+      doSave();
+    }
+  };
+  window.shareLink = function () {
+    const url = 'https://github.com/drwho2001/SHOS-V2/releases/tag/latest';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { alert('Link copied to clipboard.'); }).catch(function () { window.prompt('Copy this link:', url); });
+    } else {
+      window.prompt('Copy this link:', url);
+    }
+  };
+  loadVersion();
+})();
+</script>
+</body>
+</html>
