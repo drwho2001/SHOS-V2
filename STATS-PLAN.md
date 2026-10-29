@@ -1,4 +1,4 @@
-# Customizable Stats Plan — SHOS-V2 (revised v3)
+# Customizable Stats Plan — SHOS-V2 (revised v4)
 
 ## High-demand stats (40%+ users want these)
 - Total encounters + unique partners
@@ -10,46 +10,47 @@
 - Contraception due date
 - Cycle day (if tracked)
 
-## Slut mode (risque/kinky data, toggle in settings)
-- Total loads, fists, kinks tallies
-- Top kinks by frequency
-- Top partners by encounter count
-- Top locations
-- Chem usage frequency
-- Bottoming/topping ratio
-- Encounter type breakdown (solo/duo/group)
-- Average encounter duration
-- Most active day of week/month
+## Advanced stats (toggle in settings, off by default)
+Detailed encounter breakdown: loads, fists, kinks, top kink/partner/location, chem usage, bottoming/topping ratio, encounter type breakdown, avg duration, most active day.
 
 ## Structure: single Stats page under Settings
-One central "Stats" screen. Toggle "Slut mode" in settings to show risque section.
+One central "Stats" screen. Toggle "Advanced stats" in settings to show detailed section.
 
 ## Architecture
-- Extend StatsScreen.jsx
-- Add statsAggregator.js (pure functions)
+- Extend StatsScreen.jsx (already has useTranslation, dialog, StatRow)
+- Add statsAggregator.js (pure functions) — aggregates across modules
 - Metric picker: checkboxes to show/hide
-- Date range: 7d/30d/90d/all
+- Date range: 7d/30d/90d/all/custom
 - Group by: none/partner/location/month
 - Persist layout in appPreferencesRepository
-- Slut mode toggle in privacy/settings
+
+## Customizable charts
+- User selects: metric + date range + group-by
+- Chart types: bar, line, pie (CSS-based, no external lib)
+- Drill-down: tap a bar to see underlying records
+- Filter by partner, location, kink, chem, encounter type
+- Trend: rolling 7-day/30-day averages
+
+## Brutal critique
+- Privacy: stats on screen = exposure. Mitigate: anonymise mode, quick-exit, toggle.
+- Performance: aggregation on render. Mitigate: useMemo, caching.
+- Scope creep: keep phases small.
 
 ## Phased plan
 Phase 1: High-demand stats (encounters total, partners, last test, adherence, last encounter, next visit, contraception, cycle) — 4h
-Phase 2: Slut mode section (loads, fists, kinks, top kink/partner/location, chems) — 4h
+Phase 2: Advanced stats section (loads, fists, kinks, top kink/partner/location, chems) — 4h
 Phase 3: Metric picker + date range — 3h
 Phase 4: Group-by (partner/location/month) — 4h
 Phase 5: Simple charts (CSS bars) — 3h
 Phase 6: Export to CSV — 2h
 Total: ~20h
 
-## Brutal critique
-- Privacy: stats on screen = exposure. Mitigate: anonymise mode, quick-exit, slut mode toggle.
-- Performance: aggregation on render. Mitigate: useMemo, caching.
-- Scope creep: keep phases small.
-
 ## Dependencies
 - sessionTally, getTestingFrequencyStats, getOverallAdherence (exist)
 - No new repos; aggregate from existing.
 
-## Start
-Phase 1: extend StatsScreen with high-demand stats.
+## Status
+NOT BUILT. Plan only. Phase 1 is the starting point.
+
+## Customizable charts detail
+User can build their own: pick a metric (e.g., "loads"), a dimension (e.g., "by partner"), a date range, and a chart type. This is a "stats builder" — like a mini BI tool. Start with 3 pre-built charts, then add the builder in Phase 4.
