@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { useReducedMotion } from "./calculations/useReducedMotion";
+import { countSampleData } from "./repositories/clearSampleData";
 import { resolveQuickExitPlan } from "./calculations/quickExit";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { syncAllWidgets } from "./calculations/syncAllWidgets";
@@ -1318,6 +1319,8 @@ export default function App() {
   // so it's visible no matter which tab was open when a dose became
   // due.
   const [dueMeds, setDueMeds] = useState([]);
+  const [hasSampleData, setHasSampleData] = useState(true);
+  useEffect(() => { countSampleData().then((s) => setHasSampleData(s.total > 0)).catch(() => {}); }, []);
   // ADDED — real ask: "Build the Testing/Refill/Clinic-visit reminder
   // parity" — same in-app due-state awareness the medication banner
   // above already has, one state slot + measured banner height per
@@ -2811,7 +2814,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         </div>
       )}
 
-      {(dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue || vaccinationDue) && (
+      {!hasSampleData && (dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue || vaccinationDue) && (
         // CHANGED 15 Sep 2026 — real report: this stack read as "too
         // blocky/harsh/clashy" sitting flush edge-to-edge against the
         // screen with square corners. Wrapped the whole stack (not
