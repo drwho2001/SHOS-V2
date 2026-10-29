@@ -2265,11 +2265,11 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // search results" button survived the user tapping another tab and kept
   // pointing at a query for a record they had left. The 18th smoke flow caught
   // it, and it is the half of the change the unit tests could not see.
-  const selectTab = (tabKey) => {
+  const selectTab = useCallback((tabKey) => {
     setActive(tabKey);
     setNavResetCount((c) => c + 1);
     setSearchReturn(null);
-  };
+  }, []);
 
   // CHANGED 26 Aug 2026 — real bug fix: Clinic Card is reachable from
   // BOTH Home and from inside Healthcare itself. Using its quick-add

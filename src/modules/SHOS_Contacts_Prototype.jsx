@@ -2865,7 +2865,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
 }
 
 // ── Contacts List ──
-function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, setQuery, onOpenMyProfile, onOpenImportProfile, onOpenContactsSettings, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, setQuery, onOpenMyProfile, onOpenImportProfile, onOpenContactsSettings, onQuickExit, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
   // ADDED 19 Aug 2026 — Anonymise mode. Read once per mount, same
   // pattern as every other cross-module settings read in this app —
   // toggling it in Settings and switching back to Contacts (a fresh
@@ -3095,8 +3095,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           {/* ADDED 15 Sep 2026 — real ask: a real in-module settings
               screen (see ContactsSettingsScreen's own comment above),
               matching Medication Dashboard's own gear-icon placement. */}
-          {onOpenContactsSettings && <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />
-          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} title="Quick exit" />}}
+          {onOpenContactsSettings && <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
+          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} title="Quick exit" />}
         </div>
       </div>
 
@@ -3661,7 +3661,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
       <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
         {screen === "list" ? (
           <ContactsList contacts={contacts} T={T} onOpen={openProfile} onAdd={() => setEditingContact({})} sortBy={sortBy} setSortBy={setSortBy} query={query} setQuery={setQuery}
-            onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} onOpenContactsSettings={() => setShowContactsSettings(true)} refresh={refresh}
+            onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} onOpenContactsSettings={() => setShowContactsSettings(true)} onQuickExit={onQuickExit} refresh={refresh}
             deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} />
         ) : (
           <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} />

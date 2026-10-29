@@ -583,6 +583,13 @@ one free call, so the instinct to push on is the expensive one.
   Settings sub-screens are the current front of the extraction
   (`src/modules/settings/`). Re-check a file's coverage with
   `Select-String -Path src\modules\settings\*.jsx -Pattern '>\s*[A-Z][a-z]+ [a-z]+'`
+- **Quick exit is a real action, not a placeholder.** The control on Home's
+  header (and the module headers that render it) runs `handleQuickExit`, which
+  locks the vault when App Lock is enabled and then leaves — `App.exitApp()` on
+  Capacitor, `window.location.replace("about:blank")` on web (no third-party
+  request, reversible with Back). The decision lives in
+  `src/calculations/quickExit.js` (`resolveQuickExitPlan`) so it can never
+  silently resolve to "do nothing" again; `quickExit.test.js` fails if it does.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
