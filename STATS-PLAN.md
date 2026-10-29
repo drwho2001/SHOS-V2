@@ -10,7 +10,7 @@
 - Contraception due date
 - Cycle day (if tracked)
 
-## Advanced stats (toggle in settings, off by default)
+## XXX stats (toggle in settings, off by default)
 Detailed encounter breakdown: loads, fists, kinks, top kink/partner/location, chem usage, bottoming/topping ratio, encounter type breakdown, avg duration, most active day.
 
 ## Structure: single Stats page under Settings
@@ -32,7 +32,7 @@ One central "Stats" screen. Toggle "Advanced stats" in settings to show detailed
 - Trend: rolling 7-day/30-day averages
 
 ## Brutal critique
-- Privacy: stats on screen = exposure. Mitigate: anonymise mode, quick-exit, toggle.
+- Privacy: XXX stats on screen = exposure. Mitigate: anonymise mode, quick-exit, toggle (off by default).
 - Performance: aggregation on render. Mitigate: useMemo, caching.
 - Scope creep: keep phases small.
 
