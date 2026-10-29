@@ -51,13 +51,13 @@
     <div class="card">
       <h2>Android APK</h2>
       <div class="sub">Scan to download and install on Android</div>
-      <img class="qr" src="./share-qr-apk.png" alt="QR code for APK download" crossorigin="anonymous" />
+      <img class="qr" src="./share-qr-apk.png" alt="QR code for APK download" />
       <a class="link" id="apkLink" href="#" target="_blank" rel="noopener">Download APK</a>
     </div>
     <div class="card">
       <h2>Web App</h2>
       <div class="sub">Scan to open in browser (works on any device)</div>
-      <img class="qr" src="./share-qr-web.png" alt="QR code for web app" crossorigin="anonymous" />
+      <img class="qr" src="./share-qr-web.png" alt="QR code for web app" />
       <a class="link" id="webLink" href="#" target="_blank" rel="noopener">Open Web App</a>
     </div>
   </div>
@@ -128,16 +128,6 @@
   };
   window.shareLink = function () {
     const url = window.location.href;
-    try {
-      if (navigator.share) {
-        navigator.share({ url: url }).catch(function () {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(function () { alert('Link copied to clipboard.'); }).catch(function () { window.prompt('Copy this link:', url); });
-          } else { window.prompt('Copy this link:', url); }
-        });
-        return;
-      }
-    } catch (e) {}
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { alert('Link copied to clipboard.'); }).catch(function () { window.prompt('Copy this link:', url); });
     } else {
