@@ -1898,6 +1898,12 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
           </div>
         </div>
       )}
+      {onQuickExit && (
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 16px" }}>
+          <SignOut size={24} color={T.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} aria-label="Quick exit"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />
+        </div>
+      )}
       {screenContent}
     </div>
   );
