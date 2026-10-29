@@ -40,6 +40,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          vendor: ['react', 'react-dom'],
           settings: ['src/modules/SHOS_Settings_Prototype.jsx'],
           healthcare: ['src/modules/SHOS_Healthcare_Prototype.jsx'],
           timeline: ['src/modules/SHOS_Timeline_Prototype.jsx'],
