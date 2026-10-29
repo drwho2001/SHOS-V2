@@ -185,13 +185,13 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
     <div style={{ borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div role="button" tabIndex={0} aria-label={`Customise ${label} colour`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} />
+          <div role="button" tabIndex={0} aria-label={t("design.customiseColour", "Customise {label} colour", { label })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} />
           <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
           {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>(customised)</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isOverridden && (
-            <ResetIcon role="button" tabIndex={0} aria-label="Reset to default" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={20} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer", padding: 4 }} onClick={onReset} title="Reset to default" />
+            <ResetIcon role="button" tabIndex={0} aria-label={t("design.resetToDefault", "Reset to default")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={20} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer", padding: 4 }} onClick={onReset} title="Reset to default" />
           )}
           {/* REMOVED 1 Sep 2026 — real ask: "colour buttons sit on a
               white background... looks visually out of place." That
@@ -312,7 +312,7 @@ export function DesignScreen({ onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Colour scheme" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("design.colourScheme", "Colour scheme")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Colour scheme</h1>
