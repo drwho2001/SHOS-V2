@@ -204,12 +204,12 @@ export function StatsScreen({ onClose }) {
         {/* Healthcare */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Healthcare</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
-          <StatRow label="Tests logged" value={testingStats.testCount}
+          <StatRow label={t("stats.testsLogged", "Tests logged")} value={testingStats.testCount}
             explanation="Total non-archived tests with a real (not future-scheduled) date." />
-          <StatRow label="Average interval between tests"
+          <StatRow label={t("stats.avgInterval", "Average interval between tests")}
             value={testingStats.averageIntervalDays != null ? `${testingStats.averageIntervalDays} days` : "Not enough data"}
             explanation="Average days between consecutive tests. Needs at least 2 real tests to calculate." />
-          <StatRow label="Within BASHH-recommended interval?"
+          <StatRow label={t("stats.withinBashh", "Within BASHH-recommended interval?")}
             value={testingStats.withinBashhInterval == null ? "—" : testingStats.withinBashhInterval ? "Yes" : "No"}
             explanation={`BASHH's 2023 summary guidance recommends 3-monthly (90-day) asymptomatic STI screening for higher-risk groups, matching CDC's own 3–6 month guidance for PrEP users. This compares days since your last test against that 90-day reference point — not a personalised recommendation, just the cited benchmark.`}
             sourceUrl={BASHH_TESTING_SOURCE_URL} />
@@ -294,7 +294,7 @@ export function StatsScreen({ onClose }) {
               ))}
             </div>
           </div>
-          <StatRow label="Days since last visit" value={clinicVisitStats.daysSinceLast != null ? `${clinicVisitStats.daysSinceLast} days` : "No past visits logged"}
+          <StatRow label={t("stats.daysSinceLastVisit", "Days since last visit")} value={clinicVisitStats.daysSinceLast != null ? `${clinicVisitStats.daysSinceLast} days` : "No past visits logged"}
             explanation="Days since your most recent real (already happened, not a future booking) clinic visit." />
         </div>
         </div>
@@ -303,9 +303,9 @@ export function StatsScreen({ onClose }) {
         {/* Medication */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.medication, padding: "0 0 6px" }}>Medication</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
-          <StatRow label="Overall adherence (7-day)" value={adherence != null ? `${adherence}%` : "Not enough data"}
+          <StatRow label={t("stats.overallAdherence7d", "Overall adherence (7-day)")} value={adherence != null ? `${adherence}%` : "Not enough data"}
             explanation="Average of each daily/scheduled medication's own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications aren't included — there's no fixed expected schedule to measure against." />
-          <StatRow label="DoxyPEP compliance" value={doxyCompliance != null ? `${doxyCompliance}%` : "No DoxyPEP medication set up"}
+          <StatRow label={t("stats.doxyPepCompliance", "DoxyPEP compliance")} value={doxyCompliance != null ? `${doxyCompliance}%` : "No DoxyPEP medication set up"}
             explanation="Of each qualifying-activity window (see the DoxyPEP alert's own logic — mucous-membrane contact, BASHH/CDC-sourced), the percentage where a dose was actually logged within the real 72-hour window. Sequential activity in the same window counts once, matching the real alert's own anchoring rule." />
           {/* ADDED — real ask: "expand stats" — the adherence figure
               above was a single current snapshot with no sense of
