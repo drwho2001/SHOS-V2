@@ -3029,7 +3029,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // above; role="status" (not "region") since notifToast right
         // above already uses that role for the same "persistent,
         // non-urgent notice" shape.
-        <div role="status" style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif" }}>
+        <div role="status" style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif", pointerEvents: "none" }}>
           <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version of SHOS is ready — may include notification fixes.</span>
           {/* FIXED — real accessibility finding (10 Sep 2026, automated
               axe-core scan): ACCENTS.healthcare (#09582E, a dark green)
@@ -3043,9 +3043,9 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               text-link pattern already used for AppLockScreen's own
               "Back to PIN entry" link) distinguishes it as the tappable
               action without needing a new colour. */}
-          <button onClick={() => window.location.reload()} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit" }}>Refresh</button>
-          <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px" }}>Download APK</a>
-          <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4 }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSwUpdateAvailable(false); } }} />
+          <button onClick={() => window.location.reload()} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Refresh</button>
+          <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px", pointerEvents: "auto" }}>Download APK</a>
+          <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSwUpdateAvailable(false); } }} />
         </div>
       )}
 
