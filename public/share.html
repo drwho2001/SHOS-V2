@@ -103,7 +103,7 @@
       window.shareCard = function () {
         const url = window.location.href;
         if (navigator.share) {
-          navigator.share({ title: "SHOS — Share / Install", text: "Install or open SHOS (Sexual Health Operating System).", url: url }).catch(function () {});
+          navigator.share({ title: "SHOS - Share / Install", text: "Install or open SHOS (Sexual Health Operating System).", url: url }).catch(function () {});
         } else if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(url).then(function () { alert("Link copied to clipboard."); }).catch(function () { window.prompt("Copy this link:", url); });
         } else {
