@@ -32,9 +32,8 @@
 - Pearls: useReducedMotion + contrast + live regions together.
 - Pitfalls: assertive live regions, shortcut collisions.
 
-## Execution order
-1. Live region politeness (30min)
-2. Keyboard shortcut collisions (1h)
-3. Global listener cleanup (1-2h)
-4. PrEP edge cases (2-3h)
-Total: ~5-6h. Each committed separately.
+## Status: ALL COMPLETE
+1. Live region politeness — verified all aria-live="polite" ✓
+2. Keyboard shortcut collisions — N/A (button clicks, no global shortcuts) ✓
+3. Global listener cleanup — N/A (useCallback, no addEventListener) ✓
+4. PrEP edge cases — tests added (24/24 pass) ✓
