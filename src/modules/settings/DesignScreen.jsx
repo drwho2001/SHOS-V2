@@ -387,7 +387,7 @@ export function DesignScreen({ onClose }) {
             const currentValue = overrides[key] || ACCENTS[key];
             return (
               <ColorInputRow key={key} colorKey={key} currentValue={currentValue} isOverridden={isOverridden}
-                label={MODULE_LABELS[key]} onSetColor={setColor} onReset={() => reset(key)} />
+                label={t(`design.module.${key}`, MODULE_LABELS[key])} onSetColor={setColor} onReset={() => reset(key)} />
             );
           })}
         </div>
@@ -404,7 +404,7 @@ export function DesignScreen({ onClose }) {
             const currentValue = overrides[key] || ACTION[key === "actionRed" ? "red" : "green"];
             return (
               <ColorInputRow key={key} colorKey={key} currentValue={currentValue} isOverridden={isOverridden}
-                label={ACTION_COLOR_LABELS[key]} onSetColor={setColor} onReset={() => reset(key)} />
+                label={t(`design.actionColor.${key}`, ACTION_COLOR_LABELS[key])} onSetColor={setColor} onReset={() => reset(key)} />
             );
           })}
         </div>
