@@ -213,7 +213,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
       {expanded && (
         <div style={{ padding: "0 16px 14px" }}>
           <div style={{ display: "flex", gap: 18, marginBottom: 14 }}>
-            {[["wheel", "Colour wheel"], ["hexrgb", "Hex/RGB"]].map(([mode, tabLabel]) => (
+            {[["wheel", t("design.colourWheel", "Colour wheel")], ["hexrgb", t("design.hexRgb", "Hex/RGB")]].map(([mode, tabLabel]) => (
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={mode} onClick={() => setPanelMode(mode)}
                 style={{
                   fontSize: 12, fontWeight: 700, cursor: "pointer", paddingBottom: 4,
@@ -347,7 +347,7 @@ export function DesignScreen({ onClose }) {
                 state (only the track colour changes) — matching that
                 established pattern here too, plus the same subtle
                 shadow those use for depth against a light track. */}
-            <div onClick={() => setDarkMode((d) => !d)} role="switch" tabIndex={0} aria-checked={darkMode} aria-label="Dark mode"
+            <div onClick={() => setDarkMode((d) => !d)} role="switch" tabIndex={0} aria-checked={darkMode} aria-label={t("design.darkMode", "Dark mode")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDarkMode((d) => !d); } }}
               style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? ACCENTS.home : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
@@ -358,7 +358,7 @@ export function DesignScreen({ onClose }) {
           <div style={{ padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Colour-blind friendly palette</span>
-              <div onClick={toggleCvdPalette} role="switch" tabIndex={0} aria-checked={cvdActive} aria-label="Colour-blind friendly palette"
+              <div onClick={toggleCvdPalette} role="switch" tabIndex={0} aria-checked={cvdActive} aria-label={t("design.cvdPalette", "Colour-blind friendly palette")}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCvdPalette(); } }}
                 style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
                 <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: cvdActive ? 21 : 3, transition: "left 0.15s" }} />
