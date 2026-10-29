@@ -176,6 +176,23 @@ describe("the suggestions are always a value the form can actually take", () => 
     expect(DOXYPEP_STATUS_OPTIONS).toContain(ctx.doxyPepStatus.value);
     expect(PREP_COVERAGE_OPTIONS).toContain(ctx.prepCoverage.value);
   });
+
+  it("prepOverride=true forces on PrEP even without medication", () => {
+    const r = inferPrepCoverage({ doseLogs: [], hasPrEPMedication: false, prepOverride: true, at: NOW });
+    expect(r.value).not.toBe("Not on PrEP");
+  });
+
+  it("prepOverride=false forces not on PrEP even with medication", () => {
+    const r = inferPrepCoverage({ doseLogs: [], hasPrEPMedication: true, prepOverride: false, at: NOW });
+    expect(r.value).toBe("Not on PrEP");
+  });
+
+  it("forcePrEP and manualPrEP are respected as fallbacks", () => {
+    const r1 = inferPrepCoverage({ doseLogs: [], hasPrEPMedication: false, forcePrEP: true, at: NOW });
+    expect(r1.value).not.toBe("Not on PrEP");
+    const r2 = inferPrepCoverage({ doseLogs: [], hasPrEPMedication: true, manualPrEP: false, at: NOW });
+    expect(r2.value).toBe("Not on PrEP");
+  });
 });
 
 describe("finding the PrEP medication", () => {
