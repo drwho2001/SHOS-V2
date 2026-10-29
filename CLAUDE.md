@@ -600,6 +600,13 @@ one free call, so the instinct to push on is the expensive one.
   breaking the tour when it is absent. Driving the tour through real
   screen-to-screen navigation is deliberately out of scope for v1 — see the file's
   own header comment. Replay lives at Settings → Guide → "Take the interactive tour".
+- **"This container" on Home is an average, not a single bottle.** The ring
+  averages adherence across every non-archived, non-PRN medication that has a
+  logged refill, each measured from its own last refill and capped at one
+  container's worth of doses (`getOverallContainerAdherence` in
+  `statsCalculations.js`). A medication with no refill logged is excluded
+  rather than substituted, so the ring disappears entirely when nothing has been
+  refilled. The tooltip says so; keep it that way if you reword the caption.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
