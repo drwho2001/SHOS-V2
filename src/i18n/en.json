@@ -497,7 +497,9 @@
     "tabOrderReload": "Tab order needs a reload to apply.",
     "reloadNow": "Reload now",
     "navigation": "Navigation",
-    "healthcare": "Healthcare"
+    "healthcare": "Healthcare",
+    "moveLeft": "Move left",
+    "moveRight": "Move right"
   },
   "privacy": {
     "title": "Privacy & Security",
