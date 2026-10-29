@@ -169,6 +169,10 @@ export function StatsScreen({ onClose }) {
         <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounters.filter(e => !e.isArchived).length}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(encounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size}</div></div>
+          </div>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Encounters per month</span>
