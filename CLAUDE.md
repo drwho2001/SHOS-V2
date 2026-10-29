@@ -558,6 +558,31 @@ one free call, so the instinct to push on is the expensive one.
   failure is invisible in the text. Re-measure when you touch one. Note t109 is
   only partly real: its `clearSampleData` and `uuNoteLinkGuard` fixes use the
   supported form, but it shipped this file's fix inert.
+- **Accessibility is stated in the DOM, not implied by the styling.** Anything
+  that changes without the user acting — the live-session card, the DoxyPEP
+  banner, the backup reminder, the "Status at a glance" section, and every
+  undo/redo toast — carries `role="status"` (or `aria-live="polite"` on the
+  element whose text changes), so a background refresh is announced once instead
+  of being silently repainted. Where the announcement has no visible text of its
+  own, it is a visually-hidden `aria-live="polite" aria-atomic="true"` div, not
+  a colour change. Re-check with:
+  `Select-String -Path src\modules\*.jsx,src\App.jsx -Pattern 'aria-live|role="status"'`
+- **Motion is opt-out at the OS level, through one hook.**
+  `src/calculations/useReducedMotion.js` reads
+  `(prefers-reduced-motion: reduce)` and subscribes to its `change` event, so a
+  user who flips the OS setting mid-session gets the new behaviour without a
+  reload (the subscription falls back to `addListener` on engines without
+  `addEventListener`). The hook gates *decorative* transition — Home's progress
+  ring stops animating — and never the state change itself: the ring still
+  renders the right arc, it just arrives without the 300ms sweep. Use it for the
+  next such transition rather than a second media-query reader.
+- **User-facing strings go through `useTranslation`, with the English default
+  inline** — `t("home.quickExit", "Quick exit")`, keys in `src/i18n/en.json`.
+  The default is what makes a missing key degrade to readable English rather
+  than to a bare key name, so it is not optional even while only `en` exists.
+  Settings sub-screens are the current front of the extraction
+  (`src/modules/settings/`). Re-check a file's coverage with
+  `Select-String -Path src\modules\settings\*.jsx -Pattern '>\s*[A-Z][a-z]+ [a-z]+'`
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
