@@ -26,6 +26,7 @@ public/version.json
 # the owner's real medical records. Keep the directory local; delete the dumps
 # once they've served their purpose.
 backups/
+test-results/
 
 # Editor/tool config snapshots. Five of these were committed to this repo by
 # accident and sat in `git status` forever. They are a snapshot of a config
