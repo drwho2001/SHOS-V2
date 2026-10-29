@@ -39,8 +39,10 @@ export const TOUR_STEPS = [
   { id: "tab-medication", target: "tab-medication", title: "Medication", body: "PrEP, DoxyPEP, hormones, contraception — doses, stock, adherence, and refill reminders." },
   { id: "tab-healthcare", target: "tab-healthcare", title: "Healthcare", body: "Testing, clinic visits, symptoms, vaccinations — plus Menstrual, Contraception & Pregnancy tracking, once turned on in Settings." },
   { id: "tab-home", target: "tab-home", title: "Home", body: "Your dashboard — what's due, recent activity, quick-add shortcuts. Always the centre tab." },
+  { id: "live-session", target: "live-session", title: "Live session", body: "When a session is running, this card counts it down and shows who's there. Tap to open the full session." },
   { id: "search-icon", target: "search-icon", title: "Search everything", body: "One search box across contacts, encounters, tests, symptoms — everything, in one place." },
   { id: "settings-icon", target: "settings-icon", title: "Settings", body: "Backups, App Lock & privacy, preferences, and colour customisation all live here — including a full written Guide to every section, if you want more detail than this tour." },
+  { id: "quick-exit", target: "quick-exit", title: "Quick exit", body: "The discreet control that leaves the app immediately — and locks the vault first if App Lock is on. Use it when you need to get off the screen fast." },
   { id: "closing", target: null, title: "That's it!", body: "Replay this tour anytime from Settings → Guide → \"Take the interactive tour\"." },
 ];
 

@@ -927,7 +927,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <SettingsIcon data-tour="settings-icon" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onOpenSettings} title="Settings" aria-label="Settings"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenSettings(); } }} />
           {onQuickExit && (
-            <SignOut size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} title={tr("home.quickExit", "Quick exit")} aria-label={tr("home.quickExit", "Quick exit")}
+            <SignOut data-tour="quick-exit" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} title={tr("home.quickExit", "Quick exit")} aria-label={tr("home.quickExit", "Quick exit")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />
           )}
         </div>
@@ -968,7 +968,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           gets this: still-counting-down is a short-lived countdown, not
           something worth permanently silencing. */}
       {activeSession && (
-        <div role="status" aria-live="polite" style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
+        <div data-tour="live-session" role="status" aria-live="polite" style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ color: encountersColor, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Live session</div>
