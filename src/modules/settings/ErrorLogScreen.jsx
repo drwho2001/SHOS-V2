@@ -111,6 +111,35 @@ export function ErrorLogScreen({ darkMode, onClose }) {
     }
   };
 
+  const copyReport = async () => {
+    const lines = [];
+    lines.push("SHOS bug report");
+    lines.push("Version: 0.2.0");
+    lines.push("Build: " + (typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"));
+    lines.push("Platform: " + (typeof navigator !== "undefined" ? navigator.userAgent : "unknown"));
+    lines.push("Date: " + new Date().toISOString());
+    lines.push("");
+    if (entries.length === 0) {
+      lines.push("No errors logged.");
+    } else {
+      lines.push("Error log (" + entries.length + " entries):");
+      lines.push(entries.map((e) =>
+        "[" + e.occurredAt + "] " + e.source + "\n" + e.message + (e.stack ? "\n" + e.stack : "")
+      ).join("\n\n---\n\n"));
+    }
+    const report = lines.join("\n");
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+        setExportStatus({ ok: true, msg: "Report copied to clipboard." });
+      } else {
+        window.prompt("Copy this report:", report);
+      }
+    } catch {
+      window.prompt("Copy this report:", report);
+    }
+  };
+
   return (
     <div ref={dialogRef} role="dialog" aria-label={t("errorLog.title", "Error log")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
@@ -120,6 +149,7 @@ export function ErrorLogScreen({ darkMode, onClose }) {
         </div>
         {entries.length > 0 && (
           <div style={{ display: "flex", gap: 14 }}>
+            <span role="button" tabIndex={0} aria-label={t("errorLog.copyAria", "Copy error report")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); copyReport(); } }} onClick={copyReport} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{t("errorLog.copy", "Copy report")}</span>
             <span role="button" tabIndex={0} aria-label={t("errorLog.exportAria", "Export error log")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{t("errorLog.export", "Export")}</span>
             <span role="button" tabIndex={0} aria-label={t("errorLog.clearAria", "Clear error log")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>{t("errorLog.clear", "Clear")}</span>
           </div>

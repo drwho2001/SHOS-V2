@@ -91,7 +91,7 @@ export function AboutScreen({ onClose }) {
            </div>
            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.reportCrash", "Report a crash")}</span>
-             <a href="https://github.com/drwho2001/SHOS-V2/issues/new" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+             <a href={"https://github.com/drwho2001/SHOS-V2/issues/new?title=" + encodeURIComponent("Crash report - SHOS " + APP_VERSION) + "&body=" + encodeURIComponent("## What happened\n\n(describe what you were doing)\n\n## App info\n- Version: " + APP_VERSION + "\n- Build: " + (typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev") + "\n- Platform: " + (typeof navigator !== "undefined" ? navigator.userAgent : "unknown") + "\n\n## Error log\n(paste from Settings -> Developer tools -> Error log -> Copy report)\n")} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
                {t("about.report", "Report")}
              </a>
            </div>
