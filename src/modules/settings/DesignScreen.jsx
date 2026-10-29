@@ -1,6 +1,7 @@
 // DesignScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "../../i18n/index.js";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, ArrowUUpLeftIcon as ResetIcon } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
@@ -255,6 +256,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
 // most email clients).
 
 export function DesignScreen({ onClose }) {
+  const { t } = useTranslation();
   // ADDED — real audit finding (desktop full-width sweep): grid the
   // Dark-mode/CVD-palette toggle cards; multi-column flow (matching
   // Registry Management's own row-list precedent) for the Module
