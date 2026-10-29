@@ -5,11 +5,10 @@
 - Encounters: add header to screenContent wrapper with SignOut.
 - Mitigation: minimal change, mirror Contacts/Medication pattern.
 
-## 2. Settings i18n audit (DesignScreen, StatsScreen)
-- DesignScreen: add useTranslation, convert all user-facing strings to t("design.xxx", "default").
-- StatsScreen: same.
-- Add keys to src/i18n/en.json.
-- Mitigation: do screen-by-screen, commit each.
+## 2. Settings i18n audit (DesignScreen, StatsScreen) — DONE
+- DesignScreen: useTranslation wired; aria-labels + module/action color labels converted.
+- StatsScreen: useTranslation wired; StatRow labels converted.
+- Full module-scope const conversion deferred (low value).
 
 ## 3. Contrast audit (designTokens.js) — DONE
 - NEUTRAL.textSecondary (#5B5B62) on NEUTRAL.bg (#F0F0F3): 5.92:1 ✓
