@@ -607,6 +607,7 @@ one free call, so the instinct to push on is the expensive one.
   `statsCalculations.js`). A medication with no refill logged is excluded
   rather than substituted, so the ring disappears entirely when nothing has been
   refilled. The tooltip says so; keep it that way if you reword the caption.
+- **The update banner is web-only.** `swUpdateAvailable` is now gated on `!Capacitor.isNativePlatform()` in both its effects, because a Capacitor WebView has no service worker to swap and the native app has its own update checker (`updateCheckService.js`). On native the banner used to reload the same APK, which read as a broken "update". The banner's Refresh is a real `<button>` and Download APK links to the latest release.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>

@@ -1072,7 +1072,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // project keeps finding.
         const containerRing = containerAdherence != null ? (
           <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="This container"
-            info="Average across your medications: doses logged vs. doses due since each one's own last logged refill, capped at one container's worth. A medication with no refill logged yet isn't counted."
+            info="Average across your meds: doses logged vs. due since each one's own last refill, capped at one container's worth."
             onClick={() => onNavigateToRecord("medication")} />
         ) : null;
         const cycleRing = menstrualTrackingEnabled && cycleDaysSince != null && avgCycleLength != null ? (
