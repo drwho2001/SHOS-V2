@@ -593,14 +593,7 @@ one free call, so the instinct to push on is the expensive one.
   request, reversible with Back). The decision lives in
   `src/calculations/quickExit.js` (`resolveQuickExitPlan`) so it can never
   silently resolve to "do nothing" again; `quickExit.test.js` fails if it does.
-- **The interactive tour stays on Home.** `src/modules/InteractiveTour.jsx` spotlights
-  elements that are always present on the Home screen (`data-tour="..."` anchors in
-  `App.jsx` and `SHOS_Home_Prototype.jsx`). Steps whose target is not in the DOM
-  are skipped in both directions by `isStepAvailable`, so a step can be added for a
-  conditionally-rendered element (live-session card, quick-exit icon) without
-  breaking the tour when it is absent. Driving the tour through real
-  screen-to-screen navigation is deliberately out of scope for v1 — see the file's
-  own header comment. Replay lives at Settings → Guide → "Take the interactive tour".
+- **The interactive tour now switches tabs as it advances.** `TourOverlay` accepts an `onNavigate` callback (wired to `selectTab` in `App.jsx`); each step carries a `navigate` field, and advancing to it switches the active tab so the user sees each screen's content behind the spotlight. `finishTour` resets to Home. The spotlight targets remain on always-present elements (bottom-nav tabs, header icons), so `isStepAvailable` is unaffected. Deeper screen-to-screen spotlighting (opening Settings mid-tour) remains out of scope for v1 — see the file's own header comment.
 - **"This container" on Home is an average, not a single bottle.** The ring
   averages adherence across every non-archived, non-PRN medication that has a
   logged refill, each measured from its own last refill and capped at one
