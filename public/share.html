@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SHOS — Share / Install</title>
+<meta name="description" content="Share SHOS: scan to install the Android APK or open the web app. Links always point at the latest release." />
+<meta name="theme-color" content="#0B7F79" />
+<link rel="icon" type="image/png" href="./pwa-192.png" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; background: #F0F0F3; color: #1B1B1F; -webkit-font-smoothing: antialiased; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+  .brand { text-align: center; }
+  .brand .name { font-size: 40px; font-weight: 800; color: #0B7F79; letter-spacing: -0.5px; line-height: 1; }
+  .brand .tagline { font-size: 13px; color: #6B6B73; margin-top: 6px; }
+  .brand .desc { font-size: 14px; line-height: 1.55; margin-top: 14px; color: #1B1B1F; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .version { font-size: 12px; color: #6B6B73; text-align: center; margin-top: 14px; font-family: "JetBrains Mono", monospace; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 26px; }
+  @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: #FFFFFF; border: 1px solid rgba(0,0,0,0.07); border-radius: 18px; padding: 20px; text-align: center; }
+  .card h2 { font-size: 16px; font-weight: 700; color: #1B1B1F; margin: 0 0 4px; }
+  .card .sub { font-size: 12px; color: #6B6B73; margin-bottom: 14px; line-height: 1.4; }
+  .card img.qr { width: 100%; max-width: 260px; height: auto; border-radius: 10px; background: #FFFFFF; }
+  .card .link { display: block; margin-top: 12px; font-size: 12px; color: #0B7F79; word-break: break-all; text-decoration: none; font-family: "JetBrains Mono", monospace; }
+  .card .link:hover { text-decoration: underline; }
+  .fineprint { font-size: 11px; color: #6B6B73; text-align: center; margin-top: 26px; line-height: 1.55; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .printbtn { display: block; margin: 22px auto 0; background: transparent; color: #0B7F79; border: 1.5px solid #0B7F79; border-radius: 999px; padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  @media print {
+    body { background: #FFFFFF; }
+    .printbtn { display: none; }
+    main { padding: 12px; }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <div class="name">SHOS</div>
+    <div class="tagline">Sexual Health Operating System</div>
+    <div class="desc">A private, local-first record of your sexual-health journey — contacts, encounters, testing, medication, and clinic visits. Everything stays on your device. Scan a code below to install or open it.</div>
+  </div>
+  <div id="versionLine" class="version">Version —</div>
+  <div class="cards">
+    <div class="card">
+      <h2>Android APK</h2>
+      <div class="sub">Scan with your phone camera, then tap the link to download the latest debug APK from GitHub Releases. Updates install in place over the previous one.</div>
+      <img class="qr" src="./share-qr-apk.png" alt="QR code linking to the latest SHOS Android APK release" />
+      <a class="link" href="https://github.com/drwho2001/SHOS-V2/releases/latest">github.com/drwho2001/SHOS-V2/releases/latest</a>
+    </div>
+    <div class="card">
+      <h2>Web app (PWA)</h2>
+      <div class="sub">Scan to open SHOS in the browser. Install it from there (Add to Home Screen) — it then auto-updates to the latest deployed version.</div>
+      <img class="qr" src="./share-qr-web.png" alt="QR code linking to the SHOS web app" />
+      <a class="link" href="https://drwho2001.github.io/SHOS-V2/">drwho2001.github.io/SHOS-V2/</a>
+    </div>
+  </div>
+  <p class="fineprint">Local-first — nothing here leaves your device unless you choose to export or share it. The Android build is a debug APK signed with a stable keystore so updates install in place; the web build auto-updates on load.</p>
+  <button class="printbtn" type="button" onclick="window.print()">Print this card</button>
+  <script>
+    (function () {
+      const versionLine = document.getElementById("versionLine");
+      async function loadVersion() {
+        try {
+          const res = await fetch("./version.json", { cache: "no-store" });
+          if (!res.ok) return;
+          const d = await res.json();
+          if (versionLine) versionLine.textContent = "Version " + (d.version || "?") + " · " + (d.channel || "stable") + " · " + (d.buildSha || "").slice(0, 7);
+        } catch (e) { /* offline: keep default */ }
+      }
+      loadVersion();
+    })();
+  </script>
+</main>
+</body>
+</html>
