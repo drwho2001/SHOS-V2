@@ -26,6 +26,7 @@ import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 import { advisoryDismissalKey, isAdvisoryDismissed, dismissAdvisory } from "../calculations/advisoryDismissal";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -415,7 +416,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   };
 
   return (
-    <div ref={cardRef} style={{ position: "relative", background: T.surface, border: `1px solid ${highlighted ? T.actionRed : searchHighlighted ? T.medsBlue : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: highlighted ? `0 0 0 3px ${T.actionRed}33` : searchHighlighted ? `0 0 0 3px ${T.medsBlue}33` : "0 1px 3px rgba(0,0,0,.06)", transition: "box-shadow 300ms ease, border-color 300ms ease" }}>
+    <div ref={cardRef} style={{ position: "relative", background: T.surface, border: `1px solid ${highlighted ? T.actionRed : searchHighlighted ? T.medsBlue : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: highlighted ? `0 0 0 3px ${T.actionRed}33` : searchHighlighted ? `0 0 0 3px ${T.medsBlue}33` : "0 1px 3px rgba(0,0,0,.06)", transition: reducedMotion ? "none" : "box-shadow 300ms ease, border-color 300ms ease" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue, display: "inline-block" }} />
@@ -504,7 +505,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             <span style={{ fontSize: 12, color: T.textSecondary }}>{med.unit}s left</span>
           </div>
           <div style={{ height: 4, background: T.surfaceVariant, borderRadius: radius.full, marginTop: 8, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${stock.barPct}%`, background: stock.needsAction && !requested ? T.actionRed : T.medsBlue, borderRadius: radius.full, transition: "width 200ms ease" }} />
+            <div style={{ height: "100%", width: `${stock.barPct}%`, background: stock.needsAction && !requested ? T.actionRed : T.medsBlue, borderRadius: radius.full, transition: reducedMotion ? "none" : "width 200ms ease" }} />
           </div>
 
           <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
@@ -1077,8 +1078,8 @@ function ToggleRow({ label, value, onChange, T }) {
       style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", minHeight: 44, cursor: "pointer", borderBottom: `1px solid ${T.border}` }}
     >
       <span style={{ fontSize: 13, color: T.textPrimary }}>{label}</span>
-      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.medsBlue : T.surfaceVariant, position: "relative", flexShrink: 0, pointerEvents: "none", transition: "background 150ms ease" }}>
-        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+      <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.medsBlue : T.surfaceVariant, position: "relative", flexShrink: 0, pointerEvents: "none", transition: reducedMotion ? "none" : "background 150ms ease" }}>
+        <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: reducedMotion ? "none" : "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
       </div>
     </div>
   );
@@ -1818,7 +1819,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
               <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{tr("medication.notifyWhenDue", "Notify when a daily medication is due")}</div>
             </div>
             <div style={{ width: 44, height: 26, borderRadius: 999, background: prefs.doseRemindersEnabled ? T.medsBlue : T.border, position: "relative", flexShrink: 0, pointerEvents: "none" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 3, left: prefs.doseRemindersEnabled ? 21 : 3, transition: "left 0.15s" }} />
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 3, left: prefs.doseRemindersEnabled ? 21 : 3, transition: reducedMotion ? "none" : "left 0.15s" }} />
             </div>
           </div>
           {prefs.doseRemindersEnabled && (
@@ -1873,6 +1874,7 @@ const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget, onQuickExit } = {}) {
   const { t: tr } = useTranslation();
+  const reducedMotion = useReducedMotion();
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // Declared before useEditUndo below so that call can pass a stable
   // indirection to refreshMeds without a temporal-dead-zone reference.
@@ -2299,7 +2301,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", transition: "background 200ms ease" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", transition: reducedMotion ? "none" : "background 200ms ease" }}>
       {/* CHANGED — real ask: "Medications module is the only one
           designed like a phone screen — not full width on laptop."
           Was a fixed 390px regardless of viewport; now genuinely
