@@ -17,6 +17,7 @@ logs
 *.log
 npm-debug.log*
 .env*
+public/version.json
 
 # PLAINTEXT PERSONAL-DATA DUMPS - never commit these.
 # scripts/repair-personal-data-encoding.cjs and the app's own "Export backup"
