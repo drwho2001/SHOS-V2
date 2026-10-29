@@ -17,9 +17,10 @@
 - DARK.textSecondary (#B8B8BE) on DARK.bg (#1B1B1F): 8.70:1 ✓
 - No token changes needed.
 
-## 4. Reduced motion (low priority)
-- Audit animated components for useReducedMotion; disable transitions when true.
-- Already done in Home StatusRing.
+## 4. Reduced motion — DONE
+- Home StatusRing (original)
+- ClinicCard, Contacts, Medication Dashboard, Timeline, OptionListEditor, InteractiveTour, Testing
+- All transition-using components now respect useReducedMotion.
 
 ## Order of execution
 1. Quick-exit Testing/Encounters (small, high value)
