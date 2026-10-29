@@ -1397,6 +1397,10 @@ export default function App() {
   // prompt, not a forced silent reload — reloading out from under
   // someone mid-form would be a worse bug than the staleness itself.
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
+  const showUpdateBanner = useCallback(() => {
+    try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ }
+    setSwUpdateAvailable(true);
+  }, []);
   useEffect(() => {
     // Web/PWA only: Capacitor WebViews have no service worker to swap,
     // and the native app has its own update checker (updateCheckService)
@@ -1413,7 +1417,7 @@ export default function App() {
         sessionStorage.removeItem("shos-sw-reloaded");
         return;
       }
-      const onControllerChange = () => setSwUpdateAvailable(true);
+      const onControllerChange = () => { try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ } setSwUpdateAvailable(true); };
       navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
       window.__shosSwCleanup = () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
     })();
@@ -1440,6 +1444,7 @@ export default function App() {
         // package.json in CI, so a hardcoded-version compare can never fire.
         const currentSha = typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev";
         if (data?.channel === "stable" && data?.buildSha && currentSha && currentSha !== "dev" && data.buildSha !== currentSha) {
+          try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ }
           setSwUpdateAvailable(true);
         }
       } catch {
@@ -3086,7 +3091,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               action without needing a new colour. */}
           <button onClick={() => { sessionStorage.setItem("shos-sw-reloaded", "1"); window.location.reload(); }} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Refresh</button>
           <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px", pointerEvents: "auto" }}>Download APK</a>
-          <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSwUpdateAvailable(false); } }} />
+          <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={() => { try { sessionStorage.setItem("shos-sw-update-dismissed", "1"); } catch { /* ignore */ } setSwUpdateAvailable(false); }} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); try { sessionStorage.setItem("shos-sw-update-dismissed", "1"); } catch { /* ignore */ } setSwUpdateAvailable(false); } }} />
         </div>
       )}
 
