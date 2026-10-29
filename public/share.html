@@ -57,7 +57,9 @@
     </div>
   </div>
   <p class="fineprint">Local-first — nothing here leaves your device unless you choose to export or share it. The Android build is a debug APK signed with a stable keystore so updates install in place; the web build auto-updates on load.</p>
-  <button class="printbtn" type="button" onclick="window.print()">Print this card</button>
+  <button class="printbtn" type="button" onclick="window.print()">Print / Save as PDF</button>
+  <button class="printbtn" type="button" id="imgBtn" onclick="saveImage()">Save as image (PNG)</button>
+  <button class="printbtn" type="button" id="shareBtn" onclick="shareCard()">Share link</button>
   <script>
     (function () {
       const versionLine = document.getElementById("versionLine");
@@ -69,7 +71,45 @@
           if (versionLine) versionLine.textContent = "Version " + (d.version || "?") + " · " + (d.channel || "stable") + " · " + (d.buildSha || "").slice(0, 7);
         } catch (e) { /* offline: keep default */ }
       }
+      window.saveImage = function () {
+        const card = document.querySelector("main");
+        if (typeof html2canvas === "undefined") {
+          // Load on demand if the deferred script hasn't finished yet.
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+          s.onload = function () { doSave(card); };
+          s.onerror = function () { alert("Couldn't load the image renderer. Use Print / Save as PDF instead."); };
+          document.head.appendChild(s);
+        } else {
+          doSave(card);
+        }
+      };
+      function doSave(card) {
+        html2canvas(card, { backgroundColor: "#F0F0F3", scale: 2, useCORS: true }).then(function (canvas) {
+          canvas.toBlob(function (blob) {
+            if (!blob) { alert("Image generation failed. Use Print / Save as PDF instead."); return; }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "shos-share-card.png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          }, "image/png");
+        }).catch(function () { alert("Image generation failed. Use Print / Save as PDF instead."); });
+      }
       loadVersion();
+      window.shareCard = function () {
+        const url = window.location.href;
+        if (navigator.share) {
+          navigator.share({ title: "SHOS — Share / Install", text: "Install or open SHOS (Sexual Health Operating System).", url: url }).catch(function () {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () { alert("Link copied to clipboard."); }).catch(function () { window.prompt("Copy this link:", url); });
+        } else {
+          window.prompt("Copy this link:", url);
+        }
+      };
     })();
   </script>
 </main>
