@@ -3066,8 +3066,8 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // above; role="status" (not "region") since notifToast right
         // above already uses that role for the same "persistent,
         // non-urgent notice" shape.
-        <div role="status" style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif", pointerEvents: "none" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version of SHOS is ready — may include notification fixes.</span>
+        <div role="status" style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif", pointerEvents: "none" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version is ready. Refresh to update.</span>
           {/* FIXED — real accessibility finding (10 Sep 2026, automated
               axe-core scan): ACCENTS.healthcare (#09582E, a dark green)
               on this banner's own #1B1B1F background gave a 2:1 contrast
