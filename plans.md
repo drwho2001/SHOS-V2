@@ -1,28 +1,40 @@
-﻿# Remaining work plan (weekend-ready follow-up)
+﻿# Critical appraisal follow-up plan
 
-## 1. Quick-exit on all screens — DONE
-- Home, PartnerNotification, Contacts, Medication Dashboard, Testing, Encounters all render SignOut quick-exit.
+## Findings to fix
 
-## 2. Settings i18n audit (DesignScreen, StatsScreen) — DONE
-- DesignScreen: useTranslation wired; aria-labels + module/action color labels converted.
-- StatsScreen: useTranslation wired; StatRow labels converted.
-- Full module-scope const conversion deferred (low value).
+### 1. Global event listeners without cleanup (quick-exit, New session shortcut)
+- Risk: memory leaks, duplicate trigger firings on re-mount.
+- Fix: ensure useEffect cleanup removes listeners; use a single registered handler with ref.
+- Files: src/App.jsx (handleQuickExit), src/modules/SHOS_Home_Prototype.jsx
+- Effort: small (1-2h). Verify with lint + tests.
 
-## 3. Contrast audit (designTokens.js) — DONE
-- NEUTRAL.textSecondary (#5B5B62) on NEUTRAL.bg (#F0F0F3): 5.92:1 ✓
-- NEUTRAL.textDisabled (#656568) on NEUTRAL.bg: 5.11:1 ✓
-- DARK.textSecondary (#B8B8BE) on DARK.bg (#1B1B1F): 8.70:1 ✓
-- No token changes needed.
+### 2. PrEP override edge cases
+- Risk: timezone shifts, overlapping override windows produce inconsistent adherence.
+- Fix: add unit tests for inferPrepCoverage with prepOverride/forcePrEP/manualPrEP; validate inputs.
+- Files: src/calculations/encounterProtectionContext.js + tests
+- Effort: medium (2-3h).
 
-## 4. Reduced motion — DONE
-- Home StatusRing (original)
-- ClinicCard, Contacts, Medication Dashboard, Timeline, OptionListEditor, InteractiveTour, Testing
-- All transition-using components now respect useReducedMotion.
+### 3. Live region politeness
+- Risk: screen reader floods if assertive.
+- Fix: confirm all aria-live="polite" (not assertive); audit Home banners.
+- Files: src/modules/SHOS_Home_Prototype.jsx
+- Effort: small (30min).
 
-## Order of execution
-1. Quick-exit Testing/Encounters (small, high value)
-2. DesignScreen i18n
-3. StatsScreen i18n
-4. Contrast audit
-5. Reduced motion
-Each committed separately to keep CI green.
+### 4. Keyboard shortcut collisions
+- Risk: New session shortcut collides with native browser/OS keys.
+- Fix: guard with modifier keys (ctrl/meta) and scope to container focus; or remove shortcut if redundant.
+- Files: src/modules/SHOS_Home_Prototype.jsx
+- Effort: small (1h).
+
+## Lessons learned
+- Good: accessibility as first-class feature; standardized panic-exit pattern.
+- Bad: global listeners without cleanup; PrEP override without edge-case tests.
+- Pearls: useReducedMotion + contrast + live regions together.
+- Pitfalls: assertive live regions, shortcut collisions.
+
+## Execution order
+1. Live region politeness (30min)
+2. Keyboard shortcut collisions (1h)
+3. Global listener cleanup (1-2h)
+4. PrEP edge cases (2-3h)
+Total: ~5-6h. Each committed separately.
