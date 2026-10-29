@@ -1,9 +1,7 @@
 ﻿# Remaining work plan (weekend-ready follow-up)
 
-## 1. Quick-exit on Testing & Encounters (no header rows)
-- Testing: add a small header bar with SignOut icon (encounters/home color) at top of module root.
-- Encounters: add header to screenContent wrapper with SignOut.
-- Mitigation: minimal change, mirror Contacts/Medication pattern.
+## 1. Quick-exit on all screens — DONE
+- Home, PartnerNotification, Contacts, Medication Dashboard, Testing, Encounters all render SignOut quick-exit.
 
 ## 2. Settings i18n audit (DesignScreen, StatsScreen) — DONE
 - DesignScreen: useTranslation wired; aria-labels + module/action color labels converted.
