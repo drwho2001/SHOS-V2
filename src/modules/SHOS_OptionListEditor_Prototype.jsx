@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, DropIcon as Drop, RulerIcon as Ruler, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon, LockIcon as Lock } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 import { findRecordsUsingOptionValue, reassociateOptionValue } from "../calculations/optionListUsage";
@@ -70,7 +71,7 @@ function UsageDisclosure({ listName, value, T }) {
       <div onClick={() => setOpen((o) => !o)} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((o) => !o); } }}
         style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.textDisabled, cursor: "pointer" }}>
-        <ChevronDown size={11} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        <ChevronDown size={11} style={{ transform: open ? "rotate(180deg)" : "none", transition: reducedMotion ? "none" : "transform 0.15s" }} />
         {open && records === null ? "Checking…" : open ? `${records.length} record${records.length === 1 ? "" : "s"} use this` : "View associated records"}
       </div>
       {open && records && records.length > 0 && (
@@ -288,6 +289,7 @@ export function OptionListDetail({ listName, onClose }) {
 
 export default function OptionListsScreen({ onClose }) {
   const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
