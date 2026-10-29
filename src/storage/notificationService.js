@@ -276,7 +276,12 @@ async function primeEarlyNativeActionBuffer() {
 // module-evaluation pass finishes (every `let`/`const` in this file
 // initialized), a negligible delay against the "as early as this
 // app's JS can" goal this exists for in the first place.
-queueMicrotask(primeEarlyNativeActionBuffer);
+// Register as early as possible (module load), not via queueMicrotask �?"
+// the async body is deferred to a microtask anyway, so this runs at the
+// earliest moment this app's code executes, closing the registration gap
+// as far as JS can. The remaining gap (event fires before JS loads at
+// all) is an upstream Capacitor limitation, not something JS can close.
+primeEarlyNativeActionBuffer();
 
 export async function addNotificationActionListener(handler) {
   const platform = await getPlatform();
