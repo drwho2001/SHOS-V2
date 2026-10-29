@@ -25,6 +25,7 @@
 // conditional element) is skipped automatically in both directions
 // rather than showing a spotlight around nothing.
 import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X } from "@phosphor-icons/react";
 import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACCENT_TEXT_SAFE, RADIUS, TYPE } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
@@ -58,6 +59,7 @@ function findValidIndex(steps, fromIndex, direction) {
 
 export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
   const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
   const [index, setIndex] = useState(() => {
     const first = isStepAvailable(steps[0]) ? 0 : findValidIndex(steps, 0, 1);
     return first < 0 ? -1 : first;
@@ -259,7 +261,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 500, pointerEvents: "auto" }}>
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)" }} />
-      <div style={{ position: "absolute", top: spotTop, left: spotLeft, width: spotWidth, height: spotHeight, borderRadius: spotRadius, boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)", background: "transparent", pointerEvents: "none", transition: "top 150ms, left 150ms, width 150ms, height 150ms" }} />
+      <div style={{ position: "absolute", top: spotTop, left: spotLeft, width: spotWidth, height: spotHeight, borderRadius: spotRadius, boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)", background: "transparent", pointerEvents: "none", transition: reducedMotion ? "none" : "top 150ms, left 150ms, width 150ms, height 150ms" }} />
       {/* FIXED — real bug: this ring shares the exact same top/left/
           width/height as the cutout div above it, but without
           boxSizing: "border-box" its 2px border renders OUTSIDE that
