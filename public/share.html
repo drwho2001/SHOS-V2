@@ -127,7 +127,7 @@
     }
   };
   window.shareLink = function () {
-    const url = window.location.href;
+    const url = 'https://github.com/drwho2001/SHOS-V2/releases/tag/latest';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { alert('Link copied to clipboard.'); }).catch(function () { window.prompt('Copy this link:', url); });
     } else {
