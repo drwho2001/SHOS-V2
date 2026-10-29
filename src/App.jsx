@@ -1293,6 +1293,7 @@ export default function App() {
   const [pendingTourOffer, setPendingTourOffer] = useState(false);
   const finishTour = async () => {
     setShowTour(false);
+    selectTab("home");
     await AppPreferencesRepository.update({ hasCompletedTour: true });
   };
   // ADDED 26 Aug 2026 — dedicated visible toast for the back-button
@@ -3353,7 +3354,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           selectTab("home"); setShowSettings(false); setSettingsInitialScreen(null); setShowTour(true);
         }} />
       )}
-      {showTour && <TourOverlay onDone={finishTour} darkMode={darkMode} />}
+      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} darkMode={darkMode} />}
       {showSearch && (
         // initialQuery/initialSortMode are the Phase 2b back-navigation
         // restore. They are read as useState initialisers, which is only

@@ -33,17 +33,17 @@ import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 import { useTranslation } from "../i18n/index.js";
 
 export const TOUR_STEPS = [
-  { id: "welcome", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
-  { id: "tab-contacts", target: "tab-contacts", title: "Contacts", body: "Everyone you track — profile, stated kinks/limits, testing history, and encounter history, all in one place." },
-  { id: "tab-activity", target: "tab-activity", title: "Encounters", body: "Log a hookup, date, sauna trip, or group scene — who was there, what happened, protection used." },
-  { id: "tab-medication", target: "tab-medication", title: "Medication", body: "PrEP, DoxyPEP, hormones, contraception — doses, stock, adherence, and refill reminders." },
-  { id: "tab-healthcare", target: "tab-healthcare", title: "Healthcare", body: "Testing, clinic visits, symptoms, vaccinations — plus Menstrual, Contraception & Pregnancy tracking, once turned on in Settings." },
-  { id: "tab-home", target: "tab-home", title: "Home", body: "Your dashboard — what's due, recent activity, quick-add shortcuts. Always the centre tab." },
-  { id: "live-session", target: "live-session", title: "Live session", body: "When a session is running, this card counts it down and shows who's there. Tap to open the full session." },
-  { id: "search-icon", target: "search-icon", title: "Search everything", body: "One search box across contacts, encounters, tests, symptoms — everything, in one place." },
-  { id: "settings-icon", target: "settings-icon", title: "Settings", body: "Backups, App Lock & privacy, preferences, and colour customisation all live here — including a full written Guide to every section, if you want more detail than this tour." },
-  { id: "quick-exit", target: "quick-exit", title: "Quick exit", body: "The discreet control that leaves the app immediately — and locks the vault first if App Lock is on. Use it when you need to get off the screen fast." },
-  { id: "closing", target: null, title: "That's it!", body: "Replay this tour anytime from Settings → Guide → \"Take the interactive tour\"." },
+  { id: "welcome", navigate: "home", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
+  { id: "tab-contacts", navigate: "contacts", target: "tab-contacts", title: "Contacts", body: "Everyone you track — profile, stated kinks/limits, testing history, and encounter history, all in one place." },
+  { id: "tab-activity", navigate: "activity", target: "tab-activity", title: "Encounters", body: "Log a hookup, date, sauna trip, or group scene — who was there, what happened, protection used." },
+  { id: "tab-medication", navigate: "medication", target: "tab-medication", title: "Medication", body: "PrEP, DoxyPEP, hormones, contraception — doses, stock, adherence, and refill reminders." },
+  { id: "tab-healthcare", navigate: "healthcare", target: "tab-healthcare", title: "Healthcare", body: "Testing, clinic visits, symptoms, vaccinations — plus Menstrual, Contraception & Pregnancy tracking, once turned on in Settings." },
+  { id: "tab-home", navigate: "home", target: "tab-home", title: "Home", body: "Your dashboard — what's due, recent activity, quick-add shortcuts. Always the centre tab." },
+  { id: "live-session", navigate: "home", target: "live-session", title: "Live session", body: "When a session is running, this card counts it down and shows who's there. Tap to open the full session." },
+  { id: "search-icon", navigate: "home", target: "search-icon", title: "Search everything", body: "One search box across contacts, encounters, tests, symptoms — everything, in one place." },
+  { id: "settings-icon", navigate: "home", target: "settings-icon", title: "Settings", body: "Backups, App Lock & privacy, preferences, and colour customisation all live here — including a full written Guide to every section, if you want more detail than this tour." },
+  { id: "quick-exit", navigate: "home", target: "quick-exit", title: "Quick exit", body: "The discreet control that leaves the app immediately — and locks the vault first if App Lock is on. Use it when you need to get off the screen fast." },
+  { id: "closing", navigate: "home", target: null, title: "That's it!", body: "Replay this tour anytime from Settings → Guide → \"Take the interactive tour\"." },
 ];
 
 function isStepAvailable(step) {
@@ -59,7 +59,7 @@ function findValidIndex(steps, fromIndex, direction) {
   return direction > 0 ? steps.length : -1;
 }
 
-export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
+export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, darkMode }) {
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const [index, setIndex] = useState(() => {
@@ -120,6 +120,16 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
     window.addEventListener("resize", recalc);
     return () => window.removeEventListener("resize", recalc);
   }, [recalc]);
+
+  // ADDED - tour deep-link: switch the active tab to match the step being
+  // shown, so the user sees each screen's content as the tour explains it
+  // rather than staring at Home for the whole tour. The bottom-nav targets
+  // (tab-*) exist in the DOM regardless of the active tab, so isStepAvailable
+  // is unaffected; this only changes what's visible behind the spotlight.
+  useEffect(() => {
+    if (!step || !step.navigate || !onNavigate) return;
+    onNavigate(step.navigate);
+  }, [step, onNavigate]);
 
   // Real anchors (bottom nav tabs in particular) can shift slightly as
   // other transient UI (a due-reminder banner, an update-available

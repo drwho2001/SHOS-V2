@@ -41,6 +41,7 @@ on:
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     # ADDED 30 Sep 2026 (audit) — the one workflow here that had no
     # `permissions:` block at all, so it inherited whatever the repository
@@ -92,6 +93,12 @@ jobs:
       # only, the same way a developer running the script by hand
       # already has to. `--with-deps` pulls the system libraries Chromium
       # needs, which is the part that actually differs on ubuntu-latest.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright + Chromium
         run: |
           npm install --no-save playwright
