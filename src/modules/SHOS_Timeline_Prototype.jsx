@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useReducedMotion } from "../calculations/useReducedMotion";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw, ChatCircleTextIcon as MessageSquare, CopyIcon as Copy, XIcon as X } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
 // ADDED 27 Sep 2026 — Episodes now go to Trash like every other record type
@@ -182,7 +183,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
       {infectionNames.length > 0 && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => regenerate(!includeInfection)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", minHeight: 44 }}>
           <div style={{ width: 34, height: 20, borderRadius: radius.full, background: includeInfection ? T.healthcareBlue : T.border, position: "relative", flexShrink: 0 }}>
-            <div style={{ width: 16, height: 16, borderRadius: radius.full, background: "#FFFFFF", position: "absolute", top: 2, left: includeInfection ? 16 : 2, transition: "left 120ms ease" }} />
+            <div style={{ width: 16, height: 16, borderRadius: radius.full, background: "#FFFFFF", position: "absolute", top: 2, left: includeInfection ? 16 : 2, transition: reducedMotion ? "none" : "left 120ms ease" }} />
           </div>
           <span style={{ fontSize: 12, color: T.textPrimary }}>Name the specific result ({infectionNames.join(", ")})</span>
         </div>
@@ -867,6 +868,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
 
 export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
   const { t: tr } = useTranslation();
+  const reducedMotion = useReducedMotion();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
