@@ -942,6 +942,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Healthcare/Medication/Contacts. */}
       <div style={{ height: 4, borderRadius: 999, background: homeColor, marginBottom: 16 }} />
 
+      <NotificationPermissionNudge status={notifPermStatus} onStatusChange={setNotifPermStatus} />
       {/* ADDED 19 Aug 2026 — welcome text, the user's own wording as the
           basis: open, non-judgemental, genuinely useful tone. */}
       <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5, marginBottom: 20 }}>
@@ -1448,7 +1449,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         </div>
       )}
 
-      <NotificationPermissionNudge status={notifPermStatus} onStatusChange={setNotifPermStatus} />
+      {/* moved to top */}
 
       {/* ADDED — real ask: "scheduled auto-export" — a real, one-off
           confirmation that a backup was just written unattended,
