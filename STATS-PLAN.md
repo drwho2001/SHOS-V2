@@ -1,48 +1,34 @@
-# Customizable Stats Plan — SHOS-V2
+# Customizable Stats Plan — SHOS-V2 (revised)
 
-## Vision
-A "Stats" dashboard where users pick metrics, date ranges, and groupings to see their own patterns. Plus an "Encounters" sub-page ("slut mode") showing raw tallies.
+## Structure: tab/subpage, not separate module
+Stats shows data, doesn't collect it. So it belongs as a tab within existing modules, not a standalone module.
+
+- Encounters module: add "Stats" tab (slut mode — loads, people, fists, kinks, top kink)
+- Medication module: add "Stats" tab (adherence trends, missed doses)
+- Testing/Healthcare: add "Stats" tab (tests/month, interval, compliance)
+- Home: "Status at a glance" already exists (rings). Could link to detailed stats.
 
 ## Architecture
-- New module: SHOS_StatsBuilder_Prototype.jsx
-- Repository: statsQueryRepository (aggregates from existing repos)
-- Calculation: statsAggregator.js (pure functions, testable)
-- UI: metric picker (checkboxes), date range, group-by dropdown, chart (recharts or canvas)
-- Persistence: save user's preferred stat layout in appPreferencesRepository
-
-## Metrics catalog
-Encounters: total, unique partners, loads, fists, kinks, top kink, top partner, top location, avg duration, trend by month
-Medication: 7d/30d/all-time adherence, missed doses, top med
-Testing: tests/month, avg interval, positive ratio, BASHH compliance
-Healthcare: visits/year, vaccinations, symptoms
-Chemicals: usage frequency, trend
-
-## Brutal critique
-- **Privacy risk:** Detailed stats on screen = more exposure if phone shared. Need anonymise mode support.
-- **Performance:** Aggregating across all repos on every render = slow. Need memoization + caching.
-- **Complexity:** Customizable UI is a rabbit hole. Start with fixed views, add customization later.
-- **Data quality:** Stats are only as good as logged data. Garbage in = garbage out. Show "not enough data" honestly.
-- **Chart library:** Adding recharts = bundle size increase. Use canvas or simple CSS bars first.
-- **Scope creep:** Don't build everything. Start with Encounters sub-page (slut mode) + 3 fixed stats views.
+- No new module. Add tab to existing modules.
+- Reuse existing calculations (sessionTally, getTestingFrequencyStats, getOverallAdherence).
+- New: statsAggregator.js (pure functions, testable) — aggregates across modules.
+- UI: metric cards (not charts initially). Date range: 7d/30d/90d/all.
+- Persistence: save preferred layout in appPreferencesRepository.
 
 ## Phased plan
-Phase 1: Encounters sub-page with fixed tallies (loads, people, fists, kinks, top kink) — 4h
-Phase 2: Stats dashboard with 3 fixed views (Encounters, Medication, Testing) — 6h
-Phase 3: Customizable metric picker + date range — 8h
-Phase 4: Charts (canvas-based) — 4h
-Phase 5: Export stats to CSV — 2h
-Total: ~24h
+Phase 1: Encounters "Stats" tab with fixed tallies — 3h
+Phase 2: Medication "Stats" tab (adherence) — 3h
+Phase 3: Testing/Healthcare "Stats" tab — 3h
+Phase 4: Customizable metric picker + date range — 6h
+Phase 5: Simple charts (CSS bars) — 3h
+Total: ~18h
 
-## Risks
+## Brutal critique
 - Privacy: stats on screen = exposure. Mitigate: anonymise mode, quick-exit.
-- Performance: aggregation on every render. Mitigate: useMemo, caching.
-- Scope creep: keep phases small, ship incrementally.
+- Performance: aggregation on render. Mitigate: useMemo.
+- Scope creep: keep phases small.
 
-## Dependencies
-- sessionTally (exists)
-- getTestingFrequencyStats, getOverallAdherence (exist)
-- MenstrualCycleRepository.getAverageCycleLengthDays (exists)
-- No new repos needed; aggregate from existing.
+## Best structure
+Tab within module > separate module. Reuse existing tabs infrastructure. No new routing.
 
-## Start
-Phase 1: Encounters sub-page. Add to Testing or Encounters module as a tab.
+Done.
