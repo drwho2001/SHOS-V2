@@ -11,10 +11,11 @@
 - Add keys to src/i18n/en.json.
 - Mitigation: do screen-by-screen, commit each.
 
-## 3. Contrast audit (designTokens.js)
-- Check NEUTRAL.textSecondary (#5B5B62) on NEUTRAL.bg for 4.5:1.
-- Check DARK.textSecondary (#B8B8BE) on DARK.bg.
-- Fix any failing tokens.
+## 3. Contrast audit (designTokens.js) — DONE
+- NEUTRAL.textSecondary (#5B5B62) on NEUTRAL.bg (#F0F0F3): 5.92:1 ✓
+- NEUTRAL.textDisabled (#656568) on NEUTRAL.bg: 5.11:1 ✓
+- DARK.textSecondary (#B8B8BE) on DARK.bg (#1B1B1F): 8.70:1 ✓
+- No token changes needed.
 
 ## 4. Reduced motion (low priority)
 - Audit animated components for useReducedMotion; disable transitions when true.
