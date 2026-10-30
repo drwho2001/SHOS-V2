@@ -71,7 +71,9 @@ export function PrivacyScreen({ onClose }) {
     // so a failed write cannot leave the control showing a level that was never
     // saved. A control that lies about persisted state is the same failure this
     // repo keeps cataloguing in other places.
-    setDisclosureLevel(normaliseDisclosureLevel(next?.disclosureLevel));
+    const normalised = normaliseDisclosureLevel(next?.disclosureLevel);
+    setDisclosureLevel(normalised);
+    setPendingDisclosureLevel(normalised);
   };
 
 // ADDED 29 Sep 2026 — the disclosure level is held separately from `settings`
@@ -81,6 +83,13 @@ export function PrivacyScreen({ onClose }) {
 const [disclosureLevel, setDisclosureLevel] = useState(
   () => normaliseDisclosureLevel(settings?.disclosureLevel)
 );
+// ADDED 30 Oct 2026 — real ask: a Save button to lock in the choice, rather
+// than auto-saving on every tap. Selecting a level only updates the pending
+// value; the Save button persists it. This makes the choice deliberate.
+const [pendingDisclosureLevel, setPendingDisclosureLevel] = useState(
+  () => normaliseDisclosureLevel(settings?.disclosureLevel)
+);
+const disclosureDirty = pendingDisclosureLevel !== disclosureLevel;
 
   const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
 
@@ -397,17 +406,13 @@ const [disclosureLevel, setDisclosureLevel] = useState(
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }} role="radiogroup" aria-label={t("privacy.lockScreenDetail", "Lock screen and home screen detail")}>
             {DISCLOSURE_LEVELS.map((level) => {
-              const active = disclosureLevel === level.id;
+              const active = pendingDisclosureLevel === level.id;
               return (
                 <button
                   key={level.id}
                   role="radio"
                   aria-checked={active}
-                  onClick={async () => {
-                    setDisclosureLevel(level.id);
-                    await PrivacySettingsRepository.update({ disclosureLevel: level.id });
-                    refresh();
-                  }}
+                  onClick={() => setPendingDisclosureLevel(level.id)}
                   style={{
                     flex: "1 1 90px", padding: "8px 10px", borderRadius: 999,
                     border: `1px solid ${active ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border)}`,
@@ -422,8 +427,20 @@ const [disclosureLevel, setDisclosureLevel] = useState(
             })}
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
-            {(DISCLOSURE_LEVELS.find((l) => l.id === disclosureLevel) || DISCLOSURE_LEVELS[0]).blurb}
+            {(DISCLOSURE_LEVELS.find((l) => l.id === pendingDisclosureLevel) || DISCLOSURE_LEVELS[0]).blurb}
           </div>
+          {disclosureDirty && (
+            <button
+              onClick={async () => {
+                await PrivacySettingsRepository.update({ disclosureLevel: pendingDisclosureLevel });
+                setDisclosureLevel(pendingDisclosureLevel);
+                refresh();
+              }}
+              style={{ marginTop: 10, padding: "8px 16px", borderRadius: 999, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+            >
+              Save disclosure level
+            </button>
+          )}
         </div>
 
         {/* Big, clearly separated toggle button — never on by default,
