@@ -3343,7 +3343,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
            ContactCard's own internal JSX is completely untouched,
            only how many sit per row changes. Mobile keeps the exact
            prior single-column flex list. */
-        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10, padding: "0 16px 100px" } : { flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
           {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards}
             activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
