@@ -98,6 +98,7 @@ export function StatsScreen({ onClose }) {
   const [showOrganismInfo, setShowOrganismInfo] = useState(false);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
   const [dateRange, setDateRange] = useState("all");
+  const [groupBy, setGroupBy] = useState("none");
   const [showCustomize, setShowCustomize] = useState(false);
   const [visibleStats, setVisibleStats] = useState({ encounters: true, testing: true, healthcare: true, medication: true, contacts: true, detailed: false });
 
@@ -179,6 +180,12 @@ export function StatsScreen({ onClose }) {
           <option value="30d">Last 30 days</option>
           <option value="90d">Last 90 days</option>
           <option value="all">All time</option>
+        </select>
+        <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+          <option value="none">No grouping</option>
+          <option value="partner">By partner</option>
+          <option value="location">By location</option>
+          <option value="month">By month</option>
         </select>
         <button onClick={() => setShowDetailedStats(!showDetailedStats)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           {showDetailedStats ? "Hide detailed stats" : "Show detailed stats (XXX)"}
