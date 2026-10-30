@@ -11,6 +11,7 @@ import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../reposit
 import { useTranslation } from "../../i18n/index.js";
 
 const AUTO_EXPORT_INTERVAL_OPTIONS = [
+  { days: 1, label: "Daily" },
   { days: 7, label: "Weekly" },
   { days: 14, label: "Fortnightly" },
   { days: 30, label: "Monthly" },
@@ -118,7 +119,7 @@ export function AutomaticBackupsScreen({ onClose }) {
             <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("autoBackup.saveLocation", "Save location")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
               {prefs.autoExportFolder
-                ? t("autoBackup.savingToFolder", `Currently saving to "${prefs.autoExportFolder.name || "the chosen folder"}".`)
+                ? t("autoBackup.savingToFolder", `Currently saving to "${folderDisplayName(prefs.autoExportFolder)}".`)
                 : t("autoBackup.savingToDefault", "Currently saving to your phone's Documents folder (the default). Pick a different folder if you'd rather it went somewhere else — a synced cloud folder, for example.")}
             </div>
             {pickerError && <div style={{ fontSize: 11, color: ACTION.red, marginBottom: 8 }}>{pickerError}</div>}
@@ -153,5 +154,23 @@ export function AutomaticBackupsScreen({ onClose }) {
 // for — but there's no reason all 7 need their own top-level row.
 // Consolidated behind one "<h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Backup & Export</h1>" entry, same sub-screen
 // pattern as every other multi-control settings area in this file.
+
+// Derives a readable folder name from the SAF folder reference. The
+// plugin only returns the last path segment as `name` ("Exports"),
+// which is confusing when several folders share that name. Decode the
+// full URI so the parent folder is visible too.
+function folderDisplayName(folder) {
+  if (!folder) return "the chosen folder";
+  if (folder.name && folder.name.includes("/")) return folder.name;
+  try {
+    const uri = folder.id || "";
+    const treePart = uri.split("/tree/")[1] || "";
+    const decoded = decodeURIComponent(treePart);
+    // "B453-604D:A CRM APP /Exports" -> "A CRM APP / Exports"
+    const cleaned = decoded.replace(/^[A-F0-9-]+:/i, "").trim();
+    if (cleaned) return cleaned;
+  } catch { /* fall through */ }
+  return folder.name || "the chosen folder";
+}
 
 export default AutomaticBackupsScreen;
