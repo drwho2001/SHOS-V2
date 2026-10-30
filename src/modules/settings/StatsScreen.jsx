@@ -97,6 +97,7 @@ export function StatsScreen({ onClose }) {
   // affordance" standing convention).
   const [showOrganismInfo, setShowOrganismInfo] = useState(false);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
+  const [dateRange, setDateRange] = useState("all");
 
   const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
@@ -120,7 +121,13 @@ export function StatsScreen({ onClose }) {
   const organismNameById = useLoadedMemo(async () => new Map((await OrganismRegistry.getAll()).map((o) => [o.id, o.name])), [], new Map());
   const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
 
-  const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
+  const filteredEncounters = useMemo(() => {
+    if (dateRange === "all") return encounters;
+    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+    return encounters.filter((e) => e.date && new Date(e.date) >= cutoff);
+  }, [encounters, dateRange]);
+  const activityMonths = useMemo(() => getActivitiesPerMonth(filteredEncounters, 6), [filteredEncounters]);
   const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => kinkNameById.get(id), 5), [encounters, contacts, kinkNameById]);
   const testingStats = useMemo(() => getTestingFrequencyStats(tests), [tests]);
   // ADDED — real ask: "Stats is descriptive, not predictive" — a real
@@ -164,7 +171,13 @@ export function StatsScreen({ onClose }) {
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stats</h1>
       </div>
       <div style={{ padding: 16 }}>
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
         <button onClick={() => setShowDetailedStats(!showDetailedStats)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           {showDetailedStats ? "Hide detailed stats" : "Show detailed stats (XXX)"}
         </button>
@@ -176,11 +189,11 @@ export function StatsScreen({ onClose }) {
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounters.filter(e => !e.isArchived).length}</div></div>
-            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(encounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size}</div></div>
-            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Loads</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads || 0), 0)}</div></div>
-            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Fists</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists || 0), 0)}</div></div>
-            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Kinks</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.kinks || 0), 0)}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).length}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Loads</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads || 0), 0)}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Fists</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists || 0), 0)}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Kinks</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.kinks || 0), 0)}</div></div>
           </div>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
