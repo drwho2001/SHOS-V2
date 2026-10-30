@@ -208,7 +208,7 @@ export function StatsScreen({ onClose }) {
       <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
 
         {/* Activity */}
-        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
+        {visibleStats.encounters && <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -271,8 +271,9 @@ export function StatsScreen({ onClose }) {
           </div>
         </div>
         </div>
+        }
 
-        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
+        {visibleStats.healthcare && <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Healthcare */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Healthcare</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
@@ -370,8 +371,9 @@ export function StatsScreen({ onClose }) {
             explanation={t("stats.explDaysSinceVisit", "Days since your most recent real (already happened, not a future booking) clinic visit.")} />
         </div>
         </div>
+        }
 
-        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
+        {visibleStats.medication && <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Medication */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.medication, padding: "0 0 6px" }}>Medication</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
@@ -400,6 +402,7 @@ export function StatsScreen({ onClose }) {
           </div>
         </div>
         </div>
+        }
 
         <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Contacts */}
