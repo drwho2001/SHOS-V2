@@ -1629,7 +1629,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   const GOLD = "#E8A33D";
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center"}}>
+      style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch"}}>
       {/* ADDED 17 Sep 2026 — real fix for a genuine axe `nested-interactive`
           violation: this card used to be role="button" itself, with the
           status dot below ALSO role="button" — an interactive widget
