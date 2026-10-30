@@ -137,19 +137,19 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v5
         with:
-          name: SHOS-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: SHOS-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
 
       # Publishes the same APK to a GitHub Release so it has a stable,
       # login-free download link (unlike workflow artifacts, which require
       # a GitHub account) -- for sharing test builds with friends.
       - name: Rename APK for the release
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk SHOS-debug.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk SHOS.apk
 
       # FIXED — real bug found 16 Sep 2026: softprops/action-gh-release
       # updates an existing release's body/assets in place but never
@@ -191,4 +191,4 @@ jobs:
 
             Install: download SHOS-debug.apk below, then on your Android phone allow
             "install from unknown sources" for your browser/file manager when prompted.
-          files: SHOS-debug.apk
+          files: SHOS.apk
