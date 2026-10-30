@@ -793,15 +793,20 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
 // timestamp: an auto-export genuinely IS a real backup, so it should
 // reset the same clock — a user with this enabled should never also
 // see the manual "you're overdue" nag, since the automatic one is
-// already covering them. Also reuses hasUnbackedChanges() unchanged —
-// no point silently writing an identical file with nothing new in it
-// every time the interval ticks over.
+// already covering them.
+//
+// CHANGED 30 Oct 2026 — the "and something has changed" condition was
+// removed. It meant a quiet fortnight produced no file at all, which is
+// precisely backwards for a safety net: the exposure grows with time, so
+// the backup should not. hasUnbackedChanges() is still used by the
+// reminder above, where "you have logged things since your last backup"
+// is the right question.
 export async function isAutoExportDue() {
   const prefs = await AppPreferencesRepository.getPreferences();
   if (!prefs.autoExportEnabled) return false;
   const { lastAt, daysSince } = await getLastBackupInfo();
   if (!lastAt) return true; // never backed up at all — due immediately
-  return daysSince >= prefs.autoExportIntervalDays && (await hasUnbackedChanges());
+  return daysSince >= prefs.autoExportIntervalDays;
 }
 
 // The one function callers actually use — call unconditionally on app
