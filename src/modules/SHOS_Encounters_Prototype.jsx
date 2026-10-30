@@ -1299,7 +1299,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         timeline,
       };
     })
-    .filter((session) => session.items.length > 0)
+    .filter((session) => session.status === "active" || session.items.length > 0)
     .sort((a, b) => String(b.startAt || b.items.at(-1)?.date || "").localeCompare(String(a.startAt || a.items.at(-1)?.date || ""))), [sessions, encounters, kinkNameById]);
   const activeSession = sessionSummaries.find((session) => session.status === "active") || null;
   // ADDED — real ask: desktop grid grouped consecutively by month, since
