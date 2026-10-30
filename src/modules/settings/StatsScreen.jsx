@@ -98,6 +98,8 @@ export function StatsScreen({ onClose }) {
   const [showOrganismInfo, setShowOrganismInfo] = useState(false);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
   const [dateRange, setDateRange] = useState("all");
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [visibleStats, setVisibleStats] = useState({ encounters: true, testing: true, healthcare: true, medication: true, contacts: true, detailed: false });
 
   const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
@@ -181,6 +183,19 @@ export function StatsScreen({ onClose }) {
         <button onClick={() => setShowDetailedStats(!showDetailedStats)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           {showDetailedStats ? "Hide detailed stats" : "Show detailed stats (XXX)"}
         </button>
+        <button onClick={() => setShowCustomize(!showCustomize)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+          {showCustomize ? "Done customizing" : "Customize"}
+        </button>
+      {showCustomize && (
+        <div style={{ marginBottom: 12, padding: 12, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: 8, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {["encounters", "testing", "healthcare", "medication", "contacts", "detailed"].map((key) => (
+            <label key={key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer" }}>
+              <input type="checkbox" checked={visibleStats[key]} onChange={() => setVisibleStats((v) => ({ ...v, [key]: !v[key] }))} />
+              {key}
+            </label>
+          ))}
+        </div>
+      )}
         <button onClick={() => {
           const rows = ["Metric,Value", "Total encounters," + filteredEncounters.filter(e => !e.isArchived).length, "Unique partners," + new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size, "Loads," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads||0),0), "Fists," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists||0),0)];
           const blob = new Blob([rows.join("\n")], { type: "text/csv" });
