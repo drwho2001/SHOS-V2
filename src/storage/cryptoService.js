@@ -170,14 +170,42 @@ function writeVaultMeta(meta) {
 // web/PWA build and the installed Android app — Capacitor's own
 // WebView is genuinely just Chromium, no platform-specific code here.
 
+// ADDED 30 Oct 2026 - a wedged IndexedDB (observed live: the same
+// indexedDB.open() that resolves in milliseconds after an app restart
+// never called back at all in one session) used to hang bootUnlock()
+// silently and for ever. The app then rendered on seed data with no
+// error anywhere the user could see. Rejecting after a bounded wait
+// turns that into a real, reportable failure the boot sequence can
+// surface, and the next launch retries cleanly.
+const IDB_OPEN_TIMEOUT_MS = 8000;
+
 function openIdb() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("The device key store did not respond in time."));
+    }, IDB_OPEN_TIMEOUT_MS);
+    const done = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn(value);
+    };
+    let req;
+    try {
+      req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    } catch (err) {
+      done(reject, err);
+      return;
+    }
     req.onupgradeneeded = () => {
       req.result.createObjectStore(IDB_STORE);
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => done(resolve, req.result);
+    req.onerror = () => done(reject, req.error);
+    req.onblocked = () => done(reject, new Error("The device key store is blocked by another open copy of the app."));
   });
 }
 
@@ -219,6 +247,14 @@ async function getDeviceProtectorKey() {
       await idbSet(DEVICE_PROTECTOR_RECORD_ID, key);
       return key;
     })();
+    // ADDED 30 Oct 2026 - do not cache a FAILED attempt. A transient
+    // IndexedDB stall used to leave this rejected promise in place for
+    // the rest of the session, so every later retry (including a
+    // restore) failed for a reason that had already gone away.
+    deviceProtectorPromise = deviceProtectorPromise.catch((err) => {
+      deviceProtectorPromise = null;
+      throw err;
+    });
   }
   return deviceProtectorPromise;
 }
@@ -258,6 +294,84 @@ async function importDataKey(rawDekBytes) {
   return crypto.subtle.importKey("raw", rawDekBytes, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
+// ---------------------------------------------------------------------
+// The vault-unlocked signal.
+//
+// WHY THIS EXISTS (30 Oct 2026 - real data scare, not a hypothetical).
+//
+// Unlocking the vault is asynchronous: bootUnlock() has to open
+// IndexedDB, read the device protector key and unwrap the Data Key
+// before anything encrypted can be read. Several parts of the app ask
+// repositories for data the instant they mount, which is fine ONLY if
+// they happen to mount after that finishes. They don't: on a real
+// device cold boot, 15 collections were requested at ~0.10s while the
+// unlock was still in flight at ~0.11s.
+//
+// storageAdapter.load() answered those requests with the repository's
+// own seed array (the "first run" fallback), because from its point of
+// view a locked vault and a brand-new install looked identical. Each
+// repository then cached that result and never asked again - so the app
+// opened on 16 fabricated contacts and 18 fabricated encounters with
+// the owner's own encrypted records sitting untouched underneath.
+// Worse, storageAdapter.save() correctly REFUSED to write while locked,
+// so a restore performed in that state reported success and then
+// vanished on reload.
+//
+// The fix is this signal: "I cannot read yet" now means "wait until the
+// vault is open", not "here is some made-up data". load() awaits it,
+// save() awaits it, and nothing can be cached or discarded early.
+// ---------------------------------------------------------------------
+let vaultUnlockWaiters = [];
+let lastVaultError = null;
+
+async function setActiveDataKey(dek) {
+  activeDataKey = await importDataKey(dek);
+  lastVaultError = null;
+  const waiters = vaultUnlockWaiters;
+  vaultUnlockWaiters = [];
+  for (const resolve of waiters) resolve(true);
+}
+
+// Resolves true as soon as the vault is unlocked (immediately if it
+// already is), or false if unlocking has definitively failed (see
+// setVaultError below). Defaults to waiting indefinitely: on a boot
+// protected by a PIN, "wait" is exactly right — the lock screen is on
+// screen and the user will unlock in their own time. Bounding it would
+// hand a still-locked repository an empty list to cache, which after
+// PIN entry would look like an empty app. A genuinely broken unlock
+// resolves this through setVaultError instead of a timer, so nothing
+// hangs for ever.
+export function waitForVaultUnlocked(timeoutMs = 0) {
+  if (activeDataKey) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      const at = vaultUnlockWaiters.indexOf(finish);
+      if (at >= 0) vaultUnlockWaiters.splice(at, 1);
+      resolve(value);
+    };
+    vaultUnlockWaiters.push(finish);
+    if (timeoutMs > 0) setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
+// Records why an unlock attempt failed, so the app can say something
+// true instead of silently showing seed data, AND releases anything
+// waiting on the vault so it can stop waiting and report honestly.
+export function setVaultError(err) {
+  lastVaultError = err || null;
+  if (!activeDataKey) {
+    const waiters = vaultUnlockWaiters;
+    vaultUnlockWaiters = [];
+    for (const resolve of waiters) resolve(false);
+  }
+}
+export function getVaultError() {
+  return lastVaultError;
+}
+
 function isUnlocked() {
   return activeDataKey !== null;
 }
@@ -288,7 +402,7 @@ async function initializeFreshVault() {
   const deviceKey = await getDeviceProtectorKey();
   const deviceSlot = await protectBytes(deviceKey, dek);
   writeVaultMeta({ device: deviceSlot, pin: null, tempGrace: null, migrated: !hasExistingData });
-  activeDataKey = await importDataKey(dek);
+  await setActiveDataKey(dek);
 }
 
 // --- Cold-boot unlock, called once from App.jsx's own bootReady gate.
@@ -306,7 +420,7 @@ export async function bootUnlock() {
     // App Lock off — the device slot alone is always enough, no PIN.
     const deviceKey = await getDeviceProtectorKey();
     const dek = await unprotectBytes(deviceKey, meta.device);
-    activeDataKey = await importDataKey(dek);
+    await setActiveDataKey(dek);
     return "device";
   }
   // App Lock on. Try the temporary grace-window slot first — see this
@@ -315,7 +429,7 @@ export async function bootUnlock() {
     try {
       const deviceKey = await getDeviceProtectorKey();
       const dek = await unprotectBytes(deviceKey, meta.tempGrace.slot);
-      activeDataKey = await importDataKey(dek);
+      await setActiveDataKey(dek);
       // Sliding window, matching shouldRelock()'s own original
       // "reopening within X minutes" intent — refreshed on every real
       // use within the window, not just its own first creation.
@@ -349,7 +463,7 @@ export async function unlockWithPin(pin) {
   if (!meta?.pin) throw new Error("No PIN-protected vault exists.");
   const pinKey = await derivePinProtectorKey(pin, base64ToBytes(meta.pin.salt), meta.pin.iterations);
   const dek = await unprotectBytes(pinKey, meta.pin.slot);
-  activeDataKey = await importDataKey(dek);
+  await setActiveDataKey(dek);
   const graceMinutes = meta.graceMinutesPref || 0;
   if (graceMinutes > 0) await refreshGraceWindow(dek, graceMinutes);
   else if (meta.tempGrace) {
@@ -716,7 +830,7 @@ export async function unlockAndResetPinWithRecoveryCode(recoveryString, newPin) 
   // which PIN is active and keeps working exactly as before.
   const graceMinutes = meta.graceMinutesPref || 0;
   writeVaultMeta({ ...meta, device: null, pin: { slot: newPinSlot, salt: bytesToBase64(newSalt), iterations: PIN_KDF_ITERATIONS }, tempGrace: null });
-  activeDataKey = await importDataKey(dek);
+  await setActiveDataKey(dek);
   if (graceMinutes > 0) await refreshGraceWindow(dek, graceMinutes);
 }
 
@@ -742,7 +856,7 @@ export async function unlockWithBiometric() {
   if (!meta?.biometric) throw new Error("Biometric unlock is not set up.");
   const deviceKey = await getDeviceProtectorKey();
   const dek = await unprotectBytes(deviceKey, meta.biometric);
-  activeDataKey = await importDataKey(dek);
+  await setActiveDataKey(dek);
   const graceMinutes = meta.graceMinutesPref || 0;
   if (graceMinutes > 0) await refreshGraceWindow(dek, graceMinutes);
 }

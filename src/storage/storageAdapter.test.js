@@ -27,7 +27,7 @@ const localStorageMock = {
 // `decryptThrows` lets each test choose the failure mode, and `locked` toggles
 // the "vault is simply not unlocked yet" case, which cryptoService reports with
 // a specific message and which must NOT be treated as corruption.
-const state = { decryptThrows: null, unlocked: true, encryptShouldFail: false };
+const state = { decryptThrows: null, unlocked: true, encryptShouldFail: false, vaultExists: true, unlockSucceeds: true };
 
 vi.mock("./cryptoService.js", () => ({
   isEncryptedShape: (v) =>
@@ -35,6 +35,16 @@ vi.mock("./cryptoService.js", () => ({
     && typeof v.iv === "string" && typeof v.ciphertext === "string"
     && Object.keys(v).length === 2,
   isVaultUnlocked: () => state.unlocked,
+  vaultExists: () => state.vaultExists,
+  // ADDED 30 Oct 2026 — storage now waits for the real unlock instead of
+  // answering "here is the seed array" while locked. The mock models that:
+  // a successful unlock clears the transient failure and lets the retry read.
+  waitForVaultUnlocked: async () => {
+    if (!state.unlockSucceeds) return false;
+    state.unlocked = true;
+    state.decryptThrows = null;
+    return true;
+  },
   decryptFromStorage: async () => {
     if (state.decryptThrows) throw state.decryptThrows;
     return state.decryptValue ?? "[]";
@@ -70,6 +80,8 @@ describe("storageAdapter: unreadable data must never be overwritten", () => {
     state.decryptValue = JSON.stringify(REAL);
     state.unlocked = true;
     state.encryptShouldFail = false;
+    state.vaultExists = true;
+    state.unlockSucceeds = true;
   });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -157,11 +169,44 @@ expect(wrote).toBe(true);
     expect(store.get(KEY)).not.toBe(CIPHERTEXT);
   });
 
-  it("keeps the pre-existing boot behaviour of returning the fallback while locked", async () => {
+  // ---- CHANGED 30 Oct 2026: the boot behaviour this used to pin ---------
+  // The old test locked in "return the fallback while locked", justified as
+  // "unchanged behaviour for the transient case". That behaviour was the
+  // incident: 15 collections were read at ~0.10s while the unlock was still
+  // in flight, every one got its seed array, each repository cached it, and
+  // the app opened on fabricated records for the rest of the session. The
+  // contract is now the opposite one.
+  it("WAITS for the vault and returns the real records, not the seed array", async () => {
     putRealData();
+    state.unlocked = false;
+    state.decryptThrows = new Error("Vault is not unlocked - cannot decrypt.");
+    state.decryptValue = JSON.stringify(REAL);
+
+    const loaded = await localStorageAdapter.load(KEY, SEED);
+
+    expect(loaded).toEqual(REAL);
+    expect(loaded).not.toEqual(SEED);
+  });
+
+  it("returns an honest empty list - never seed data - if unlocking genuinely fails", async () => {
+    putRealData();
+    state.unlocked = false;
+    state.unlockSucceeds = false;
     state.decryptThrows = new Error("Vault is not unlocked - cannot decrypt.");
 
-    // Conservative: unchanged behaviour for the transient case.
+    const loaded = await localStorageAdapter.load(KEY, SEED);
+
+    // Empty is recoverable (the next read retries); presented-as-real
+    // fabricated data is not, because it gets cached and then saved.
+    expect(loaded).toEqual([]);
+    expect(loaded).not.toEqual(SEED);
+  });
+
+  it("does not wait at all on a genuinely fresh install with no vault yet", async () => {
+    state.vaultExists = false;
+    state.unlocked = false;
+    state.decryptThrows = new Error("Vault is not unlocked - cannot decrypt.");
+
     expect(await localStorageAdapter.load(KEY, SEED)).toEqual(SEED);
   });
 

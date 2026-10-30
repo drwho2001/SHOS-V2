@@ -30,7 +30,7 @@
 // own `shos_vault_key_slots` metadata key, which structurally can't
 // be encrypted by the very key it exists to protect) are handled
 // separately — see their own files.
-import { encryptForStorage, decryptFromStorage, isEncryptedShape, isVaultUnlocked } from "./cryptoService.js";
+import { encryptForStorage, decryptFromStorage, isEncryptedShape, isVaultUnlocked, waitForVaultUnlocked, vaultExists } from "./cryptoService.js";
 
 // FIXED 30 Sep 2026 (audit) — the one data-DESTRUCTION bug in this app, and
 // it was here the whole time.
@@ -120,11 +120,45 @@ export const localStorageAdapter = {
       unreadableKeys.delete(key);
       return parsed;
     } catch (err) {
+      if (isVaultLockedError(err) && raw && vaultExists()) {
+        // FIXED 30 Oct 2026 — see waitForVaultUnlocked()'s own comment in
+        // cryptoService.js for the real incident behind this. Real
+        // ciphertext is sitting right there; the only reason it would not
+        // decrypt is that the vault is still opening. Answering with the
+        // seed array here is what put 16 fabricated contacts on screen
+        // over the owner's own records and made a restore look successful
+        // and then disappear. Wait for the real unlock, then re-read.
+        // `vaultExists()` keeps a genuinely fresh install on the old
+        // immediate path, so nothing waits for an unlock that will never
+        // be attempted.
+        const unlocked = await waitForVaultUnlocked();
+        if (unlocked) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (isEncryptedShape(parsed)) {
+              const value = JSON.parse(await decryptFromStorage(parsed));
+              unreadableKeys.delete(key);
+              return value;
+            }
+            unreadableKeys.delete(key);
+            return parsed;
+          } catch (retryErr) {
+            // Fall through to the classification below with the retry's own
+            // error, which is the more informative one.
+            err = retryErr;
+          }
+        }
+        if (!isVaultUnlocked()) {
+          // Still locked after waiting: a real boot failure, already logged
+          // by cryptoService. Never fabricate data for it — an empty list is
+          // honest, and the repositories will re-read on the next request.
+          console.error(`Storage load deferred for "${key}": vault still locked.`);
+          return emptyLike(fallback);
+        }
+      }
       console.error(`Storage load failed for "${key}":`, err);
       if (isVaultLockedError(err)) {
-        // Expected during boot and behind the lock screen. Not corruption.
-        // Deliberately leaves the quarantine alone for a key we can't yet
-        // judge, but never sets one.
+        // Locked and nothing stored yet — nothing to protect.
         return fallback;
       }
       if (raw && isVaultUnlocked()) {
@@ -183,6 +217,17 @@ export const localStorageAdapter = {
       return false;
     }
     try {
+      // ADDED 30 Oct 2026 — same reason as load()'s retry: a write that
+      // happens while the vault is still opening used to fail and be
+      // dropped. That is precisely how a successful-looking restore
+      // disappeared on the next reload. Wait for the real unlock, then
+      // write for real.
+      if (!isVaultUnlocked()) {
+        const unlocked = vaultExists() ? await waitForVaultUnlocked() : false;
+        if (!unlocked) {
+          throw new Error("The vault is still locked, so this was not saved.");
+        }
+      }
       const encrypted = await encryptForStorage(JSON.stringify(value));
       localStorage.setItem(key, JSON.stringify(encrypted));
       return true;

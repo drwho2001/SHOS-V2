@@ -20,7 +20,7 @@ import { setScreenshotsAllowed } from "./storage/screenSecurityService";
 // this file's own new cold-boot gate (replacing shouldRelock() there —
 // shouldRelock() still runs fine for the resume-from-background relock
 // check further down, since the vault is already unlocked by then).
-import { bootUnlock, unlockWithPin, unlockWithBiometric, isDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString } from "./storage/cryptoService";
+import { bootUnlock, unlockWithPin, unlockWithBiometric, isDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString, setVaultError } from "./storage/cryptoService";
 // ADDED — Phase 4 (Sep 2026): real, pre-existing bug found while
 // verifying this boot gate live — these three used to be self-invoking
 // IIFEs at module load, which ran (and tried to storage.save()) BEFORE
@@ -290,8 +290,29 @@ function resolveTabAccent(tab, darkMode) {
 // frame on-device (storageAdapter itself is still fully synchronous —
 // this is a microtask-scale delay, not a real disk/network wait), so
 // this is much more a correctness guarantee than a visible splash.
-function AppBootScreen() {
+// CHANGED 30 Oct 2026 — can now show a real failure instead of spinning
+// for ever. A vault that will not open is the one situation where
+// carrying on is actively harmful: every collection would fall back to
+// its sample data and look like a normal, if empty, app. Saying so is
+// the only honest outcome.
+function AppBootScreen({ error = null, onRetry = null }) {
   const [darkMode] = useDarkModePreference();
+  if (error) {
+    return (
+      <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 32, textAlign: "center", zIndex: 999 }}>
+        <div style={{ color: "#FFFFFF", fontSize: 17, fontWeight: 600 }}>Your data didn't open</div>
+        <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, maxWidth: 420, lineHeight: 1.5 }}>
+          Nothing has been deleted or changed. The app could not unlock the key that reads your saved records, so it has stopped here rather than show you made-up sample data.
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, maxWidth: 420, wordBreak: "break-word" }}>{error.message || String(error)}</div>
+        {onRetry && (
+          <button type="button" onClick={onRetry} style={{ marginTop: 8, padding: "10px 20px", borderRadius: 10, border: "none", background: "#FFFFFF", color: "#1B1B1F", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            Try again
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#1B1B1F", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
       <Activity size={32} color="#FFFFFF" style={{ opacity: 0.5 }} />
@@ -1076,6 +1097,10 @@ export default function App() {
   // all). A blank/neutral screen is the only choice that's correct for
   // both cases at once.
   const [bootReady, setBootReady] = useState(false);
+  // ADDED 30 Oct 2026 — set when the vault genuinely cannot be opened.
+  // Rendered as a real, honest error instead of falling through to sample
+  // data; see AppBootScreen's own comment.
+  const [bootFailure, setBootFailure] = useState(null);
   // ADDED — Phase 4 (Sep 2026): guards the one-time parts of boot
   // finishing (tab-resume, colour overrides, migration) so they run
   // exactly once — on a genuine cold boot — and never again on a
@@ -1185,14 +1210,22 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const unlockResult = await bootUnlock();
-      if (cancelled) return;
-      if (unlockResult === "pin-needed") {
-        setLocked(true);
-        setBootReady(true);
-        return;
+      try {
+        const unlockResult = await bootUnlock();
+        if (cancelled) return;
+        if (unlockResult === "pin-needed") {
+          setLocked(true);
+          setBootReady(true);
+          return;
+        }
+        await finishBootAfterUnlock();
+      } catch (err) {
+        // ADDED 30 Oct 2026 — never boot on sample data because the key
+        // could not be read. See setVaultError()'s own comment.
+        console.error("[App] Vault unlock failed - refusing to boot on sample data:", err);
+        setVaultError(err);
+        if (!cancelled) setBootFailure(err);
       }
-      await finishBootAfterUnlock();
     })();
     return () => { cancelled = true; };
     // Deliberately [] — this is the one-shot boot sequence, meant to run
@@ -2693,7 +2726,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // why. Nothing else in this render path is allowed to run off
   // `locked`/`active` until this resolves.
   if (!bootReady) {
-    return <AppBootScreen />;
+    return <AppBootScreen error={bootFailure} onRetry={() => window.location.reload()} />;
   }
 
   // ADDED 1 Sep 2026 — decoy session gate: checked before the App Lock

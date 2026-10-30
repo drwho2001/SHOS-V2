@@ -52,7 +52,11 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 import { SymptomLogRepository } from "./symptomLogRepository.js";
 import { EpisodeRepository } from "./episodeRepository.js";
 
-const STORAGE_KEY = "shos_encounters";
+// Exported 30 Oct 2026, matching contactRepository.js's own precedent —
+// backupService.js's restore verification reads this key back from
+// storage to prove a restore actually persisted, and duplicating the
+// literal there would silently drift if the key ever changed.
+export const STORAGE_KEY = "shos_encounters";
 
 // ---------------------------------------------------------------------
 // Known option sets — copied verbatim from the live Notion select/

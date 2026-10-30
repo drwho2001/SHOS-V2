@@ -14,7 +14,7 @@
 // its data, one line to restore it. Nothing else in the app needs to
 // know backup/restore exists.
 
-import { ContactRepository } from "../repositories/contactRepository.js";
+import { ContactRepository, STORAGE_KEY as CONTACTS_STORAGE_KEY } from "../repositories/contactRepository.js";
 import { exportTextFile, writeTextFileSilently, writeTextFileToFolder, exportTextFileToChosenFolder } from "./fileExportHelper.js";
 // ADDED — real ask: scheduled auto-export reads its own on/off toggle
 // and interval from here (Settings -> Preferences), same repository
@@ -28,9 +28,10 @@ import { localStorageAdapter as storage } from "./storageAdapter.js";
 // working on its own, not need a human to hand-check the schema first.
 // See that file's own header for the full reasoning.
 import { migrateBackupData } from "./backupMigrations.js";
+import { mergeRecordsById } from "../calculations/mergeRecordsById.js";
 import { MedicationRepository } from "../repositories/medicationRepository.js";
 import { LogRepository } from "../repositories/logRepository.js";
-import { EncounterRepository } from "../repositories/encounterRepository.js";
+import { EncounterRepository, STORAGE_KEY as ENCOUNTERS_STORAGE_KEY } from "../repositories/encounterRepository.js";
 import { KinkRegistry } from "../registries/kinkRegistry.js";
 import { ChemsRegistry } from "../registries/chemsRegistry.js";
 import { ProtectionRegistry } from "../registries/protectionRegistry.js";
@@ -574,7 +575,14 @@ export async function mergeBackup(parsedBackup) {
   // Made async/await-aware here; a no-op for every repo still synchronous.
   const append = async (repo, incoming) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return;
-    await repo.replaceAll([...(await repo.getAll()), ...incoming]);
+    // FIXED 30 Oct 2026 — this used to concatenate blindly, so merging
+    // the same backup twice (or a backup that overlapped what was
+    // already there) duplicated every record under its existing id. See
+    // mergeRecordsById.js for the full account and the rule itself.
+    const current = await repo.getAll();
+    const merged = mergeRecordsById(current, incoming);
+    if (merged.length === current.length) return;
+    await repo.replaceAll(merged);
   };
   await append(ContactRepository, data.contacts);
   await append(MedicationRepository, data.medications);
@@ -1040,4 +1048,43 @@ export async function restoreFromParsedBackup(parsed, mode = "replace") {
   // sees it, not after.
   const migrated = { ...parsed, data: migrateBackupData(sanitizeBackupData(parsed.data)) };
   if (mode === "merge") await mergeBackup(migrated); else await restoreBackup(migrated);
+  await verifyRestorePersisted(migrated.data, mode);
+}
+
+// ADDED 30 Oct 2026 — real incident, not a precaution.
+//
+// On the owner's own device a restore reported "Backup restored" and the
+// app reloaded straight back into 16 fabricated sample contacts. The
+// writes had all been thrown away, because the vault had not finished
+// unlocking and storageAdapter.save() correctly refuses to write over
+// real ciphertext in that state. Nothing anywhere checked whether the
+// restore had actually reached the disk — restoreBackup() fires ~30
+// repository writes and trusts every one of them.
+//
+// This reads the two collections that matter most back OUT of storage
+// (not out of the repositories' in-memory copies, which would happily
+// echo back whatever was just handed to them) and compares. A restore
+// that cannot be read back now fails loudly instead of lying, and the
+// message says plainly that the old data is still intact — because it
+// is: a refused write leaves the previous value untouched.
+async function verifyRestorePersisted(data, mode) {
+  const checks = [
+    { label: "contacts", key: CONTACTS_STORAGE_KEY, expected: Array.isArray(data.contacts) ? data.contacts.length : null },
+    { label: "encounters", key: ENCOUNTERS_STORAGE_KEY, expected: Array.isArray(data.encounters) ? data.encounters.length : null },
+  ].filter((check) => check.expected !== null);
+
+  for (const check of checks) {
+    const stored = await storage.load(check.key, null);
+    const actual = Array.isArray(stored) ? stored.length : null;
+    // Merge adds to whatever was already there, so "at least what the
+    // backup contained" is the correct bar for it; Replace All must
+    // match exactly.
+    const ok = actual !== null && (mode === "merge" ? actual >= check.expected : actual === check.expected);
+    if (!ok) {
+      throw new Error(
+        `The backup could not be saved to this device (${check.label}: expected ${check.expected}, found ${actual ?? "none"}). ` +
+        "Your existing data has not been changed — nothing was overwritten. Try again, and if it keeps happening, export a fresh backup first."
+      );
+    }
+  }
 }

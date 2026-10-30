@@ -9464,3 +9464,43 @@ Co-Authored-By: Claude <opencode-go/minimax-m3.1-flash-free> <noreply@anthropic.
 
 ## 27 Oct 2026 - Zeus (22)
 - t210: CI now stamps version.json per release (web-alpha + build-apk workflows); web silent update check compares release buildSha vs running build SHA instead of hardcoded version. Closes the dead-update-check gap from Phase 2.
+
+## 30 Oct 2026 - records were never lost, the vault just would not open (Lily)
+
+**WHAT HAPPENED.** The owner reported data loss after installing an older debug
+APK: the app opened on 16 fabricated contacts and 18 fabricated encounters.
+Reading the live WebView over Chrome DevTools showed the truth - 51 contacts,
+58 encounters and 131 medication logs still on disk, encrypted and intact. The
+app could not read any of them, and said nothing.
+
+**ROOT CAUSE.** Unlocking the vault is asynchronous, and 15 collections were
+requested at roughly 0.10s while the unlock was still in flight at 0.11s.
+`storageAdapter.load()` treats "locked" and "brand new install" identically, so
+every one of those reads was answered with that repository's seed array. Each
+repository cached the answer and never asked again. `storageAdapter.save()`
+correctly refused to write over unreadable ciphertext, so restores and new
+medication logs reported success and were then discarded - which is why a
+restore "worked" and the next launch showed demo data again.
+
+**FIXES.** `load()` now waits for the real unlock (`waitForVaultUnlocked()`) and
+re-reads, and an honest empty list is the worst case, never seed data. `save()`
+waits too, so a write during boot lands instead of vanishing. `bootUnlock()`
+failures now render a real "your data didn't open, nothing has been changed"
+screen instead of falling through to sample data, and the IndexedDB open is
+time-bounded so a wedged key store cannot hang boot silently.
+
+`restoreFromParsedBackup()` now reads the two largest collections back OUT of
+storage after restoring and throws if they do not match, so a restore that did
+not persist can no longer be reported as success.
+
+`mergeBackup()` de-duplicates by id (`calculations/mergeRecordsById.js`). It
+concatenated blindly, so merging the same file twice duplicated every record
+under its original id - the owner's Kink Registry was 228 rows for 78 ids.
+Duplicated ids are cross-reference keys, so each option rendered three times in
+every picker.
+
+**RECOVERY.** The device's own encrypted data was extracted and merged with the
+24 Oct backup file: 37 contacts, 47 encounters, 189 medication logs, with the
+fabricated sample records excluded. Real medication logs stop at 23 Oct; the
+app had been unable to save anything since the wipe, so 24-29 Oct was never
+written to disk and is not recoverable.
