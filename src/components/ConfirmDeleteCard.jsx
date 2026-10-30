@@ -84,7 +84,7 @@ export default function ConfirmDeleteCard({
         <button
           ref={cancelRef}
           onClick={onCancel}
-          style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${accent}`, background: "transparent", color: accent, fontWeight: 600, cursor: "pointer" }}
+          style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${accent}`, background: "transparent", color: T.textPrimary, fontWeight: 600, cursor: "pointer" }}
         >
           Cancel
         </button>
