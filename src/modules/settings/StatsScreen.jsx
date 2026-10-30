@@ -103,6 +103,7 @@ export function StatsScreen({ onClose }) {
   const [visibleStats, setVisibleStats] = useState({ encounters: true, testing: true, healthcare: true, medication: true, contacts: true, detailed: false });
 
   const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
+  const locations = useLoadedMemo(() => LocationsRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
   const tests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
   // computeAdherence() reads med.logs directly — not part of the raw
@@ -222,18 +223,32 @@ export function StatsScreen({ onClose }) {
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).length}</div></div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size}</div></div>
             <div style={{ flexBasis: "100%" }}>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Top partners</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>{groupBy === "location" ? "Top locations" : groupBy === "month" ? "By month" : "Top partners"}</div>
               {(() => {
                 const counts = {};
-                filteredEncounters.filter(e => !e.isArchived).forEach(e => { if (e.contactId) counts[e.contactId] = (counts[e.contactId] || 0) + 1; });
+                filteredEncounters.filter(e => !e.isArchived).forEach(e => {
+                  let key = null;
+                  if (groupBy === "location") key = e.locationId;
+                  else if (groupBy === "partner") key = e.contactId;
+                  else if (groupBy === "month") key = e.date ? e.date.slice(0,7) : null;
+                  else key = e.contactId;
+                  if (key) counts[key] = (counts[key] || 0) + 1;
+                });
                 const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
                 if (sorted.length === 0) return <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>;
                 const maxN = sorted.length > 0 ? sorted[0][1] : 1;
                 return sorted.map(([id, n]) => {
-                  const contact = contacts.find(c => c.id === id);
+                  let name = id;
+                  if (groupBy === "location" || groupBy === "none") {
+                    const loc = locations.find(l => l.id === id);
+                    if (loc) name = loc.name;
+                  } else if (groupBy === "partner") {
+                    const contact = contacts.find(c => c.id === id);
+                    if (contact) name = contact.name;
+                  }
                   return <div key={id} style={{ padding: "4px 0" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                      <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{contact ? contact.name : id}</span>
+                      <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{name}</span>
                       <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{n}</span>
                     </div>
                     <div style={{ height: 4, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, borderRadius: 2, overflow: "hidden" }}>
