@@ -96,6 +96,7 @@ export function StatsScreen({ onClose }) {
   // calculation basis (see the "Icon-only UI needs an explanatory
   // affordance" standing convention).
   const [showOrganismInfo, setShowOrganismInfo] = useState(false);
+  const [showDetailedStats, setShowDetailedStats] = useState(false);
 
   const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
@@ -163,6 +164,11 @@ export function StatsScreen({ onClose }) {
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stats</h1>
       </div>
       <div style={{ padding: 16 }}>
+      <div style={{ marginBottom: 12 }}>
+        <button onClick={() => setShowDetailedStats(!showDetailedStats)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+          {showDetailedStats ? "Hide detailed stats" : "Show detailed stats (XXX)"}
+        </button>
+      </div>
       <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
 
         {/* Activity */}
