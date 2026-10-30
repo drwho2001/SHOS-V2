@@ -191,6 +191,19 @@ export function StatsScreen({ onClose }) {
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", gap: 16, flexWrap: "wrap" }}>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).length}</div></div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size}</div></div>
+            <div style={{ flexBasis: "100%" }}>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Top partners</div>
+              {(() => {
+                const counts = {};
+                filteredEncounters.filter(e => !e.isArchived).forEach(e => { if (e.contactId) counts[e.contactId] = (counts[e.contactId] || 0) + 1; });
+                const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
+                if (sorted.length === 0) return <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>;
+                return sorted.map(([id, n]) => {
+                  const contact = contacts.find(c => c.id === id);
+                  return <div key={id} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{contact ? contact.name : id}</span><span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{n}</span></div>;
+                });
+              })()}
+            </div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Loads</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads || 0), 0)}</div></div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Fists</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists || 0), 0)}</div></div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Kinks</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.kinks || 0), 0)}</div></div>
