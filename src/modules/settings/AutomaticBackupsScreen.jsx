@@ -7,6 +7,7 @@ import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/desig
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { isCustomAutoExportFolderAvailable, pickAutoExportFolder } from "../../storage/fileExportHelper";
+import { getLastBackupInfo } from "../../storage/backupService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useTranslation } from "../../i18n/index.js";
 
@@ -35,6 +36,7 @@ export function AutomaticBackupsScreen({ onClose }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const [lastBackupInfo, setLastBackupInfo] = useLoadedState(() => getLastBackupInfo(), [], { lastAt: null, daysSince: null, dueForReminder: false });
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   // ADDED — real ask: an editable save location, previously stuck on
@@ -90,9 +92,13 @@ export function AutomaticBackupsScreen({ onClose }) {
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: prefs.autoExportEnabled ? 12 : 0 }}>
             Writes a full backup {prefs.autoExportFolder ? "to your chosen folder" : "straight to your phone's Documents folder"} on its own, on
-            whatever schedule you pick below — no need to remember to tap Export. Only
-            runs when there's something new since the last backup. Nothing leaves this
-            device; it's the same local file the manual Export button produces.
+            whatever schedule you pick below - no need to remember to tap Export. Runs on the
+            schedule you choose, even if nothing new was added since the last backup.
+          {lastBackupInfo.lastAt && (
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 8 }}>
+              Last backup: {new Date(lastBackupInfo.lastAt).toLocaleDateString()} ({lastBackupInfo.daysSince} days ago)
+            </div>
+          )}
           </div>
           {prefs.autoExportEnabled && (
             <div role="radiogroup" aria-label="Backup interval" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
