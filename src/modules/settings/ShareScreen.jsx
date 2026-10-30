@@ -58,6 +58,9 @@ export function ShareScreen({ onClose }) {
         <button onClick={shareLink} style={{ marginTop: 16, width: "100%", padding: "12px 16px", borderRadius: 999, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
           {t("share.shareLink", "Share link")}
         </button>
+        <button onClick={() => { const url = "https://drwho2001.github.io/SHOS-V2/share.html"; try { if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) { window.Capacitor.Plugins.Browser.open({ url }); return; } } catch (e) { /* fall through */ } window.open(url, "_blank"); }} style={{ marginTop: 8, width: "100%", padding: "12px 16px", borderRadius: 999, border: "1.5px solid " + ACCENTS.home, background: "transparent", color: ACCENTS.home, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+          {t("share.savePdf", "Open share page (Save as PDF)")}
+        </button>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", marginTop: 16 }}>
           {t("share.footer", "Local-first — nothing here leaves the device unless you choose to export or share it.")}
         </div>
