@@ -181,6 +181,14 @@ export function StatsScreen({ onClose }) {
         <button onClick={() => setShowDetailedStats(!showDetailedStats)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           {showDetailedStats ? "Hide detailed stats" : "Show detailed stats (XXX)"}
         </button>
+        <button onClick={() => {
+          const rows = ["Metric,Value", "Total encounters," + filteredEncounters.filter(e => !e.isArchived).length, "Unique partners," + new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size, "Loads," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads||0),0), "Fists," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists||0),0)];
+          const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url; a.download = "shos-stats.csv"; a.click(); URL.revokeObjectURL(url);
+        }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+          Export CSV
+        </button>
       </div>
       <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
 
