@@ -198,9 +198,18 @@ export function StatsScreen({ onClose }) {
                 filteredEncounters.filter(e => !e.isArchived).forEach(e => { if (e.contactId) counts[e.contactId] = (counts[e.contactId] || 0) + 1; });
                 const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
                 if (sorted.length === 0) return <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>;
+                const maxN = sorted.length > 0 ? sorted[0][1] : 1;
                 return sorted.map(([id, n]) => {
                   const contact = contacts.find(c => c.id === id);
-                  return <div key={id} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{contact ? contact.name : id}</span><span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{n}</span></div>;
+                  return <div key={id} style={{ padding: "4px 0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                      <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{contact ? contact.name : id}</span>
+                      <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{n}</span>
+                    </div>
+                    <div style={{ height: 4, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${(n / maxN) * 100}%`, background: ACCENTS.encounters, borderRadius: 2 }} />
+                    </div>
+                  </div>;
                 });
               })()}
             </div>
