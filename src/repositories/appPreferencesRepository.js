@@ -81,8 +81,8 @@ export const DEFAULT_APP_PREFERENCES = {
   // backupService.js's runAutoExportIfDue() for the real mechanism
   // (writes straight to the public Documents folder, no share sheet,
   // no dialog).
-  autoExportEnabled: false,
-  autoExportIntervalDays: 30,
+  autoExportEnabled: true,
+  autoExportIntervalDays: 7,
   // ADDED — real ask: an editable save location for automatic backups,
   // which always silently wrote to the public Documents folder with no
   // way to change that. A persisted Android SAF tree reference
