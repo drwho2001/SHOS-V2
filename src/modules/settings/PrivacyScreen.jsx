@@ -91,6 +91,16 @@ const [pendingDisclosureLevel, setPendingDisclosureLevel] = useState(
 );
 const disclosureDirty = pendingDisclosureLevel !== disclosureLevel;
 
+// ADDED 30 Oct 2026 — sync disclosure state when settings load. Without this,
+// the control shows "masked" (the default) until the user interacts, even if
+// a different level was saved, because useState initialisers run once before
+// useLoadedState resolves.
+useEffect(() => {
+  const normalised = normaliseDisclosureLevel(settings?.disclosureLevel);
+  setDisclosureLevel(normalised);
+  setPendingDisclosureLevel(normalised);
+}, [settings?.disclosureLevel]);
+
   const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
 
   // ADDED 21 Oct 2026 (t131) - THE PIN IS RE-TYPED TO CONFIRM A PRIVILEGED
