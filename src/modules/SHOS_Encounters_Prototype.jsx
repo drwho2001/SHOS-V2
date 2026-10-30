@@ -2082,8 +2082,9 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
       </div>
 
       {form.sessionId && sessions.find((s) => s.id === form.sessionId) && (
-        <div style={{ margin: "10px 16px 0", padding: "8px 12px", borderRadius: radius.sm, background: `${T.encountersPink}18`, border: `1px solid ${T.encountersPink}`, fontSize: 12, color: T.textPrimary, fontWeight: 600 }}>
-          Adding to session: {sessions.find((s) => s.id === form.sessionId)?.title || "Untitled session"}
+        <div style={{ margin: "10px 16px 0", padding: "10px 14px", borderRadius: radius.md, background: `${T.encountersPink}18`, border: `2px solid ${T.encountersPink}`, fontSize: 13, color: T.textPrimary, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6, color: T.encountersPink }}>Session</span>
+          {sessions.find((s) => s.id === form.sessionId)?.title || "Untitled session"}
           {sessions.find((s) => s.id === form.sessionId)?.status === "active" ? " (active)" : " (closed)"}
         </div>
       )}
