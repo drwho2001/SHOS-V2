@@ -174,7 +174,11 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.release_tag || 'latest' }}
         run: |
           git tag -f "$RELEASE_TAG"
-          git push origin "$RELEASE_TAG" --force
+          for i in 1 2 3; do
+            git push origin "$RELEASE_TAG" --force && break
+            echo "Tag push attempt $i failed, retrying..."
+            sleep 5
+          done
 
       - name: Publish APK to release
         uses: softprops/action-gh-release@v2
