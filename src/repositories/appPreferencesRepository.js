@@ -82,7 +82,7 @@ export const DEFAULT_APP_PREFERENCES = {
   // (writes straight to the public Documents folder, no share sheet,
   // no dialog).
   autoExportEnabled: true,
-  autoExportIntervalDays: 7,
+  autoExportIntervalDays: 1,
   // ADDED — real ask: an editable save location for automatic backups,
   // which always silently wrote to the public Documents folder with no
   // way to change that. A persisted Android SAF tree reference
