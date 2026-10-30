@@ -148,10 +148,25 @@ export function getTestingIntervalTrend(tests) {
   const averageIntervalDays = gaps.reduce((a, b) => a + b, 0) / gaps.length;
   const daysSinceLast = daysSinceStoredDay(real[real.length - 1].date, now);
 
-  // 1. Current gap vs. own average — a real ratio, not just a boolean,
-  // so the UI can say by how much rather than just "yes/no".
+  // ADDED 30 Oct 2026 - real user feedback: "personal test history
+  // trending feels pointless - I had a few tests together because of
+  // symptoms, C&S, TOC, and so skewed averages. As such the
+  // recommendations of 142% longer despite only 37 days later is wrong.
+  // Don't need to test before 90 days unless symptomatic/indicated.
+  // Needs to only kick in around 90 days."
+  //
+  // The nudge compared the gap since the last test against the user's
+  // OWN average interval. When tests were clustered (symptoms, test of
+  // cure, C&S), the average was tiny, so even 37 days looked like a
+  // huge percentage increase. But the user doesn't need to retest
+  // before BASHH's 90-day interval unless symptomatic or indicated.
+  // So the nudge now only fires when the gap since the last test is
+  // approaching the 90-day mark (at 2/3 of the interval), not just
+  // when it's proportionally longer than a possibly very short
+  // personal average.
+  const MIN_DAYS_FOR_TREND_NUDGE = Math.round(BASHH_TESTING_INTERVAL_DAYS * (2 / 3));
   const gapRatio = averageIntervalDays > 0 ? daysSinceLast / averageIntervalDays : 1;
-  const currentGapVsAverage = Math.abs(gapRatio - 1) >= TREND_THRESHOLD
+  const currentGapVsAverage = (daysSinceLast !== null && daysSinceLast >= MIN_DAYS_FOR_TREND_NUDGE) && Math.abs(gapRatio - 1) >= TREND_THRESHOLD
     ? { direction: gapRatio > 1 ? "longer" : "shorter", percent: Math.round(Math.abs(gapRatio - 1) * 100), averageIntervalDays: Math.round(averageIntervalDays), daysSinceLast }
     : null;
 

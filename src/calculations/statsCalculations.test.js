@@ -99,7 +99,7 @@ describe('statsCalculations', () => {
       const tests = [
         { id: 't1', date: '2026-03-15T08:00:00.000Z', isArchived: false },
         { id: 't2', date: '2026-06-15T08:00:00.000Z', isArchived: false },
-        { id: 't3', date: '2026-09-15T08:00:00.000Z', isArchived: false },
+        { id: 't3', date: '2026-08-01T08:00:00.000Z', isArchived: false },
       ];
       const result = getTestingIntervalTrend(tests);
       expect(result.currentGapVsAverage).toHaveProperty('direction');
