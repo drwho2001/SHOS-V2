@@ -969,7 +969,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           gets this: still-counting-down is a short-lived countdown, not
           something worth permanently silencing. */}
       {activeSession && (
-        <div data-tour="live-session" role="status" aria-live="polite" style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
+        <div data-tour="live-session" role="button" tabIndex={0} onClick={() => onNavigateToRecord("activity")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity"); } }} style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px solid ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ color: encountersColor, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Live session</div>
@@ -983,8 +983,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             <Activity size={24} color={encountersColor} />
           </div>
           <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-            <div role="button" tabIndex={0} onClick={() => onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: encountersColor, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
-            <div role="button" tabIndex={0} onClick={() => onNavigateToRecord("activity")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${encountersColor}`, color: encountersColor, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Open log</div>
+            <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: encountersColor, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
+            <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onNavigateToRecord("activity"); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${encountersColor}`, color: encountersColor, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Open log</div>
           </div>
         </div>
       )}
