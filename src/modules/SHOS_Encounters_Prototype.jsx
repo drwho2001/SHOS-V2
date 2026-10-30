@@ -1416,14 +1416,25 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   </div>
                 )}
               </div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsStoredDateTime() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
-                style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
-              >
-                Close session
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsStoredDateTime() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
+                  style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  Close session
+                </div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={async () => { if (confirm("Cancel this session? Encounters already logged will be kept but unlinked from the session.")) { await SessionRepository.delete(activeSession.id); await syncAllWidgets(); setSessionVersion((version) => version + 1); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
+                  style={{ color: T.actionRed, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  Cancel session
+                </div>
               </div>
             </div>
             <div
@@ -2070,7 +2081,12 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
         </div>
       </div>
 
-      {draftRestored && (
+      {form.sessionId && sessions.find((s) => s.id === form.sessionId) && (
+        <div style={{ margin: "10px 16px 0", padding: "8px 12px", borderRadius: radius.sm, background: `${T.encountersPink}18`, border: `1px solid ${T.encountersPink}`, fontSize: 12, color: T.textPrimary, fontWeight: 600 }}>
+          Adding to session: {sessions.find((s) => s.id === form.sessionId)?.title || "Untitled session"}
+          {sessions.find((s) => s.id === form.sessionId)?.status === "active" ? " (active)" : " (closed)"}
+        </div>
+      )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "10px 16px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
           <span>{tr("encounters.draftRestored", "Restored unsaved changes from earlier.")}</span>
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
