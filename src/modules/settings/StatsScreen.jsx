@@ -258,9 +258,11 @@ export function StatsScreen({ onClose }) {
                 });
               })()}
             </div>
+            {showDetailedStats && <>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Loads</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads || 0), 0)}</div></div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Fists</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists || 0), 0)}</div></div>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Kinks</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.kinks || 0), 0)}</div></div>
+            </>}
           </div>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
