@@ -2107,6 +2107,30 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
         <SectionCard title={tr("encounters.overview", "Overview")} T={T}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder={tr("encounters.titlePlaceholder", "e.g. Alex — coffee then back to theirs")} />
           <DateTimeField label={tr("encounters.dateTime", "Date & time")} value={form.date} onChange={set("date")} T={T} />
+          {/* ADDED — real ask: "optional end time for encounter (ie if
+              multiday or particularly long)". `dateEnd` already existed
+              on the data model (DEFAULT_ENCOUNTER) but had no UI
+              anywhere — genuinely wired up now. Left blank by default
+              and no separate toggle needed: it's just an optional
+              field, same pattern as Clinic Visits' own "(optional)"
+              Location field. */}
+          {form.dateEnd ? (
+            <>
+              <DateTimeField label={tr("encounters.endDateTime", "End date & time")} value={form.dateEnd} onChange={set("dateEnd")} T={T} />
+              <div style={{ padding: "0 0 8px" }}>
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>{tr("encounters.removeEndTime", "Remove end time")}</span>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: "8px 0" }}>
+              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")(form.date || `${nowAsDateTimeLocalString()}:00.000Z`)}
+                style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>
+                + {tr("encounters.addEndTime", "Add end date & time (multi-day or long encounter)")}
+              </span>
+            </div>
+          )}
+          <SelectField label={tr("encounters.encounterType", "Encounter type")} value={form.encounterType} onChange={set("encounterType")} options={ENCOUNTER_TYPE_OPTIONS} T={T} />
+          <SelectField label={tr("encounters.wouldMeetAgain", "Would meet again")} value={form.wouldMeetAgain} onChange={set("wouldMeetAgain")} options={WOULD_MEET_AGAIN_OPTIONS} T={T} />
           <SelectField
             label={tr("encounters.session", "Session (optional)")}
             value={form.sessionId}
@@ -2138,30 +2162,6 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
               </div>
             </div>
           )}
-          {/* ADDED — real ask: "optional end time for encounter (ie if
-              multiday or particularly long)". `dateEnd` already existed
-              on the data model (DEFAULT_ENCOUNTER) but had no UI
-              anywhere — genuinely wired up now. Left blank by default
-              and no separate toggle needed: it's just an optional
-              field, same pattern as Clinic Visits' own "(optional)"
-              Location field. */}
-          {form.dateEnd ? (
-            <>
-              <DateTimeField label={tr("encounters.endDateTime", "End date & time")} value={form.dateEnd} onChange={set("dateEnd")} T={T} />
-              <div style={{ padding: "0 0 8px" }}>
-                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>{tr("encounters.removeEndTime", "Remove end time")}</span>
-              </div>
-            </>
-          ) : (
-            <div style={{ padding: "8px 0" }}>
-              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("dateEnd")(form.date || `${nowAsDateTimeLocalString()}:00.000Z`)}
-                style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>
-                + {tr("encounters.addEndTime", "Add end date & time (multi-day or long encounter)")}
-              </span>
-            </div>
-          )}
-          <SelectField label={tr("encounters.encounterType", "Encounter type")} value={form.encounterType} onChange={set("encounterType")} options={ENCOUNTER_TYPE_OPTIONS} T={T} />
-          <SelectField label={tr("encounters.wouldMeetAgain", "Would meet again")} value={form.wouldMeetAgain} onChange={set("wouldMeetAgain")} options={WOULD_MEET_AGAIN_OPTIONS} T={T} />
           <TextField label={tr("encounters.enjoymentRating", "Enjoyment rating (0–100)")} value={form.enjoymentRating} onChange={set("enjoymentRating")} T={T} type="number" />
         </SectionCard>
 
