@@ -13,6 +13,7 @@ import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { EncounterRepository } from "../../repositories/encounterRepository";
+import { LocationsRepository } from "../../repositories/locationsRepository";
 import { MedicationRepository } from "../../repositories/medicationRepository";
 import { LogRepository } from "../../repositories/logRepository";
 import { TestingRepository } from "../../repositories/testingRepository";
