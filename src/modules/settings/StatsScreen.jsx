@@ -405,7 +405,7 @@ export function StatsScreen({ onClose }) {
           <StatRow label={t("stats.overallAdherence7d", "Overall adherence (7-day)")} value={adherence != null ? `${adherence}%` : "Not enough data"}
             explanation={t("stats.explAdherence", "Average of each daily/scheduled medication's own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications aren't included — there's no fixed expected schedule to measure against.")} />
           <StatRow label={t("stats.doxyPepCompliance", "DoxyPEP compliance")} value={doxyCompliance != null ? `${doxyCompliance}%` : "No DoxyPEP medication set up"}
-            explanation="Of each qualifying-activity window (see the DoxyPEP alert's own logic — mucous-membrane contact, BASHH/CDC-sourced), the percentage where a dose was actually logged within the real 72-hour window. Sequential activity in the same window counts once, matching the real alert's own anchoring rule." />
+            explanation="Of each qualifying-activity window (see the DoxyPEP alert's own logic - mucous-membrane contact, BASHH/CDC-sourced), the percentage where a dose was actually logged within the real 72-hour window. Sequential activity in the same window counts once. Covers all logged encounters." />
           {/* ADDED — real ask: "expand stats" — the adherence figure
               above was a single current snapshot with no sense of
               whether things are improving or slipping over time. A
