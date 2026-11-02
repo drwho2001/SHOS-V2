@@ -1746,8 +1746,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             affordance at all. Now tappable (toggles the same caption
             panel as the active-status dot), plus a real title/aria-label
             for a hover or screen-reader user. */}
-        {(() => {
-          const TransportIcon = getTransportIcon(contact);
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
           if (!TransportIcon) return null;
           const label = getTransportLabel(contact);
           return (
@@ -1801,6 +1800,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             row. The methods row is also the widest, so putting it last also keeps
             the leading icons from being pushed onto a second line first. */}
         <MethodIcons methods={methods} T={T} />
+        </div>
       </div>
       {showStatusInfo && (() => {
         const transportLabel = getTransportLabel(contact);
