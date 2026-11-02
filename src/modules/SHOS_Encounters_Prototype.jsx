@@ -198,10 +198,19 @@ function DateTimeField({ label, value, onChange, T }) {
   // plain string manipulation — no Date object, no local-timezone
   // interpretation anywhere in this component.
   const inputVal = value ? value.slice(0, 16) : "";
+  // ADDED — show the day of the week for the selected date, so the user
+  // can see "Monday 30 Oct" rather than just "30 Oct".
+  const dayName = value ? (() => {
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return "";
+      return d.toLocaleDateString(undefined, { weekday: "long" });
+    } catch { return ""; }
+  })() : "";
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}{dayName ? ` — ${dayName}` : ""}</div>
         {/* ADDED — real ask: "Now" quick-fill, device's real local
             date AND time — uses the datetime variant of the same
             shared helper, same safe reasoning as the fix just above. */}
