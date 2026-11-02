@@ -1353,9 +1353,12 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
               matching Medication's pattern — long-press stays as an
               additional quick entry. */}
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
-            {selectMode ? "Done" : "Select"}
-          </span>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+            <span role='button' tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF', cursor: 'pointer' }}>
+              {selectMode ? 'Done' : 'Select'}
+            </span>
+            {onQuickExit && <SignOut size={24} color='#FFFFFF' role='button' tabIndex={0} style={{ cursor: 'pointer', padding: 4 }} onClick={onQuickExit} aria-label='Quick exit' onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onQuickExit(); } }} />}
+          </div>
         </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
