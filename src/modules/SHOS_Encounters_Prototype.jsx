@@ -1318,13 +1318,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const visibleGroups = groupConsecutive(visible, (e) => monthLabel(e.date));
 
   return (
-    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", overflow: "hidden" }}>
       {/* ADDED — real report: thin vertical border lines already shipped
           on Contacts/My Profile/Medication Dashboard as a deliberate
           desktop-width-cap treatment, but never rolled out to the rest
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 90 }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 90, overflow: "hidden", boxSizing: "border-box" }}>
       {/* CHANGED — real edge-to-edge redesign (researched how other
           apps handle colour under the notch/status bar): the earlier
           env()+8px offset on this wrapper left a permanent neutral
@@ -1403,7 +1403,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
         </div>
         {activeSession && (
-          <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}` }}>
+          <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}`, overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
               <div>
                 <div style={{ fontSize: 11, color: T.encountersPink, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>Live session</div>
@@ -1420,7 +1420,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                     {activeSession.timeline.slice(-5).map((entry) => (
                       <div key={entry.id} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, color: T.textSecondary }}>
                         <span style={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{entry.time}</span>
-                        <span style={{ color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.label}</span>
+                        <span style={{ color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{entry.label}</span>
                       </div>
                     ))}
                   </div>
@@ -1662,7 +1662,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   };
 
   return (
-    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", overflow: "hidden" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to ActivityLanding above. */}
       <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 40 }}>
