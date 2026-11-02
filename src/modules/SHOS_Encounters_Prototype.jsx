@@ -1420,7 +1420,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                     {activeSession.timeline.slice(-5).map((entry) => (
                       <div key={entry.id} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, color: T.textSecondary }}>
                         <span style={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{entry.time}</span>
-                        <span style={{ color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{entry.label}</span>
+                        <span style={{ color: T.textPrimary, wordBreak: "break-word" }}>{entry.label}</span>
                       </div>
                     ))}
                   </div>
