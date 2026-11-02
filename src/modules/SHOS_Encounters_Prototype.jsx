@@ -258,27 +258,27 @@ function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, 
       {showTop && (
         <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Top</div>
-          <TextField label="Hands" value={detail.topHands} onChange={change("topHands")} T={T} type="number" />
-          <TextField label="Depth" value={detail.topDepth} onChange={change("topDepth")} T={T} type="number" />
+          <TextField label="Hands" value={detail.topHands} onChange={change("topHands")} T={T} type="text" />
+          <TextField label="Depth" value={detail.topDepth} onChange={change("topDepth")} T={T} type="text" />
         </div>
       )}
       {showBottom && (
         <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Bottom</div>
-          <TextField label="Fingers" value={detail.bottomFingers} onChange={change("bottomFingers")} T={T} type="number" />
-          <TextField label="Depth" value={detail.bottomDepth} onChange={change("bottomDepth")} T={T} type="number" />
-          <TextField label="Width" value={detail.bottomWidth} onChange={change("bottomWidth")} T={T} type="number" />
+          <TextField label="Fingers" value={detail.bottomFingers} onChange={change("bottomFingers")} T={T} type="text" />
+          <TextField label="Depth" value={detail.bottomDepth} onChange={change("bottomDepth")} T={T} type="text" />
+          <TextField label="Width" value={detail.bottomWidth} onChange={change("bottomWidth")} T={T} type="text" />
         </div>
       )}
       {pack !== "hands" && showMeasure && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <TextField label="Depth" value={detail.depth} onChange={change("depth")} T={T} type="number" />
-          <TextField label="Width" value={detail.width} onChange={change("width")} T={T} type="number" />
+          <TextField label="Depth" value={detail.depth} onChange={change("depth")} T={T} type="text" />
+          <TextField label="Width" value={detail.width} onChange={change("width")} T={T} type="text" />
         </div>
       )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <TextField label="Count" value={detail.count} onChange={change("count")} T={T} type="number" />
-        <TextField label="Minutes" value={detail.durationMinutes} onChange={change("durationMinutes")} T={T} type="number" />
+        <TextField label="Count" value={detail.count} onChange={change("count")} T={T} type="text" />
+        <TextField label="Minutes" value={detail.durationMinutes} onChange={change("durationMinutes")} T={T} type="text" />
       </div>
       <TextField label="Notes" value={detail.notes} onChange={change("notes")} T={T} />
     </div>
@@ -1425,13 +1425,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexDirection: "column" }}>
                 <div
                   role="button"
                   tabIndex={0}
                   onClick={async () => { await SessionRepository.update(activeSession.id, { status: "closed", endAt: nowAsStoredDateTime() }); await syncAllWidgets(); setSessionVersion((version) => version + 1); }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
-                  style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+                  style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", padding: "4px 8px", borderRadius: radius.sm, border: `1px solid ${T.encountersPink}`, textAlign: "center" }}
                 >
                   Close session
                 </div>
@@ -1440,7 +1440,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   tabIndex={0}
                   onClick={async () => { if (confirm("Cancel this session? Encounters already logged will be kept but unlinked from the session.")) { await SessionRepository.delete(activeSession.id); await syncAllWidgets(); setSessionVersion((version) => version + 1); } }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
-                  style={{ color: T.actionRed, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+                  style={{ color: T.actionRed, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", padding: "4px 8px", borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, textAlign: "center" }}
                 >
                   Cancel session
                 </div>
