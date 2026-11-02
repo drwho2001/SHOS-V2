@@ -321,6 +321,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   // already being open for this specific medication — doesn't need
   // the app-wide single-open tracking `menuOpen` uses.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dismissedRefill, setDismissedRefill] = useState(false);
   const stock = computeStock(med);
   const adherence = computeAdherence(med);
   const lastDose = latestLogOfType(med, "dose");
@@ -514,10 +515,11 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
               <><Check size={14} color={T.actionGreen} /><span style={{ color: T.actionGreen, fontWeight: 600 }}>{tr("medication.logged", "Logged")}</span></>
             ) : justCompleted === "requested" ? (
               <><Check size={14} color={T.medsBlue} /><span style={{ color: T.medsBlue, fontWeight: 600 }}>{tr("medication.markedAsRequested", "Marked as requested")}</span></>
-            ) : requested ? (
-              <><Clock size={14} color={T.textSecondary} /><span style={{ color: T.textSecondary, fontWeight: 600 }}>Requested {daysFromNow(med.refillRequestedAt)} — awaiting refill</span></>
+            ) : requested && !dismissedRefill ? (
+              <><Clock size={14} color={T.textSecondary} /><span style={{ color: T.textSecondary, fontWeight: 600 }}>Requested {daysFromNow(med.refillRequestedAt)} - awaiting refill</span>
+                <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setDismissedRefill(true); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDismissedRefill(true); } }} style={{ marginLeft: 6, cursor: "pointer", color: T.textDisabled, fontSize: 12, fontWeight: 700 }} aria-label="Dismiss">x</span></>
             ) : stock.needsAction ? (
-              <><AlertTriangle size={14} color={T.actionRed} /><span style={{ color: T.actionRed, fontWeight: 600 }}>{stock.currentStock <= 0 ? "Out of stock" : `Refill needed — ≤ ${med.refillThreshold} left`}</span></>
+              <><AlertTriangle size={14} color={T.actionRed} /><span style={{ color: T.actionRed, fontWeight: 600 }}>{stock.currentStock <= 0 ? "Out of stock" : `Refill needed - ${med.refillThreshold} left`}</span></>
             ) : (
               <span style={{ color: T.textSecondary }}>{stock.supplementary}</span>
             )}
