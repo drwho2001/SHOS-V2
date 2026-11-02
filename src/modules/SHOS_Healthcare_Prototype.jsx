@@ -235,24 +235,14 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           lives in the banner's own top padding instead, so its colour
           fills all the way up while the title/icons stay safely below
           the notch. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
           {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
         </div>
-      </div>
-      <div style={{ padding: "14px 16px 0", background: T.bg }}>
-        {/* CHANGED — real ask: "ensure all six sit in two rows of three
-            cleanly. Use relative width to adjust text/button size to
-            fit." flex-wrap let each pill size to its own content,
-            which wrapped unevenly depending on label length. A real
-            3-column grid guarantees the same clean 2-row layout
-            regardless of screen width or label length — cells are
-            equal width (1fr each) and text wraps to a second line
-            in-place rather than overflowing or forcing the grid to
-            reflow. */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+        <div style={{ padding: "0 16px 10px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
           {[
             { key: "testing", label: tr("healthcare.testing", "Testing") },
             { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
@@ -277,6 +267,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             </div>
           ))}
         </div>
+      </div>
+      <div style={{ padding: "14px 16px 0", background: T.bg }}>
         {/* CHANGED — real fix: moved to its own row below the sub-tab
             pills, instead of squeezed alongside them in one row —
             same entry points (Timeline/Attachments/Clinic Card),
@@ -381,6 +373,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           </div>
         </div>
       )}
+      </div>
       </div>
     </div>
   );
