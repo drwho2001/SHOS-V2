@@ -64,8 +64,8 @@ export const STORAGE_KEY = "shos_contacts";
 // not the schema itself — see the AI Development page for the dated
 // entry. If this ever gets ported back to Notion, this comment is the
 // pointer to why the two don't match.
-export const HOSTS_OPTIONS = ["Yes", "Sometimes", "No"];
-export const TRAVELS_OPTIONS = ["Yes", "Sometimes", "No"];
+export const HOSTS_OPTIONS = ["Yes", "Sometimes", "No", "Unknown"];
+export const TRAVELS_OPTIONS = ["Yes", "Sometimes", "No", "Unknown"];
 // ADDED 18 Aug 2026 — the user's ask: capture HOW someone travels, not just
 // whether they do. Multi-select, since someone might use different
 // modes depending on the day (car sometimes, public transport other
@@ -91,10 +91,10 @@ export const READILY_AVAILABLE_OPTIONS = ["Readily available", "Inaccessible", "
 // Same option strings preserved there, so existing contacts' stored
 // values are unaffected.
 export const MEET_AGAIN_OPTIONS = ["Yes", "Tentatively", "No"];
-export const LENGTH_OPTIONS = ["Short", "Average", "Long"];
+export const LENGTH_OPTIONS = ["Micro", "Short", "Average", "Long", "XXL"];
 // CHANGED 18 Aug 2026 — renamed Thickness → Girth (the user's ask: name
 // should say what it measures). Values unchanged.
-export const GIRTH_OPTIONS = ["Skinny", "Average", "Thick"];
+export const GIRTH_OPTIONS = ["Micro", "Skinny", "Average", "Thick", "XXL"];
 // CHANGED 18 Aug 2026 — simplified to the top-level state only. The
 // old flat list mixed circumcision status with foreskin FIT ("Loose",
 // "Too tight") as if they were the same kind of thing. The user's ask:

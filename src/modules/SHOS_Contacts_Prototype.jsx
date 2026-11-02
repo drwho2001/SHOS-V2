@@ -2959,11 +2959,16 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // filter UI for it is a better fit once the flagged Kink Registry
   // management screen exists, rather than a second, narrower mechanism
   // built just for this list.
-  const [filterRoles, setFilterRoles] = useState([]);
-  const [filterPositions, setFilterPositions] = useState([]);
+  const [filterRoles, setFilterRoles] = useState(() => { try { return JSON.parse(localStorage.getItem("shos_contact_filter_roles") || "[]"); } catch { return []; } });
+  const [filterPositions, setFilterPositions] = useState(() => { try { return JSON.parse(localStorage.getItem("shos_contact_filter_positions") || "[]"); } catch { return []; } });
   // ADDED 26 Aug 2026 — real ask: filter by drives/accommodation too.
-  const [filterHosts, setFilterHosts] = useState([]);
-  const [filterDrives, setFilterDrives] = useState(false);
+  const [filterHosts, setFilterHosts] = useState(() => { try { return JSON.parse(localStorage.getItem("shos_contact_filter_hosts") || "[]"); } catch { return []; } });
+  const [filterDrives, setFilterDrives] = useState(() => { try { return JSON.parse(localStorage.getItem("shos_contact_filter_drives") || "false"); } catch { return false; } });
+  // Persist filters so they survive navigation
+  useEffect(() => { localStorage.setItem("shos_contact_filter_roles", JSON.stringify(filterRoles)); }, [filterRoles]);
+  useEffect(() => { localStorage.setItem("shos_contact_filter_positions", JSON.stringify(filterPositions)); }, [filterPositions]);
+  useEffect(() => { localStorage.setItem("shos_contact_filter_hosts", JSON.stringify(filterHosts)); }, [filterHosts]);
+  useEffect(() => { localStorage.setItem("shos_contact_filter_drives", JSON.stringify(filterDrives)); }, [filterDrives]);
   const activeFilterCount = filterRoles.length + filterPositions.length + filterHosts.length + (filterDrives ? 1 : 0);
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
   // — resolved once here (loaded, not per keystroke), read synchronously
