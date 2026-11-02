@@ -10,7 +10,7 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
-import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar } from "@phosphor-icons/react";
+import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -33,7 +33,7 @@ const TimelineModule = lazy(() => import("./SHOS_Timeline_Prototype"));
 // Healthcare is one, so the only reason the Clinic Card route to My Profile had
 // a dead U=U link is that this signature dropped it. See ClinicCardScreen's own
 // mount below for the second half.
-function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink, onOpenGlossary, onOpenCalendar }) {
+function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink, onOpenGlossary, onOpenCalendar, onQuickExit }) {
   const { t: tr } = useTranslation();
   // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
   // position with Vaccinations, ensure all six sit in two clean rows
@@ -237,7 +237,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           the notch. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px" }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
-        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
+          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+        </div>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
         {/* CHANGED — real ask: "ensure all six sit in two rows of three

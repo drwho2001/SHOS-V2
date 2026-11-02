@@ -1136,7 +1136,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
 }
 
 // ── 3a. Activity Landing ──
-function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, onQuickExit }) {
   const { t: tr } = useTranslation();
   const contacts = useLoadedMemo(loadContacts, [], []);
   // ADDED — real bug report: Anonymise mode masked Contacts but not
@@ -2412,7 +2412,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
       <ActivityLanding T={T}
         onOpenEncounter={(id) => setScreen({ name: "detail", id })}
         onAdd={(sessionId = "") => setScreen({ name: "edit", id: null, sessionId })}
-        encounters={encounters} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
+        encounters={encounters} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} onQuickExit={onQuickExit} />
     );
   } else if (screen.name === "detail") {
     screenContent = (
