@@ -1317,7 +1317,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const visibleGroups = groupConsecutive(visible, (e) => monthLabel(e.date));
 
   return (
-    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {/* ADDED — real report: thin vertical border lines already shipped
           on Contacts/My Profile/Medication Dashboard as a deliberate
           desktop-width-cap treatment, but never rolled out to the rest
