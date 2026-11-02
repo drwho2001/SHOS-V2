@@ -29,6 +29,10 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
         aria-label={ariaLabel}
         aria-orientation="horizontal"
         style={{
+          position: "sticky",
+          top: "calc(env(safe-area-inset-top) + 58px)",
+          zIndex: 5,
+          background: surface,
           display: "flex",
           gap: 6,
           overflowX: "auto",
