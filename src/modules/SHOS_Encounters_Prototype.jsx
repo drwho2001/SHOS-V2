@@ -1335,7 +1335,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           while the title/icons stay safely below the notch. This
           outer wrapper's T.bg background is now effectively unused
           (zero height above the inner banner) but harmless to leave. */}
-      <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
+      <div style={{ position: "sticky", top: 0, background: T.encountersPink, zIndex: 5 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
         {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
             with the module's own colour, same pattern applied across
             every module this pass. */}
@@ -1418,9 +1418,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                 {activeSession.timeline.length > 0 && (
                   <div style={{ marginTop: 8, display: "grid", gap: 2 }}>
                     {activeSession.timeline.slice(-5).map((entry) => (
-                      <div key={entry.id} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, color: T.textSecondary }}>
+                      <div key={entry.id} style={{ display: "flex", gap: 6, alignItems: "baseline", fontSize: 11, color: T.textSecondary, flexWrap: "wrap" }}>
                         <span style={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{entry.time}</span>
-                        <span style={{ color: T.textPrimary, wordBreak: "break-word" }}>{entry.label}</span>
+                        <span style={{ color: T.textPrimary, wordBreak: "break-word", flex: "1 1 0", minWidth: 0 }}>{entry.label}</span>
                       </div>
                     ))}
                   </div>
