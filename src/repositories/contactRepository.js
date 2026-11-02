@@ -171,6 +171,8 @@ export const DEFAULT_CONTACT = {
   // ADDED — real ask: trans/hetero inclusivity, same field as My
   // Profile's own gender addition — see that repository's comment.
     gender: "",
+    // ADDED 2 Nov 2026 - piercings and tattoos
+    piercings: "", tattoos: "",
     // ADDED 29 Sep 2026 (t025) - HIV status as a RECORDED FACT, on Contacts as
     // well as My Profile. Partner notification already operates on the
     // assumption that someone's status matters to someone else's decisions, so

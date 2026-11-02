@@ -2186,6 +2186,11 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           <CummerRow T={T} label="Ejaculation — frequency" form={form} set={set} options={CUMMER_FREQUENCY_OPTIONS} />
           <CummerRow T={T} label="Ejaculation — volume" form={form} set={set} options={CUMMER_VOLUME_OPTIONS} />
           <CummerRow T={T} label="Ejaculation — style" form={form} set={set} options={CUMMER_STYLE_OPTIONS} />
+          {/* ADDED 2 Nov 2026 — piercings and tattoos */}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <TextField T={T} label="Piercings" value={form.piercings} onChange={set("piercings")} placeholder="e.g. Prince Albert, nipple" />
+            <TextField T={T} label="Tattoos" value={form.tattoos} onChange={set("tattoos")} placeholder="e.g. sleeve, tribal" />
+          </div>
           </>
           )}
           {/* FIXED 27 Sep 2026 — the escape hatch this gate never had. Same
