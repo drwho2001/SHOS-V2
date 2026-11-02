@@ -254,7 +254,6 @@ function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, 
         T={T}
         contacts={contacts}
         anonymise={anonymise}
-        onCreatePlaceholder={createPlaceholderContact}
       />
       {showTop && (
         <div style={{ marginTop: 8 }}>
@@ -2103,10 +2102,9 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
           {sessions.find((s) => s.id === form.sessionId)?.status === "active" ? " (active)" : " (closed)"}
         </div>
       )}
+{draftRestored && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "10px 16px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
           <span>{tr("encounters.draftRestored", "Restored unsaved changes from earlier.")}</span>
-          {/* ADDED 19 Aug 2026 — same "discard and start clean" option
-              Contacts got, same reasoning. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER, sessionId: initialSessionId } : await EncounterRepository.getById(encounterId)); }}
             style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
             Clear & start fresh
