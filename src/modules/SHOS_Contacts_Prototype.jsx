@@ -2129,7 +2129,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           <SelectField T={T} label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} />
           <SelectField T={T} label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} />
           {(form.travels === "Yes" || form.travels === "Sometimes") && (
-            <MultiSelectChips T={T} label="Travel mode" value={form.travelMode} onChange={set("travelMode")} options={TRAVEL_MODE_OPTIONS} />
+            <MultiSelectChips T={T} label="Travel mode" value={form.travelMode} onChange={(v) => { set("travelMode")(v); if (Array.isArray(v) && v.includes("Car")) set("drives")(true); }} options={TRAVEL_MODE_OPTIONS} />
           )}
           <AddressAutocomplete T={T} label="Address" value={form.address} onChange={set("address")}
             placeholder="Start typing an address..." onCityDetected={set("city")} />
