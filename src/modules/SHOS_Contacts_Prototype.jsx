@@ -2340,11 +2340,13 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
-        {!isNew && (
-          <SectionCard T={T} title="Linked contacts">
+        <SectionCard T={T} title="Linked contacts">
+          {form.id ? (
             <LinkedContactsField T={T} contactId={form.id} allContacts={contacts} refresh={refresh} />
-          </SectionCard>
-        )}
+          ) : (
+            <div style={{ fontSize: 12, color: T.textSecondary, fontStyle: "italic" }}>Save this contact first, then you can link other contacts to it.</div>
+          )}
+        </SectionCard>
         </div>
         </FormTabs>
         </div>
