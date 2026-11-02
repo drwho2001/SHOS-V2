@@ -1426,7 +1426,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexDirection: "column" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <div
                   role="button"
                   tabIndex={0}
