@@ -1434,7 +1434,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
                   style={{ color: T.encountersPink, fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", padding: "4px 8px", borderRadius: radius.sm, border: `1px solid ${T.encountersPink}`, textAlign: "center" }}
                 >
-                  Close session
+                  End session
                 </div>
                 <div
                   role="button"
