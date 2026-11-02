@@ -1334,31 +1334,15 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           while the title/icons stay safely below the notch. This
           outer wrapper's T.bg background is now effectively unused
           (zero height above the inner banner) but harmless to leave. */}
-      <div style={{ position: "sticky", top: 0, background: T.encountersPink, zIndex: 5 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
-        {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
-            with the module's own colour, same pattern applied across
-            every module this pass. */}
-        {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
-            softened the sharp corners/stark border, same treatment as
-            Contacts'/Healthcare's/Medication's own screen-title banners. */}
-        <div style={{ background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {/* CHANGED — real accessibility gap found via a full axe
-              scan (page-has-heading-one): Encounters was missed by the
-              earlier heading pass, which only covered 6 named primary
-              screens — this is a 7th. Same real <h1> treatment, same
-              margin:0 to avoid the browser's own default heading
-              margin adding unwanted spacing. */}
-          <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
-          {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
-              matching Medication's pattern — long-press stays as an
-              additional quick entry. */}
-          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-            <span role='button' tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF', cursor: 'pointer' }}>
-              {selectMode ? 'Done' : 'Select'}
-            </span>
-            {onQuickExit && <SignOut size={24} color='#FFFFFF' role='button' tabIndex={0} style={{ cursor: 'pointer', padding: 4 }} onClick={onQuickExit} aria-label='Quick exit' onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onQuickExit(); } }} />}
-          </div>
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
+            {selectMode ? "Done" : "Select"}
+          </span>
+          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
         </div>
+      </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1582,7 +1566,6 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         <div onClick={() => onAdd()} role="button" tabIndex={0} aria-label="Add encounter" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, color: T.fabIcon, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
-      </div>
       </div>
     </div>
   );
