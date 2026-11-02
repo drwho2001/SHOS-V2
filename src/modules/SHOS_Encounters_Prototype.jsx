@@ -254,17 +254,18 @@ function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, 
         T={T}
         contacts={contacts}
         anonymise={anonymise}
+        onCreatePlaceholder={createPlaceholderContact}
       />
       {showTop && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Top</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Top (you)</div>
           <TextField label="Hands" value={detail.topHands} onChange={change("topHands")} T={T} type="text" />
           <TextField label="Depth" value={detail.topDepth} onChange={change("topDepth")} T={T} type="text" />
         </div>
       )}
       {showBottom && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Bottom</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>Bottom (you)</div>
           <TextField label="Fingers" value={detail.bottomFingers} onChange={change("bottomFingers")} T={T} type="text" />
           <TextField label="Depth" value={detail.bottomDepth} onChange={change("bottomDepth")} T={T} type="text" />
           <TextField label="Width" value={detail.bottomWidth} onChange={change("bottomWidth")} T={T} type="text" />
@@ -272,8 +273,8 @@ function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, 
       )}
       {pack !== "hands" && showMeasure && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <TextField label="Depth" value={detail.depth} onChange={change("depth")} T={T} type="text" />
-          <TextField label="Width" value={detail.width} onChange={change("width")} T={T} type="text" />
+          <TextField label="Depth (you)" value={detail.depth} onChange={change("depth")} T={T} type="text" />
+          <TextField label="Width (you)" value={detail.width} onChange={change("width")} T={T} type="text" />
         </div>
       )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
