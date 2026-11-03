@@ -241,6 +241,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // medication has a logged refill, so there is nothing to measure a container
   // from - and this app shows no empty rings on a fresh install.
   const [containerAdherence, setContainerAdherence] = useState(null);
+  const [encounterPostCount, setEncounterPostCount] = useState(3);
+  const [encounterPreCount, setEncounterPreCount] = useState(1);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
   // ADDED 15 Sep 2026 — real report: back-navigation-to-Clinic-Card fix,
@@ -1097,6 +1099,22 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
           />
         ) : null;
+        const encounterRiskRing = (encounterPostCount > 0 || encounterPreCount > 0) ? (
+          <div key="encounterRisk" style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260 }}>
+            <div style={{ position: "relative", width: isDesktopWidth ? 96 : 64, height: isDesktopWidth ? 96 : 64, flexShrink: 0 }}>
+              <svg width={isDesktopWidth ? 96 : 64} height={isDesktopWidth ? 96 : 64} viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }}>
+                <circle cx="50" cy="50" r="42" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="132 264" strokeDashoffset="-66" strokeLinecap="round" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="53 211" strokeDashoffset="-145" strokeLinecap="round" />
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounterPostCount}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: "#ec4899" }}>Encounter risk</span>
+              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Since last test: post-test at-risk; pre-test inside incubation window.</span>
+            </div>
+          </div>
+        ) : null;
         const cardStyle = { display: "flex", flexWrap: "wrap", gap: 16, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "24px 20px" };
         return (
           <>
@@ -1119,8 +1137,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               // Mobile is untouched below — the exact prior single-card
               // markup, byte-for-byte.
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16, marginBottom: 24 }}>
-      {(testingRing || adherenceRing || containerRing) && (
-        <div style={cardStyle}>{testingRing}{adherenceRing}{containerRing}</div>
+      {(testingRing || adherenceRing || containerRing || encounterRiskRing) && (
+        <div style={cardStyle}>{testingRing}{adherenceRing}{containerRing}{encounterRiskRing}</div>
       )}
                 {(cycleRing || contraRing) && (
                   <div style={cardStyle}>{cycleRing}{contraRing}</div>
@@ -1128,7 +1146,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               </div>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
-                {testingRing}{adherenceRing}{containerRing}{cycleRing}{contraRing}
+                {testingRing}{adherenceRing}{containerRing}{encounterRiskRing}{cycleRing}{contraRing}
               </div>
             )}
             </section>
