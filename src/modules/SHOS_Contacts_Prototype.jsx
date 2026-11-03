@@ -1541,6 +1541,11 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   // original reason for this filter is gone — showing the full list
   // again, same as the detail-view header already does.
   const methods = getContactableVia(contact);
+  // Resolve the optional component in this scope, rather than declaring a
+  // JSX component inside an inline IIFE. This also makes the no-icon case
+  // explicit in React's render tree.
+  const transportIconComponent = getTransportIcon(contact);
+  const transportLabel = getTransportLabel(contact);
   // ADDED 18 Aug 2026 — real "active" status, replacing the leading dot
   // that used to just be a fixed decorative teal bullet. DEFINITION,
   // a judgment call flagged explicitly since the user's ask didn't specify
@@ -1747,14 +1752,17 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             panel as the active-status dot), plus a real title/aria-label
             for a hover or screen-reader user. */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          if (!TransportIcon) return null;
-          const label = getTransportLabel(contact);
-          return (
-            <TransportIcon size={20} color={T.textSecondary} role="button" tabIndex={0} title={label} aria-label={`${label} — tap for details`} style={{ padding: 4, cursor: "pointer" }}
-              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }} />
-          );
-        })()}
+          {transportIconComponent && React.createElement(transportIconComponent, {
+            size: 20,
+            color: T.textSecondary,
+            role: "button",
+            tabIndex: 0,
+            title: transportLabel,
+            "aria-label": `${transportLabel} — tap for details`,
+            style: { padding: 4, cursor: "pointer" },
+            onClick: (e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); },
+            onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } },
+          })}
         {/* ADDED 18 Aug 2026 — hosts/travels indicator, the user's ask:
             "house or car icon" — House if they host, an icon if they'll
             travel to you instead. Mutually exclusive (hosts takes

@@ -1323,7 +1323,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           desktop-width-cap treatment, but never rolled out to the rest
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 90, overflow: "hidden", boxSizing: "border-box" }}>
+        <div style={{ width: "100%", minWidth: 0, maxWidth: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 90, boxSizing: "border-box" }}>
       {/* CHANGED — real edge-to-edge redesign (researched how other
           apps handle colour under the notch/status bar): the earlier
           env()+8px offset on this wrapper left a permanent neutral
@@ -1390,8 +1390,8 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         </div>
         {activeSession && (
           <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}`, overflow: "hidden" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
-              <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch", minWidth: 0, width: "100%" }}>
+              <div style={{ minWidth: 0, width: "100%" }}>
                 <div style={{ fontSize: 11, color: T.encountersPink, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>Live session</div>
                 <div style={{ marginTop: 3, fontSize: 15, color: T.textPrimary, fontWeight: 800 }}>{activeSession.title || "Untitled session"}</div>
                 <div style={{ marginTop: 3, fontSize: 12, color: T.textSecondary }}>
@@ -1412,7 +1412,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", width: "100%" }}>
                 <div
                   role="button"
                   tabIndex={0}
