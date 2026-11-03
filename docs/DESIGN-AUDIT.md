@@ -31,7 +31,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | P1 blocking | 5 |
 | P2 dark-mode / colour | 8 |
 | P3 inconsistency | 17 |
-| P4 accessibility | 4 |
+| P4 accessibility | 5 |
 | Web/PWA specific | 1 |
 | Investigated and **not** defects | 12 |
 | Manual corrections needed | 12 |
@@ -395,6 +395,12 @@ Manual §5.1 states: "Do not put `minHeight: 44` on an inline SVG icon. It scale
 
 **Fix.** A codemod that moves `minHeight: 44` from the icon's style to its parent container's style, replacing the icon's own with `padding`/`margin`. High-risk on dense rows; do file-by-file with a screenshot check per module.
 
+### D5 · Four settings screens animate toggles without respecting reduced motion
+
+`AutomaticBackupsScreen.jsx`, `DataNetworkScreen.jsx`, `DesignScreen.jsx` and `PrivacyScreen.jsx` render toggle switches with `transition: "left 0.15s"` / `"background 0.15s"` and do not import `useReducedMotion`. The other nine settings screens that use the same toggle pattern do check it. Manual §12 requires reduced motion to be respected.
+
+**Fix.** Add `const reducedMotion = useReducedMotion();` and make each transition conditional, matching the pattern in the other nine screens.
+
 ---
 
 ## 6. Investigated and **not** defects
@@ -516,8 +522,8 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 These are violations the manual's rules would catch but this pass did not check. Listed so the next pass has a starting point; none is claimed as clean.
 
 - **`minHeight: 44` on inline SVGs** (manual §5.1): `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, and many others (117 occurrences of `minHeight: 44` in total, a large fraction on Phosphor icons).
-- **Hardcoded hex beyond the cited sites:** `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
-- **RADIUS literals beyond 14** (see C11's scope note): 12, 10, 8, 4 used as `borderRadius` values.
+- **Hardcoded hex beyond the cited sites:** 495 hex literals across 41 files. Examples: `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
+- **RADIUS literals beyond 14** (see C11's scope note): 299 `borderRadius: <number>` sites across 41 files using 12, 10, 8, 4.
 - **FONT_FAMILY bypass:** most screens use the literal `"'Inter', sans-serif"` rather than the token. Visually identical but token drift.
 - (Resolved above: dark companions for Home and Menstrual are now part of B8.)
 - **Reduced motion, empty/loading/error states** (manual §10.5, §12): explicitly excluded from this pass.
