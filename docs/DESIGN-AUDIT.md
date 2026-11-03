@@ -390,7 +390,7 @@ Same site as C3. The input has no height, padding, or container, so the tappable
 
 ### D3 · Module-banner icon buttons are 32 dp, not 44 dp
 
-Home's header icons (`:908`, `:914`, `:918`, `:927`, `:930`) are `size: 24` with `padding: 4` → **32 × 32 dp**. Encounters' and Healthcare's Quick exit use `padding: 4` with no `minHeight`. Only Contacts and Medication add `minHeight: 44`, and even they stay 32 dp wide.
+Home's header icons (`:910`, `:916`, `:920`, `:929`, `:932`) are `size: 24` with `padding: 4` → **32 × 32 dp**. Encounters' and Healthcare's Quick exit use `padding: 4` with no `minHeight`. Only Contacts and Medication add `minHeight: 44`, and even they stay 32 dp wide.
 
 The manual states 44 dp twice (§5.1 and §12). The most-used controls in the app miss it.
 
