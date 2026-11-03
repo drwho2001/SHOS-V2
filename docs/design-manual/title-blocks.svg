@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-label="SHOS title blocks">
+  <rect width="920" height="420" fill="#F0F0F3"/>
+  <text x="32" y="44" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1B1B1F">Title blocks</text>
+
+  <rect x="32" y="72" width="410" height="76" rx="13" fill="#008585"/>
+  <text x="52" y="118" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">Module banner</text>
+  <text x="52" y="138" font-family="Inter, sans-serif" font-size="12" fill="rgba(255,255,255,0.8)">screenTitle on module accent</text>
+
+  <rect x="478" y="72" width="410" height="64" rx="0" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="498" y="110" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#1B1B1F">Settings / drill-down header</text>
+  <text x="498" y="128" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">subScreenTitle, sticky at top: 0 in settings root</text>
+
+  <rect x="32" y="176" width="410" height="64" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="52" y="208" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#003B6F">Add / edit sheet</text>
+  <text x="52" y="228" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">sheetTitle on white/full-bleed surface</text>
+
+  <rect x="478" y="176" width="410" height="180" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="498" y="208" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#008585" letter-spacing="0.5">SECTION LABEL</text>
+  <rect x="498" y="224" width="370" height="42" rx="8" fill="#F0F0F3"/>
+  <text x="510" y="250" font-family="Inter, sans-serif" font-size="14" fill="#1B1B1F">Field group or record block</text>
+  <text x="498" y="292" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#008585" letter-spacing="0.5">ANOTHER GROUP</text>
+  <rect x="498" y="308" width="370" height="42" rx="8" fill="#F0F0F3"/>
+
+  <text x="32" y="392" font-family="Inter, sans-serif" font-size="11" fill="#5B5B62">Use one title role per visual level. Do not mix sheetTitle and subScreenTitle on the same screen.</text>
+</svg>

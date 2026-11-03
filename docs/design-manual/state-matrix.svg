@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="360" viewBox="0 0 920 360" role="img" aria-label="SHOS control states">
+  <rect width="920" height="360" fill="#F0F0F3"/>
+  <text x="32" y="44" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1B1B1F">Control states</text>
+
+  <g font-family="Inter, sans-serif" font-size="12" font-weight="600">
+    <rect x="32" y="72" width="132" height="40" rx="20" fill="#003B6F"/><text x="54" y="97" fill="#FFFFFF">Default</text>
+    <rect x="180" y="72" width="132" height="40" rx="20" fill="#003B6F" opacity="0.85"/><text x="202" y="97" fill="#FFFFFF">Pressed</text>
+    <rect x="328" y="72" width="132" height="40" rx="20" fill="#FFFFFF" stroke="#003B6F"/><text x="350" y="97" fill="#003B6F">Secondary</text>
+    <rect x="476" y="72" width="132" height="40" rx="20" fill="#FFFFFF" stroke="#DCDCE1"/><text x="498" y="97" fill="#656568">Disabled</text>
+    <rect x="624" y="72" width="132" height="40" rx="20" fill="#148A1E"/><text x="646" y="97" fill="#FFFFFF">Success</text>
+    <rect x="772" y="72" width="116" height="40" rx="20" fill="#D93838"/><text x="794" y="97" fill="#FFFFFF">Error</text>
+  </g>
+
+  <rect x="32" y="140" width="856" height="92" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="52" y="170" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#1B1B1F">Loading / empty / error states</text>
+  <rect x="52" y="186" width="250" height="34" rx="8" fill="#F0F0F3"/>
+  <text x="64" y="208" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Loading: skeleton or spinner, same card shape</text>
+  <rect x="320" y="186" width="250" height="34" rx="8" fill="#F0F0F3"/>
+  <text x="332" y="208" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Empty: icon + one sentence + optional action</text>
+  <rect x="588" y="186" width="280" height="34" rx="8" fill="#F0F0F3"/>
+  <text x="600" y="208" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Error: red accent only for the failed action</text>
+
+  <rect x="32" y="256" width="856" height="72" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="52" y="286" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#1B1B1F">Focus and selection</text>
+  <text x="52" y="308" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Visible focus ring; selected rows use module accent border/background tint; disabled controls keep layout.</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="300" viewBox="0 0 920 300" role="img" aria-label="SHOS elevation">
+  <rect width="920" height="300" fill="#F0F0F3"/>
+  <text x="32" y="44" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1B1B1F">Borders and elevation</text>
+
+  <rect x="40" y="80" width="250" height="150" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="60" y="110" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="#1B1B1F">Flat card</text>
+  <text x="60" y="134" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">1px border, RADIUS.md, no shadow</text>
+
+  <rect x="335" y="74" width="250" height="150" rx="13" fill="#FFFFFF" stroke="#DCDCE1" style="filter: drop-shadow(0 4px 16px rgba(0,0,0,0.12));"/>
+  <text x="355" y="110" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="#1B1B1F">Raised card</text>
+  <text x="355" y="134" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Used for FABs, toasts, overlays</text>
+
+  <rect x="630" y="68" width="250" height="150" rx="24" fill="#FFFFFF" stroke="#DCDCE1" style="filter: drop-shadow(0 8px 24px rgba(0,0,0,0.18));"/>
+  <text x="650" y="110" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="#1B1B1F">Overlay / sheet</text>
+  <text x="650" y="134" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Larger radius and stronger shadow</text>
+
+  <text x="40" y="268" font-family="Inter, sans-serif" font-size="11" fill="#5B5B62">Prefer borders for cards. Reserve shadows for floating or overlay surfaces.</text>
+</svg>

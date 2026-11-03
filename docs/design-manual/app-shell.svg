@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="760" viewBox="0 0 420 760" role="img" aria-label="SHOS app shell">
+  <rect width="420" height="760" fill="#F0F0F3"/>
+  <rect x="0" y="0" width="420" height="72" fill="#008585"/>
+  <text x="24" y="46" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">SHOS</text>
+  <circle cx="372" cy="36" r="18" fill="rgba(255,255,255,0.18)"/>
+  <text x="365" y="42" font-family="Inter, sans-serif" font-size="12" fill="#FFFFFF">⚙</text>
+
+  <rect x="16" y="96" width="388" height="112" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="32" y="124" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#008585" letter-spacing="0.5">RECENT ACTIVITY</text>
+  <rect x="32" y="140" width="356" height="48" rx="8" fill="#F0F0F3"/>
+
+  <rect x="16" y="224" width="388" height="150" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="32" y="252" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#008585" letter-spacing="0.5">SUMMARY</text>
+  <rect x="32" y="270" width="168" height="88" rx="8" fill="#F0F0F3"/>
+  <rect x="220" y="270" width="168" height="88" rx="8" fill="#F0F0F3"/>
+
+  <rect x="0" y="640" width="420" height="120" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <g font-family="Inter, sans-serif" font-size="10" font-weight="600" text-anchor="middle">
+    <text x="42" y="700" fill="#656568">Contacts</text>
+    <text x="126" y="700" fill="#656568">Encounter</text>
+    <circle cx="210" cy="678" r="28" fill="#008585"/>
+    <text x="210" y="683" fill="#FFFFFF" font-size="12">Home</text>
+    <text x="294" y="700" fill="#656568">Medication</text>
+    <text x="378" y="700" fill="#656568">Healthcare</text>
+  </g>
+  <text x="24" y="738" font-family="Inter, sans-serif" font-size="10" fill="#5B5B62">Illustrative shell only. Home is the raised centre tab; other tab accents are module accents.</text>
+</svg>

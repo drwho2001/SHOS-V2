@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="330" viewBox="0 0 920 330" role="img" aria-label="SHOS spacing scale">
+  <rect width="920" height="330" fill="#F0F0F3"/>
+  <text x="32" y="44" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1B1B1F">Spacing scale</text>
+  <text x="32" y="70" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Observed common values in the app. Proposed standard scale is 4, 8, 12, 16, 20, 24, 32.</text>
+
+  <g font-family="Inter, sans-serif" font-size="11" fill="#1B1B1F">
+    <rect x="32" y="96" width="40" height="24" rx="4" fill="#008585"/><text x="82" y="113">4px — tight gaps, icon padding</text>
+    <rect x="32" y="132" width="80" height="24" rx="4" fill="#008585"/><text x="122" y="149">8px — control gaps, compact rows</text>
+    <rect x="32" y="168" width="120" height="24" rx="4" fill="#008585"/><text x="162" y="185">12px — card padding, form spacing</text>
+    <rect x="32" y="204" width="160" height="24" rx="4" fill="#008585"/><text x="202" y="221">16px — screen horizontal padding</text>
+    <rect x="32" y="240" width="200" height="24" rx="4" fill="#008585"/><text x="242" y="257">20px — section gaps, banners</text>
+    <rect x="32" y="276" width="240" height="24" rx="4" fill="#008585"/><text x="282" y="293">24px+ — major section separation</text>
+  </g>
+</svg>

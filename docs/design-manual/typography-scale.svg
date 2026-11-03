@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-label="SHOS typography scale">
+  <rect width="920" height="560" fill="#F0F0F3"/>
+  <text x="32" y="44" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1B1B1F">Typography scale</text>
+  <text x="32" y="70" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Fonts: Inter (body) and JetBrains Mono (utility). Source: src/calculations/designTokens.js TYPE.</text>
+
+  <g font-family="Inter, sans-serif" fill="#1B1B1F">
+    <text x="32" y="120" font-size="22" font-weight="700">Screen title — 22 / 700</text>
+    <text x="32" y="156" font-size="20" font-weight="700">Record title — 20 / 700</text>
+    <text x="32" y="190" font-size="16" font-weight="700">Sub-screen title — 16 / 700</text>
+    <text x="32" y="222" font-size="18" font-weight="700">Sheet title — 18 / 700</text>
+    <text x="32" y="252" font-size="12" font-weight="700" letter-spacing="0.5" text-transform="uppercase">SECTION LABEL — 12 / 700</text>
+    <text x="32" y="286" font-size="14" font-weight="400">Body text — 14 / 400. Used for most readable content and supporting detail.</text>
+    <text x="32" y="312" font-size="14" font-weight="600">Body emphasis — 14 / 600. Used for labels, values, and short calls to action.</text>
+    <text x="32" y="338" font-size="12" font-weight="400" fill="#5B5B62">Caption — 12 / 400. Secondary information, timestamps, helper text.</text>
+    <text x="32" y="364" font-size="12" font-weight="600" fill="#5B5B62">Caption emphasis — 12 / 600. Status labels and compact metadata.</text>
+  </g>
+
+  <text x="32" y="410" font-family="JetBrains Mono, monospace" font-size="12" fill="#1B1B1F">Mono label — 12 / JetBrains Mono. Use for identifiers, codes, and technical values.</text>
+
+  <rect x="32" y="440" width="856" height="88" rx="13" fill="#FFFFFF" stroke="#DCDCE1"/>
+  <text x="52" y="472" font-family="Inter, sans-serif" font-size="12" font-weight="700" fill="#1B1B1F">Title hierarchy</text>
+  <text x="52" y="496" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Primary module banner: screenTitle. Drill-down/settings: subScreenTitle. Full-bleed add/edit sheet: sheetTitle.</text>
+  <text x="52" y="516" font-family="Inter, sans-serif" font-size="12" fill="#5B5B62">Grouped fields: sectionLabel. Record content: body/bodyEmphasis. Supporting text: caption/captionEmphasis.</text>
+</svg>
