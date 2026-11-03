@@ -2340,7 +2340,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             top padding, so only the title/icons — not the colour — sit
             below the notch. */}
         <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
-          <div style={{ background: T.medsBlue, padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("medication.title", "Medication")}</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
@@ -2357,7 +2357,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
           </div>
           </div>
-          <div style={{ background: T.bg, padding: "6px 16px 0", borderTop: `1px solid ${T.border}` }}>
+          <div style={{ background: T.bg, padding: "6px 16px 0" }}>
           <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
             {["Registry", "Log", "Inventory"].map((t) => (
               <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 13, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
@@ -2615,7 +2615,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             at the old width's right edge once the content column
             itself can go wider than that. */}
         <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-          <div onClick={() => setAddingMed(true)} role="button" tabIndex={0} aria-label="Add medication" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAddingMed(true); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}}><Plus size={24} color={T.fabIcon} /></div>
+          <div onClick={() => setAddingMed(true)} role="button" tabIndex={0} aria-label="Add medication" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAddingMed(true); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer", flexShrink: 0 }}><Plus size={24} color={T.fabIcon} /></div>
         </div>
 
         {/* CHANGED 18 Aug 2026 — removed this module's own static, non-

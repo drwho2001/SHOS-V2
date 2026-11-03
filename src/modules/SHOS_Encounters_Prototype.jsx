@@ -24,7 +24,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, CaretDownIcon as CaretDown, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -1457,11 +1457,12 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                 type="button"
                 aria-expanded={showSessionSummaries}
                 aria-controls="encounter-session-summaries"
+                aria-label={`${showSessionSummaries ? "Hide" : "Show"} session summaries`}
                 onClick={() => setShowSessionSummaries((show) => !show)}
                 style={{ padding: "4px 8px", borderRadius: radius.full, border: `1px solid ${sessionFilter ? T.encountersPink : T.border}`, background: sessionFilter ? `${T.encountersPink}15` : "transparent", color: sessionFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
               >
                 Sessions ({sessionSummaries.length})
-                <CaretDown size={13} style={{ marginLeft: 4, verticalAlign: "middle", transform: showSessionSummaries ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }} />
+                {showSessionSummaries ? <Eye size={14} style={{ marginLeft: 4, verticalAlign: "middle" }} /> : <EyeSlash size={14} style={{ marginLeft: 4, verticalAlign: "middle" }} />}
               </button>
             )}
           </div>
@@ -1475,7 +1476,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           </div>
         </div>
         {sessionSummaries.length > 0 && (
-          <div id="encounter-session-summaries" hidden={!showSessionSummaries} style={{ padding: "8px 16px 0", display: "flex", gap: 8, overflowX: "auto" }}>
+          <div id="encounter-session-summaries" aria-hidden={!showSessionSummaries} style={{ padding: "8px 16px 0", display: showSessionSummaries ? "flex" : "none", gap: 8, overflowX: "auto" }}>
             {sessionSummaries.map((session) => {
               const active = sessionFilter === session.id;
               return (

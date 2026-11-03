@@ -238,7 +238,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       {/* One sticky stack: the blue title band remains visually distinct
           from the dark sub-tabs, while both stay attached during scrolling. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
-        <div style={{ position: "relative", background: T.healthcareBlue }}>
+        <div style={{ position: "relative", background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
           <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
           <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
@@ -324,7 +324,6 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
           <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />
         </div>
-      </div>
       <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>{tr("common.loading", "Loading...")}</div>}>
     {subTab === "testing" ? (
         <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
@@ -340,6 +339,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
     </Suspense>
+      </div>
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />}
       {showAttachments && (
         <AttachmentsScreen onClose={() => setShowAttachments(false)}
