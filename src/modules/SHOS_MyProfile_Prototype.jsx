@@ -1069,8 +1069,11 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
   const [revealPhysicalAnyway, setRevealPhysicalAnyway] = useState(false);
 
   return (
-    <div role="dialog" aria-label={t("myProfile.editTitle", "Edit My Profile")} ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
+    <div role="dialog" aria-label={t("myProfile.editTitle", "Edit My Profile")} ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
+      {/* Keep the safe-area fill inside the sticky row. Putting it on this
+          scroll root lets the inset scroll away and exposes content above the
+          pinned title. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(16px + env(safe-area-inset-top)) 16px 16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onCancel} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("myProfile.editTitle", "Edit My Profile")}</h1>
         <div onClick={handleSave} role="button" tabIndex={0} aria-label="Save" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer"}}>Save</div>
@@ -1744,7 +1747,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     // correct (`position: fixed, inset: 0, overflowY: auto`, entirely
     // self-contained) — applying the exact same pattern here instead
     // of depending on App.jsx's wrapper to provide it.
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg }}>
+      <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "calc(80px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg }}>
       {/* FIXED 2 Oct 2026 (real device) — `display:flex` was removed from the
           root element above. Having it together with that element's own
           `overflowY: auto` is the t060 defect that
@@ -1770,7 +1773,9 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
             remain at top even when scrolling" — was not sticky at all
             before, unlike the Edit sheet's own header just below,
             which already had this correctly. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "18px 16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
+        {/* Keep the safe-area fill in the sticky title itself so the scroll
+            root cannot scroll it away and reveal content above this header. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "calc(18px + env(safe-area-inset-top)) 16px 18px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
           {/* ADDED 18 Aug 2026 — My Profile no longer has its own bottom-nav
               tab (see Doc 1 — it's a Settings sub-item, reached from
               Contacts for now until Settings exists). Shown as a
