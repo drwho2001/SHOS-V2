@@ -159,7 +159,7 @@ Two separate problems:
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1868` hardcodes `color: "#926100"` and `background: "#FFF3C4"`.
 
-The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals appear on 8 lines (`:1868`, `:2064`, `:2065`, `:2071`, `:3103`, `:3104`, `:3141`, `:3142`) across 5 distinct uses, so fixing one site leaves the rest.
+The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals appear on 8 lines (`:1868`, `:2064`, `:2065`, `:2071`, `:3103`, `:3104`, `:3141`, `:3142`) across 5 distinct uses. Lines `:3141–3142` use a second colour family (`#B42318`/`#FEE4E2`) for the high-confidence duplicate warning, not the amber pair. Fixing one site leaves the rest.
 
 **Fix.** Promote an `ACTION.amberSurface` / `ACTION.amberText` pair into `designTokens.js` with dark companions, and replace all six sites. Amber-as-warning is the correct semantic; only the values are wrong.
 
@@ -340,7 +340,7 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 ### C20 · Loading states are text placeholders, not skeletons
 
-Manual §10.5 says "Loading states should preserve the final layout shape where practical." The files that show a loading state render a bare "Loading..." string (8 sites across 5 files: `App.jsx` ×2, `SHOS_Settings_Prototype.jsx` ×2, `SHOS_Healthcare_Prototype.jsx` ×1, `SHOS_MyProfile_Prototype.jsx` ×2, plus `CalendarScreen.jsx` "Loading calendars…" which was omitted from the earlier count). `DeveloperToolsScreen.jsx:173` is a button busy-label, not a loading state, and is excluded. Contacts and MyProfile also have inline "Searching…" indicators (`SHOS_Contacts_Prototype.jsx:624`, `SHOS_MyProfile_Prototype.jsx:326`) not counted here. None preserves the final layout shape. Low severity, but inconsistent with the manual.
+Manual §10.5 says "Loading states should preserve the final layout shape where practical." The files that show a loading state render a bare "Loading..." string (8 sites across 6 files: `App.jsx` ×2, `SHOS_Settings_Prototype.jsx` ×2, `SHOS_Healthcare_Prototype.jsx` ×1, `SHOS_MyProfile_Prototype.jsx` ×2, `CalendarScreen.jsx` ×1). `DeveloperToolsScreen.jsx:173` is a button busy-label, not a loading state, and is excluded. Contacts and MyProfile also have inline "Searching…" indicators (`SHOS_Contacts_Prototype.jsx:624`, `SHOS_MyProfile_Prototype.jsx:326`) not counted here. None preserves the final layout shape. Low severity, but inconsistent with the manual.
 
 **Fix.** Add skeleton placeholders matching the final row/card shape for the lists that load asynchronously (contacts, encounters, medications). Keep "Loading..." only for full-screen transitions.
 
