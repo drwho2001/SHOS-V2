@@ -29,12 +29,12 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | | Count |
 |---|---:|
 | P1 blocking | 5 |
-| P2 dark-mode / colour | 10 |
+| P2 dark-mode / colour | 9 |
 | P3 inconsistency | 19 |
 | P4 accessibility | 5 |
 | Web/PWA specific | 1 |
-| Investigated and **not** defects | 11 |
-| Manual corrections needed | 13 |
+| Investigated and **not** defects | 12 |
+| Manual corrections needed | 15 |
 
 One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **already red** and its failure is finding C10 — the guard is correctly reporting two hardcoded sticky offsets. Fixing C10 turns it green.
 
@@ -159,7 +159,7 @@ Two separate problems:
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1868` hardcodes `color: "#926100"` and `background: "#FFF3C4"`.
 
-The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals are reused at `:2064`, `:2065`, `:2071`, `:3103`, `:3104` and `:3141-3142` (duplicate-confidence chips), so fixing one site leaves six.
+The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals appear on 8 lines (`:1868`, `:2064`, `:2065`, `:2071`, `:3103`, `:3104`, `:3141`, `:3142`) across 5 distinct uses, so fixing one site leaves the rest.
 
 **Fix.** Promote an `ACTION.amberSurface` / `ACTION.amberText` pair into `designTokens.js` with dark companions, and replace all six sites. Amber-as-warning is the correct semantic; only the values are wrong.
 
@@ -440,6 +440,7 @@ Recorded so these do not get "fixed" later.
 | Bottom padding clips the last row | **Mid-scroll only.** At true scroll end on Home, Contacts and Settings the content clears the nav. Not a safe-area bug. |
 | FormTabs' selected "About" pill is a faint tint | It also has a 1 px accent border and accent text — adequate, and consistent with the other two tabs' structure. |
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
+| Home centre tab has no active/inactive state | Intentional (user's explicit ask, `App.jsx:3268–3270`). Documented via M9, not a defect. (C13 reclassified.) |
 
 ---
 
@@ -506,7 +507,7 @@ Checked against the same build on `http://localhost:5174/` in the desktop review
 
 ### W1 · The root has no max-width, so the phone-first UI stretches on desktop
 
-`browser.evaluate` over the whole document found **zero elements with a non-`none` max-width**, including `#root`. On a 742 px window the Home header is 695 px wide and cards run the full width. The manual (§11) says the app is phone-first and that `useIsDesktopWidth` controls desktop-specific layout, but `useIsDesktopWidth` is imported in ~20 files and used for component-level tweaks (empty states, grids, padding); no site caps the *root* container width. The `maxWidth: 560` at `App.jsx:805` is the only width cap anywhere in the app, and it applies to one empty-state, not the root. The result is a stretched phone: 695 px text lines, full-width bottom nav, and the icon-budget problem from A4 only manifesting on phones.
+`browser.evaluate` found that **`#root` itself has no max-width** (`maxWidth: "none"`), so the app's outer container stretches to the viewport. (Component-level caps do exist — 30+ sites use `maxWidth` for individual cards, dialogs and empty states — but none caps the root, so the phone-first UI still stretches to the full window width.) On a 742 px window the Home header is 695 px wide and cards run the full width. The manual (§11) says the app is phone-first and that `useIsDesktopWidth` controls desktop-specific layout, but `useIsDesktopWidth` is imported in ~20 files and used for component-level tweaks (empty states, grids, padding); no site caps the *root* container width. The `maxWidth: 560` at `App.jsx:805` is the only width cap anywhere in the app, and it applies to one empty-state, not the root. The result is a stretched phone: 695 px text lines, full-width bottom nav, and the icon-budget problem from A4 only manifesting on phones.
 
 **Fix.** Cap the root at ~560 px and centre it when `!isDesktopWidth` is false (or always cap and let the desktop path opt out). This is the single change that makes the web/PWA build read as a designed desktop surface rather than a resized phone.
 
