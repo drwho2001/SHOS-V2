@@ -10,7 +10,7 @@ Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an u
 
 Two independent passes, then reconciled:
 
-1. **Source pass** — all 54 JSX files, `designTokens.js`, `moduleColorRepository.js`, and the existing guards.
+1. **Source pass** — all 50 non-test JSX files (54 including tests), `designTokens.js`, `moduleColorRepository.js`, and the existing guards.
 2. **Device pass** — the debug APK on a real handset (`23124RA7EO`, `sapphiren_eea`), 1080×2400 at 440 dpi, i.e. a **393 × 873 dp** viewport with 3-button system navigation. Light and dark, plus scrolled states and both overlay types (sheet, sticky bar).
 
 A finding only becomes **device-confirmed** when the rendered pixels show it. Code that looks wrong but never renders wrong is **code-only**, and is labelled as such. Screenshots live in the untracked `.audit-shots/` folder because they contain real personal data; they are not published and must not be committed.
@@ -80,7 +80,7 @@ One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **alr
 
 **Evidence (device, confirmed).** Screenshot shows the tab bar overlaying the white card with `IDENTITY` above it and the avatar below it, and ~58 dp of empty sheet background between the sheet's coloured banner and the tab bar.
 
-**Code.** `src/components/FormTabs.jsx:27` sets `top: "calc(env(safe-area-inset-top) + 58px)"`. It is used inside the sheet's own scroll container at `src/modules/SHOS_Contacts_Prototype.jsx:2055` (`overflowY: "auto"`). A sticky `top` is relative to **the scrollport**, not to the screen — so inside a sheet, whose banner is already outside the scroller, `58px` offsets the bar *into* the content and guarantees overlap at every scroll position.
+**Code.** `src/components/FormTabs.jsx:33` sets `top: "calc(env(safe-area-inset-top) + 58px)"` (the element opens at :27). It is used inside the sheet's own scroll container at `src/modules/SHOS_Contacts_Prototype.jsx:2055` (`overflowY: "auto"`). A sticky `top` is relative to **the scrollport**, not to the screen — so inside a sheet, whose banner is already outside the scroller, `58px` offsets the bar *into* the content and guarantees overlap at every scroll position.
 
 **Fix.** `FormTabs` must take its sticky offset as a prop (default `0`), or detect that it is inside `[data-contact-sheet]` and use `top: 0`. A sticky offset should never be inherited from screen chrome into a modal.
 
@@ -206,7 +206,6 @@ In all three, `defaultDarkValue` falls back to the raw light value, so the accen
 ---
 
 ## 4. P3 — inconsistency
-
 ### C1 · Duplicate DEMO badge in Contacts and Encounters
 
 Both the contact card title row (`src/modules/SHOS_Contacts_Prototype.jsx:1725`) and the encounter card title row (`src/modules/SHOS_Encounters_Prototype.jsx`, search `common.demo` in the card header) contain the same `isDemo` span **twice, back to back**. Clinic Visits (`:1934`) and Testing (`:1590`) each render exactly one.
@@ -303,7 +302,7 @@ Some of these are justified: a fixed-width badge cannot grow without breaking th
 `stickySubheadingGuard.test.js` fails today with exactly two offenders:
 
 ```
-components/FormTabs.jsx:27                top=calc(env(safe-area-inset-top) + 58px)
+components/FormTabs.jsx:33                top=calc(env(safe-area-inset-top) + 58px) (element opens at :27)
 modules/SHOS_Encounters_Prototype.jsx:1463 top=calc(env(safe-area-inset-top) + 60px)
 ```
 
@@ -326,18 +325,6 @@ Clinic Visits (`:1937-1940`) and Testing (`:1598-1605`) set `marginLeft: 16` on 
 The indent lines the metadata under the title *after* the 8 dp status dot plus gap. Without it, Encounters' subtitle starts 16 dp to the left of its siblings — visible when moving between the three lists.
 
 **Fix.** Use one shared list-row layout. If it stays inline, add the indent to Encounters for consistency.
-
-### C13 (reclassified) · Home's centre tab has no active or inactive state — intentional, not a defect
-
-This is the user's explicit ask (`App.jsx:3268–3270`). It is not a P3 finding; it is a documentation gap covered by M9. Listed here only so a reader who greps for "centre tab" finds the reasoning.
-
-`src/App.jsx:3279` gives Home an always-filled 48 dp circle in `resolveTabAccent(tab)`, with **no label** and no change when it is the current tab. The other four tabs are flat until active, then get a filled pill with icon and label (`:3296`).
-
-On the Home screen the centre tab and, say, the Contacts tab can both look "selected" — one by being filled, one by being an active pill — which makes the nav ambiguous at exactly the moment it should be clearest.
-
-This is **intentional** (the comment at `:3268` records the user's ask for a raised centre bump), so it is not a defect to fix by accident.
-
-**Fix.** Keep the bump and add the missing state cue: dim the circle when Home is not active, or show the label under it when active. Then document the exception so the next reader does not "fix" it.
 
 ### C14 · The bottom nav stays on record detail and disappears in Settings
 
