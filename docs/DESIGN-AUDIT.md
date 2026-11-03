@@ -4,6 +4,8 @@ This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records 
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
+**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty, loading and error states, reduced motion, gesture navigation, landscape and localisation were not checked. See §10.
+
 ## 1. How this was checked
 
 Two independent passes, then reconciled:
@@ -28,9 +30,9 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 |---|---:|
 | P1 blocking | 5 |
 | P2 dark-mode / colour | 8 |
-| P3 inconsistency | 17 |
+| P3 inconsistency | 16 |
 | P4 accessibility | 3 |
-| Web/PWA specific | 2 |
+| Web/PWA specific | 1 |
 | Investigated and **not** defects | 12 |
 | Manual corrections needed | 12 |
 
@@ -119,7 +121,7 @@ Every item here is a raw token read that bypasses the module's own resolved colo
 
 **Contrast: 1.50:1.** It renders as dark navy on near-black — device-confirmed, effectively invisible. The same raw value colours the segmented control's selected border at `:221-222`.
 
-**Fix.** Resolve it: `darkMode ? resolveDarkAccent("medication", ACCENTS.medication) : ACCENT_TEXT_SAFE.medication`. It is text on a surface, so the text-safe variant is the right one, not the fill colour.
+**Fix.** Resolve it: `darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication` (the same companion Medication already uses). Note: `ACCENT_TEXT_SAFE` has no `medication` key, so the text-safe variant cannot be used here; the resolved fill gives 4.94:1 on the dark card and the raw accent gives 8.6:1 on light.
 
 ### B2 · Design screen swatches show light-mode colours in dark mode
 
@@ -129,7 +131,9 @@ Every item here is a raw token read that bypasses the module's own resolved colo
 
 **Fix.** Resolve for display: `darkMode ? resolveDarkAccent(key, value) : value`. Keep the *stored* value raw — only the preview is resolved, and label it so the user knows the stored value is the light one.
 
-### B3 · Home's Contacts accent is not dark-resolved
+### B3 · Home's Contacts accent is not dark-resolved (subsumed by B8)
+
+B3's two sites (`:1171`, `:1266`) are part of B8's inventory. Kept as a separate line only because it was the first place the missing dark companion was noticed; the fix is B8's.
 
 Two sites read `ACCENTS.contacts` directly while their neighbours read resolved variables:
 
@@ -163,9 +167,9 @@ The chip's own contrast is fine (**4.80:1**), and that is not the problem. The p
 
 `src/modules/SHOS_Contacts_Prototype.jsx:3200` sets `background: "#1B1B1F"` — a hardcoded *light-theme* neutral — as the bar that separates select mode from the list.
 
-In light mode it reads as a deliberate dark action bar. In dark mode it sits on `#121214` at **1.06:1** against the page, so the bar's edges disappear and the white text floats free. This is code-only (select mode was not re-captured in dark), but the numbers decide it.
+In light mode it reads as a deliberate dark action bar. In dark mode it sits on `#121214` at **1.09:1** against the page, so the bar's edges disappear and the white text floats free. This is code-only (select mode was not re-captured in dark), but the numbers decide it.
 
-**Fix.** Use `T.textPrimary` as the inverse surface in both themes, or add an `inverseSurface` / `inverseText` token pair. A fixed hex cannot be right in both themes.
+**Fix (needs a decision).** The defect is the hardcoded hex, not the dark-bar intent. Preserve the "dark action bar in both themes" look by using a theme-aware dark surface (e.g. `NEUTRAL_DARK.surface` in dark, `NEUTRAL.textPrimary` in light), or add an `inverseSurface` token. Do not blindly swap to `T.textPrimary`, which would turn the bar light in dark mode and change the intended language.
 
 ### B7 · Testing stores icons as emoji
 
@@ -246,7 +250,7 @@ Healthcare is the real break: its Select sits *inside* the content, in the Clini
 
 The manual's own rule (§10.2) says the accent goes on the label or the primary action, "not the whole card". The rendered effect is a column of orange, purple and blue outlines that competes with the module banners.
 
-**Fix.** Either move the accent to the icon and a 1px neutral border, or accept it and change the manual. The current state is a documented rule being broken in the app's most-visited screen, which is the worst of both.
+**Fix (needs a decision).** The manual is ambiguous here: §10.2 says accent for label/primary action, "not the whole card," but these cards *are* the primary action. Either move the accent to the icon plus a neutral border, or update §10.2 to permit accent borders on primary-action cards. The current state is a rule being broken on the app's most-visited screen — or a rule that was never precise enough.
 
 ### C7 · "New encounter" and "New session" use the same icon
 
@@ -299,6 +303,8 @@ Note `60` vs the shared `58` — the drift the guard exists to prevent, still pr
 
 **Fix.** Use `RADIUS.md` (13) so the pill matches card corners, or add `RADIUS.navPill` if 14 is deliberate.
 
+**Scope note (challenger):** this is broader than the one site. Literals 12, 10, 8 and 4 appear throughout (`SHOS_Vaccinations_Prototype.jsx`, `SHOS_Contacts_Prototype.jsx:3137`, etc.). Manual §6 only defines sm/md/lg/full. A full radius audit is a separate pass; this finding is the most visible instance.
+
 ### C12 · Record metadata indents by 16 dp in two lists and not the third
 
 Clinic Visits (`:1937-1940`) and Testing (`:1598-1605`) set `marginLeft: 16` on every metadata line. Encounters does not.
@@ -307,7 +313,9 @@ The indent lines the metadata under the title *after* the 8 dp status dot plus g
 
 **Fix.** Use one shared list-row layout. If it stays inline, add the indent to Encounters for consistency.
 
-### C13 · Home's centre tab has no active or inactive state
+### C13 (reclassified) · Home's centre tab has no active or inactive state — intentional, not a defect
+
+This is the user's explicit ask (`App.jsx:3268–3270`). It is not a P3 finding; it is a documentation gap covered by M9. Listed here only so a reader who greps for "centre tab" finds the reasoning.
 
 `src/App.jsx:3279` gives Home an always-filled 48 dp circle in `resolveTabAccent(tab)`, with **no label** and no change when it is the current tab. The other four tabs are flat until active, then get a filled pill with icon and label (`:3296`).
 
@@ -333,7 +341,7 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1720` renders the name and the travel/social/contact-method icons on one flex row with `marginBottom: 4`; the relationship-type chips below (`:1829`) carry `marginTop: 4`. The icons are pushed right by `marginLeft: "auto"`, so when the icon cluster is narrow it sits well to the right of the name and never reaches the chips' `marginLeft: 16` start. The result is an 8 px vertical gap between the name and the relationship line that exists only because of the icon row, plus a horizontal gap the icons do not fill.
 
-**Fix applied (this pass):** `marginBottom: 4` → `0` on the name row and `marginTop: 4` → `0` on the relationship-type row, collapsing the gap the icon line created. The icons remain right-aligned.
+**Fix applied (this pass, verify in diff):** `marginBottom: 4` → `0` on the name row and `marginTop: 4` → `0` on the relationship-type row, collapsing the gap the icon line created. The icons remain right-aligned.
 
 ### C16 · Home's quick-add section hierarchy is encoded by one grey step
 
@@ -459,11 +467,11 @@ Checked against the same build on `http://localhost:5174/` in the desktop review
 
 **Fix.** Cap the root at ~560 px and centre it when `!isDesktopWidth` is false (or always cap and let the desktop path opt out). This is the single change that makes the web/PWA build read as a designed desktop surface rather than a resized phone.
 
-### W2 · The service-worker update notice is a static block
+### W2 (withdrawn)
 
-The notice ("A new version is ready. Back up your data first, then refresh.") is `position: static` at the top of the document. It pushes content down while visible, and scrolls away with the page, so a user who scrolls loses it. Low urgency, so this is acceptable as-is, but it should be `position: sticky` at `top: 0` if it is meant to stay reachable, and it must not be allowed to overlap the sticky module header (which sits at `top: 0` of the scrollport) — at the moment both claim `top: 0`.
+The earlier claim that the update notice was a static top block was wrong. The code at `src/App.jsx:3126–3150` renders it as `position: fixed; bottom: calc(76px + env(safe-area-inset-bottom))` with `zIndex: 300`, i.e. a fixed toast stacked above the bottom nav, and its buttons carry `pointerEvents: "auto"` to override the container's `pointerEvents: "none"`. It is correctly positioned and does not overlap the nav or the module header. **No finding; removed.**
 
-**Fix.** Either keep it static and accept that it scrolls away, or make it sticky above the module header. Do not make it fixed.
+The web/PWA specific count in the headline table drops from 2 to 1.
 
 ### Web/PWA items checked and found clean
 
@@ -484,3 +492,15 @@ The notice ("A new version is ready. Back up your data first, then refresh.") is
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
 - All settings subscreens were sampled in dark mode (Privacy, Widgets, Notifications, Preferences, Manage lists, Stats, Calendar, Trash, Developer tools, About, Share SHOS, My Profile, Backup & Export, Design, Colour scheme) and found clean — no new findings. Light mode for the same screens was covered in the earlier pass.
+
+### Known blind spots not yet audited (challenger-flagged)
+
+These are violations the manual's rules would catch but this pass did not check. Listed so the next pass has a starting point; none is claimed as clean.
+
+- **`minHeight: 44` on inline SVGs** (manual §5.1): `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, and many others (117 occurrences of `minHeight: 44` in total, a large fraction on Phosphor icons).
+- **Hardcoded hex beyond the cited sites:** `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
+- **RADIUS literals beyond 14** (see C11's scope note): 12, 10, 8, 4 used as `borderRadius` values.
+- **FONT_FAMILY bypass:** most screens use the literal `"'Inter', sans-serif"` rather than the token. Visually identical but token drift.
+- **Dark companions missing for Home and Menstrual:** `SHOS_Home_Prototype.jsx:191` and `:199` call `resolveDarkAccent` without a default dark value, same defect class as B8.
+- **Reduced motion, empty/loading/error states** (manual §10.5, §12): explicitly excluded from this pass.
+- **Safe-area double-counting on other screens:** only Settings/Healthcare/FormTabs were checked; Vaccinations/Measurements/SymptomLog/ClinicVisits share `STICKY_SUBHEADING_TOP` with different header heights.
