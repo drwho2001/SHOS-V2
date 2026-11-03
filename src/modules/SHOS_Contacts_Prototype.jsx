@@ -1717,7 +1717,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           flexWrap lets a long name drop to a second line instead of being
           squeezed to nothing, which is what "two-line long-name layout" means
           here: the NAME wraps, the small icons after it stay on one line. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap", paddingRight: (!selectMode && onToggleFavourite) ? 24 : 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 0, flexWrap: "wrap", paddingRight: (!selectMode && onToggleFavourite) ? 24 : 0 }}>
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
           title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
@@ -1827,7 +1827,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         );
       })()}
       {contact.relationshipType.length > 0 && (
-        <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 0, flexWrap: "wrap" }}>
           {contact.relationshipType.map((rt) => (
             <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
           ))}

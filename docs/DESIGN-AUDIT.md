@@ -28,7 +28,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 |---|---:|
 | P1 blocking | 5 |
 | P2 dark-mode / colour | 8 |
-| P3 inconsistency | 16 |
+| P3 inconsistency | 17 |
 | P4 accessibility | 3 |
 | Web/PWA specific | 2 |
 | Investigated and **not** defects | 12 |
@@ -328,6 +328,12 @@ Device-confirmed: Contact detail keeps the five-tab bar; Settings hides it. Both
 Covered partly by C4 and C12. The combined effect on device is that Encounters, Clinic Visits and Testing read as three different list components that happen to share a colour. They share a shape (border, radius, 14 px padding) and nothing else.
 
 **Fix.** Extract one `ModuleListRow` with props for accent, status dot, demo badge, metadata indent and title weight. The manual already says to consolidate at three copies — this is the third copy.
+
+### C17 · Contact card: the travel/social icon row leaves a gap above the relationship chips
+
+`src/modules/SHOS_Contacts_Prototype.jsx:1720` renders the name and the travel/social/contact-method icons on one flex row with `marginBottom: 4`; the relationship-type chips below (`:1829`) carry `marginTop: 4`. The icons are pushed right by `marginLeft: "auto"`, so when the icon cluster is narrow it sits well to the right of the name and never reaches the chips' `marginLeft: 16` start. The result is an 8 px vertical gap between the name and the relationship line that exists only because of the icon row, plus a horizontal gap the icons do not fill.
+
+**Fix applied (this pass):** `marginBottom: 4` → `0` on the name row and `marginTop: 4` → `0` on the relationship-type row, collapsing the gap the icon line created. The icons remain right-aligned.
 
 ### C16 · Home's quick-add section hierarchy is encoded by one grey step
 
