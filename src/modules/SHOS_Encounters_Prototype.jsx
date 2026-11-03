@@ -1324,6 +1324,8 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
         <div style={{ width: "100%", minWidth: 0, maxWidth: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 90, boxSizing: "border-box" }}>
+      {/* Keep the results list inside this viewport-height wrapper. Closing
+          it after the filters creates a screen-sized blank spacer before the list. */}
       {/* CHANGED — real edge-to-edge redesign (researched how other
           apps handle colour under the notch/status bar): the earlier
           env()+8px offset on this wrapper left a permanent neutral
@@ -1499,7 +1501,6 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             })}
           </div>
         )}
-      </div>
       <div style={{ padding: "4px 16px" }}>
         {visible.length === 0 && (
           <div style={{ textAlign: "center", color: T.textDisabled, fontStyle: "italic", padding: "40px 0" }}>
@@ -1536,6 +1537,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             </div>
           </div>
         ))}
+      </div>
       </div>
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
