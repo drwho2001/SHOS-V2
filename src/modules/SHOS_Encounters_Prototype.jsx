@@ -432,11 +432,20 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // flow on commit is untouched, this only fixes the live suggestion
   // list shown while still typing.
   const draftTrimmedForFilter = draft.trim();
-  const visibleSuggestions = (
-    draftTrimmedForFilter
-      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
-      : allEntries
-  ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
+  // Sort visible suggestions: selected/recent items first (most used), then alphabetical
+  const sortedSuggestions = (draftTrimmedForFilter
+    ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+    : allEntries
+  ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id));
+  
+  const visibleSuggestions = sortedSuggestions.sort((a, b) => {
+    // Put recently selected / most-used items at front (simple heuristic)
+    const aRecent = value.some((v) => (trackRole ? v.kinkId === a.id : v === a.id));
+    const bRecent = value.some((v) => (trackRole ? v.kinkId === b.id : v === b.id));
+    if (bRecent && !aRecent) return 1;
+    if (aRecent && !bRecent) return -1;
+    return a.name.localeCompare(b.name);
+  }).slice(0, 10);
 
   const addEntries = (ids) => {
     if (ids.length === 0) return;
@@ -597,10 +606,10 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           reasoning as Contacts/My Profile: the on-screen keyboard covers
           whatever's below the input the moment you tap in. */}
       {visibleSuggestions.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+        <div style={{ display: "flex", flexWrap: "nowrap", gap: 5, marginBottom: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "thin", padding: "2px 0" }}>
           {visibleSuggestions.map((e) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", flexShrink: 0 }}>
               + {e.name}
             </div>
           ))}
