@@ -2306,7 +2306,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", transition: reducedMotion ? "none" : "background 200ms ease" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, transition: reducedMotion ? "none" : "background 200ms ease" }}>
       {/* CHANGED — real ask: "Medications module is the only one
           designed like a phone screen — not full width on laptop."
           Was a fixed 390px regardless of viewport; now genuinely
@@ -2336,7 +2336,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             The safe-area inset moved from `top` into the banner's own
             top padding, so only the title/icons — not the colour — sit
             below the notch. */}
-        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+          <div style={{ background: T.medsBlue, padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("medication.title", "Medication")}</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
@@ -2351,6 +2352,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                 deliberately a visual-only stub until this existed. */}
             <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
             {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+          </div>
+          </div>
+          <div style={{ background: T.bg, padding: "4px 16px 0" }}>
+          <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
+            {["Registry", "Log", "Inventory"].map((t) => (
+              <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 13, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
+            ))}
+          </div>
           </div>
         </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
@@ -2484,13 +2493,6 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
         </div>
 
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 50px)", zIndex: 5, background: T.bg, padding: "4px 16px", borderBottom: `1px solid ${T.border}` }}>
-          <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
-            {["Registry", "Log", "Inventory"].map((t) => (
-              <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 13, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
-            ))}
-          </div>
-        </div>
 
         {tab === "Registry" && (
           <>

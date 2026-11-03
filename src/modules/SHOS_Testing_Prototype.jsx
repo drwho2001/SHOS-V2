@@ -1415,39 +1415,11 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* CHANGED 26 Aug 2026 — real ask: this had the same full
-          prominence as Healthcare's own title banner right above it —
-          redundant, since this is always a sub-tab within Healthcare
-          (the sub-tab pills already show which section is active),
-          never a standalone top-level screen. Shrunk to a small
-          subordinate label instead of a duplicate full banner. */}
-      {/* CHANGED — real bug: this stuck at top:0, the SAME position as
-          Healthcare's own colored banner above it (also top:0, zIndex
-          6) — since both are sticky within Healthcare's one shared
-          scroll container, they overlapped exactly instead of stacking,
-          so this floated ON TOP of Healthcare's banner once scrolled
-          past it, with the rest of the page (including the multiselect
-          toolbar below) still scrolling underneath as if this were at
-          y:0. top:62 sticks it directly beneath Healthcare's banner
-          instead — same measured height Contacts already uses for its
-          own second sticky bar under an identical banner shape. */}
-      {/* FIXED 16 Sep 2026 — real bug: the sticky-header status-bar
-          fix moved Healthcare's own banner from top:0 to
-          calc(env(safe-area-inset-top) + 8px), but this bar's own
-          top stayed a bare 62 — so once the banner's own stick
-          position shifted down by that extra offset, this bar (still
-          locking at the OLD position) overlapped the banner's new
-          bottom edge instead of sitting flush beneath it. Carries the
-          identical offset now, so it always sticks exactly where the
-          banner's own real bottom edge is, on any device.
-          CHANGED — real edge-to-edge redesign: Healthcare's banner
-          moved its own safe-area inset from `top` into its top
-          padding (so its colour now runs flush to the true screen
-          edge, no neutral gap behind the status bar) — its net
-          rendered height shrank by exactly the 8px this bar used to
-          add on top of it, so 70 became 62 to keep sitting flush. */}
-      <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>{tr("healthcare.testing", "Testing")}</span>
+      {/* This is a local action row, not another title/tab header.
+          Healthcare already names the active section in its sticky tabs;
+          a second sticky label layered above those tabs caused the green
+          stripe and covered part of the selected tab while scrolling. */}
+      <div style={{ padding: "2px 16px 4px", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an
             additional quick entry. */}

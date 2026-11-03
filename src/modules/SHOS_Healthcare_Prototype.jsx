@@ -196,7 +196,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   );
 
   return (
-    <div style={{ fontFamily: FONT_FAMILY, display: "flex", justifyContent: "center" }}>
+    <div style={{ fontFamily: FONT_FAMILY, width: "100%", minWidth: 0 }}>
       {/* ADDED — real report: thin vertical border lines already shipped
           on Contacts/My Profile/Medication Dashboard as a deliberate
           desktop-width-cap treatment, but never rolled out here — this
@@ -235,14 +235,18 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           lives in the banner's own top padding instead, so its colour
           fills all the way up while the title/icons stay safely below
           the notch. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
-  <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
-        <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* One sticky stack: the blue title band remains visually distinct
+          from the dark sub-tabs, while both stay attached during scrolling. */}
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+        <div style={{ position: "relative", background: T.healthcareBlue }}>
+          <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
+          <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
           {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+          </div>
         </div>
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 50px)", zIndex: 5, background: T.bg, padding: "4px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+        <div style={{ background: T.bg, padding: "8px 16px 8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {[
             { key: "testing", label: tr("healthcare.testing", "Testing") },
             { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
