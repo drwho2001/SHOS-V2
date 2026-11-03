@@ -1,6 +1,6 @@
 # SHOS Visual Audit — 3 November 2026
 
-This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. No application code was changed for this pass.
+This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. One application-code change was made during the audit (C17: contact-card spacing collapse in `SHOS_Contacts_Prototype.jsx`); all other findings are documentation-only.
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
@@ -33,7 +33,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | P3 inconsistency | 19 |
 | P4 accessibility | 5 |
 | Web/PWA specific | 1 |
-| Investigated and **not** defects | 12 |
+| Investigated and **not** defects | 11 |
 | Manual corrections needed | 13 |
 
 One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **already red** and its failure is finding C10 — the guard is correctly reporting two hardcoded sticky offsets. Fixing C10 turns it green.
@@ -199,11 +199,11 @@ In all three, `defaultDarkValue` falls back to the raw light value, so the accen
 
 ## 4. P3 — inconsistency
 
-### C1 · Duplicate DEMO badge in Encounters
+### C1 · Duplicate DEMO badge in Contacts and Encounters
 
-The encounter card title row contains the same `isDemo` span **twice, back to back**, in `src/modules/SHOS_Encounters_Prototype.jsx` (search `common.demo` in the card header). Contacts (`:1725`), Clinic Visits (`:1934`) and Testing (`:1590`) each render exactly one.
+Both the contact card title row (`src/modules/SHOS_Contacts_Prototype.jsx:1725`) and the encounter card title row (`src/modules/SHOS_Encounters_Prototype.jsx`, search `common.demo` in the card header) contain the same `isDemo` span **twice, back to back**. Clinic Visits (`:1934`) and Testing (`:1590`) each render exactly one.
 
-**Correction to an earlier note:** this is **not** in Contacts. That claim came from a card that had both a DEMO badge and an Incomplete chip; the counts are 1 and 1, not 2.
+**Correction (third pass):** my earlier correction was wrong. `SHOS_Contacts_Prototype.jsx:1725` does contain two DEMO spans back-to-back; the original claim was right. The "1 and 1, not 2" note was an error.
 
 **Fix.** Delete one span.
 
@@ -345,15 +345,15 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 ### C20 · Loading states are text placeholders, not skeletons
 
-Manual §10.5 says "Loading states should preserve the final layout shape where practical." The five files that show a loading state (`App.jsx`, `SHOS_Healthcare_Prototype.jsx`, `SHOS_MyProfile_Prototype.jsx`, `SHOS_Settings_Prototype.jsx`, `DeveloperToolsScreen.jsx`) render a bare "Loading..." string (9 sites total). None preserves the final layout shape. Low severity, but inconsistent with the manual.
+Manual §10.5 says "Loading states should preserve the final layout shape where practical." The files that show a loading state render a bare "Loading..." string (8 sites across 5 files: `App.jsx` ×2, `SHOS_Settings_Prototype.jsx` ×2, `SHOS_Healthcare_Prototype.jsx` ×1, `SHOS_MyProfile_Prototype.jsx` ×2, plus `CalendarScreen.jsx` "Loading calendars…" which was omitted from the earlier count). `DeveloperToolsScreen.jsx:173` is a button busy-label, not a loading state, and is excluded. Contacts and MyProfile also have inline "Searching…" indicators (`SHOS_Contacts_Prototype.jsx:624`, `SHOS_MyProfile_Prototype.jsx:326`) not counted here. None preserves the final layout shape. Low severity, but inconsistent with the manual.
 
 **Fix.** Add skeleton placeholders matching the final row/card shape for the lists that load asynchronously (contacts, encounters, medications). Keep "Loading..." only for full-screen transitions.
 
 ### C19 · Empty states are text-only, with no icon or action
 
-Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." All 69 empty-text sites across 25 files render a single italic line (`"No contacts yet."`, `"No encounters match your search."`, etc.) with no icon and no action. Some lists (e.g. Contacts) include an action elsewhere, but the empty state itself does not. Consistent deviation from the manual, not a one-off.
+Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3354`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of italic text with no icon and no action. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) The 69 "empty-text" sites across 25 files conflate the two; only the list-level ones are in scope for this finding. The Medication dashboard empty state (`:925–928`) is non-italic, so the "all italic" claim does not hold.
 
-**Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the 25 files. Consolidate at the manual's three-copy threshold.
+**Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
 
 ### C18 · `FONT_FAMILY` is bypassed in 43 of 46 files:
 
@@ -432,7 +432,6 @@ Recorded so these do not get "fixed" later.
 | Bottom padding clips the last row | **Mid-scroll only.** At true scroll end on Home, Contacts and Settings the content clears the nav. Not a safe-area bug. |
 | FormTabs' selected "About" pill is a faint tint | It also has a 1 px accent border and accent text — adequate, and consistent with the other two tabs' structure. |
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
-| `FONT_FAMILY` appears in fewer places than expected | **Superseded by C18.** Only two files use the token; the rest use the literal. See C18. |
 
 ---
 
@@ -532,7 +531,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 
 ### Known blind spots not yet audited (challenger-flagged)
 
-These are violations the manual's rules would catch but this pass did not check. Listed so the next pass has a starting point; none is claimed as clean.
+These are sites the manual's rules would flag but this pass did not enumerate as defects. Raw counts are review candidates, not violation counts — they include legitimate uses (designTokens definitions, intentional dark surfaces, accent fills). Listed so the next pass has a starting point.
 
 - **`minHeight: 44` on inline SVGs** (manual §5.1): ~11 inline Phosphor icons (of 117 total `minHeight: 44` sites). See D4.
 - **Hardcoded hex beyond the cited sites:** 495 hex literals across 41 files. Examples: `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
