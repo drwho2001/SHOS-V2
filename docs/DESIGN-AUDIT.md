@@ -197,7 +197,7 @@ In all three, `defaultDarkValue` falls back to the raw light value, so the accen
 
 ### B9 · Settings subscreens use raw accents as text/labels in dark mode
 
-`AboutScreen.jsx` (5 links, `ACCENTS.medication` at 13 px), `StatsScreen.jsx` (section labels at `ACCENTS.encounters/healthcare/medication/contacts` plus a "View source guidance" link at 11 px), `ResourcesScreen.jsx` (links at `ACCENTS.healthcare`, 11 px) and `ShareScreen.jsx` (links, 11 px) all read the raw accent directly, with no `resolveDarkAccent`. In dark mode these are the same 1.50–3.78:1 failures as B1/B8. `TrashScreen.jsx` uses `ACCENTS.medication` for selected-state borders (`:187`) — a fill/border use, which is acceptable as-is, but should be resolved for consistency.
+`AboutScreen.jsx` (5 links, `ACCENTS.medication` at 13 px), `StatsScreen.jsx` (section labels at `ACCENTS.encounters/healthcare/medication/contacts` plus a "View source guidance" link at 11 px), `ResourcesScreen.jsx` (links at `ACCENTS.healthcare`, 11 px), `ShareScreen.jsx` (links, 11 px) and `DeveloperToolsScreen.jsx` (text at `ACCENTS.home`, 11–14 px) all read the raw accent directly, with no `resolveDarkAccent`. In dark mode these are the same 1.50–3.78:1 failures as B1/B8. `TrashScreen.jsx` uses `ACCENTS.medication` for selected-state borders (`:187`) — a fill/border use, which is acceptable as-is, but should be resolved for consistency.
 
 `AutomaticBackupsScreen`, `BackupExportScreen`, `CalendarScreen`, `DataNetworkScreen`, `ManageListsScreen`, `NotificationsScreen`, `PreferencesScreen`, `PrivacyScreen` use raw accents only for fills, borders and toggles, which is correct — those screens are clean on colour.
 
@@ -519,7 +519,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Gesture navigation (the device uses 3-button nav). Bottom-inset behaviour with a gesture bar is unverified.
 - Landscape and tablet widths on the device (the web pass was desktop-width only).
 - Localisation: only English strings were rendered; the long-string rule was not exercised.
-- Reduced motion on module screens: not checked (only 4 settings screens, D5).
+- Reduced motion on module screens: all module files that animate import `useReducedMotion` (verified); 4 settings screens do not (D5). Coverage is code-level only.
 - Dark-mode web: not checked (web pass was Home + Settings in light only).
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
@@ -537,5 +537,5 @@ These are sites the manual's rules would flag but this pass did not enumerate as
 - **Empty states** (manual §10.5): code-checked (C19); device verification of the actual empty states not done.
 - **Loading states** (manual §10.5): code-checked (C20); device verification not done.
 - **Error states** (manual §10.5): code-checked; follow §10.1 (ACTION.red under the failed field). No new finding.
-- **Reduced motion on module screens** (manual §12): not checked.
+- **Reduced motion on module screens** (manual §12): code-checked — all animating module files use `useReducedMotion`; 4 settings screens do not (D5). Device verification not done.
 - **Safe-area double-counting on other screens:** only Settings/Healthcare/FormTabs were checked; Vaccinations/Measurements/SymptomLog/ClinicVisits share `STICKY_SUBHEADING_TOP` with different header heights.
