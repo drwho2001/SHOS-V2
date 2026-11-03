@@ -27,9 +27,10 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | | Count |
 |---|---:|
 | P1 blocking | 5 |
-| P2 dark-mode / colour | 7 |
-| P3 inconsistency | 15 |
+| P2 dark-mode / colour | 8 |
+| P3 inconsistency | 16 |
 | P4 accessibility | 3 |
+| Web/PWA specific | 2 |
 | Investigated and **not** defects | 12 |
 | Manual corrections needed | 12 |
 
@@ -173,6 +174,16 @@ In light mode it reads as a deliberate dark action bar. In dark mode it sits on 
 This breaks two rules at once: icons are Phosphor-only, and a display glyph is being used as a data key. It also means renaming the label requires a data migration.
 
 **Fix.** Store a stable key (`home`, `clinicRoutine`, …) and render the Phosphor icon beside the label. The two `=== "🏠 Home"` branches become `=== "home"`. This is the one finding here that needs a small data migration, so it should be its own change.
+
+### B8 · Contacts has no dark companion, so every Contacts accent used as text fails in dark mode
+
+`resolveDarkAccent("contacts", ACCENTS.contacts)` is called in `src/modules/SHOS_Contacts_Prototype.jsx:156` and `:161` **without a third argument**, so `defaultDarkValue` falls back to the raw light value `#B36205`. Every other module that needs a dark companion (Encounters, Medication, Healthcare) passes one. Contacts never did, so in dark mode the Contacts accent is byte-identical to light mode.
+
+**Contrast on `#1C1C1F`:** `#B36205` = **3.78:1** at 13 px/600 — below 4.5:1. At 10 px (the role/position/tag chips at `:1847`, `:1850`, `:1857`) it is worse, and those chips render as brown text on a `contactsTeal 15` tint, which is `#B36205` at 8% alpha over `#1C1C1F` — effectively brown on near-black. Device-confirmed: the relationship and tag chips on a dark contact card are barely legible, and the section labels (`IDENTITY`, etc.) are visibly duller than the same label in Encounters/Healthcare.
+
+**Sites affected (all Contacts-accent-as-text):** Home summary row `:1171`, Home quick-add `:1266`, relationship chips `:1847/1850/1857`, role/position chips, section labels `:343`, `:1868` (Incomplete chip, which also hardcodes its own light colours — see B5).
+
+**Fix.** Give Contacts a dark companion the way Medication and Healthcare have one. A value near `#D08A2E` measures ≈6.0:1 on `#1C1C1F`; run it through `paletteContrast.test.js` before adopting. Then pass it as the third argument to both `resolveDarkAccent` calls. This single change clears B3, B5's adjacent sites, and the chip readability problem together — it is the same defect as B3, generalised.
 
 ---
 
@@ -318,6 +329,18 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 **Fix.** Extract one `ModuleListRow` with props for accent, status dot, demo badge, metadata indent and title weight. The manual already says to consolidate at three copies — this is the third copy.
 
+### C16 · Home's quick-add section hierarchy is encoded by one grey step
+
+`src/modules/SHOS_Home_Prototype.jsx:1263-1293` renders three labels at identical `TYPE.sectionLabel` (12 / 700, uppercase) with the same `marginBottom: 6`:
+
+- `Quick add` — `textSecondary`
+- `Personal` — `textDisabled`
+- `Healthcare` — `textDisabled`
+
+On device these read as three peers, not as a parent and two children. The colour difference is one step of grey at the same size, with no indent, so `Personal` and `Healthcare` look like separate top-level sections. The same block also uses three card treatments at once — the Calendar card is a tinted fill (`homeColor 22` + accent border), the quick-add cards are `surface` + accent border, and the summary rows above are flat dividers — so the screen has no single card language.
+
+**Fix.** Make the hierarchy structural: either indent the children, drop them to `TYPE.caption`, or nest them under the parent with a leading rule. Pick one card treatment for the whole screen and apply it to the Calendar card too.
+
 ---
 
 ## 5. P4 — accessibility
@@ -379,6 +402,7 @@ Recorded so these do not get "fixed" later.
 | M10 | §7 | Document when the bottom nav persists vs hides (C14). |
 | M11 | §3.7 | Replace the vague "open audit item" with the actual raw-accent inventory: Home summary + quick-add, Design screen link/swatches/segmented border, Encounters kink tag, Incomplete chip, Contacts select bar (B1–B6). |
 | M12 | §9 | Add "no emoji as icons, and never as a stored value" (B7). |
+| M13 | §11 | State the desktop cap and how it is applied (W1). |
 
 Two further manual fixes with no code counterpart:
 
@@ -397,14 +421,16 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 3. A3 — FormTabs sticky offset becomes a prop.
 4. C10 — Encounters imports the constant. Turns `stickySubheadingGuard` green.
 
-**Batch 2 — dark mode (B1–B6).** Add the missing dark resolution in five files, plus amber tokens. B7 (emoji) is separate because it needs a migration.
+**Batch 2 — dark mode (B1–B8).** Add the missing dark resolution in five files, plus amber tokens and a Contacts dark companion (B8). B7 (emoji) is separate because it needs a migration.
 - Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
 
 **Batch 3 — list and control consistency (C1–C7, C11, C12).** Extract `ModuleListRow` and `ListSearchField`, then delete the four hand-rolled copies. Delete the duplicate DEMO span and the card shadow on the way through.
 
 **Batch 4 — typography, icons, touch (C9, C13, D1–D3).** Add `microLabel`, the header icon button, and the emoji migration.
 
-**Batch 5 — manual (M1–M12).** Last, so it documents what shipped rather than what was planned.
+**Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
+
+**Batch 6 — web/PWA (W1–W2).** Cap the root width and resolve the update-notice overlap. Can ship independently of the device work.
 
 ### Tests worth adding
 
@@ -413,14 +439,42 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 - New guard: no hex literals in JSX colour positions outside `designTokens.js` — would have caught B5 and B6.
 - Extend `paletteContrast.test.js` from the default palette to the pairs actually rendered: accent-as-text-on-dark-surface, and accent-text-on-own-tint (B3, B4, B5).
 - A layout guard is not practical, so A4/A5 stay manual device checks. Add both to the new-feature checklist instead: "does the header still fit at 393 dp with every icon shown?"
+- Add a guard that the root container has a `maxWidth` on viewports above the phone width, so W1 cannot regress silently.
 
 ---
 
-## 9. Not covered by this pass
+## 9. Web and PWA
+
+Checked against the same build on `http://localhost:5174/` in the desktop review browser (742 × 620 CSS px), both themes, with the service-worker update notice and the App Lock dialog dismissed. The web build runs the same React code, so every colour, spacing and sticky finding in §§2–4 applies unchanged. Two web-only items:
+
+### W1 · The root has no max-width, so the phone-first UI stretches on desktop
+
+`browser.evaluate` over the whole document found **zero elements with a non-`none` max-width**, including `#root`. On a 742 px window the Home header is 695 px wide and cards run the full width. The manual (§11) says the app is phone-first and that `useIsDesktopWidth` controls desktop-specific layout, but `useIsDesktopWidth` is only used for one empty-state container (`App.jsx:805`, `maxWidth: 560`); the root container is uncapped. The result is a stretched phone: 695 px text lines, full-width bottom nav, and the icon-budget problem from A4 only manifesting on phones.
+
+**Fix.** Cap the root at ~560 px and centre it when `!isDesktopWidth` is false (or always cap and let the desktop path opt out). This is the single change that makes the web/PWA build read as a designed desktop surface rather than a resized phone.
+
+### W2 · The service-worker update notice is a static block
+
+The notice ("A new version is ready. Back up your data first, then refresh.") is `position: static` at the top of the document. It pushes content down while visible, and scrolls away with the page, so a user who scrolls loses it. Low urgency, so this is acceptable as-is, but it should be `position: sticky` at `top: 0` if it is meant to stay reachable, and it must not be allowed to overlap the sticky module header (which sits at `top: 0` of the scrollport) — at the moment both claim `top: 0`.
+
+**Fix.** Either keep it static and accept that it scrolls away, or make it sticky above the module header. Do not make it fixed.
+
+### Web/PWA items checked and found clean
+
+- Safe-area handling: `env(safe-area-inset-*)` resolves to 0 on desktop, so sticky headers sit at `top: 0` with no gap — correct. On a notched PWA install the browser supplies the insets.
+- Dynamic viewport: the root uses `100dvh` (verified via `CSS.supports`), so the bottom nav is not cut off by a mobile browser's collapsing address bar.
+- Theme: the app keeps its own light/dark toggle rather than following `prefers-color-scheme`; consistent with Android. All colour findings in §§2–4 apply to web.
+- Navigation: Settings is presented as a dialog on web vs a full screen on Android — a deliberate platform difference, documented in §11.5. In-app back controls are present.
+- The App Lock prompt is a dialog on web — same as Android.
+
+---
+
+## 10. Not covered by this pass
 
 - Gesture navigation (the device uses 3-button nav). Bottom-inset behaviour with a gesture bar is unverified.
-- Landscape and tablet widths.
+- Landscape and tablet widths on the device (the web pass was desktop-width only).
 - Localisation: only English strings were rendered; the long-string rule was not exercised.
 - Animated transitions and reduced-motion behaviour.
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
+- All settings subscreens were sampled in dark mode (Privacy, Widgets, Notifications, Preferences, Manage lists, Stats, Calendar, Trash, Developer tools, About, Share SHOS, My Profile, Backup & Export, Design, Colour scheme) and found clean — no new findings. Light mode for the same screens was covered in the earlier pass.
