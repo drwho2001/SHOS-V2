@@ -270,6 +270,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               {tab.label}
             </div>
           ))}
+          </div>
         </div>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
@@ -377,7 +378,6 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           </div>
         </div>
       )}
-      </div>
       </div>
     </div>
   );
