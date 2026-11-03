@@ -1469,7 +1469,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             })}
           </div>
         )}
-        <div style={{ padding: "8px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "calc(env(safe-area-inset-top) + 60px)", zIndex: 5, background: T.bg }}>
+        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "calc(env(safe-area-inset-top) + 60px)", zIndex: 5, background: T.bg }}>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
             {showArchived ? "Hide archived" : "Show archived"}
           </div>
@@ -1500,7 +1500,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           </div>
         )}
       </div>
-      <div style={{ padding: "8px 16px" }}>
+      <div style={{ padding: "4px 16px" }}>
         {visible.length === 0 && (
           <div style={{ textAlign: "center", color: T.textDisabled, fontStyle: "italic", padding: "40px 0" }}>
             {query.trim() ? tr("encounters.noEncountersMatchSearch", "No encounters match your search.") : tr("encounters.noEncountersLoggedYet", "No encounters logged yet.")}
