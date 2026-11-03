@@ -181,11 +181,12 @@ This breaks two rules at once: icons are Phosphor-only, and a display glyph is b
 
 ### B8 · Contacts, Home and Menstrual have no dark companion, so their accents used as text fail in dark mode
 
-The same call without a third argument appears in three modules:
+The same call without a third argument appears in four modules:
 
 - `src/modules/SHOS_Contacts_Prototype.jsx:156` and `:161` — `contactsTeal` / `contactsTealText`
 - `src/modules/SHOS_Home_Prototype.jsx:191` — `homeColor`
 - `src/modules/SHOS_Home_Prototype.jsx:199` — `menstrualColor`
+- `src/modules/SHOS_MyProfile_Prototype.jsx:127` and `:131` — `contactsTeal` / `contactsTealText` (used as text/labels on dark surfaces at `:172`, `:227`, `:314`, `:474`, `:561`, `:1189`, `:1211`, `:1786`)
 
 In all three, `defaultDarkValue` falls back to the raw light value, so the accent is byte-identical in light and dark mode. Encounters, Medication and Healthcare pass a hand-picked companion; these three do not. Where the accent is used as text or an icon on a dark surface, it fails contrast (Contacts 3.78:1; Home teal on `#1C1C1F` is 5.2:1 but visibly dull; Menstrual pink is 3.6:1 at 13 px).
 
@@ -193,7 +194,7 @@ In all three, `defaultDarkValue` falls back to the raw light value, so the accen
 
 **Sites affected (all Contacts-accent-as-text):** Home summary row `:1171`, Home quick-add `:1266`, relationship chips `:1847/1850/1857`, role/position chips, section labels `:343`, `:1868` (Incomplete chip, which also hardcodes its own light colours — see B5).
 
-**Fix.** Give Contacts a dark companion the way Medication and Healthcare have one. A value near `#D08A2E` measures ≈6.0:1 on `#1C1C1F`; run it through `paletteContrast.test.js` before adopting. Then pass it as the third argument to both `resolveDarkAccent` calls. This single change clears B3, B5's adjacent sites, and the chip readability problem together — it is the same defect as B3, generalised.
+**Fix.** Give Contacts (and Home, Menstrual, MyProfile) a dark companion the way Medication and Healthcare have one. A value near `#D08A2E` measures ≈6.0:1 on `#1C1C1F` for Contacts; run each through `paletteContrast.test.js` before adopting. Then pass it as the third argument to every `resolveDarkAccent` call listed above. This single change clears B3, B5's adjacent sites, and the chip/label readability problem together — it is the same defect as B3, generalised.
 
 ### B9 · Settings subscreens use raw accents as text/labels in dark mode
 
@@ -469,7 +470,7 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 **Batch 2 — dark mode (B1–B8).** Add the missing dark resolution in five files, plus amber tokens and a Contacts dark companion (B8). B7 (emoji) is separate because it needs a migration.
 - Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
 
-**Batch 3 — list and control consistency (C1–C7, C11, C12).** Extract `ModuleListRow` and `ListSearchField`, then delete the four hand-rolled copies. Delete the duplicate DEMO span and the card shadow on the way through.
+**Batch 3 — list and control consistency (C1, C2, C4–C8, C11, C12, C14–C16, C18–C20).** Extract `ModuleListRow` and `ListSearchField`, then delete the four hand-rolled copies. Delete the duplicate DEMO span and the card shadow on the way through. (C3 and C9 are typography/touch and go in Batch 4; C13 is reclassified as not a defect.)
 
 **Batch 4 — typography, icons, touch (C9, D1–D5).** Add `microLabel`, the header icon button, the emoji migration, and the reduced-motion/toggle fixes. (C13 is reclassified as not a defect; see §6.)
 
