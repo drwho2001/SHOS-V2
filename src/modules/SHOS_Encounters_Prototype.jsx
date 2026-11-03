@@ -24,7 +24,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretDownIcon as CaretDown, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -1149,6 +1149,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const [sessionVersion, setSessionVersion] = useState(0);
   const sessions = useLoadedMemo(loadSessions, [sessionVersion], []);
   const [sessionFilter, setSessionFilter] = useState("");
+  const [showSessionSummaries, setShowSessionSummaries] = useState(false);
   useEffect(() => {
     const refreshSessions = () => setSessionVersion((version) => version + 1);
     window.addEventListener("shos-session-changed", refreshSessions);
@@ -1446,8 +1447,35 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             </div>
           </div>
         )}
+        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "calc(env(safe-area-inset-top) + 60px)", zIndex: 5, background: T.bg }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
+              {showArchived ? "Hide archived" : "Show archived"}
+            </div>
+            {sessionSummaries.length > 0 && (
+              <button
+                type="button"
+                aria-expanded={showSessionSummaries}
+                aria-controls="encounter-session-summaries"
+                onClick={() => setShowSessionSummaries((show) => !show)}
+                style={{ padding: "4px 8px", borderRadius: radius.full, border: `1px solid ${sessionFilter ? T.encountersPink : T.border}`, background: sessionFilter ? `${T.encountersPink}15` : "transparent", color: sessionFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+              >
+                Sessions ({sessionSummaries.length})
+                <CaretDown size={13} style={{ marginLeft: 4, verticalAlign: "middle", transform: showSessionSummaries ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }} />
+              </button>
+            )}
+          </div>
+          {/* ADDED 26 Aug 2026 — real ask: filters like Contacts has. */}
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${dateFilter ? T.encountersPink : T.border}`, color: dateFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600 }}>
+            Filter{dateFilter ? " (1)" : ""}
+          </div>
+
+          <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+            {visible.length > 0 ? `${visible.length} encounters${dateFilter ? ` (filtered)` : ""}${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No encounters match" : "No encounters logged"}
+          </div>
+        </div>
         {sessionSummaries.length > 0 && (
-          <div style={{ padding: "8px 16px 0", display: "flex", gap: 8, overflowX: "auto" }}>
+          <div id="encounter-session-summaries" hidden={!showSessionSummaries} style={{ padding: "8px 16px 0", display: "flex", gap: 8, overflowX: "auto" }}>
             {sessionSummaries.map((session) => {
               const active = sessionFilter === session.id;
               return (
@@ -1471,19 +1499,6 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             })}
           </div>
         )}
-        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "calc(env(safe-area-inset-top) + 60px)", zIndex: 5, background: T.bg }}>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
-            {showArchived ? "Hide archived" : "Show archived"}
-          </div>
-          {/* ADDED 26 Aug 2026 — real ask: filters like Contacts has. */}
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${dateFilter ? T.encountersPink : T.border}`, color: dateFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600 }}>
-            Filter{dateFilter ? " (1)" : ""}
-          </div>
-
-          <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
-            {visible.length > 0 ? `${visible.length} encounters${dateFilter ? ` (filtered)` : ""}${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No encounters match" : "No encounters logged"}
-          </div>
-        </div>
         {showFilters && (
           <div style={{ padding: "8px 16px 0", display: "flex", flexWrap: "wrap", gap: 6 }}>
             {[

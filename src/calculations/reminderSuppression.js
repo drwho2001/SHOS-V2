@@ -183,6 +183,18 @@ export function buildRefillSignature(medications) {
 }
 
 /**
+ * Requested-but-uncollected refills are a separate status from refills still
+ * needing to be requested. Include each request timestamp so a later refill
+ * cycle for the same medication is not hidden by a session dismissal.
+ */
+export function buildRefillAwaitingSignature(medications) {
+  const requested = (medications || []).map((medication) => ({
+    id: medication?.id && `${medication.id}@${medication.refillRequestedAt || "unknown"}`,
+  }));
+  return buildSimpleSignature(`${REMINDER_KIND.REFILL}:awaiting`, requested);
+}
+
+/**
  * Decide whether a banner should be on screen.
  *
  * Order matters here and it is the substance of the feature: an

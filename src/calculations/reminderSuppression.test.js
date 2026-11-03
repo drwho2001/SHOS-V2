@@ -12,7 +12,9 @@ import {
   REMINDER_KIND,
   ACK_SCOPE,
   buildMedsSignature,
+  buildRefillSignature,
   buildSimpleSignature,
+  buildRefillAwaitingSignature,
   isBannerVisible,
   hasOutstandingAcknowledged,
   shouldSuppressDeviceNotification,
@@ -78,6 +80,24 @@ describe("buildSimpleSignature", () => {
     const visit = buildSimpleSignature(REMINDER_KIND.CLINIC_VISIT, [{ id: "x" }]);
     const jab = buildSimpleSignature(REMINDER_KIND.VACCINATION, [{ id: "x" }]);
     expect(visit).not.toBe(jab);
+  });
+});
+
+describe("buildRefillAwaitingSignature", () => {
+  it("is order-independent and distinct from the refill-needed signature", () => {
+    const awaiting = [
+      { id: "sertraline", refillRequestedAt: "2026-11-03T08:00:00.000Z" },
+      { id: "prep", refillRequestedAt: "2026-11-03T09:00:00.000Z" },
+    ];
+    const signature = buildRefillAwaitingSignature(awaiting);
+    expect(signature).toBe(buildRefillAwaitingSignature([...awaiting].reverse()));
+    expect(signature).not.toBe(buildRefillSignature(awaiting));
+  });
+
+  it("changes for a new request cycle and is empty without awaiting refills", () => {
+    expect(buildRefillAwaitingSignature([{ id: "sertraline", refillRequestedAt: "first" }]))
+      .not.toBe(buildRefillAwaitingSignature([{ id: "sertraline", refillRequestedAt: "second" }]));
+    expect(buildRefillAwaitingSignature([])).toBe("");
   });
 });
 

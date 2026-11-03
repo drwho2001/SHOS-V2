@@ -70,6 +70,7 @@ import {
   ACK_SCOPE,
   buildMedsSignature,
   buildRefillSignature,
+  buildRefillAwaitingSignature,
   buildTestingSignature,
   buildVaccinationSignature,
   buildClinicVisitSignature,
@@ -1738,6 +1739,12 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     () => buildRefillSignature(refillDue),
     [refillDue]
   );
+  const refillAwaitingSignature = useMemo(
+    () => buildRefillAwaitingSignature(refillAwaiting),
+    [refillAwaiting]
+  );
+  const refillAwaitingVisible = refillAwaiting.length > 0
+    && !sessionDismissed.includes(refillAwaitingSignature);
   // ADDED 28 Sep 2026, fixed same day - D1. This used to read
   // `testingDue?.test`, but `getTestingDueState()` returns `{ due, dueDate }`
   // and has NO `test` property at all, so the expression was always undefined,
@@ -2860,7 +2867,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         </div>
       )}
 
-      {!hasSampleData && (dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue || vaccinationDue) && (
+      {!hasSampleData && (dueMeds.length > 0 || refillDue.length > 0 || refillAwaitingVisible || testingDue || clinicVisitDue || vaccinationDue) && (
         // CHANGED 15 Sep 2026 — real report: this stack read as "too
         // blocky/harsh/clashy" sitting flush edge-to-edge against the
         // screen with square corners. Wrapped the whole stack (not
@@ -2952,7 +2959,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                 logged. Re-adding a timer here would be the same unsourced
                 constant the medication lockout fell into before the NHS figures
                 were found. */}
-            {refillAwaiting.length > 0 && (
+            {refillAwaitingVisible && (
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 16px", background: ACCENTS.medication, borderTop: "1px solid rgba(255,255,255,.25)" }}>
                 <Clock size={18} color="rgba(255,255,255,.9)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -2975,6 +2982,15 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                     I didn&apos;t order these
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => dismissReminder(REMINDER_KIND.REFILL, refillAwaitingSignature, "Hidden for now — this refill is still requested, not collected. It'll show again when you next open the app.")}
+                  aria-label="Dismiss requested refill status for now"
+                  title="Hide for now"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, margin: -4, padding: 4, border: "none", background: "transparent", color: "rgba(255,255,255,.9)", cursor: "pointer" }}
+                >
+                  <X size={18} />
+                </button>
               </div>
             )}
 
