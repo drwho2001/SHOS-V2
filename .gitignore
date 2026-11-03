@@ -28,6 +28,12 @@ public/version.json
 backups/
 test-results/
 
+# Device-audit screenshots. These are real screenshots of the owner's own data
+# (contact names, clinic details, dates) taken with `adb exec-out screencap` for
+# the design audit in docs/DESIGN-AUDIT.md. Same rule as backups/ above: keep
+# them local, and never let a stray `git add -A` publish them.
+.audit-shots/
+
 # Editor/tool config snapshots. Five of these were committed to this repo by
 # accident and sat in `git status` forever. They are a snapshot of a config
 # that git history already records, so tracking them bought nothing and cost
