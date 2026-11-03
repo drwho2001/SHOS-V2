@@ -446,7 +446,7 @@ Recorded so these do not get "fixed" later.
 | M8 | §4.1 | Fix one list-card title weight (C4). |
 | M9 | §7 | Document the Home centre tab as an intentional always-filled, label-less exception, so it is not copied and not "fixed" (C13). |
 | M10 | §7 | Document when the bottom nav persists vs hides (C14). |
-| M11 | §3.7 | Replace the vague "open audit item" with the actual raw-accent inventory: Home summary + quick-add, Design screen link/swatches/segmented border, Encounters kink tag, Incomplete chip, Contacts select bar (B1–B6). |
+| M11 | §3.7 | Replace the vague "open audit item" with the actual raw-accent inventory: Home summary + quick-add, Design screen link/swatches/segmented border, Encounters kink tag, Incomplete chip, Contacts select bar (B1–B6), settings subscreens (B9). |
 | M12 | §9 | Add "no emoji as icons, and never as a stored value" (B7). |
 | M13 | §11 | State the desktop cap and how it is applied (W1). |
 
@@ -472,7 +472,7 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 
 **Batch 3 — list and control consistency (C1, C2, C4–C8, C11, C12, C14–C16, C18–C20).** Extract `ModuleListRow` and `ListSearchField`, then delete the four hand-rolled copies. Delete the duplicate DEMO span and the card shadow on the way through. (C3 and C9 are typography/touch and go in Batch 4; C13 is reclassified as not a defect.)
 
-**Batch 4 — typography, icons, touch (C9, D1–D5).** Add `microLabel`, the header icon button, the emoji migration, and the reduced-motion/toggle fixes. (C13 is reclassified as not a defect; see §6.)
+**Batch 4 — typography, icons, touch (C3, C9, D1–D5).** Add the standard search field (C3), `microLabel`, the header icon button, the emoji migration, and the reduced-motion/toggle fixes. (C13 is reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 
@@ -521,7 +521,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Landscape and tablet widths on the device (the web pass was desktop-width only).
 - Localisation: only English strings were rendered; the long-string rule was not exercised.
 - Reduced motion on module screens: all module files that animate import `useReducedMotion` (verified); 4 settings screens do not (D5). Coverage is code-level only.
-- Dark-mode web: not checked (web pass was Home + Settings in light only).
+- Dark-mode web: could not be toggled via browser automation (preferences are encrypted). Same React code as Android, so all B-series findings apply, but not independently verified.
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
 - Settings subscreens were sampled in dark mode. The *layout* (sticky header, spacing, safe area) is clean, but the *colour* pass found raw-accent-as-text reads in AboutScreen, StatsScreen, ResourcesScreen, ShareScreen and TrashScreen — see B9 (new). Privacy, Widgets, Notifications, Preferences, Manage lists, Calendar, My Profile, Backup & Export and Colour scheme were checked and are clean on colour. DeveloperTools and Design are flagged (B9 and B1/B2 respectively). Light mode for the same screens was covered in the earlier pass.
