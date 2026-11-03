@@ -4,7 +4,7 @@ import React, { Children, useId, useRef } from "react";
  * Accessible tabs for long Add/Edit forms. Panels stay mounted while hidden so
  * controlled fields and picker-local draft text survive a tab change.
  */
-export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentText, textColor, border, surface, children }) {
+export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentText, textColor, border, surface, tabListPadding = "10px 0 8px", children }) {
   const id = `form-tabs-${useId().replace(/:/g, "")}`;
   const tabRefs = useRef([]);
   const panels = Children.toArray(children);
@@ -36,7 +36,7 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
           display: "flex",
           gap: 6,
           overflowX: "auto",
-          padding: "10px 0 8px",
+          padding: tabListPadding,
           marginBottom: 4,
           borderBottom: `1px solid ${border}`,
         }}

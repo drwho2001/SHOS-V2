@@ -1079,7 +1079,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
       <div style={{ padding: "0 16px 100px" }}>
         <FormTabs tabs={PROFILE_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab}
           ariaLabel="My Profile form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
-          textColor={T.textSecondary} border={T.border} surface={T.bg}>
+          textColor={T.textSecondary} border={T.border} surface={T.bg} tabListPadding="0 0 8px">
         <div>
         <SectionCard accent={T.contactsTeal} title="Identity" T={T}>
           <PhotoPicker value={form.profilePicture} onChange={set("profilePicture")} T={T} />

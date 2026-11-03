@@ -9,7 +9,7 @@ const tabs = [
   { key: "notes", label: "Notes" },
 ];
 
-function renderTabs(activeKey = "about", onChange = vi.fn()) {
+function renderTabs(activeKey = "about", onChange = vi.fn(), tabListPadding) {
   return {
     onChange,
     ...render(
@@ -23,6 +23,7 @@ function renderTabs(activeKey = "about", onChange = vi.fn()) {
         textColor="#52525A"
         border="#DCDCE1"
         surface="#FFFFFF"
+        tabListPadding={tabListPadding}
       >
         <div>About fields</div>
         <div>Health fields</div>
@@ -33,6 +34,11 @@ function renderTabs(activeKey = "about", onChange = vi.fn()) {
 }
 
 describe("FormTabs", () => {
+  it("lets My Profile place the sticky tab buttons directly under its title", () => {
+    renderTabs("about", undefined, "0px 0px 8px");
+    expect(screen.getByRole("tablist").style.padding).toBe("0px 0px 8px");
+  });
+
   it("exposes the selected panel and keeps other panels hidden but mounted", () => {
     renderTabs();
 
