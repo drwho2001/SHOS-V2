@@ -4,7 +4,7 @@ This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records 
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
-**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty, loading and error states, reduced motion, gesture navigation, landscape and localisation were not checked. See §10.
+**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty states (C19), loading states (C20) and reduced motion (D5, partial) are now code-checked; gesture navigation, landscape, localisation and dark-mode web remain unchecked. See §10.
 
 ## 1. How this was checked
 
@@ -30,7 +30,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 |---|---:|
 | P1 blocking | 5 |
 | P2 dark-mode / colour | 8 |
-| P3 inconsistency | 17 |
+| P3 inconsistency | 19 |
 | P4 accessibility | 5 |
 | Web/PWA specific | 1 |
 | Investigated and **not** defects | 12 |
@@ -343,7 +343,19 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 **Fix.** Extract one `ModuleListRow` with props for accent, status dot, demo badge, metadata indent and title weight. The manual already says to consolidate at three copies — this is the third copy.
 
-### C18 · `FONT_FAMILY` is bypassed in 44 of 47 files
+### C20 · Loading states are text placeholders, not skeletons
+
+Manual §10.5 says "Loading states should preserve the final layout shape where practical." The five files that show a loading state (`App.jsx`, `SHOS_Healthcare_Prototype.jsx`, `SHOS_MyProfile_Prototype.jsx`, `SHOS_Settings_Prototype.jsx`, `DeveloperToolsScreen.jsx`) render a bare "Loading..." string (9 sites total). None preserves the final layout shape. Low severity, but inconsistent with the manual.
+
+**Fix.** Add skeleton placeholders matching the final row/card shape for the lists that load asynchronously (contacts, encounters, medications). Keep "Loading..." only for full-screen transitions.
+
+### C19 · Empty states are text-only, with no icon or action
+
+Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." All 69 empty-text sites across 25 files render a single italic line (`"No contacts yet."`, `"No encounters match your search."`, etc.) with no icon and no action. Some lists (e.g. Contacts) include an action elsewhere, but the empty state itself does not. Consistent deviation from the manual, not a one-off.
+
+**Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the 25 files. Consolidate at the manual's three-copy threshold.
+
+### C18 · `FONT_FAMILY` is bypassed in 43 of 46 files:
 
 `src/calculations/designTokens.js` exports `FONT_FAMILY = "'Inter', sans-serif"`. It is consumed in only two files (`SHOS_GlobalSearch_Prototype.jsx`, `SHOS_Healthcare_Prototype.jsx`) plus its own definition. The other 43 files that set a font use the literal `"'Inter', sans-serif"` string (263 sites). Visually identical, but it means a font change requires editing 263 sites and the token is not the single source of truth the manual claims it is (manual §4, §4.2). The audit's earlier "not defect" line ("Healthcare and every screen root checked do set FONT_FAMILY") was wrong: Healthcare is one of only two consumers.
 
@@ -512,7 +524,8 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Gesture navigation (the device uses 3-button nav). Bottom-inset behaviour with a gesture bar is unverified.
 - Landscape and tablet widths on the device (the web pass was desktop-width only).
 - Localisation: only English strings were rendered; the long-string rule was not exercised.
-- Animated transitions: reduced motion was checked in 4 settings screens (D5 found violations); module screens not checked.
+- Reduced motion on module screens: not checked (only 4 settings screens, D5).
+- Dark-mode web: not checked (web pass was Home + Settings in light only).
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
 - All settings subscreens were sampled in dark mode (Privacy, Widgets, Notifications, Preferences, Manage lists, Stats, Calendar, Trash, Developer tools, About, Share SHOS, My Profile, Backup & Export, Design, Colour scheme) and found clean — no new findings. Light mode for the same screens was covered in the earlier pass.
@@ -521,10 +534,11 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 
 These are violations the manual's rules would catch but this pass did not check. Listed so the next pass has a starting point; none is claimed as clean.
 
-- **`minHeight: 44` on inline SVGs** (manual §5.1): `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, and many others (117 occurrences of `minHeight: 44` in total, a large fraction on Phosphor icons).
+- **`minHeight: 44` on inline SVGs** (manual §5.1): ~11 inline Phosphor icons (of 117 total `minHeight: 44` sites). See D4.
 - **Hardcoded hex beyond the cited sites:** 495 hex literals across 41 files. Examples: `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
 - **RADIUS literals beyond 14** (see C11's scope note): 299 `borderRadius: <number>` sites across 41 files using 12, 10, 8, 4.
 - **FONT_FAMILY bypass:** most screens use the literal `"'Inter', sans-serif"` rather than the token. Visually identical but token drift.
 - (Resolved above: dark companions for Home and Menstrual are now part of B8.)
-- **Reduced motion, empty/loading/error states** (manual §10.5, §12): explicitly excluded from this pass.
+- **Empty/loading/error states** (manual §10.5): now code-checked (C19, C20); device verification of the actual empty states not done.
+- **Reduced motion on module screens** (manual §12): not checked.
 - **Safe-area double-counting on other screens:** only Settings/Healthcare/FormTabs were checked; Vaccinations/Measurements/SymptomLog/ClinicVisits share `STICKY_SUBHEADING_TOP` with different header heights.
