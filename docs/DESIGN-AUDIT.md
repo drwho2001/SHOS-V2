@@ -4,7 +4,7 @@ This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records 
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
-**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty states (C19), loading states (C20) and reduced motion (D5, partial) are now code-checked; error states (manual §10.5) are not. Gesture navigation, landscape, localisation and dark-mode web remain unchecked. See §10.
+**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty states (C19), loading states (C20) and reduced motion (D5, partial) are now code-checked. Error states follow manual §10.1 (ACTION.red text under the failed field) — verified in PrivacyScreen, AutomaticBackupsScreen and App.jsx; no new finding. Gesture navigation, landscape, localisation and dark-mode web remain unchecked. See §10.
 
 ## 1. How this was checked
 
@@ -549,6 +549,6 @@ These are sites the manual's rules would flag but this pass did not enumerate as
 - (Resolved above: dark companions for Home and Menstrual are now part of B8.)
 - **Empty states** (manual §10.5): code-checked (C19); device verification of the actual empty states not done.
 - **Loading states** (manual §10.5): code-checked (C20); device verification not done.
-- **Error states** (manual §10.5): **not audited at all.** No finding exists.
+- **Error states** (manual §10.5): code-checked; follow §10.1 (ACTION.red under the failed field). No new finding.
 - **Reduced motion on module screens** (manual §12): not checked.
 - **Safe-area double-counting on other screens:** only Settings/Healthcare/FormTabs were checked; Vaccinations/Measurements/SymptomLog/ClinicVisits share `STICKY_SUBHEADING_TOP` with different header heights.
