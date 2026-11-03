@@ -471,11 +471,11 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 
 **Batch 3 — list and control consistency (C1–C7, C11, C12).** Extract `ModuleListRow` and `ListSearchField`, then delete the four hand-rolled copies. Delete the duplicate DEMO span and the card shadow on the way through.
 
-**Batch 4 — typography, icons, touch (C9, C13, D1–D3).** Add `microLabel`, the header icon button, and the emoji migration.
+**Batch 4 — typography, icons, touch (C9, D1–D5).** Add `microLabel`, the header icon button, the emoji migration, and the reduced-motion/toggle fixes. (C13 is reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 
-**Batch 6 — web/PWA (W1–W2).** Cap the root width and resolve the update-notice overlap. Can ship independently of the device work.
+**Batch 6 — web/PWA (W1).** Cap the root width. (W2 withdrawn — the update notice is already correctly positioned.) Can ship independently of the device work.
 
 ### Tests worth adding
 
