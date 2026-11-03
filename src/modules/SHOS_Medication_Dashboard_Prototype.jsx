@@ -5,6 +5,7 @@ import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, Arr
 // looks or behaves changes; this just moves WHERE the facts actually live.
 import { MedicationRepository, DOSE_UNIT_OPTIONS } from "../repositories/medicationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
@@ -1877,7 +1878,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 // Hoisted to module scope (a pure literal, no dependency on props/state).
 const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
-export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget, onQuickExit } = {}) {
+export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, onOpenGlossary, registerModuleBackHandler, quickAddTarget, onQuickExit } = {}) {
   const { t: tr } = useTranslation();
   const reducedMotion = useReducedMotion();
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
@@ -1905,7 +1906,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // module's read-only cross-repository reference (e.g. Contacts'
   // Timeline reading EncounterRepository). Allergies is edited on My
   // Profile, not here.
-  const allergies = useLoadedMemo(async () => (await MyProfileRepository.getProfile()).allergies, [], []);
+  const [allergies, setAllergies] = useLoadedState(async () => (await MyProfileRepository.getProfile()).allergies, [], []);
   // Called after every write to either repository — re-reads both and
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.
@@ -1923,6 +1924,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // ADDED 26 Aug 2026 — real ask: Medication's own settings screen,
   // now that real content exists (dose reminders) to justify it.
   const [showMedicationSettings, setShowMedicationSettings] = useState(false);
+  const [showMyProfile, setShowMyProfile] = useState(false);
   // ADDED 26 Aug 2026 — real ask: back should go one step within this
   // module. Medication has the most overlay states of any module —
   // checked in priority order, whatever's currently on top closes
@@ -1932,6 +1934,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   useEffect(() => {
     if (!registerModuleBackHandler) return;
     registerModuleBackHandler(() => {
+      if (showMyProfile) { setShowMyProfile(false); MyProfileRepository.getProfile().then((profile) => setAllergies(profile.allergies || [])); return true; }
       if (showMedicationSettings) { setShowMedicationSettings(false); return true; }
       if (sheet) { setSheet(null); return true; }
       if (correction) { setCorrection(null); return true; }
@@ -1941,7 +1944,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
       return false;
     });
     return () => registerModuleBackHandler(null);
-  }, [showMedicationSettings, sheet, correction, editingMed, addingMed, updatingDose, registerModuleBackHandler]);
+  }, [showMyProfile, showMedicationSettings, sheet, correction, editingMed, addingMed, updatingDose, registerModuleBackHandler, setAllergies]);
   // ADDED 26 Aug 2026 — real ask: multi-select rolled out to every
   // module. Uses an explicit "Select" toggle here instead of the
   // long-press pattern every other module uses — this card already
@@ -2354,7 +2357,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
           </div>
           </div>
-          <div style={{ background: T.bg, padding: "4px 16px 0" }}>
+          <div style={{ background: T.bg, padding: "6px 16px 0", borderTop: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
             {["Registry", "Log", "Inventory"].map((t) => (
               <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 13, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
@@ -2402,26 +2405,24 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           />
         )}
 
-        {/* ADDED 19 Aug 2026 — real ask: allergies visible here too, not
-            just on Clinic Card, since it's directly relevant while
-            adding/reviewing medications. Read-only banner — editing
-            still happens on My Profile, this is a visibility surface
-            only, and stays silent entirely when nothing's recorded
-            rather than showing an empty/permanent row. */}
-        {/* FIXED — real follow-up: the previous fix only addressed the
-            gap BELOW this banner (double-counted against the stat row).
-            This banner's own top margin was still a flat 0, sitting
-            completely flush against the sticky module header above it
-            — no breathing room at all, which is very likely what
-            still read as "off" after that first fix. 12px top now,
-            matching the same 12px this banner already uses on every
-            other side. */}
-        {allergies.length > 0 && (
-          <div style={{ margin: "12px 16px 12px", padding: "10px 14px", borderRadius: radius.md, background: `${T.actionRed}14`, border: `1px solid ${T.actionRed}40`, display: "flex", alignItems: "center", gap: 8 }}>
-            <AlertTriangle size={15} color={T.actionRed} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: T.actionRedText, fontWeight: 600 }}>Allergies: {allergies.join(", ")}</span>
-          </div>
-        )}
+        {/* Allergies remain sourced from My Profile, but this home-screen
+            summary opens its editor directly so it is not a dead-end warning. */}
+        <div style={{ margin: "12px 16px", }}>
+          <button
+            type="button"
+            onClick={() => setShowMyProfile(true)}
+            aria-label={allergies.length ? `Edit allergies: ${allergies.join(", ")}` : "Add allergy information"}
+            style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: radius.md, background: allergies.length ? `${T.actionRed}14` : T.surfaceVariant, border: `1px solid ${allergies.length ? `${T.actionRed}40` : T.border}`, display: "flex", alignItems: "center", gap: 8, textAlign: "left", cursor: "pointer" }}
+          >
+            {allergies.length > 0
+              ? <AlertTriangle size={15} color={T.actionRed} style={{ flexShrink: 0 }} />
+              : <Plus size={15} color={T.textSecondary} style={{ flexShrink: 0 }} />}
+            <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: allergies.length ? T.actionRedText : T.textSecondary, fontWeight: 600 }}>
+              Allergies: {allergies.length ? allergies.join(", ") : "None recorded"}
+            </span>
+            <span style={{ fontSize: 11, color: T.textSecondary }}>{allergies.length ? "Edit" : "Add"}</span>
+          </button>
+        </div>
 
         {/* ADDED 19 Aug 2026 — real ask: an immediate way to undo the
             most recent dose log, specifically for the accidental-tap
@@ -2480,13 +2481,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             other module with a stat/summary row directly under its
             banner (Healthcare, Encounters) has some top breathing
             room, this was the one at a flat 0. */}
-        {/* FIXED — real ask: "spacing after allergies added" — the flat
-            12px top padding above double-counted for anyone with
-            allergies recorded, since the Allergies banner right above
-            (when it's showing) already carries its own 12px bottom
-            margin — the undo/redo toasts are `position: fixed` overlays
-            that never affect layout, only Allergies actually does. */}
-        <div style={{ display: "flex", gap: 10, padding: `${allergies.length > 0 ? 0 : 12}px 16px 16px` }}>
+        <div style={{ display: "flex", gap: 10, padding: "0 16px 16px" }}>
           <StatTile T={T} label="Active medications" value={activeMeds.length} tint={T.medsBlue} />
           <StatTile T={T} label="Needs action" value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
             subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
@@ -2636,6 +2631,19 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
 
       {showMedicationSettings && (
         <MedicationSettingsScreen T={T} onClose={() => setShowMedicationSettings(false)} onOpenGeneralSettings={() => { setShowMedicationSettings(false); onOpenSettings?.(); }} />
+      )}
+      {showMyProfile && (
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
+          <MyProfileModule
+            onClose={() => {
+              setShowMyProfile(false);
+              MyProfileRepository.getProfile().then((profile) => setAllergies(profile.allergies || []));
+            }}
+            registerModuleBackHandler={registerModuleBackHandler}
+            openEditingOnMount
+            onOpenGlossary={onOpenGlossary}
+          />
+        </div>
       )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
