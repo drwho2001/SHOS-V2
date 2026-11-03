@@ -30,8 +30,8 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 |---|---:|
 | P1 blocking | 5 |
 | P2 dark-mode / colour | 8 |
-| P3 inconsistency | 16 |
-| P4 accessibility | 3 |
+| P3 inconsistency | 17 |
+| P4 accessibility | 4 |
 | Web/PWA specific | 1 |
 | Investigated and **not** defects | 12 |
 | Manual corrections needed | 12 |
@@ -133,7 +133,7 @@ Every item here is a raw token read that bypasses the module's own resolved colo
 
 ### B3 · Home's Contacts accent is not dark-resolved (subsumed by B8)
 
-B3's two sites (`:1171`, `:1266`) are part of B8's inventory. Kept as a separate line only because it was the first place the missing dark companion was noticed; the fix is B8's.
+B3's two sites (`:1171`, `:1266`) are part of B8's inventory. Kept as a separate line only because it was the first place the missing dark companion was noticed; the fix is B8's. B8 also covers `homeColor` (`:191`) and `menstrualColor` (`:199`), which the challenger flagged as the same defect class.
 
 Two sites read `ACCENTS.contacts` directly while their neighbours read resolved variables:
 
@@ -179,9 +179,15 @@ This breaks two rules at once: icons are Phosphor-only, and a display glyph is b
 
 **Fix.** Store a stable key (`home`, `clinicRoutine`, …) and render the Phosphor icon beside the label. The two `=== "🏠 Home"` branches become `=== "home"`. This is the one finding here that needs a small data migration, so it should be its own change.
 
-### B8 · Contacts has no dark companion, so every Contacts accent used as text fails in dark mode
+### B8 · Contacts, Home and Menstrual have no dark companion, so their accents used as text fail in dark mode
 
-`resolveDarkAccent("contacts", ACCENTS.contacts)` is called in `src/modules/SHOS_Contacts_Prototype.jsx:156` and `:161` **without a third argument**, so `defaultDarkValue` falls back to the raw light value `#B36205`. Every other module that needs a dark companion (Encounters, Medication, Healthcare) passes one. Contacts never did, so in dark mode the Contacts accent is byte-identical to light mode.
+The same call without a third argument appears in three modules:
+
+- `src/modules/SHOS_Contacts_Prototype.jsx:156` and `:161` — `contactsTeal` / `contactsTealText`
+- `src/modules/SHOS_Home_Prototype.jsx:191` — `homeColor`
+- `src/modules/SHOS_Home_Prototype.jsx:199` — `menstrualColor`
+
+In all three, `defaultDarkValue` falls back to the raw light value, so the accent is byte-identical in light and dark mode. Encounters, Medication and Healthcare pass a hand-picked companion; these three do not. Where the accent is used as text or an icon on a dark surface, it fails contrast (Contacts 3.78:1; Home teal on `#1C1C1F` is 5.2:1 but visibly dull; Menstrual pink is 3.6:1 at 13 px).
 
 **Contrast on `#1C1C1F`:** `#B36205` = **3.78:1** at 13 px/600 — below 4.5:1. At 10 px (the role/position/tag chips at `:1847`, `:1850`, `:1857`) it is worse, and those chips render as brown text on a `contactsTeal 15` tint, which is `#B36205` at 8% alpha over `#1C1C1F` — effectively brown on near-black. Device-confirmed: the relationship and tag chips on a dark contact card are barely legible, and the section labels (`IDENTITY`, etc.) are visibly duller than the same label in Encounters/Healthcare.
 
@@ -337,6 +343,12 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 **Fix.** Extract one `ModuleListRow` with props for accent, status dot, demo badge, metadata indent and title weight. The manual already says to consolidate at three copies — this is the third copy.
 
+### C18 · `FONT_FAMILY` is bypassed in 44 of 47 files
+
+`src/calculations/designTokens.js` exports `FONT_FAMILY = "'Inter', sans-serif"`. It is consumed in only three files (`designTokens.js` itself, `SHOS_GlobalSearch_Prototype.jsx`, `SHOS_Healthcare_Prototype.jsx`). The other 44 files that set a font use the literal `"'Inter', sans-serif"` string (263 sites). Visually identical, but it means a font change requires editing 263 sites and the token is not the single source of truth the manual claims it is (manual §4, §4.2). The audit's earlier "not defect" line ("Healthcare and every screen root checked do set FONT_FAMILY") was wrong: Healthcare is one of only two consumers.
+
+**Fix.** Replace the literal with the token everywhere. A codemod is safe here because the string is byte-identical; the only risk is files that import the token under a different name.
+
 ### C17 · Contact card: the travel/social icon row leaves a gap above the relationship chips
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1720` renders the name and the travel/social/contact-method icons on one flex row with `marginBottom: 4`; the relationship-type chips below (`:1829`) carry `marginTop: 4`. The icons are pushed right by `marginLeft: "auto"`, so when the icon cluster is narrow it sits well to the right of the name and never reaches the chips' `marginLeft: 16` start. The result is an 8 px vertical gap between the name and the relationship line that exists only because of the icon row, plus a horizontal gap the icons do not fill.
@@ -376,6 +388,12 @@ Home's header icons (`:908`, `:914`, `:918`, `:927`, `:930`) are `size: 24` with
 The manual states 44 dp twice (§5.1 and §12). The most-used controls in the app miss it.
 
 **Fix.** Standardise on a `HeaderIconButton` with `minWidth: 44, minHeight: 44`, centred glyph, `margin: -6` so the layout does not grow. This also removes five copies of the same keydown boilerplate.
+
+### D4 · `minHeight: 44` is applied to inline SVG icons in 117 places
+
+Manual §5.1 states: "Do not put `minHeight: 44` on an inline SVG icon. It scales the glyph. Use padding or a negative margin on the parent instead." The codebase violates this in 117 sites across 16 files, including `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, `SHOS_Contacts_Prototype.jsx` and `SHOS_Settings_Prototype.jsx`. The glyph is enlarged by the constraint, which is the opposite of the intended touch-target padding.
+
+**Fix.** A codemod that moves `minHeight: 44` from the icon's style to its parent container's style, replacing the icon's own with `padding`/`margin`. High-risk on dense rows; do file-by-file with a screenshot check per module.
 
 ---
 
@@ -501,6 +519,6 @@ These are violations the manual's rules would catch but this pass did not check.
 - **Hardcoded hex beyond the cited sites:** `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
 - **RADIUS literals beyond 14** (see C11's scope note): 12, 10, 8, 4 used as `borderRadius` values.
 - **FONT_FAMILY bypass:** most screens use the literal `"'Inter', sans-serif"` rather than the token. Visually identical but token drift.
-- **Dark companions missing for Home and Menstrual:** `SHOS_Home_Prototype.jsx:191` and `:199` call `resolveDarkAccent` without a default dark value, same defect class as B8.
+- (Resolved above: dark companions for Home and Menstrual are now part of B8.)
 - **Reduced motion, empty/loading/error states** (manual §10.5, §12): explicitly excluded from this pass.
 - **Safe-area double-counting on other screens:** only Settings/Healthcare/FormTabs were checked; Vaccinations/Measurements/SymptomLog/ClinicVisits share `STICKY_SUBHEADING_TOP` with different header heights.
