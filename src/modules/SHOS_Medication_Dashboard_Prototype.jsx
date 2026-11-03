@@ -2641,6 +2641,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             }}
             registerModuleBackHandler={registerModuleBackHandler}
             openEditingOnMount
+            initialEditTab="health"
             onOpenGlossary={onOpenGlossary}
           />
         </div>

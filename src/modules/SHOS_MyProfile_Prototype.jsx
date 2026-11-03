@@ -946,10 +946,10 @@ function useResolvedHivStatus(stated) {
   );
 }
 
-function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
+function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, initialTab = PROFILE_EDIT_TABS[0].key }) {
   const { t } = useTranslation();
     const [form, setForm] = useState(profile);
-    const [activeFormTab, setActiveFormTab] = useState(PROFILE_EDIT_TABS[0].key);
+    const [activeFormTab, setActiveFormTab] = useState(initialTab);
     const editSheetRef = useRef(null);
     useEffect(() => { editSheetRef.current?.focus(); }, []);
     // ADDED 28 Sep 2026 — Escape-to-dismiss sweep, second pass. This is a
@@ -1689,7 +1689,7 @@ function ProfileSummary({ profile, T, onEdit }) {
 // open straight into the edit form instead of the summary view —
 // optional, every existing call site keeps its current behavior by
 // simply not passing it.
-export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false, onOpenGlossary }) {
+export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false, initialEditTab = "about", onOpenGlossary }) {
   const { t } = useTranslation();
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
   const [editing, setEditing] = useState(openEditingOnMount);
@@ -1787,7 +1787,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
         {showShare && <ShareProfilePanel T={T} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} />}
 
         {editing && (
-          <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} onOpenGlossary={onOpenGlossary} />
+          <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} onOpenGlossary={onOpenGlossary} initialTab={initialEditTab} />
         )}
       </div>
     </div>
