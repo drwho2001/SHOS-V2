@@ -1150,6 +1150,10 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const sessions = useLoadedMemo(loadSessions, [sessionVersion], []);
   const [sessionFilter, setSessionFilter] = useState("");
   const [showSessionSummaries, setShowSessionSummaries] = useState(false);
+  const sessionSummariesRef = useRef(null);
+  useEffect(() => {
+    if (showSessionSummaries) sessionSummariesRef.current?.scrollIntoView({ block: "start" });
+  }, [showSessionSummaries]);
   useEffect(() => {
     const refreshSessions = () => setSessionVersion((version) => version + 1);
     window.addEventListener("shos-session-changed", refreshSessions);
@@ -1476,7 +1480,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           </div>
         </div>
         {sessionSummaries.length > 0 && (
-          <div id="encounter-session-summaries" aria-hidden={!showSessionSummaries} style={{ padding: "8px 16px 0", display: showSessionSummaries ? "flex" : "none", gap: 8, overflowX: "auto" }}>
+          <div ref={sessionSummariesRef} id="encounter-session-summaries" aria-hidden={!showSessionSummaries} style={{ padding: "8px 16px 0", display: showSessionSummaries ? "flex" : "none", gap: 8, overflowX: "auto", scrollMarginTop: "calc(env(safe-area-inset-top) + 110px)" }}>
             {sessionSummaries.map((session) => {
               const active = sessionFilter === session.id;
               return (
