@@ -29,7 +29,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | | Count |
 |---|---:|
 | P1 blocking | 5 |
-| P2 dark-mode / colour | 9 |
+| P2 dark-mode / colour | 10 |
 | P3 inconsistency | 19 |
 | P4 accessibility | 5 |
 | Web/PWA specific | 1 |
