@@ -1,6 +1,6 @@
 # SHOS Design Manual
 
-This manual standardises the look, feel, and interaction patterns used across SHOS. It is written for contributors and future design passes. It describes the current implementation where it is settled, recommends a consistent approach where the app still varies, and records known exceptions instead of hiding them.
+This manual is a plain-English guide to how SHOS should look and behave. Start with the pictures, then use the code names when you need the exact value. It records what is settled, what is only recommended, and what still needs checking.
 
 ## 1. Scope and how to use this manual
 
@@ -21,6 +21,30 @@ The source of truth for colours, type, radius, and fonts is `src/calculations/de
 6. **Exceptions are named.** A deliberate deviation is documented here or in the relevant component. An undocumented deviation is drift.
 
 ![Colour roles](design-manual/color-roles.svg)
+
+## 2.5 Quick visual guide
+
+If you are new to the app’s look, start here:
+
+- [Colour roles](design-manual/color-roles.svg)
+- [Typography scale](design-manual/typography-scale.svg)
+- [App shell](design-manual/app-shell.svg)
+- [Title blocks](design-manual/title-blocks.svg)
+- [Spacing scale](design-manual/spacing-scale.svg)
+- [Borders and elevation](design-manual/elevation.svg)
+- [Control states](design-manual/state-matrix.svg)
+
+These pictures show the intended style. The code in `designTokens.js` is the final authority.
+
+## 2.6 Plain-language glossary
+
+- **Accent colour:** the main colour for a module, such as Contacts or Medication.
+- **Action colour:** a colour with a fixed meaning, such as red for errors.
+- **Safe-area inset:** space reserved for phone status bars and navigation bars.
+- **Sticky header:** a header that stays visible while the page scrolls.
+- **PWA:** the web version installed like an app.
+- **Redacted tier:** a privacy mode that hides most details from a home-screen widget.
+- **Token:** a named value in `designTokens.js`, such as `TYPE.screenTitle`.
 
 ## 3. Colour system
 
@@ -305,7 +329,7 @@ SHOS ships the same React UI to all platforms, but the surrounding shell and cap
 - Anonymise mode hides identifying details across notification surfaces.
 - Screenshots and documentation must use fictional data only.
 
-## 14. Common design errors and fixes
+## 14. Common design mistakes and fixes
 
 | Symptom | Likely cause | Preferred fix |
 |---|---|---|
@@ -370,15 +394,23 @@ Before shipping a new screen or component, check:
 
 ## 17. Known gaps and exceptions
 
-These are current audit items. They are not standards and should not be copied.
+These are current audit items. They are not standards and should not be copied. Each item should be checked against current code before it is treated as open work.
 
-- Settings screens lack escape-to-close handling.
-- Many settings `cursor: pointer` sites lack a 44px touch target.
-- Home's active-session border uses `ACCENTS.encounters` in dark mode without `resolveDarkAccent`.
-- Many fixed overlays lack `role="dialog"` and need manual review.
-- i18n adoption is uneven; the settings module has no `tr()` calls.
-- Smoke tests have CRUD gaps for encounter, testing, clinic visit, and medication.
-- Native and device validation require CI or a real device.
+### 17.1 Resolved or no longer applicable
+
+- Home's active-session border now uses the dark-mode accent resolver.
+- Some settings screens already use the shared Escape handler; the blanket "settings screens lack Escape" claim is not accurate.
+- The manual no longer lists i18n adoption, CRUD smoke-test coverage, or device validation as design-system issues. Those belong to their own work areas.
+
+### 17.2 Needs verification before calling it open
+
+- Settings Escape handling: several screens use it, but the full set has not been re-audited screen by screen.
+- Settings touch targets: the old count of `cursor: pointer` sites does not prove the tap area is too small. Padding and surrounding controls also matter.
+- Fixed overlays: a floating panel is not always a dialog. Each one needs an intent review before adding dialog semantics.
+
+### 17.3 Confirmed open
+
+- Native and device validation still require CI or a real device. Keep this in platform testing guidance, not as a visual defect.
 
 ## 18. Change policy
 
