@@ -4,7 +4,7 @@ This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records 
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
-**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty states (C19), loading states (C20) and reduced motion (D5, partial) are now code-checked; gesture navigation, landscape, localisation and dark-mode web remain unchecked. See §10.
+**Coverage honesty.** This is not a complete "all screens, all platforms, light and dark" audit. Android device coverage is strong for the module screens and the main settings list, but settings subscreens and Healthcare sub-tabs were code-checked rather than measured on device, and the dark-mode settings pass was visual only (no contrast numbers). Web/PWA coverage is Home + Settings only. Empty states (C19), loading states (C20) and reduced motion (D5, partial) are now code-checked; error states (manual §10.5) are not. Gesture navigation, landscape, localisation and dark-mode web remain unchecked. See §10.
 
 ## 1. How this was checked
 
@@ -29,7 +29,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | | Count |
 |---|---:|
 | P1 blocking | 5 |
-| P2 dark-mode / colour | 8 |
+| P2 dark-mode / colour | 9 |
 | P3 inconsistency | 19 |
 | P4 accessibility | 5 |
 | Web/PWA specific | 1 |
@@ -194,6 +194,14 @@ In all three, `defaultDarkValue` falls back to the raw light value, so the accen
 **Sites affected (all Contacts-accent-as-text):** Home summary row `:1171`, Home quick-add `:1266`, relationship chips `:1847/1850/1857`, role/position chips, section labels `:343`, `:1868` (Incomplete chip, which also hardcodes its own light colours — see B5).
 
 **Fix.** Give Contacts a dark companion the way Medication and Healthcare have one. A value near `#D08A2E` measures ≈6.0:1 on `#1C1C1F`; run it through `paletteContrast.test.js` before adopting. Then pass it as the third argument to both `resolveDarkAccent` calls. This single change clears B3, B5's adjacent sites, and the chip readability problem together — it is the same defect as B3, generalised.
+
+### B9 · Settings subscreens use raw accents as text/labels in dark mode
+
+`AboutScreen.jsx` (5 links, `ACCENTS.medication` at 13 px), `StatsScreen.jsx` (section labels at `ACCENTS.encounters/healthcare/medication/contacts` plus a "View source guidance" link at 11 px), `ResourcesScreen.jsx` (links at `ACCENTS.healthcare`, 11 px) and `ShareScreen.jsx` (links, 11 px) all read the raw accent directly, with no `resolveDarkAccent`. In dark mode these are the same 1.50–3.78:1 failures as B1/B8. `TrashScreen.jsx` uses `ACCENTS.medication` for selected-state borders (`:187`) — a fill/border use, which is acceptable as-is, but should be resolved for consistency.
+
+`AutomaticBackupsScreen`, `BackupExportScreen`, `CalendarScreen`, `DataNetworkScreen`, `ManageListsScreen`, `NotificationsScreen`, `PreferencesScreen`, `PrivacyScreen` use raw accents only for fills, borders and toggles, which is correct — those screens are clean on colour.
+
+**Fix.** Resolve the four text/link sites the same way as B1 (use the companion when in dark mode). `StatsScreen`'s section labels should use the same pattern as the module screens (resolved accent or neutral secondary).
 
 ---
 
@@ -498,7 +506,7 @@ Checked against the same build on `http://localhost:5174/` in the desktop review
 
 ### W1 · The root has no max-width, so the phone-first UI stretches on desktop
 
-`browser.evaluate` over the whole document found **zero elements with a non-`none` max-width**, including `#root`. On a 742 px window the Home header is 695 px wide and cards run the full width. The manual (§11) says the app is phone-first and that `useIsDesktopWidth` controls desktop-specific layout, but `useIsDesktopWidth` is only used for one empty-state container (`App.jsx:805`, `maxWidth: 560`); the root container is uncapped. The result is a stretched phone: 695 px text lines, full-width bottom nav, and the icon-budget problem from A4 only manifesting on phones.
+`browser.evaluate` over the whole document found **zero elements with a non-`none` max-width**, including `#root`. On a 742 px window the Home header is 695 px wide and cards run the full width. The manual (§11) says the app is phone-first and that `useIsDesktopWidth` controls desktop-specific layout, but `useIsDesktopWidth` is imported in ~20 files and used for component-level tweaks (empty states, grids, padding); no site caps the *root* container width. The `maxWidth: 560` at `App.jsx:805` is the only width cap anywhere in the app, and it applies to one empty-state, not the root. The result is a stretched phone: 695 px text lines, full-width bottom nav, and the icon-budget problem from A4 only manifesting on phones.
 
 **Fix.** Cap the root at ~560 px and centre it when `!isDesktopWidth` is false (or always cap and let the desktop path opt out). This is the single change that makes the web/PWA build read as a designed desktop surface rather than a resized phone.
 
@@ -527,7 +535,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Dark-mode web: not checked (web pass was Home + Settings in light only).
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
-- All settings subscreens were sampled in dark mode (Privacy, Widgets, Notifications, Preferences, Manage lists, Stats, Calendar, Trash, Developer tools, About, Share SHOS, My Profile, Backup & Export, Design, Colour scheme) and found clean — no new findings. Light mode for the same screens was covered in the earlier pass.
+- Settings subscreens were sampled in dark mode. The *layout* (sticky header, spacing, safe area) is clean, but the *colour* pass found raw-accent-as-text reads in AboutScreen, StatsScreen, ResourcesScreen, ShareScreen and TrashScreen — see B9 (new). Privacy, Widgets, Notifications, Preferences, Manage lists, Calendar, Developer tools, My Profile, Backup & Export, Design and Colour scheme were checked and are clean on colour. Light mode for the same screens was covered in the earlier pass.
 
 ### Known blind spots not yet audited (challenger-flagged)
 
@@ -538,6 +546,8 @@ These are sites the manual's rules would flag but this pass did not enumerate as
 - **RADIUS literals beyond 14** (see C11's scope note): 299 `borderRadius: <number>` sites across 41 files using 12, 10, 8, 4.
 - **FONT_FAMILY bypass:** most screens use the literal `"'Inter', sans-serif"` rather than the token. Visually identical but token drift.
 - (Resolved above: dark companions for Home and Menstrual are now part of B8.)
-- **Empty/loading/error states** (manual §10.5): now code-checked (C19, C20); device verification of the actual empty states not done.
+- **Empty states** (manual §10.5): code-checked (C19); device verification of the actual empty states not done.
+- **Loading states** (manual §10.5): code-checked (C20); device verification not done.
+- **Error states** (manual §10.5): **not audited at all.** No finding exists.
 - **Reduced motion on module screens** (manual §12): not checked.
 - **Safe-area double-counting on other screens:** only Settings/Healthcare/FormTabs were checked; Vaccinations/Measurements/SymptomLog/ClinicVisits share `STICKY_SUBHEADING_TOP` with different header heights.
