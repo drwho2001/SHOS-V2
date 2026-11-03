@@ -241,7 +241,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
           {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
         </div>
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 60px)", zIndex: 5, background: T.bg, padding: "0 16px 10px", borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 50px)", zIndex: 5, background: T.bg, padding: "4px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
           {[
             { key: "testing", label: tr("healthcare.testing", "Testing") },

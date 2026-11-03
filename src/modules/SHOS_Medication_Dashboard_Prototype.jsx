@@ -2484,8 +2484,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
         </div>
 
-        <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 5, background: T.bg, padding: "8px 16px 8px", borderBottom: `1px solid ${T.border}` }}>
-          <div style={{ display: "flex", gap: 20, padding: "0 16px", borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
+        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 50px)", zIndex: 5, background: T.bg, padding: "4px 16px", borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
             {["Registry", "Log", "Inventory"].map((t) => (
               <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 13, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
             ))}
