@@ -1445,7 +1445,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           </div>
         )}
         {sessionSummaries.length > 0 && (
-          <div style={{ padding: "8px 16px 0", display: "flex", gap: 8, overflowX: "auto" }}>
+          <div style={{ padding: "8px 16px 0", display: "grid", gap: 8, minWidth: 0 }}>
             {sessionSummaries.map((session) => {
               const active = sessionFilter === session.id;
               return (
@@ -1456,7 +1456,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   aria-pressed={active}
                   onClick={() => setSessionFilter(active ? "" : session.id)}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSessionFilter(active ? "" : session.id); } }}
-                  style={{ minWidth: 190, padding: 10, borderRadius: radius.md, border: `1px solid ${active ? T.encountersPink : T.border}`, background: active ? `${T.encountersPink}12` : T.surface, cursor: "pointer" }}
+                  style={{ width: "100%", minWidth: 0, boxSizing: "border-box", padding: 10, borderRadius: radius.md, border: `1px solid ${active ? T.encountersPink : T.border}`, background: active ? `${T.encountersPink}12` : T.surface, cursor: "pointer" }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{session.title || "Untitled session"}</div>
                   <div style={{ marginTop: 4, fontSize: 11, color: T.textSecondary }}>
