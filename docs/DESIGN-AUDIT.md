@@ -161,7 +161,7 @@ Two separate problems:
 
 The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals appear on 8 lines (`:1868`, `:2064`, `:2065`, `:2071`, `:3103`, `:3104`, `:3141`, `:3142`) across 5 distinct uses. Lines `:3141–3142` use a second colour family (`#B42318`/`#FEE4E2`) for the high-confidence duplicate warning, not the amber pair. Fixing one site leaves the rest.
 
-**Fix.** Promote an `ACTION.amberSurface` / `ACTION.amberText` pair into `designTokens.js` with dark companions, and replace all six sites. Amber-as-warning is the correct semantic; only the values are wrong.
+**Fix.** Promote an `ACTION.amberSurface` / `ACTION.amberText` pair into `designTokens.js` with dark companions, and replace all 8 lines. Amber-as-warning is the correct semantic; only the values are wrong.
 
 ### B6 · The Contacts select-mode bar loses its elevation in dark mode
 
@@ -179,7 +179,7 @@ This breaks two rules at once: icons are Phosphor-only, and a display glyph is b
 
 **Fix.** Store a stable key (`home`, `clinicRoutine`, …) and render the Phosphor icon beside the label. The two `=== "🏠 Home"` branches become `=== "home"`. This is the one finding here that needs a small data migration, so it should be its own change.
 
-### B8 · Contacts, Home and Menstrual have no dark companion, so their accents used as text fail in dark mode
+### B8 · Contacts, Home, Menstrual and MyProfile have no dark companion, so their accents used as text fail in dark mode
 
 The same call without a third argument appears in four modules:
 
@@ -341,13 +341,13 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 ### C20 · Loading states are text placeholders, not skeletons
 
-Manual §10.5 says "Loading states should preserve the final layout shape where practical." The files that show a loading state render a bare "Loading..." string (8 sites across 6 files: `App.jsx` ×2, `SHOS_Settings_Prototype.jsx` ×2, `SHOS_Healthcare_Prototype.jsx` ×1, `SHOS_MyProfile_Prototype.jsx` ×2, `CalendarScreen.jsx` ×1). `DeveloperToolsScreen.jsx:173` is a button busy-label, not a loading state, and is excluded. Contacts and MyProfile also have inline "Searching…" indicators (`SHOS_Contacts_Prototype.jsx:624`, `SHOS_MyProfile_Prototype.jsx:326`) not counted here. None preserves the final layout shape. Low severity, but inconsistent with the manual.
+Manual §10.5 says "Loading states should preserve the final layout shape where practical." The files that show a loading state render a bare "Loading..." string (8 sites across 5 files: `App.jsx` ×2, `SHOS_Settings_Prototype.jsx` ×2, `SHOS_Healthcare_Prototype.jsx` ×1, `SHOS_MyProfile_Prototype.jsx` ×2, `CalendarScreen.jsx` ×1). `DeveloperToolsScreen.jsx:173` is a button busy-label, not a loading state, and is excluded. Contacts and MyProfile also have inline "Searching…" indicators (`SHOS_Contacts_Prototype.jsx:624`, `SHOS_MyProfile_Prototype.jsx:326`) not counted here. None preserves the final layout shape. Low severity, but inconsistent with the manual.
 
 **Fix.** Add skeleton placeholders matching the final row/card shape for the lists that load asynchronously (contacts, encounters, medications). Keep "Loading..." only for full-screen transitions.
 
 ### C19 · Empty states are text-only, with no icon or action
 
-Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3354`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of italic text with no icon and no action. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) The 69 "empty-text" sites across 25 files conflate the two; only the list-level ones are in scope for this finding. The Medication dashboard empty state (`:925–928`) is non-italic, so the "all italic" claim does not hold.
+Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3355`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of italic text with no icon and no action. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) The 69 "empty-text" sites across 25 files conflate the two; only the list-level ones are in scope for this finding. The Medication dashboard empty state (`:925–928`) is non-italic, so the "all italic" claim does not hold.
 
 **Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
 
