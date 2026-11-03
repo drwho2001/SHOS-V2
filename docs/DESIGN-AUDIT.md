@@ -34,7 +34,7 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | P4 accessibility | 5 |
 | Web/PWA specific | 1 |
 | Investigated and **not** defects | 12 |
-| Manual corrections needed | 12 |
+| Manual corrections needed | 13 |
 
 One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **already red** and its failure is finding C10 — the guard is correctly reporting two hardcoded sticky offsets. Fixing C10 turns it green.
 
@@ -159,7 +159,7 @@ Two separate problems:
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1868` hardcodes `color: "#926100"` and `background: "#FFF3C4"`.
 
-The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals are reused at `:2064`, `:2065`, `:2071`, `:3104` and `:3141-3142` (duplicate-confidence chips), so fixing one site leaves five.
+The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals are reused at `:2064`, `:2065`, `:2071`, `:3103`, `:3104` and `:3141-3142` (duplicate-confidence chips), so fixing one site leaves six.
 
 **Fix.** Promote an `ACTION.amberSurface` / `ACTION.amberText` pair into `designTokens.js` with dark companions, and replace all six sites. Amber-as-warning is the correct semantic; only the values are wrong.
 
@@ -345,7 +345,7 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 ### C18 · `FONT_FAMILY` is bypassed in 44 of 47 files
 
-`src/calculations/designTokens.js` exports `FONT_FAMILY = "'Inter', sans-serif"`. It is consumed in only three files (`designTokens.js` itself, `SHOS_GlobalSearch_Prototype.jsx`, `SHOS_Healthcare_Prototype.jsx`). The other 44 files that set a font use the literal `"'Inter', sans-serif"` string (263 sites). Visually identical, but it means a font change requires editing 263 sites and the token is not the single source of truth the manual claims it is (manual §4, §4.2). The audit's earlier "not defect" line ("Healthcare and every screen root checked do set FONT_FAMILY") was wrong: Healthcare is one of only two consumers.
+`src/calculations/designTokens.js` exports `FONT_FAMILY = "'Inter', sans-serif"`. It is consumed in only two files (`SHOS_GlobalSearch_Prototype.jsx`, `SHOS_Healthcare_Prototype.jsx`) plus its own definition. The other 43 files that set a font use the literal `"'Inter', sans-serif"` string (263 sites). Visually identical, but it means a font change requires editing 263 sites and the token is not the single source of truth the manual claims it is (manual §4, §4.2). The audit's earlier "not defect" line ("Healthcare and every screen root checked do set FONT_FAMILY") was wrong: Healthcare is one of only two consumers.
 
 **Fix.** Replace the literal with the token everywhere. A codemod is safe here because the string is byte-identical; the only risk is files that import the token under a different name.
 
@@ -353,7 +353,7 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1720` renders the name and the travel/social/contact-method icons on one flex row with `marginBottom: 4`; the relationship-type chips below (`:1829`) carry `marginTop: 4`. The icons are pushed right by `marginLeft: "auto"`, so when the icon cluster is narrow it sits well to the right of the name and never reaches the chips' `marginLeft: 16` start. The result is an 8 px vertical gap between the name and the relationship line that exists only because of the icon row, plus a horizontal gap the icons do not fill.
 
-**Fix applied (this pass, verify in diff):** `marginBottom: 4` → `0` on the name row and `marginTop: 4` → `0` on the relationship-type row, collapsing the gap the icon line created. The icons remain right-aligned.
+**Fix applied (this pass, verify in diff):** `marginBottom: 4` → `0` on the name row (`:1720`) and `marginTop: 4` → `0` on the relationship-type row (`:1830`), collapsing the gap the icon line created. The role/position/tag/Incomplete rows at `:1845`, `:1855`, `:1868` retain `marginTop: 4` (untouched, since the request was specifically about the name-to-relationship gap). The icons remain right-aligned.
 
 ### C16 · Home's quick-add section hierarchy is encoded by one grey step
 
@@ -389,15 +389,15 @@ The manual states 44 dp twice (§5.1 and §12). The most-used controls in the ap
 
 **Fix.** Standardise on a `HeaderIconButton` with `minWidth: 44, minHeight: 44`, centred glyph, `margin: -6` so the layout does not grow. This also removes five copies of the same keydown boilerplate.
 
-### D4 · `minHeight: 44` is applied to inline SVG icons in 117 places
+### D4 · `minHeight: 44` is applied to inline SVG icons
 
-Manual §5.1 states: "Do not put `minHeight: 44` on an inline SVG icon. It scales the glyph. Use padding or a negative margin on the parent instead." The codebase violates this in 117 sites across 16 files, including `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, `SHOS_Contacts_Prototype.jsx` and `SHOS_Settings_Prototype.jsx`. The glyph is enlarged by the constraint, which is the opposite of the intended touch-target padding.
+Manual §5.1 states: "Do not put `minHeight: 44` on an inline SVG icon. It scales the glyph. Use padding or a negative margin on the parent instead." Of the 117 `minHeight: 44` sites across 15 files, approximately 11 are on inline Phosphor icons (e.g. `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, `SHOS_Contacts_Prototype.jsx`, `SHOS_Settings_Prototype.jsx:411–412`, `SHOS_Measurements_Prototype.jsx:865`). The rest are on buttons/containers where the rule does not apply. The glyph is enlarged by the constraint, which is the opposite of the intended touch-target padding.
 
 **Fix.** A codemod that moves `minHeight: 44` from the icon's style to its parent container's style, replacing the icon's own with `padding`/`margin`. High-risk on dense rows; do file-by-file with a screenshot check per module.
 
 ### D5 · Four settings screens animate toggles without respecting reduced motion
 
-`AutomaticBackupsScreen.jsx`, `DataNetworkScreen.jsx`, `DesignScreen.jsx` and `PrivacyScreen.jsx` render toggle switches with `transition: "left 0.15s"` / `"background 0.15s"` and do not import `useReducedMotion`. The other nine settings screens that use the same toggle pattern do check it. Manual §12 requires reduced motion to be respected.
+`AutomaticBackupsScreen.jsx`, `DataNetworkScreen.jsx`, `DesignScreen.jsx` and `PrivacyScreen.jsx` render toggle switches with `transition: "left 0.15s"` / `"background 0.15s"` and do not import `useReducedMotion`. Manual §12 requires reduced motion to be respected. (No other settings screen in the repo uses this toggle pattern, so these four are the entire population.)
 
 **Fix.** Add `const reducedMotion = useReducedMotion();` and make each transition conditional, matching the pattern in the other nine screens.
 
@@ -420,7 +420,7 @@ Recorded so these do not get "fixed" later.
 | Bottom padding clips the last row | **Mid-scroll only.** At true scroll end on Home, Contacts and Settings the content clears the nav. Not a safe-area bug. |
 | FormTabs' selected "About" pill is a faint tint | It also has a 1 px accent border and accent text — adequate, and consistent with the other two tabs' structure. |
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
-| `FONT_FAMILY` appears in fewer places than expected | The token count does not prove a missing font; Healthcare and every screen root checked do set it. |
+| `FONT_FAMILY` appears in fewer places than expected | **Superseded by C18.** Only two files use the token; the rest use the literal. See C18. |
 
 ---
 
@@ -512,7 +512,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Gesture navigation (the device uses 3-button nav). Bottom-inset behaviour with a gesture bar is unverified.
 - Landscape and tablet widths on the device (the web pass was desktop-width only).
 - Localisation: only English strings were rendered; the long-string rule was not exercised.
-- Animated transitions and reduced-motion behaviour.
+- Animated transitions: reduced motion was checked in 4 settings screens (D5 found violations); module screens not checked.
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
 - All settings subscreens were sampled in dark mode (Privacy, Widgets, Notifications, Preferences, Manage lists, Stats, Calendar, Trash, Developer tools, About, Share SHOS, My Profile, Backup & Export, Design, Colour scheme) and found clean — no new findings. Light mode for the same screens was covered in the earlier pass.
