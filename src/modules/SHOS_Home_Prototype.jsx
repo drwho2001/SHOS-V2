@@ -1101,7 +1101,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         ) : null;
         // STRESS TEST — ring spacing: y (scale) must always > x (total) so grey buffer always visible; not target.
         const totalAtRisk = encounterPostCount + encounterPreCount;
-        const ringScale = Math.max(10, Math.ceil(totalAtRisk / 10) * 10); // next 10-unit bucket above count
+        const ringScale = Math.max(10, Math.ceil((totalAtRisk + 1) / 10) * 10); // always +1 grey buffer so never full
         const postFrac = Math.min(encounterPostCount / ringScale, 1);
         const preFrac = Math.min(encounterPreCount / ringScale, 1);
         const greyFrac = Math.max(0, 1 - postFrac - preFrac);
@@ -1114,9 +1114,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
                 <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="79.2 184.7" strokeDashoffset="-66" strokeLinecap="butt" />
                 <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="26.4 237.5" strokeDashoffset="-145" strokeLinecap="butt" />
-                <text x="50" y="56" text-anchor="middle" font-size="22" font-weight="800" fill="#111827">{encounterPostCount + encounterPreCount}</text>
+                <text x="50" y="56" text-anchor="middle" font-size="22" font-weight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{encounterPostCount + encounterPreCount}</text>
                 <text x="50" y="68" text-anchor="middle" font-size="13" font-weight="700">
-                  <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill="#111827">+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
+                  <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
                 </text>
               </svg>
             </div>
@@ -1156,7 +1156,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 )}
               </div>
             ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
                 {testingRing}{adherenceRing}{containerRing}{encounterRiskRing}{cycleRing}{contraRing}
               </div>
             )}
