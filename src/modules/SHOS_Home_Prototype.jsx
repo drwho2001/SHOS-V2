@@ -244,11 +244,20 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [containerAdherence, setContainerAdherence] = useState(null);
   const [encounterPostCount, setEncounterPostCount] = useState(0);
   const [encounterPreCount, setEncounterPreCount] = useState(0);
+  const [encounterReference, setEncounterReference] = useState("");
   const [showEncounterRiskInfo, setShowEncounterRiskInfo] = useState(false);
   useEffect(() => {
     (async () => {
       try {
-        const [all, tests] = await Promise.all([EncounterRepository.getAll(), TestingRepository.getAll()]);
+        const [all, tests, visits] = await Promise.all([
+          EncounterRepository.getAll(),
+          TestingRepository.getAll(),
+          ClinicVisitsRepository.getAll(),
+        ]);
+        const hasTimeOfDay = (iso) => {
+          const m = /T(\d{2}):(\d{2})/.exec(String(iso || ""));
+          return Boolean(m) && (Number(m[1]) !== 0 || Number(m[2]) !== 0);
+        };
         // The reference point is the newest test by sample date - the point the
         // negative result stops covering. (The stored `mostRecent` flag can lag
         // behind, so it is not used here.)
@@ -258,30 +267,47 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         if (!lastTest) {
           setEncounterPreCount(0);
           setEncounterPostCount(0);
+          setEncounterReference("");
           return;
         }
+        // A Test stores a DATE, not a time. When it was taken at a clinic
+        // visit, the visit holds the real time (the PrEP screen was 15:00 on
+        // 23 Sep) - use that. Otherwise a same-day encounter gets ordered
+        // against an arbitrary midnight and is miscounted as "after the test".
+        const linkedVisit = (visits || []).find(v =>
+          !v.isArchived && Array.isArray(v.linkedTestIds) && v.linkedTestIds.includes(lastTest.id)
+        );
+        const visitTimed = Boolean(linkedVisit) && hasTimeOfDay(linkedVisit.date);
+        const testTimed = visitTimed || hasTimeOfDay(lastTest.date);
+        const testMoment = visitTimed ? new Date(linkedVisit.date) : new Date(lastTest.date);
         const testDay = storedDayKey(lastTest.date);
         let pre = 0, post = 0;
         for (const e of all) {
           if (e.isArchived || !e.date) continue;
           const encounterDay = storedDayKey(e.date);
           if (!testDay || !encounterDay) continue;
-          if (encounterDay > testDay) {
-            // Logged after the test day: not covered by that test at all.
+          // Only order by clock time when BOTH records actually carry one.
+          // A date-only encounter on the test day is "sometime that day", so
+          // the safe reading is that this test cannot confidently clear it.
+          const encounterTimed = e.isDateTime === true && hasTimeOfDay(e.date);
+          const afterTest = testTimed && encounterTimed
+            ? new Date(e.date).getTime() > testMoment.getTime()
+            : encounterDay > testDay;
+          if (afterTest) {
             post += 1;
           } else if (unclearedPriorityInfectionsForEncounter(lastTest, e).length > 0) {
-            // On or before the test day, but still inside the window period of
-            // something it screened for - so that negative cannot confidently
-            // clear it. Same-day counts here: a Test has no time of day.
             pre += 1;
           }
         }
         setEncounterPreCount(pre);
         setEncounterPostCount(post);
+        const timeLabel = visitTimed ? ` at ${String(linkedVisit.date).slice(11, 16)}` : "";
+        setEncounterReference(`${lastTest.title || "last test"} — ${testDay}${timeLabel}`);
       } catch {
         // Never invent a count. No data means no ring.
         setEncounterPreCount(0);
         setEncounterPostCount(0);
+        setEncounterReference("");
       }
     })();
   }, []);
@@ -1200,7 +1226,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               <RingSummary text="Exposures too recent for your last test to clear, plus encounters since it." fontSize={isDesktopWidth ? 12 : 8.5}>
                 <button type="button" aria-label="At-risk encounter colors and counting" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "-2px", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={isDesktopWidth ? 13 : 10} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
               </RingSummary>
-              {showEncounterRiskInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means encounters still inside the window period for HIV, gonorrhoea or chlamydia — too soon for your last negative to clear them. HIV is skipped when PrEP coverage is adequate, and chlamydia when DoxyPEP was taken. Syphilis has a much longer window and is not part of this count. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means encounters logged since that test.</span>}
+              {showEncounterRiskInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means encounters still inside the window period for HIV, gonorrhoea or chlamydia — too soon for your last negative to clear them. HIV is skipped when PrEP coverage is adequate, and chlamydia when DoxyPEP was taken. Syphilis has a much longer window and is not part of this count. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means encounters logged since that test.{encounterReference ? ` Counted against: ${encounterReference}.` : ""}</span>}
             </div>
           </div>
         ) : null;
