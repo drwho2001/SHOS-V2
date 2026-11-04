@@ -55,13 +55,11 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // A2 fix: measure the sticky header height so sub-tab sticky subheadings
   // pin below it instead of at a hardcoded 58px that assumes a single band.
   const healthcareHeaderRef = useRef(null);
-  const [healthcareHeaderHeight, setHealthcareHeaderHeight] = useState(0);
   useLayoutEffect(() => {
     const node = healthcareHeaderRef.current;
     if (!node) return;
     const measure = () => {
       const h = node.getBoundingClientRect().height;
-      setHealthcareHeaderHeight(h);
       if (h > 0) {
         document.documentElement.style.setProperty("--shos-sticky-header-h", `${h}px`);
       }
