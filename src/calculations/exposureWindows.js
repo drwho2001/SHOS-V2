@@ -99,3 +99,40 @@ export function getEncounterCoverage(encounterDate, tests) {
   });
   return best;
 }
+
+// The Home ring's own question, which is narrower than "every infection
+// this test screened for": which exposures is the last negative result
+// still NOT able to clear, counting only the infections that actually
+// drive decisions here - HIV, gonorrhoea and chlamydia. Syphilis (and the
+// hepatitis entries) are deliberately left out: their 84-day windows are
+// far longer than the rest and would swamp the count, and they are not the
+// infections this ring is asking about.
+//
+// The encounter's own prevention is applied, because a window that has not
+// elapsed only matters if that infection was a live concern in the first
+// place:
+//   - HIV is not counted when PrEP coverage is adequate (daily or 2-1-1).
+//   - Chlamydia is not counted when DoxyPEP was actually taken.
+//   - Gonorrhoea is always counted: DoxyPEP does not reliably prevent it.
+//
+// `unclearedInfectionsForTest` above is unchanged and still used by
+// Timeline/Episode, which asks the wider "anything this test screened for"
+// question.
+export const RING_PRIORITY_INFECTIONS = ["HIV", "Gonorrhoea", "Chlamydia"];
+
+export function unclearedPriorityInfectionsForEncounter(test, encounter) {
+  if (!test?.date || !encounter?.date) return [];
+  const daysBetween = (new Date(test.date) - new Date(encounter.date)) / 86400000;
+  if (daysBetween <= 0) return []; // on/after the test: not the pre-test window's question
+  const prepAdequate = /^adequate/i.test(encounter.myPrepCoverage || "");
+  const doxyTaken = /taken/i.test(encounter.myDoxyPepStatus || "")
+    && !/not yet|missed/i.test(encounter.myDoxyPepStatus || "");
+  return (test.testingFor || []).filter((infection) => {
+    if (!RING_PRIORITY_INFECTIONS.includes(infection)) return false;
+    const entry = EXPOSURE_WINDOWS_DAYS[infection];
+    if (entry == null || daysBetween >= entry.days) return false;
+    if (infection === "HIV" && prepAdequate) return false;
+    if (infection === "Chlamydia" && doxyTaken) return false;
+    return true;
+  });
+}

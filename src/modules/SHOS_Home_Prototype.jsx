@@ -39,6 +39,7 @@ import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAc
 // at module scope — see medsBlue/healthcareColor/actionRedColor/
 // actionGreenColor/homeColor just after the darkMode hook.
 import { formatRelativeDate } from "../calculations/encounterCalculations";
+import { unclearedPriorityInfectionsForEncounter } from "../calculations/exposureWindows";
 import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } from "../calculations/dateInputHelpers";
 // ADDED — real ask: a "status at a glance" visual layer, the biggest
 // opportunity surfaced by comparing SHOS against similar apps (Natural
@@ -247,25 +248,39 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   useEffect(() => {
     (async () => {
       try {
-        const all = await EncounterRepository.getAll();
-        const lastTest = await TestingRepository.getAll().then(t => t.sort((a,b)=>(new Date(b.date||0)-new Date(a.date||0)))[0]);
-        const atRisk = all.filter(e => {
-          if (e.isArchived) return false;
-          const activities = [...(e.activities || []), ...(e.activityDetails || [])];
-          return Boolean(e.atRisk) || activities.some(a => a?.risky || Number(a?.riskLevel) > 0);
-        });
-        const lastTestDate = lastTest ? new Date(lastTest.date||lastTest.createdAt||0) : new Date(0);
-        const encounterTimestamp = e => Math.max(new Date(e.date || 0).getTime(), new Date(e.createdAt || 0).getTime());
-        const post = atRisk.filter(e => encounterTimestamp(e) >= lastTestDate.getTime()).length;
-        const pre = atRisk.filter(e => encounterTimestamp(e) < lastTestDate.getTime()).length;
-        if (atRisk.length === 0) {
-          setEncounterPostCount(13);
-          setEncounterPreCount(40);
-        } else {
-          setEncounterPostCount(post);
-          setEncounterPreCount(pre);
+        const [all, tests] = await Promise.all([EncounterRepository.getAll(), TestingRepository.getAll()]);
+        // The reference point is the newest test by sample date - the point the
+        // negative result stops covering. (The stored `mostRecent` flag can lag
+        // behind, so it is not used here.)
+        const lastTest = tests
+          .filter(t => !t.isArchived && t.date)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+        if (!lastTest) {
+          setEncounterPreCount(0);
+          setEncounterPostCount(0);
+          return;
         }
-      } catch { /* demo fallback */ setEncounterPostCount(13); setEncounterPreCount(40); }
+        const lastTestTime = new Date(lastTest.date).getTime();
+        let pre = 0, post = 0;
+        for (const e of all) {
+          if (e.isArchived || !e.date) continue;
+          const t = new Date(e.date).getTime();
+          if (t >= lastTestTime) {
+            // Not covered by that test at all.
+            post += 1;
+          } else if (unclearedPriorityInfectionsForEncounter(lastTest, e).length > 0) {
+            // Before the test, but still inside the window period of something
+            // it screened for - so that negative cannot confidently clear it.
+            pre += 1;
+          }
+        }
+        setEncounterPreCount(pre);
+        setEncounterPostCount(post);
+      } catch {
+        // Never invent a count. No data means no ring.
+        setEncounterPreCount(0);
+        setEncounterPostCount(0);
+      }
     })();
   }, []);
   const [showMyProfile, setShowMyProfile] = useState(false);
@@ -1180,10 +1195,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1, paddingTop: 1 }}>
               <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor, lineHeight: 1.2, letterSpacing: "-0.005em" }}>At-Risk Encounters</span>
-              <RingSummary text="At-risk exposures from pre-test, plus encounters since last test." fontSize={isDesktopWidth ? 12 : 8.5}>
+              <RingSummary text="Exposures too recent for your last test to clear, plus encounters since it." fontSize={isDesktopWidth ? 12 : 8.5}>
                 <button type="button" aria-label="At-risk encounter colors and counting" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "-2px", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={isDesktopWidth ? 13 : 10} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
               </RingSummary>
-              {showEncounterRiskInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means at-risk exposures from before your last test; it may have been too early to detect an infection. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means at-risk encounters logged since that test.</span>}
+              {showEncounterRiskInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means encounters still inside the window period for HIV, gonorrhoea or chlamydia — too soon for your last negative to clear them. HIV is skipped when PrEP coverage is adequate, and chlamydia when DoxyPEP was taken. Syphilis has a much longer window and is not part of this count. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means encounters logged since that test.</span>}
             </div>
           </div>
         ) : null;
