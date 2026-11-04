@@ -36,7 +36,7 @@ import { MeasurementRepository } from "../repositories/measurementRepository.js"
 import { LogRepository } from "../repositories/logRepository.js";
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
 import { storedDayKey, calendarDaysBetween } from "./dateInputHelpers.js";
-import { isPlannedTest } from "./testingCalculations.js";
+import { isPlannedTestOn } from "./testingCalculations.js";
 
 // A same-day-ish window. The real case this exists for is "logged at 3am, forgot
 // I had, logged it again at 11am" - 8 hours. The window is comfortably wider
@@ -109,7 +109,7 @@ async function findFutureDates(todayKey) {
     // one kind of future-dated record that is perfectly legitimate. The other
     // record kinds keep the check: a future-dated vaccination, measurement or
     // symptom entry has no planned meaning and is still worth a look.
-    if (!isPlannedTest(t)) {
+    if (!isPlannedTestOn(t, todayKey)) {
       future("Test", t.title, t.id, "sample date", t.date);
       future("Test", t.title, t.id, "result date", t.resultDate);
     }
