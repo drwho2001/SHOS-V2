@@ -274,7 +274,7 @@ The manual's own rule (§10.2) says the accent goes on the label or the primary 
 
 ### C8 · Section labels have three colour roles but the manual documents one
 
-`TYPE.sectionLabel` is used 51 times, in three colours:
+`TYPE.sectionLabel` is used 72 times (≈70 in code, 2 in a test comment), in three colours:
 
 - module accent — card group headings, e.g. Contacts `:343`, Encounters `:167`
 - `textSecondary` — field groups, e.g. Encounters `:1540`, Contacts `:3273`
