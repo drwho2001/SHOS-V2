@@ -260,17 +260,19 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           setEncounterPostCount(0);
           return;
         }
-        const lastTestTime = new Date(lastTest.date).getTime();
+        const testDay = storedDayKey(lastTest.date);
         let pre = 0, post = 0;
         for (const e of all) {
           if (e.isArchived || !e.date) continue;
-          const t = new Date(e.date).getTime();
-          if (t >= lastTestTime) {
-            // Not covered by that test at all.
+          const encounterDay = storedDayKey(e.date);
+          if (!testDay || !encounterDay) continue;
+          if (encounterDay > testDay) {
+            // Logged after the test day: not covered by that test at all.
             post += 1;
           } else if (unclearedPriorityInfectionsForEncounter(lastTest, e).length > 0) {
-            // Before the test, but still inside the window period of something
-            // it screened for - so that negative cannot confidently clear it.
+            // On or before the test day, but still inside the window period of
+            // something it screened for - so that negative cannot confidently
+            // clear it. Same-day counts here: a Test has no time of day.
             pre += 1;
           }
         }

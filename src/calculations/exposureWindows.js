@@ -122,8 +122,17 @@ export const RING_PRIORITY_INFECTIONS = ["HIV", "Gonorrhoea", "Chlamydia"];
 
 export function unclearedPriorityInfectionsForEncounter(test, encounter) {
   if (!test?.date || !encounter?.date) return [];
-  const daysBetween = (new Date(test.date) - new Date(encounter.date)) / 86400000;
-  if (daysBetween <= 0) return []; // on/after the test: not the pre-test window's question
+  // Compare CALENDAR DAYS, not elapsed milliseconds. A Test is stored with a
+  // date and no time of day, so an encounter logged minutes after midnight on
+  // the test day would otherwise read as "after the test" purely because of
+  // its timestamp. A same-day encounter therefore counts as still uncleared:
+  // the safe reading is that a test that day cannot confidently clear it.
+  const testDay = String(test.date).slice(0, 10);
+  const encounterDay = String(encounter.date).slice(0, 10);
+  const daysBetween = Math.round(
+    (Date.parse(`${testDay}T00:00:00Z`) - Date.parse(`${encounterDay}T00:00:00Z`)) / 86400000
+  );
+  if (!Number.isFinite(daysBetween) || daysBetween < 0) return []; // after the test day: not the pre-test window's question
   const prepAdequate = /^adequate/i.test(encounter.myPrepCoverage || "");
   const doxyTaken = /taken/i.test(encounter.myDoxyPepStatus || "")
     && !/not yet|missed/i.test(encounter.myDoxyPepStatus || "");

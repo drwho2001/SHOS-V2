@@ -76,8 +76,16 @@ describe('unclearedPriorityInfectionsForEncounter', () => {
     expect(RING_PRIORITY_INFECTIONS).not.toContain('Syphilis');
   });
 
-  it('returns nothing for an encounter on or after the test', () => {
-    expect(unclearedPriorityInfectionsForEncounter(test, encounter('2026-09-23T00:00:00.000Z'))).toEqual([]);
+  it('returns nothing for an encounter after the test day', () => {
+    expect(unclearedPriorityInfectionsForEncounter(test, encounter('2026-09-24T00:00:00.000Z'))).toEqual([]);
     expect(unclearedPriorityInfectionsForEncounter(test, encounter('2026-10-01T00:00:00.000Z'))).toEqual([]);
+  });
+
+  it('treats a same-day encounter as still uncleared, even minutes after midnight', () => {
+    // A Test stores a date and no time, so 00:11 on the test day is not
+    // evidence that the encounter came after the sample was taken.
+    const out = unclearedPriorityInfectionsForEncounter(test, encounter('2026-09-23T00:11:00.000Z'));
+    expect(out).toContain('Gonorrhoea');
+    expect(out).toContain('Chlamydia');
   });
 });
