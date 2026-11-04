@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n/index.js";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, ArrowUUpLeftIcon as ResetIcon } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
+import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../../repositories/moduleColorRepository";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../../calculations/loadedRepositoryState";
@@ -159,7 +159,18 @@ function ColorWheelPicker({ currentValue, onPick, darkMode }) {
   );
 }
 
-function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onReset, label }) {
+const DARK_COMPANIONS = {
+  contacts: null,
+  encounters: "#D370C7",
+  medication: "#5B85F5",
+  healthcare: "#0E8144",
+  home: null,
+  menstrual: null,
+  actionRed: "#FF7A7E",
+  actionGreen: "#5FD9A4",
+};
+
+function ColorInputRow({ colorKey, currentValue, displayValue, isOverridden, onSetColor, onReset, label }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
 
@@ -186,7 +197,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
     <div style={{ borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div role="button" tabIndex={0} aria-label={t("design.customiseColour", "Customise {label} colour", { label })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} />
+          <div role="button" tabIndex={0} aria-label={t("design.customiseColour", "Customise {label} colour", { label })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: displayValue || currentValue, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} />
           <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
           {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>(customised)</span>}
         </div>
@@ -208,7 +219,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               "feel v dated" (see ColorWheelPicker's own comment) — this
               button was a second, redundant entry point to that same
               native picker the app already moved away from. */}
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: ACCENTS.medication, fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Customise"}</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Customise"}</span>
         </div>
       </div>
       {expanded && (
@@ -218,8 +229,8 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={mode} onClick={() => setPanelMode(mode)}
                 style={{
                   fontSize: 12, fontWeight: 700, cursor: "pointer", paddingBottom: 4,
-                  color: panelMode === mode ? ACCENTS.medication : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled),
-                  borderBottom: panelMode === mode ? `2px solid ${ACCENTS.medication}` : "2px solid transparent",
+                  color: panelMode === mode ? (darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication) : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled),
+                  borderBottom: panelMode === mode ? `2px solid ${darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication}` : "2px solid transparent",
                 }}>
                 {tabLabel}
               </span>
@@ -386,8 +397,10 @@ export function DesignScreen({ onClose }) {
           {CUSTOMIZABLE_MODULE_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACCENTS[key];
+            const companion = DARK_COMPANIONS[key];
+            const displayValue = darkMode ? resolveDarkAccent(key, currentValue, companion ? companion : deriveDarkAccent(currentValue)) : currentValue;
             return (
-              <ColorInputRow key={key} colorKey={key} currentValue={currentValue} isOverridden={isOverridden}
+              <ColorInputRow key={key} colorKey={key} currentValue={currentValue} displayValue={displayValue} isOverridden={isOverridden}
                 label={t(`design.module.${key}`, MODULE_LABELS[key])} onSetColor={setColor} onReset={() => reset(key)} />
             );
           })}
