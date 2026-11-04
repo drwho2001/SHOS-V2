@@ -332,17 +332,21 @@ Covered partly by C4 and C12. The combined effect on device is that Encounters, 
 
 **Fix.** Extract one `ModuleListRow` with props for accent, status dot, demo badge, metadata indent and title weight. The manual already says to consolidate at three copies — this is the third copy.
 
-### C20 · Loading states are text placeholders, not skeletons
+### C20 · Loading states are text placeholders, not skeletons — ✅ fixed
 
 Manual §10.5 says "Loading states should preserve the final layout shape where practical." The files that show a loading state render a bare "Loading..." string (8 sites across 5 files: `App.jsx` ×2, `SHOS_Settings_Prototype.jsx` ×2, `SHOS_Healthcare_Prototype.jsx` ×1, `SHOS_MyProfile_Prototype.jsx` ×2, `CalendarScreen.jsx` ×1). `DeveloperToolsScreen.jsx:173` is a button busy-label, not a loading state, and is excluded. Contacts and MyProfile also have inline "Searching…" indicators (`SHOS_Contacts_Prototype.jsx:624`, `SHOS_MyProfile_Prototype.jsx:326`) not counted here. None preserves the final layout shape. Low severity, but inconsistent with the manual.
 
 **Fix.** Add skeleton placeholders matching the final row/card shape for the lists that load asynchronously (contacts, encounters, medications). Keep "Loading..." only for full-screen transitions.
 
-### C19 · Empty states are text-only, with no icon or action
+**Status.** ✅ Fixed (commit 057fb29). New `src/components/Skeleton.jsx` (`SkeletonList` / `SkeletonRow`, reduced-motion aware). The three inline Suspense fallbacks (App `:3178`, Settings `:896`, Healthcare `:348`) now render skeletons; the two full-screen ones (App `:3413`, Settings `:922`) deliberately keep text, per this item's own fix note. Note the audit's "8 sites across 5 files" was overstated: two MyProfile hits are data placeholders ("Loading…"), not Suspense states, and CalendarScreen's is a single inline field label.
+
+### C19 · Empty states are text-only, with no icon or action — ✅ fixed
 
 Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3355`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of text with no icon and no action. Only Encounters uses `fontStyle: "italic"`; the other three are plain `textDisabled`. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) A grep for centred empty-state containers (`textAlign: center; padding: 40/60px`) finds 20 sites across 13 files — these are the list-level ones in scope. The 69 "empty-text" sites across 25 files conflate list-level and field-level (the latter are not empty states). The Medication dashboard empty state (`:925–928`) is also non-italic.
 
 **Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
+
+**Status.** ✅ Fixed (commit b417b42). New `src/components/EmptyState.jsx` (theme via `T` prop, Phosphor `Tray` default icon, optional 44dp action). Migrated 16 list-level sites across 10 files: ClinicVisits ×2, Testing ×2, Vaccinations ×2, Encounters, Timeline, Medication ×3, Measurements, Attachments, Menstrual ×3, Trash. Field-level placeholders were left untouched as specified. Contacts' list empty state is covered by its own card-level component and was not changed here.
 
 ### C18 · `FONT_FAMILY` is bypassed in 43 of 46 files — ✅ fixed (commit 8c5b8d6)
 
@@ -391,17 +395,21 @@ The manual states 44 dp twice (§5.1 and §12). The most-used controls in the ap
 
 **Fix.** Standardise on a `HeaderIconButton` with `minWidth: 44, minHeight: 44`, centred glyph, `margin: -6` so the layout does not grow. This also removes five copies of the same keydown boilerplate.
 
-### D4 · `minHeight: 44` is applied to inline SVG icons
+### D4 · `minHeight: 44` is applied to inline SVG icons — ✅ fixed
 
 Manual §5.1 states: "Do not put `minHeight: 44` on an inline SVG icon. It scales the glyph. Use padding or a negative margin on the parent instead." Of the 117 `minHeight: 44` sites across 15 files, approximately 11 are on inline Phosphor icons (e.g. `SHOS_Timeline_Prototype.jsx`, `SHOS_Medication_Dashboard_Prototype.jsx:1013–1014`, `SHOS_Contacts_Prototype.jsx`, `SHOS_Settings_Prototype.jsx:411–412`, `SHOS_Measurements_Prototype.jsx:865`). The rest are on buttons/containers where the rule does not apply. The glyph is enlarged by the constraint, which is the opposite of the intended touch-target padding.
 
 **Fix.** A codemod that moves `minHeight: 44` from the icon's style to its parent container's style, replacing the icon's own with `padding`/`margin`. High-risk on dense rows; do file-by-file with a screenshot check per module.
 
-### D5 · Four settings screens animate toggles without respecting reduced motion
+**Status.** ✅ Fixed (commits f8a0773, 840a914). All 11 icon sites corrected with three patterns chosen per context: banner icons (Contacts ×3, Medication ×2) had `minHeight` deleted outright (already 44px via `padding: 10` + 24px glyph); in-row icons (Timeline `Archive`, Medication ×2, Measurements `Gear`) use `padding: 12` + `boxSizing: content-box` + −12px margins, matching that file's own existing compliant chevron/trash pattern; the two Settings password-eye icons use `padding: 10` + content-box with `right/top` adjusted 8→2 so the glyph centre does not move. Verified no global `box-sizing: border-box` rule exists that would collapse the glyph.
+
+### D5 · Four settings screens animate toggles without respecting reduced motion — ✅ fixed
 
 `AutomaticBackupsScreen.jsx`, `DataNetworkScreen.jsx`, `DesignScreen.jsx` and `PrivacyScreen.jsx` render toggle switches with `transition: "left 0.15s"` / `"background 0.15s"` and do not import `useReducedMotion`. Manual §12 requires reduced motion to be respected. (No other settings screen in the repo uses this toggle pattern, so these four are the entire population.)
 
 **Fix.** Add `const reducedMotion = useReducedMotion();` and make each transition conditional, matching the pattern in the other nine screens.
+
+**Status.** ✅ Fixed (commit 840a914). All four screens import `useReducedMotion` and gate both the track transition and the thumb `left` transition. Note the audit's earlier "done for 4 settings screens" claim in §8 was wrong at the time — no settings screen imported the hook; it is correct now.
 
 ---
 
@@ -466,9 +474,9 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 **Batch 2 — dark mode.** ✅ B4, B6, B8 (Contacts + Home only), B9 done. ❌ Not done: B1 (DesignScreen link/segmented), B2 (DesignScreen swatches), B3 (Home Contacts accent — partially covered by B8), B5 (amber tokens — tokens added, chip sites converted), B7 (emoji migration, deferred), B8 (MyProfile + Menstrual companions). Remaining work: B1, B2, B5 verification, B8 completion.
 - Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
 
-**Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy), C19 (empty states), C20 (loading states). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
+**Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18, C19, C20 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
-**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done (banner/header icons). ❌ Not done: D4 (minHeight on ~11 inline SVGs — row-level, not header), D5 (reduced motion — done for 4 settings screens, module screens not checked). C3 (search field — D1 already standardized Contacts; standardize remaining). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
+**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done (banner/header icons), D4 (11 inline SVG icons), D5 (reduced motion in all four settings screens), B5 (amber chip tokens). Remaining: C3 (search field — D1 already standardized Contacts; standardize remaining). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 
