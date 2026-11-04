@@ -1134,7 +1134,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         const ringStroke = isDesktopWidth ? 8 : 6;
         const ringCenter = ringSize / 2;
         const ringRadius = (ringSize - ringStroke) / 2;
-        const pointOnRing = (degrees) => {
+        const pointOnRing = degrees => {
           const radians = (degrees * Math.PI) / 180;
           return { x: ringCenter + ringRadius * Math.cos(radians), y: ringCenter + ringRadius * Math.sin(radians) };
         };
@@ -1164,9 +1164,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 <button type="button" aria-label="Pre-test encounter counting information" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ width: 16, height: 16, padding: 0, borderRadius: 999, border: "1px solid #656568", background: "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, fontWeight: 700, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, cursor: "pointer", flexShrink: 0 }}>i</button>
               </div>
               <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>
-                <span style={{ color: "#ec4899" }}>Post-test:</span> since your last test — at-risk encounters logged by you. <span style={{ color: "#10b981" }}>Pre-test:</span> exposures before that test which may not have been detectable yet, counted for your next test. Scale {ringScale}; grey buffer = {ringScale - totalAtRisk} (not a target ring).
+                Counts encounters with an at-risk activity <span style={{ color: "#ec4899" }}>since your last test (post-test)</span> — both logged by you. <span style={{ color: "#10b981" }}>Pre-test:</span> exposures before the last test that may not have been detectable yet, included for your next test. Scale {ringScale}; grey buffer = {ringScale - totalAtRisk} (not a target ring).
               </span>
-              {showEncounterRiskInfo && <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Pre-test encounters may fall within the test window period. They are included for the next test because that test may have been too early to detect an infection from the exposure.</span>}
+              {showEncounterRiskInfo && <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Pre-test exposures can fall inside a test's window period, so they are counted toward the next test.</span>}
             </div>
           </div>
         ) : null;
