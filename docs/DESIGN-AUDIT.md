@@ -347,7 +347,7 @@ Manual §10.5 says "Loading states should preserve the final layout shape where 
 
 ### C19 · Empty states are text-only, with no icon or action
 
-Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3355`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of italic text with no icon and no action. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) The 69 "empty-text" sites across 25 files conflate the two; only the list-level ones are in scope for this finding. The Medication dashboard empty state (`:925–928`) is non-italic, so the "all italic" claim does not hold.
+Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3355`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of text with no icon and no action. Only Encounters uses `fontStyle: "italic"`; the other three are plain `textDisabled`. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) The 69 "empty-text" sites across 25 files conflate the two; only the list-level ones are in scope for this finding. The Medication dashboard empty state (`:925–928`) is also non-italic.
 
 **Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
 
