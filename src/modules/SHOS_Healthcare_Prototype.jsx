@@ -59,20 +59,21 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   useLayoutEffect(() => {
     const node = healthcareHeaderRef.current;
     if (!node) return;
-    const measure = () => setHealthcareHeaderHeight(node.getBoundingClientRect().height);
+    const measure = () => {
+      const h = node.getBoundingClientRect().height;
+      setHealthcareHeaderHeight(h);
+      if (h > 0) {
+        document.documentElement.style.setProperty("--shos-sticky-header-h", `${h}px`);
+      }
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(node);
-    return () => ro.disconnect();
-  }, []);
-  useEffect(() => {
-    if (healthcareHeaderHeight > 0) {
-      document.documentElement.style.setProperty("--shos-sticky-header-h", `${healthcareHeaderHeight}px`);
-    }
     return () => {
+      ro.disconnect();
       document.documentElement.style.removeProperty("--shos-sticky-header-h");
     };
-  }, [healthcareHeaderHeight]);
+  }, []);
   // ADDED 26 Aug 2026 — real gap found and fixed: tapping a linked
   // test from a Clinic Visit's own detail view used to only switch to
   // the Testing sub-tab, discarding the specific test id VisitDetail
