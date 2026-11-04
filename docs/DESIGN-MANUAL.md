@@ -257,7 +257,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 ### 10.3 Lists
 
 - Rows should have consistent height and spacing.
-- Empty states should use an icon, one sentence, and an optional action.
+- Empty states should use an icon, one sentence, and an optional action. Implement with the shared `EmptyState` component (`src/components/EmptyState.jsx`) rather than a new inline div; it is for list-level states only — field placeholders such as "No notes yet" stay plain text.
 - Archived or historical items should use `ACTION.gold` or muted styling, not red.
 
 ### 10.4 Dialogs and overlays
@@ -271,8 +271,8 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 
 ![Control states](design-manual/state-matrix.svg)
 
-- Loading states should preserve the final layout shape where practical.
-- Empty states should not look like errors.
+- Loading states should preserve the final layout shape where practical. Use `SkeletonList` / `SkeletonRow` from `src/components/Skeleton.jsx` for inline module loads; keep a plain "Loading..." only for full-screen transitions (App launch, Settings full-screen push).
+- Empty states should not look like errors. Use `EmptyState` from `src/components/EmptyState.jsx` — it supplies the icon, sentence and optional action, and defaults to the same 40/20 padding and 13px text the old inline divs used.
 - Error states should use red only for the failed action or invalid value.
 - Disabled controls should remain visible and keep their layout.
 

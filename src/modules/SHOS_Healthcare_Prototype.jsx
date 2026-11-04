@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { SkeletonList } from "../components/Skeleton";
 import { useTranslation } from "../i18n/index.js";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -345,7 +346,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
           <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />
         </div>
-      <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>{tr("common.loading", "Loading...")}</div>}>
+      <Suspense fallback={<SkeletonList T={{ surfaceVariant: N.surfaceVariant }} rows={6} />}>
     {subTab === "testing" ? (
         <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "clinicVisits" ? (

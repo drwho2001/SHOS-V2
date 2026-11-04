@@ -14,6 +14,7 @@
 
 import React from "react";
 import { RADIUS } from "../calculations/designTokens.js";
+import { useReducedMotion } from "../calculations/useReducedMotion.js";
 
 const PULSE_STYLE_ID = "shos-skeleton-pulse";
 
@@ -31,6 +32,8 @@ function usePulse() {
 
 export function SkeletonRow({ T, reducedMotion, width = "100%", height = 14 }) {
   usePulse();
+  const prefersReduced = useReducedMotion();
+  const still = reducedMotion === undefined ? prefersReduced : reducedMotion;
   return (
     <div
       aria-hidden="true"
@@ -39,7 +42,7 @@ export function SkeletonRow({ T, reducedMotion, width = "100%", height = 14 }) {
         height,
         borderRadius: RADIUS.sm,
         background: T.surfaceVariant,
-        animation: reducedMotion ? "none" : "shosSkeletonPulse 1.4s ease-in-out infinite",
+        animation: still ? "none" : "shosSkeletonPulse 1.4s ease-in-out infinite",
       }}
     />
   );

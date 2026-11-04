@@ -26,6 +26,7 @@ import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 const MyProfileModule = lazy(() => import("./SHOS_MyProfile_Prototype"));
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { SkeletonList } from "../components/Skeleton";
 import { useTranslation } from "../i18n/index.js";
 
 // Settings sub-screens (lazy — one chunk per screen, loaded on first open)
@@ -893,7 +894,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         // and bottom padding on a wrong theory, then reverted. MyProfileModule's
         // own root already provides both; the real defect is its display:flex.
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
-          <Suspense fallback={<div style={{ padding: 20, textAlign: "center" }}>Loading...</div>}>
+          <Suspense fallback={<SkeletonList T={{ surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }} rows={6} />}>
     <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={() => setShowGlossary(true)} />
     </Suspense>
         </div>

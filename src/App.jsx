@@ -62,6 +62,7 @@ import { handleOverlayBack } from "./calculations/overlayBackStack";
 // previous session removed from 46 other components. Wired here rather than
 // inline so the hook can actually own the lifecycle. See AcknowledgeSheet.
 import { useEscapeToClose } from "./components/useEscapeToClose";
+import { SkeletonList } from "./components/Skeleton";
 import { useOverlayBackHandler } from "./components/useOverlayBackHandler";
 // ADDED 28 Sep 2026 (Phase 3) — banner suppression. Pure, so it can be
 // unit-tested; see reminderSuppression.js's own header for the design.
@@ -3175,7 +3176,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
-          <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY }}>Loading...</div>}>
+          <Suspense fallback={<SkeletonList T={{ surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }} reducedMotion={reducedMotion} rows={6} />}>
             <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
