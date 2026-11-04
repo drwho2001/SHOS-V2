@@ -30,10 +30,9 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 |---|---:|
 | P1 blocking | 5 |
 | P2 dark-mode / colour | 9 |
-| P3 inconsistency | 19 |
+| P3 inconsistency | 18 |
 | P4 accessibility | 5 |
-| Web/PWA specific | 1 |
-| Investigated and **not** defects | 12 |
+| Investigated and **not** defects | 14 |
 | Manual corrections needed | 15 |
 
 One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **already red** and its failure is finding C10 — the guard is correctly reporting two hardcoded sticky offsets. Fixing C10 turns it green.
@@ -258,7 +257,7 @@ Healthcare is the real break: its Select sits *inside* the content, in the Clini
 
 **Fix.** Decide a budget and write it down: title, then at most **two** module actions, then the two global actions (Quick exit always last). Move Select into a list-level toolbar in every module, matching Healthcare — which is the pattern that scales, because a banner cannot own a control for content that scrolls.
 
-### C6 · Home's quick-add cards use saturated module borders
+### C6 (reclassified) · Home's quick-add cards use saturated module borders — needs a design decision, not a clear defect
 
 `QuickAddButton` at `src/modules/SHOS_Home_Prototype.jsx:871` sets `border: 1px solid ${color}` — the full accent on the whole card border — for eight cards across three colour families.
 
@@ -430,6 +429,8 @@ Recorded so these do not get "fixed" later.
 | FormTabs' selected "About" pill is a faint tint | It also has a 1 px accent border and accent text — adequate, and consistent with the other two tabs' structure. |
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
 | Home centre tab has no active/inactive state | Intentional (user's explicit ask, `App.jsx:3268–3270`). Documented via M9, not a defect. (C13 reclassified.) |
+| Home quick-add saturated borders | Intentional or needs design decision (§10.2 ambiguous). (C6 reclassified.) |
+| No root max-width on desktop | Intentional (owner decision 15 Sep 2026, 14 sites). (W1 reclassified.) |
 
 ---
 
@@ -494,11 +495,13 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 
 Checked against the same build on `http://localhost:5174/` in the desktop review browser (742 × 620 CSS px), both themes, with the service-worker update notice and the App Lock dialog dismissed. The web build runs the same React code, so every colour, spacing and sticky finding in §§2–4 applies unchanged. Two web-only items:
 
-### W1 · The root has no max-width, so the phone-first UI stretches on desktop
+### W1 (reclassified) · The root has no max-width — intentional, not a defect
+
+The 15 Sep 2026 commit (`HISTORY.md:7307-7323`) explicitly removed the `maxWidth: 600` cap across 14 sites after the owner requested full-width desktop. `index.html:33-47` documents the UA-margin fix that made full-width work. Manual §11 permits desktop wider inputs, multi-column layouts and larger pickers. Reintroducing a narrower cap would reverse that decision without new evidence. Listed here for completeness; not a defect.
 
 `browser.evaluate` found that **`#root` itself has no max-width** (`maxWidth: "none"`), so the app's outer container stretches to the viewport. Component-level caps do exist (30+ sites use `maxWidth` for individual cards, dialogs and empty states), but none caps the root container, so the phone-first UI still stretches to the full window width. On a 742 px window the Home header is 695 px wide and cards run the full width. The manual (§11) says the app is phone-first and that `useIsDesktopWidth` controls desktop-specific layout. It is imported in ~30 files and used for component-level tweaks (empty states, grids, padding); no site caps the *root* container width. The `maxWidth: 560` at `App.jsx:805` is the only cap on a top-level container, and it applies to one empty-state, not the root. The result is a stretched phone: 695 px text lines, full-width bottom nav, and the icon-budget problem from A4 only manifesting on phones.
 
-**Fix.** Cap the root at ~560 px and centre it when `!isDesktopWidth` is false (or always cap and let the desktop path opt out). This is the single change that makes the web/PWA build read as a designed desktop surface rather than a resized phone.
+**Status.** Reclassified as intentional (owner decision 15 Sep 2026). No code change. If a desktop cap is genuinely wanted, it requires an owner-level reversal of the 15 Sep decision, an outer-shell + inner-wrapper shape (matching the module pattern), and an `isDesktopWidth` gate — not a root-div cap.
 
 ### W2 (withdrawn)
 
