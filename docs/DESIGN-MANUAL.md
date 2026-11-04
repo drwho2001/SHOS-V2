@@ -146,6 +146,7 @@ Fonts are self-hosted through `@fontsource/*` and imported in `src/main.jsx`. Do
 
 - Set `FONT_FAMILY` explicitly on screen-level root containers. Healthcare previously rendered in the browser default because it omitted this.
 - Do not invent new font sizes for a one-off. If a new recurring role appears, add a token.
+- **List-card title:** 15px / 600. Encounters was the outlier at 700; corrected to 600. (C4)
 - Use `TYPE.sectionLabel` for grouped field labels, not ad hoc uppercase styling.
 - Use JetBrains Mono only for utility values, not general body text.
 
@@ -182,6 +183,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - Standard cards use a 1px border in `T.border` and no shadow.
 - Use shadows for floating or overlay surfaces: FABs, toasts, dialogs, and sheets.
 - Prefer borders over shadows for ordinary cards. Borders are more stable across light and dark mode.
+- **Elevation rule:** ordinary list cards get no shadow. Shadows are reserved for floating/overlay surfaces. Contacts was the only list card with a shadow; it has been removed (C2).
 
 ![Elevation](design-manual/elevation.svg)
 
@@ -190,8 +192,9 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 ![App shell](design-manual/app-shell.svg)
 
 - Bottom navigation has five tabs: Contacts, Encounter, Home, Medication, Healthcare.
-- Home is the raised centre tab and is visually distinct from the other four.
+- Home is the raised centre tab and is visually distinct from the other four. It is an **intentional exception**: always-filled 48 dp circle, no label, no state change when active. Do not copy this as a pattern for other tabs.
 - Tab accents come from `ACCENTS` and are resolved for dark mode at render time.
+- The bottom nav stays on record/detail screens and hides on Settings and other full-screen stacks.
 - Tab order can be customised, but Home remains in the centre position.
 - My Profile is not a primary tab. It is reached from Home or Settings.
 - Settings is reached from the gear icon on Home.
@@ -209,14 +212,17 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 | Grouped field label | `TYPE.sectionLabel` | Card or form section |
 
 - Module banners use the module accent background with white text.
+- **Home header** is a non-banner title (22/700) with up to 5 icons (Lock, Search, My Profile, Settings, Quick exit) and a 4 px accent bar underneath. Keep the icon count to 4 on narrow screens to avoid title wrap.
 - Settings headers are sticky at `top: 0` inside a root that already carries the safe-area top padding.
 - Sub-module sticky subheadings use `STICKY_SUBHEADING_TOP`.
+- **Banner control budget:** title, then at most 2 module actions, then global actions (Quick exit always last). Select should live in the list toolbar, not the banner.
 
 ## 8. Sticky headers and safe areas
 
 - Screen roots carry `paddingTop: env(safe-area-inset-top)`.
 - Settings screen headers stick at `top: 0`, not at an additional safe-area offset. Adding the inset again creates a gap.
-- Healthcare subheadings use `STICKY_SUBHEADING_TOP = calc(env(safe-area-inset-top) + 58px)`.
+- Healthcare subheadings use `STICKY_SUBHEADING_TOP = calc(env(safe-area-inset-top) + 58px)`. This is the height of a **single-band** module banner. Only valid when the sticky header above is exactly one band. Multi-band headers (e.g. Healthcare's two-row sub-tab stack) need a measured height instead.
+- **Sheet rule:** inside a sheet's own scroll container, the sticky offset is `0`, never the screen offset. Use a `stickyTop` prop (default `0`) on shared components like `FormTabs`.
 - Do not copy a hardcoded sticky offset from another screen. Use the shared constant.
 - Check comments near sticky code before changing it. Some values were settled by on-device measurement.
 
@@ -228,6 +234,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - Common weights: `regular`, `bold`, and `fill` for active states.
 - Icons are decorative unless they carry meaning. Provide an accessible label for icon-only controls.
 - Icon-only elements are audited by `iconOnlyUIAudit.test.js`.
+- **No emoji as icons.** Icons are Phosphor-only. Never use emoji as a stored value or display glyph (e.g. Testing's setting field used "🏠 Home" as a data key).
 
 ## 10. Forms, cards, lists, and dialogs
 
@@ -239,6 +246,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - Labels use `TYPE.bodyEmphasis` or `TYPE.caption`, depending on density.
 - Keep related fields vertically spaced by 8-12px.
 - Validation errors use `ACTION.red` text and appear directly under the failed field.
+- **Standard search/filter field:** `surfaceVariant` background, 1px `border` outline, `RADIUS.sm`, 8/12px padding, 13px font, `minHeight: 44`. Contacts was the only module with a bare transparent input; it has been standardized (D1).
 
 ### 10.2 Cards
 
@@ -412,7 +420,7 @@ These are current audit items. They are not standards and should not be copied. 
 
 ### 17.3 Confirmed open
 
-- Native and device validation still require CI or a real device. Keep this in platform testing guidance, not as a visual defect.
+- (Device validation moved to §11.5 platform testing guidance.)
 
 ## 18. Change policy
 
