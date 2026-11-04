@@ -1150,8 +1150,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             <div style={{ position: "relative", width: ringSize, height: ringSize, flexShrink: 0 }}>
               <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} role="img" aria-label={`At-risk encounters: ${totalAtRisk}, ${encounterPreCount} pre-test and ${encounterPostCount} post-test`}>
                 <circle cx={ringCenter} cy={ringCenter} r={ringRadius} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={ringStroke} />
-                {postFrac > 0 && <path d={ringArc(-90, postFrac * 360)} fill="none" stroke="#ec4899" strokeWidth={ringStroke} strokeLinecap="butt" />}
-                {preFrac > 0 && <path d={ringArc(-90 - postFrac * 360, preFrac * 360)} fill="none" stroke="#10b981" strokeWidth={ringStroke} strokeLinecap="butt" />}
+                {preFrac > 0 && <path d={ringArc(-90, preFrac * 360)} fill="none" stroke="#10b981" strokeWidth={ringStroke} strokeLinecap="butt" />}
+                {postFrac > 0 && <path d={ringArc(-90 - preFrac * 360, postFrac * 360)} fill="none" stroke="#ec4899" strokeWidth={ringStroke} strokeLinecap="butt" />}
                 <text x={ringCenter} y={ringCenter + 5} textAnchor="middle" fontSize={isDesktopWidth ? 18 : 14} fontWeight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{totalAtRisk}</text>
                 <text x={ringCenter} y={ringCenter + 17} textAnchor="middle" fontSize={isDesktopWidth ? 10 : 8} fontWeight="700">
                   <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
