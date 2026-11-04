@@ -416,8 +416,10 @@ export function DesignScreen({ onClose }) {
           {CUSTOMIZABLE_ACTION_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACTION[key === "actionRed" ? "red" : "green"];
+            const companion = DARK_COMPANIONS[key];
+            const displayValue = darkMode ? resolveDarkAccent(key, currentValue, companion ? companion : deriveDarkAccent(currentValue)) : currentValue;
             return (
-              <ColorInputRow key={key} colorKey={key} currentValue={currentValue} isOverridden={isOverridden}
+              <ColorInputRow key={key} colorKey={key} currentValue={currentValue} displayValue={displayValue} isOverridden={isOverridden}
                 label={t(`design.actionColor.${key}`, ACTION_COLOR_LABELS[key])} onSetColor={setColor} onReset={() => reset(key)} />
             );
           })}
