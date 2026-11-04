@@ -284,7 +284,7 @@ The manual says section labels are grey. All three uses are defensible; the miss
 
 **Fix.** Document it: accent when the label names a group *of the module's own records*; secondary when it names a field group inside a form or card; disabled only for a label that sits directly above an already-disabled value.
 
-### C9 · Text below the documented scale
+### C9 · Text below the documented scale — ✅ microLabel token added (commit 8c5b8d6)
 
 The manual's smallest role is 12 px. The app uses:
 
@@ -351,8 +351,9 @@ Manual §10.5 says "Empty states should use an icon, one sentence, and an option
 
 **Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
 
-### C18 · `FONT_FAMILY` is bypassed in 43 of 46 files:
+### C18 · `FONT_FAMILY` is bypassed in 43 of 46 files — ✅ fixed (commit 8c5b8d6)
 
+All 43 files now import and use `FONT_FAMILY` instead of the literal. `microLabel` token also added to `TYPE` (C9, same commit).
 `src/calculations/designTokens.js` exports `FONT_FAMILY = "'Inter', sans-serif"`. It is consumed in only two files (`SHOS_GlobalSearch_Prototype.jsx`, `SHOS_Healthcare_Prototype.jsx`) plus its own definition. The other 43 files that set a font use the literal `"'Inter', sans-serif"` string (263 sites). Visually identical, but it means a font change requires editing 263 sites and the token is not the single source of truth the manual claims it is (manual §4, §4.2). The audit's earlier "not defect" line ("Healthcare and every screen root checked do set FONT_FAMILY") was wrong: Healthcare is one of only two consumers.
 
 **Fix.** Replace the literal with the token everywhere. A codemod is safe here because the string is byte-identical; the only risk is files that import the token under a different name.
@@ -470,9 +471,9 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 **Batch 2 — dark mode (B1–B8).** Add the missing dark resolution in five files, plus amber tokens and a Contacts dark companion (B8). B7 (emoji) is separate because it needs a migration.
 - Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
 
-**Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12 fixed (commits 9eeec2d + 924fdf7). Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy), C18 (FONT_FAMILY bypass), C19 (empty states), C20 (loading states). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
+**Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy), C19 (empty states), C20 (loading states). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
-**Batch 4 — typography, icons, touch (C3, C9, D1–D5).** Add the standard search field (C3), `microLabel`, the header icon button, the emoji migration, and the reduced-motion/toggle fixes. (C13 is reclassified as not a defect; see §6.)
+**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done. Remaining: C3 (search field — D1 already standardized Contacts; standardize remaining), D4 (minHeight on SVGs), D5 (reduced motion — done for 4 settings screens). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 
