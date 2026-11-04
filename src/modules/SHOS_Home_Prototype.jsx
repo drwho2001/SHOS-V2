@@ -1124,9 +1124,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <div key="encounterRisk" style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260 }}>
             <div style={{ position: "relative", width: isDesktopWidth ? 96 : 64, height: isDesktopWidth ? 96 : 64, flexShrink: 0 }}>
               <svg width={isDesktopWidth ? 96 : 64} height={isDesktopWidth ? 96 : 64} viewBox="0 0 100 100" role="img" aria-label="At-risk encounters ring">
-                <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
-                <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="57 207" strokeDashoffset="-57" strokeLinecap="butt" />
-                <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="176 93" strokeDashoffset="-233" strokeLinecap="butt" />
+                <path d="M50 8 A42 42 0 0 1 50 92 A42 42 0 0 1 50 8" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
+                <path d="M50 8 A42 42 0 0 1 50 92 A42 42 0 0 1 50 8" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="57 207" strokeDashoffset="57" strokeLinecap="butt" />
+                <path d="M50 8 A42 42 0 0 1 50 92 A42 42 0 0 1 50 8" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="176 93" strokeDashoffset="233" strokeLinecap="butt" />
                 <text x="50" y="52" text-anchor="middle" font-size="22" font-weight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{encounterPostCount + encounterPreCount}</text>
                 <text x="50" y="72" text-anchor="middle" font-size="13" font-weight="700">
                   <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
