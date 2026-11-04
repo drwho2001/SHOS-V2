@@ -68,7 +68,7 @@ import {
   TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
-  BellIcon as Bell, XIcon as X, SignOutIcon as SignOut,
+  BellIcon as Bell, XIcon as X, SignOutIcon as SignOut, InfoIcon,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -800,47 +800,41 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // red convention for testing, staying in the module's own identity
   // colour unconditionally for adherence) — this component itself
   // stays a plain, neutral rendering of a percentage.
-  // CHANGED 16 Sep 2026 — real ask: "Status at a glance have
-  // informational i button to explain what each thing is" — same
-  // tap-to-reveal-caption pattern already established for Medication
-  // Dashboard's 7-day adherence dot and Contacts' active-status dot,
-  // applied here so every ring (not just adherence) can explain its
-  // own calculation basis. An info icon, not a hover-only tooltip,
-  // since this app targets touchscreens.
+  // Ring tiles keep a short summary visible for scanning and put each
+  // calculation detail behind the same outlined, touch-friendly i
+  // control so the four tiles stay consistent without long captions.
   // ADDED 16 Sep 2026 — real ask (#93, desktop empty-space): these
   // rings read as tiny/lost at wide desktop viewports. Desktop-only,
   // additive — mobile's own size/spacing is completely untouched
   // (isDesktopWidth is already computed once at the top of
   // HomeScreen, threaded down as a prop rather than a second hook
   // instance). See CLAUDE.md's #93 entry for the full design.
-  // CHANGED 16 Sep 2026, later still — real ask: "consider if the
-  // information button contents can actually just be given next to
-  // the circle - will use some of the free space without adding
-  // unnecessary filler." Reworked from a vertical stack (ring, then
-  // caption, then a tap-to-reveal info line below) into a horizontal
-  // layout (ring on the left, caption + info text stacked to its
-  // right) — the info text is now always visible, no tap required,
-  // and fills the row's own free horizontal space instead of leaving
-  // it empty. This is a real improvement on the standing "icon-only
-  // UI needs an explanatory affordance" rule (see CLAUDE.md), not a
-  // regression of it — always-visible text is strictly more
-  // accessible than an icon gating the same text behind a tap.
-  const StatusRing = ({ pct, color, centerText, caption, info, onClick }) => {
+  const statusTileStyle = (accent) => ({
+    background: `color-mix(in srgb, ${accent} ${darkMode ? 8 : 5}%, ${darkMode ? DARK.surface : NEUTRAL.surface})`,
+    border: `1px solid color-mix(in srgb, ${accent} ${darkMode ? 22 : 18}%, ${darkMode ? DARK.border : NEUTRAL.border})`,
+    borderRadius: RADIUS.sm,
+    padding: isDesktopWidth ? 10 : 8,
+  });
+  const StatusRing = ({ pct, color, centerText, caption, info, summary, onClick }) => {
+    const [showInfo, setShowInfo] = useState(false);
     const size = isDesktopWidth ? 96 : 64, stroke = isDesktopWidth ? 8 : 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
     const clamped = Math.max(0, Math.min(100, pct));
     const offset = c * (1 - clamped / 100);
     return (
-      <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} aria-label={onClick ? caption : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260, cursor: onClick ? "pointer" : "default" }}>
-        <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <div style={{ ...statusTileStyle(color), display: "flex", alignItems: "center", gap: 8, flex: isDesktopWidth ? "1 1 220px" : "1 1 0", maxWidth: isDesktopWidth ? 340 : "none", minWidth: 0 }}>
+        <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} aria-label={onClick ? caption : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ position: "relative", width: size, height: size, flexShrink: 0, cursor: onClick ? "pointer" : "default" }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: reducedMotion ? "none" : "stroke-dashoffset 300ms ease" }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
           <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: color }}>{caption}</span>
-          {info && <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>{info}</span>}
+          {info && <>
+            <span style={{ fontSize: 9, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>{summary || info} <button type="button" aria-label={`${caption} information`} aria-expanded={showInfo} onClick={(e) => { e.stopPropagation(); setShowInfo(value => !value); }} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "middle", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={11} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button></span>
+            {showInfo && <span style={{ fontSize: 9, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>{info}</span>}
+          </>}
         </div>
       </div>
     );
@@ -1062,6 +1056,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             color={testingStats.withinBashhInterval === false ? actionRedColor : healthcareColor}
             centerText={`${testingStats.daysSinceLast}d`}
             caption={testingStats.withinBashhInterval === false ? "Testing — overdue" : "Last test"}
+            summary={`Your last test was ${testingStats.daysSinceLast} days ago.`}
             info={`Days since your last test, out of the ${BASHH_TESTING_INTERVAL_DAYS}-day routine retest interval (BASHH 2023).`}
             onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
           />
@@ -1085,6 +1080,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // other tap target on this screen.
         const adherenceRing = adherence != null ? (
           <StatusRing key="adherence" pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence"
+            summary="Logged doses compared with what was due this week."
             info="Doses actually logged vs. doses due, across every tracked medication, over the last 7 days."
             onClick={() => onNavigateToRecord("medication")} />
         ) : null;
@@ -1101,6 +1097,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // project keeps finding.
         const containerRing = containerAdherence != null ? (
           <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="Current container adherence"
+            summary="Doses logged since each refill, capped at one supply."
             info="Average across your meds: doses logged vs. due since each one's own last refill, capped at one container's worth."
             onClick={() => onNavigateToRecord("medication")} />
         ) : null;
@@ -1110,6 +1107,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             color={cycleOverdue ? actionRedColor : menstrualColor}
             centerText={`${cycleDaysSince}d`}
             caption={cycleOverdue ? "Cycle — late" : "Cycle day"}
+            summary="Days since your last logged period started."
             info="Days since your last logged period started, compared to your own average cycle length — not a fixed external benchmark."
             onClick={() => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth")}
           />
@@ -1120,6 +1118,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             color={contraOverdue ? actionRedColor : medsBlue}
             centerText={contraOverdue ? "Due" : `${contraDaysUntilDue}d`}
             caption={contraOverdue ? "Contraception overdue" : "Contraception due"}
+            summary="Progress through your method's own interval."
             info="How far you are through your current contraception method's own logged interval, from its last dose/application to its next one due."
             onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
           />
@@ -1139,34 +1138,31 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           return { x: ringCenter + ringRadius * Math.cos(radians), y: ringCenter + ringRadius * Math.sin(radians) };
         };
         // SVG sweep-flag 0 draws counter-clockwise. Starting at -90° puts
-        // the pink post-test segment exactly at 12 o'clock; green follows it.
+        // the green pre-test segment exactly at 12 o'clock; pink follows it.
         const ringArc = (startDegrees, sweepDegrees) => {
           const start = pointOnRing(startDegrees);
           const end = pointOnRing(startDegrees - sweepDegrees);
           return `M${start.x} ${start.y} A${ringRadius} ${ringRadius} 0 ${sweepDegrees > 180 ? 1 : 0} 0 ${end.x} ${end.y}`;
         };
         const encounterRiskRing = (encounterPostCount > 0 || encounterPreCount > 0) ? (
-          <div key="encounterRisk" style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260 }}>
+          <div key="encounterRisk" style={{ ...statusTileStyle(encountersColor), display: "flex", alignItems: "center", gap: 8, flex: isDesktopWidth ? "1 1 220px" : "1 1 0", maxWidth: isDesktopWidth ? 340 : "none", minWidth: 0 }}>
             <div style={{ position: "relative", width: ringSize, height: ringSize, flexShrink: 0 }}>
               <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} role="img" aria-label={`At-risk encounters: ${totalAtRisk}, ${encounterPreCount} pre-test and ${encounterPostCount} post-test`}>
                 <circle cx={ringCenter} cy={ringCenter} r={ringRadius} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={ringStroke} />
                 {preFrac > 0 && <path d={ringArc(-90, preFrac * 360)} fill="none" stroke="#10b981" strokeWidth={ringStroke} strokeLinecap="butt" />}
                 {postFrac > 0 && <path d={ringArc(-90 - preFrac * 360, postFrac * 360)} fill="none" stroke="#ec4899" strokeWidth={ringStroke} strokeLinecap="butt" />}
-                <text x={ringCenter} y={ringCenter + 5} textAnchor="middle" fontSize={isDesktopWidth ? 18 : 14} fontWeight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{totalAtRisk}</text>
-                <text x={ringCenter} y={ringCenter + 17} textAnchor="middle" fontSize={isDesktopWidth ? 10 : 8} fontWeight="700">
+                <text x={ringCenter} y={ringCenter - 3} textAnchor="middle" fontSize={isDesktopWidth ? 20 : 16} fontWeight="700" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{totalAtRisk}</text>
+                <text x={ringCenter} y={ringCenter + 13} textAnchor="middle" fontSize={isDesktopWidth ? 11 : 9} fontWeight="600">
                   <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
                 </text>
               </svg>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor }}>At-Risk Encounters</span>
-                <button type="button" aria-label="Pre-test encounter counting information" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ width: 16, height: 16, padding: 0, borderRadius: 999, border: "1px solid #656568", background: "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, fontWeight: 700, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, cursor: "pointer", flexShrink: 0 }}>i</button>
-              </div>
-              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>
-                Counts all encounters containing an at-risk activity <span style={{ color: "#ec4899" }}>since your last test (post-test)</span> — both logged by you. <span style={{ color: "#10b981" }}>Pre-test exposures</span> before that test may not be detectable yet, so they count toward your next test.
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor }}>At-Risk Encounters</span>
+              <span style={{ fontSize: 9, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>
+                At-risk encounters since your last test, plus earlier exposures that may not have shown up yet. <button type="button" aria-label="At-risk encounter colors and counting" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "middle", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={11} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
               </span>
-              {showEncounterRiskInfo && <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Pre-test exposures can fall inside a test's window period, so they are counted toward the next test. Scale {ringScale}; grey buffer = {ringScale - totalAtRisk} (not a target ring).</span>}
+              {showEncounterRiskInfo && <span style={{ fontSize: 9, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means before your last test; it may have been too early to detect an infection. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means at-risk encounters logged since that test.</span>}
             </div>
           </div>
         ) : null;
