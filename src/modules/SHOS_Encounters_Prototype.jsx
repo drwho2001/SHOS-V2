@@ -1098,7 +1098,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
             <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
           </div>
           <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4, marginLeft: 16 }}>
             <span>

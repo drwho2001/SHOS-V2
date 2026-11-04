@@ -40,7 +40,7 @@ One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **alr
 
 ---
 
-## 2. P1 — content is occluded
+## 2. P1 — content is occluded (all 5 fixed in commit 7d90aaa + 0498e01)
 
 ### A1 · The refill "requested, not collected" strip covers Home's header
 
@@ -461,7 +461,7 @@ Two further manual fixes with no code counterpart:
 
 Five batches, each independently shippable. Nothing here needs a redesign; every fix is local.
 
-**Batch 1 — occlusion (P1 + C10).** The three overlaps share one root cause: fixed heights used where the real height is measured.
+**Batch 1 — occlusion (P1 + C10).** ✅ Done (commit 7d90aaa + 0498e01). All 5 P1 issues fixed; sticky guard green.
 1. A1 — measure the refill-awaiting strip and add it to the padding sum.
 2. A2 — replace the constant with a measured header height; fix Healthcare first, then the other four sub-tabs.
 3. A3 — FormTabs sticky offset becomes a prop.
@@ -470,7 +470,7 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 **Batch 2 — dark mode (B1–B8).** Add the missing dark resolution in five files, plus amber tokens and a Contacts dark companion (B8). B7 (emoji) is separate because it needs a migration.
 - Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
 
-**Batch 3 — list and control consistency (C1, C2, C4–C8, C11, C12, C14–C16, C18–C20).** Extract `ModuleListRow` and `ListSearchField`, then delete the four hand-rolled copies. Delete the duplicate DEMO span and the card shadow on the way through. (C3 and C9 are typography/touch and go in Batch 4; C13 is reclassified as not a defect.)
+**Batch 3 — list and control consistency.** ✅ C2, C4, C7, C11, C12 fixed (commit 9eeec2d). Remaining: C1 (duplicate DEMO), C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy), C18 (FONT_FAMILY bypass), C19 (empty states), C20 (loading states). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
 **Batch 4 — typography, icons, touch (C3, C9, D1–D5).** Add the standard search field (C3), `microLabel`, the header icon button, the emoji migration, and the reduced-motion/toggle fixes. (C13 is reclassified as not a defect; see §6.)
 
