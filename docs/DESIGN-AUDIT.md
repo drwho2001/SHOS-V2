@@ -1,6 +1,6 @@
 # SHOS Visual Audit — 3 November 2026
 
-This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. Application-code changes have since been applied for P1 (A1-A5), C1, C2, C4, C7, C10-C12, C17-C18, D1-D5, B1-B9 (except B7), plus pre-existing CI fixes. See §8 for the current fix status.
+This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. Application-code changes have been applied for: P1 (A1-A5), C1, C2, C4, C7, C10-C12, C17-C18, D1-D3, B4, B6, B8 (Contacts + Home only), B9, plus pre-existing CI fixes (lint, dataAnomalyScan). Not yet applied: B1, B2, B3 (MyProfile/Menstrual), B5, D4, D5. See §8 for the current fix status.
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
@@ -463,12 +463,12 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 3. A3 — FormTabs sticky offset becomes a prop.
 4. C10 — Encounters imports the constant. Turns `stickySubheadingGuard` green.
 
-**Batch 2 — dark mode (B1–B8).** Add the missing dark resolution in five files, plus amber tokens and a Contacts dark companion (B8). B7 (emoji) is separate because it needs a migration.
+**Batch 2 — dark mode.** ✅ B4, B6, B8 (Contacts + Home only), B9 done. ❌ Not done: B1 (DesignScreen link/segmented), B2 (DesignScreen swatches), B3 (Home Contacts accent — partially covered by B8), B5 (amber tokens — tokens added, chip sites converted), B7 (emoji migration, deferred), B8 (MyProfile + Menstrual companions). Remaining work: B1, B2, B5 verification, B8 completion.
 - Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
 
 **Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy), C19 (empty states), C20 (loading states). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
-**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done (banner/header icons). Remaining: C3 (search field — D1 already standardized Contacts; standardize remaining), D4 (minHeight on ~11 inline SVGs — row-level, not header), D5 (reduced motion — done for 4 settings screens). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
+**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done (banner/header icons). ❌ Not done: D4 (minHeight on ~11 inline SVGs — row-level, not header), D5 (reduced motion — done for 4 settings screens, module screens not checked). C3 (search field — D1 already standardized Contacts; standardize remaining). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 
