@@ -1098,9 +1098,9 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
             <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
           </div>
-          <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4, marginLeft: 16 }}>
             <span>
               {encounter.date ? `${formatStoredDate(encounter.date)} · ${formatRelativeDate(encounter.date)}` : tr("encounters.noDate", "No date")}
               {encounter.encounterType ? " · " : ""}
@@ -1117,12 +1117,12 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
           </div>
         </div>
 {encounter.enjoymentRating != null && (
-  <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif", color: T.textSecondary, display: "flex", alignItems: "center", gap: 3 }}>
+  <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif", color: T.textSecondary, display: "flex", alignItems: "center", gap: 3, marginLeft: 16 }}>
     <Heart size={12} color={T.encountersPink} /> {encounter.enjoymentRating}
   </div>
 )}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, marginLeft: 16, flexWrap: "wrap" }}>
         {shown.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary }}>
             <Users size={13} />
@@ -1135,7 +1135,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
           </div>
         )}
         {kinkNames.slice(0, 3).map((name) => (
-          <span key={name} style={{ fontSize: 11, padding: "2px 7px", borderRadius: radius.full, border: `1px solid ${ACTION.red}`, color: ACTION.red }}>{name}</span>
+          <span key={name} style={{ fontSize: 11, padding: "2px 7px", borderRadius: radius.full, border: `1px solid ${T.encountersPink}`, color: T.encountersPinkText || T.encountersPink }}>{name}</span>
         ))}
       </div>
       </div>

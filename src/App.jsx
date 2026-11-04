@@ -3296,7 +3296,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               onClick={() => { selectTab(tab.key); }}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
-              <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
+              <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: RADIUS.md, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
                 {/* FIXED — real device bug: Phosphor's "fill" weight for
                     the Encounter tab's own Pulse icon isn't just a
                     bolder line like every other icon's fill weight —
