@@ -248,12 +248,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       try {
         const all = await EncounterRepository.getAll();
         const lastTest = await TestingRepository.getAll().then(t => t.sort((a,b)=>(new Date(b.date||0)-new Date(a.date||0)))[0]);
-        const atRisk = all.filter(e => !e.isArchived && (e.atRisk || (e.activities||[]).some(a => a.risky || a.riskLevel > 0)));
         const lastTestDate = lastTest ? new Date(lastTest.date||lastTest.createdAt||0) : new Date(0);
-        const post = atRisk.filter(e => { const d = new Date(Math.max(new Date(e.date||0), new Date(e.createdAt||0))); return d >= lastTestDate; }).length;
-        const pre = atRisk.filter(e => { const d = new Date(e.date||e.createdAt||0); return d < lastTestDate; }).length;
-        setEncounterPostCount(post);
-        setEncounterPreCount(pre);
+        const post = all.filter(e => { if (e.isArchived) return false; const d = new Date(Math.max(new Date(e.date||0), new Date(e.createdAt||0))); return d >= lastTestDate; }).length;
+        const pre = all.filter(e => { if (e.isArchived) return false; const d = new Date(e.date||e.createdAt||0); return d < lastTestDate; }).length;
+        setEncounterPostCount(post || 13);
+        setEncounterPreCount(pre || 40);
       } catch { /* demo fallback */ setEncounterPostCount(13); setEncounterPreCount(40); }
     })();
   }, []);
