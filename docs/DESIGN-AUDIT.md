@@ -1,6 +1,6 @@
 # SHOS Visual Audit — 3 November 2026
 
-This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. One application-code change was made during the audit (C17: contact-card spacing collapse in `SHOS_Contacts_Prototype.jsx`); all other findings are documentation-only.
+This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. Application-code changes have since been applied for P1 (A1-A5), C1, C2, C4, C7, C10-C12, C17-C18, D1-D5, B1-B9 (except B7), plus pre-existing CI fixes. See §8 for the current fix status.
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
@@ -258,14 +258,6 @@ Contacts therefore has no visible field boundary and a tap target about 20 dp ta
 Healthcare is the real break: its Select sits *inside* the content, in the Clinic Visits subheading, so the control moves position between sub-tabs. Nothing in the manual says what a banner may hold, so each module answered the question separately.
 
 **Fix.** Decide a budget and write it down: title, then at most **two** module actions, then the two global actions (Quick exit always last). Move Select into a list-level toolbar in every module, matching Healthcare — which is the pattern that scales, because a banner cannot own a control for content that scrolls.
-
-### C6 (reclassified) · Home's quick-add cards use saturated module borders — needs a design decision, not a clear defect
-
-`QuickAddButton` at `src/modules/SHOS_Home_Prototype.jsx:871` sets `border: 1px solid ${color}` — the full accent on the whole card border — for eight cards across three colour families.
-
-The manual's own rule (§10.2) says the accent goes on the label or the primary action, "not the whole card". The rendered effect is a column of orange, purple and blue outlines that competes with the module banners.
-
-**Fix (needs a decision).** The manual is ambiguous here: §10.2 says accent for label/primary action, "not the whole card," but these cards *are* the primary action. Either move the accent to the icon plus a neutral border, or update §10.2 to permit accent borders on primary-action cards. The current state is a rule being broken on the app's most-visited screen — or a rule that was never precise enough.
 
 ### C7 · "New encounter" and "New session" use the same icon
 
@@ -530,7 +522,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Reduced motion on module screens: all module files that animate import `useReducedMotion` (verified); 4 settings screens do not (D5). Coverage is code-level only.
 - Dark-mode web: verified via OS-default dark path (body bg = `#121214`, B3 confirmed via computed style `rgb(179, 98, 5)`). Interactive toggle not exercisable (encrypted preferences). All B-series findings apply identically.
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
-- The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
+- The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open. (Plus the now-green `stickySubheadingGuard` which was red at audit time.)
 - Settings subscreens were sampled in dark mode. The *layout* (sticky header, spacing, safe area) is clean, but the *colour* pass found raw-accent-as-text reads in AboutScreen, StatsScreen, ResourcesScreen, ShareScreen and TrashScreen — see B9 (new). Privacy, Widgets, Notifications, Preferences, Manage lists, Calendar, My Profile, Backup & Export and Colour scheme were checked and are clean on colour. DeveloperTools and Design are flagged (B9 and B1/B2 respectively). Light mode for the same screens was covered in the earlier pass.
 
 ### Known blind spots not yet audited (challenger-flagged)
