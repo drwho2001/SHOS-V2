@@ -3197,8 +3197,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         // CHANGED — real edge-to-edge redesign: Contacts' own banner
         // moved its safe-area inset from `top` into its own top
         // padding, shrinking its net height by 8px, so 70 became 62.
-        <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
+        <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.surfaceVariant, border: `1px solid ${T.border}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather
                 than manual 1 by 1", scoped to whatever's currently
