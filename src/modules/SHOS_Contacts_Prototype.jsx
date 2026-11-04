@@ -3138,8 +3138,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <span style={{
                       fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-                      color: confidence === "High" ? "#B42318" : confidence === "Medium" ? "#926100" : T.textSecondary,
-                      background: confidence === "High" ? "#FEE4E2" : confidence === "Medium" ? "#FFF3C4" : T.surfaceVariant,
+                      color: confidence === "High" ? T.actionRedText : confidence === "Medium" ? T.actionAmberText : T.textSecondary,
+                      background: confidence === "High" ? `${T.actionRed}15` : confidence === "Medium" ? T.actionAmberSurface : T.surfaceVariant,
                     }}>{confidence} confidence</span>
                     <span style={{ fontSize: 11, color: T.textDisabled }}>matched: {matched.join(", ")}</span>
                   </div>
