@@ -1,4 +1,5 @@
 import React, { Children, useId, useRef } from "react";
+import { FONT_FAMILY } from "../calculations/designTokens";
 
 /**
  * Accessible tabs for long Add/Edit forms. Panels stay mounted while hidden so
@@ -63,7 +64,7 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
                 background: selected ? `${accent}15` : surface,
                 color: selected ? accentText : textColor,
                 font: "inherit",
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: FONT_FAMILY,
                 fontSize: 12,
                 fontWeight: selected ? 700 : 600,
                 cursor: "pointer",

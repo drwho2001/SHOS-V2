@@ -63,7 +63,7 @@ import { syncPlannedEventsToCalendar } from "../storage/calendarSyncService";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useEscapeToClose } from "../components/useEscapeToClose";
@@ -224,7 +224,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
         )}
       </div>
       <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -234,7 +234,7 @@ function SelectField({ label, value, onChange, options, T }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
@@ -421,7 +421,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         onBlur={commit}
         placeholder={placeholder || tr("testing.pickOrTypeOrganisms", "Pick existing or type new ones, comma-separated")}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -507,7 +507,7 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addResult(draft); } }}
         onBlur={() => addResult(draft)}
         placeholder={placeholder || tr("testing.pickOrTypeResults", "Pick or type a result — add more than one if positive at multiple sites")}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -577,7 +577,7 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
       )}
       <div style={{ display: "flex", gap: 8 }}>
         <select value={pendingType} onChange={(e) => setPendingType(e.target.value)}
-          style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12 }}>
+          style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12 }}>
           {["Test result", "Prescription", "ID", "Photo", "Other"].map((type) => <option key={type} value={type}>{tr(`testing.attachmentType.${type === "Test result" ? "testResult" : type.toLowerCase()}`, type)}</option>)}
         </select>
         <label style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, color: T.textPrimary, fontSize: 12, fontWeight: 600, cursor: "pointer", minHeight: 44 }}>
@@ -609,7 +609,7 @@ function LinkPicker({ items, onPick, T, placeholder }) {
     <div>
       {items.length > 3 && (
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder || tr("testing.searchByName", "Search by name…")}
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visible.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -972,7 +972,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("testing.generalNotes", "General notes")}</div>
             <textarea value={form.notes ?? ""} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("testing.generalNotes", "General notes")}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </SectionCard>
 
@@ -1091,7 +1091,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
   const canScheduleRetest = !isPlanned && isRoutineRetestEligible(test, resultNameById);
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -1154,7 +1154,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block", opacity: isOlder ? 0.5 : 1 }} />
           <h1 style={{ ...TYPE.recordTitle, margin: 0, color: isOlder ? T.textSecondary : T.textPrimary }}>{test.title || tr("testing.untitledTest", "Untitled test")}</h1>
         </div>
-        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
+        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>{formatDate(test.date)}</div>
 
         <SectionCard title={tr("testing.overview", "Overview")} T={T}>
           {/* MOVED — real ask: Result date should read near the top,
@@ -1414,7 +1414,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
   // TestDetail) so both screens share one source of truth.
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       {/* This is a local action row, not another title/tab header.
           Healthcare already names the active section in its sticky tabs;
           a second sticky label layered above those tabs caused the green
@@ -1473,11 +1473,11 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("testing.searchTests", "Search tests")}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
           </div>
           <div style={{ minWidth: 180 }}>
             <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
+              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}>
               <option value="all">{tr("testing.allTime", "All time")}</option>
               <option value="30">{tr("testing.last30Days", "Last 30 days")}</option>
               <option value="90">{tr("testing.last90Days", "Last 90 days")}</option>
@@ -1595,7 +1595,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
             and looks like a test already taken. */}
         {isPlannedTest(t) && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>{tr("testing.scheduled", "Scheduled")}</span>}
       </div>
-      <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
+      <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>{formatDate(t.date)}</div>
       {t.setting && (
         <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
       )}

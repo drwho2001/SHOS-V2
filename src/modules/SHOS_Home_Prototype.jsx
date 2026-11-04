@@ -1,6 +1,6 @@
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
-import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 import { useReducedMotion } from "../calculations/useReducedMotion";
 // ADDED 9 Oct 2026 (t052) - tap-to-reveal explanation for "BASHH" on the
 // testing ring. See JargonNote.jsx for why it is a bubble and not permanent
@@ -243,16 +243,28 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [containerAdherence, setContainerAdherence] = useState(null);
   const [encounterPostCount, setEncounterPostCount] = useState(0);
   const [encounterPreCount, setEncounterPreCount] = useState(0);
+  const [showEncounterRiskInfo, setShowEncounterRiskInfo] = useState(false);
   useEffect(() => {
     (async () => {
       try {
         const all = await EncounterRepository.getAll();
         const lastTest = await TestingRepository.getAll().then(t => t.sort((a,b)=>(new Date(b.date||0)-new Date(a.date||0)))[0]);
+        const atRisk = all.filter(e => {
+          if (e.isArchived) return false;
+          const activities = [...(e.activities || []), ...(e.activityDetails || [])];
+          return Boolean(e.atRisk) || activities.some(a => a?.risky || Number(a?.riskLevel) > 0);
+        });
         const lastTestDate = lastTest ? new Date(lastTest.date||lastTest.createdAt||0) : new Date(0);
-        const post = all.filter(e => { if (e.isArchived) return false; const d = new Date(Math.max(new Date(e.date||0), new Date(e.createdAt||0))); return d >= lastTestDate; }).length;
-        const pre = all.filter(e => { if (e.isArchived) return false; const d = new Date(e.date||e.createdAt||0); return d < lastTestDate; }).length;
-        setEncounterPostCount(post || 13);
-        setEncounterPreCount(pre || 40);
+        const encounterTimestamp = e => Math.max(new Date(e.date || 0).getTime(), new Date(e.createdAt || 0).getTime());
+        const post = atRisk.filter(e => encounterTimestamp(e) >= lastTestDate.getTime()).length;
+        const pre = atRisk.filter(e => encounterTimestamp(e) < lastTestDate.getTime()).length;
+        if (atRisk.length === 0) {
+          setEncounterPostCount(13);
+          setEncounterPreCount(40);
+        } else {
+          setEncounterPostCount(post);
+          setEncounterPreCount(pre);
+        }
       } catch { /* demo fallback */ setEncounterPostCount(13); setEncounterPreCount(40); }
     })();
   }, []);
@@ -897,7 +909,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%", padding: "20px 16px", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", padding: "20px 16px", fontFamily: FONT_FAMILY, boxSizing: "border-box" }}>
       <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{profileName ? tr("home.dashboardTitle", "{name}'s dashboard", { name: profileName }) : tr("home.yourDashboard", "Your dashboard")}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -1112,30 +1124,49 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
           />
         ) : null;
-        // STRESS TEST — ring spacing: y (scale) must always > x (total) so grey buffer always visible; not target.
+        // Keep the at-risk scale above the live count so the grey buffer is
+        // always visible and explicitly represents remaining capacity.
         const totalAtRisk = encounterPostCount + encounterPreCount;
-        const ringScale = Math.max(10, Math.ceil((totalAtRisk + 1) / 10) * 10); // always +1 grey buffer so never full
+        const ringScale = Math.max(60, Math.ceil((totalAtRisk + 1) / 10) * 10);
         const postFrac = Math.min(encounterPostCount / ringScale, 1);
         const preFrac = Math.min(encounterPreCount / ringScale, 1);
-        const greyFrac = Math.max(0, 1 - postFrac - preFrac);
-        // Verify: grey always > 0 when not full
-        if (postFrac + preFrac > 1) { console.warn("At-risk ring overflow: scale too small for counts", totalAtRisk, ringScale); }
+        const ringSize = isDesktopWidth ? 96 : 64;
+        const ringStroke = isDesktopWidth ? 8 : 6;
+        const ringCenter = ringSize / 2;
+        const ringRadius = (ringSize - ringStroke) / 2;
+        const pointOnRing = (degrees) => {
+          const radians = (degrees * Math.PI) / 180;
+          return { x: ringCenter + ringRadius * Math.cos(radians), y: ringCenter + ringRadius * Math.sin(radians) };
+        };
+        // SVG sweep-flag 0 draws counter-clockwise. Starting at -90° puts
+        // the pink post-test segment exactly at 12 o'clock; green follows it.
+        const ringArc = (startDegrees, sweepDegrees) => {
+          const start = pointOnRing(startDegrees);
+          const end = pointOnRing(startDegrees - sweepDegrees);
+          return `M${start.x} ${start.y} A${ringRadius} ${ringRadius} 0 ${sweepDegrees > 180 ? 1 : 0} 0 ${end.x} ${end.y}`;
+        };
         const encounterRiskRing = (encounterPostCount > 0 || encounterPreCount > 0) ? (
           <div key="encounterRisk" style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260 }}>
-            <div style={{ position: "relative", width: isDesktopWidth ? 96 : 64, height: isDesktopWidth ? 96 : 64, flexShrink: 0 }}>
-              <svg width={isDesktopWidth ? 96 : 64} height={isDesktopWidth ? 96 : 64} viewBox="0 0 100 100" role="img" aria-label="At-risk encounters ring">
-                <path d="M50 8 A42 42 0 0 1 50 92 A42 42 0 0 1 50 8" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
-                <path d="M50 8 A42 42 0 0 1 50 92 A42 42 0 0 1 50 8" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="57 207" strokeDashoffset="0" strokeLinecap="butt" />
-                <path d="M50 8 A42 42 0 0 1 50 92 A42 42 0 0 1 50 8" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="176 88" strokeDashoffset="57" strokeLinecap="butt" />
-                <text x="50" y="52" text-anchor="middle" font-size="22" font-weight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{encounterPostCount + encounterPreCount}</text>
-                <text x="50" y="72" text-anchor="middle" font-size="13" font-weight="700">
+            <div style={{ position: "relative", width: ringSize, height: ringSize, flexShrink: 0 }}>
+              <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} role="img" aria-label={`At-risk encounters: ${totalAtRisk}, ${encounterPreCount} pre-test and ${encounterPostCount} post-test`}>
+                <circle cx={ringCenter} cy={ringCenter} r={ringRadius} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={ringStroke} />
+                {postFrac > 0 && <path d={ringArc(-90, postFrac * 360)} fill="none" stroke="#ec4899" strokeWidth={ringStroke} strokeLinecap="butt" />}
+                {preFrac > 0 && <path d={ringArc(-90 - postFrac * 360, preFrac * 360)} fill="none" stroke="#10b981" strokeWidth={ringStroke} strokeLinecap="butt" />}
+                <text x={ringCenter} y={ringCenter + 5} textAnchor="middle" fontSize={isDesktopWidth ? 18 : 14} fontWeight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{totalAtRisk}</text>
+                <text x={ringCenter} y={ringCenter + 17} textAnchor="middle" fontSize={isDesktopWidth ? 10 : 8} fontWeight="700">
                   <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
                 </text>
               </svg>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor }}>At-Risk Encounters</span>
-              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Post-test (pink): since last test. Pre-test (green): before last test; counted for next. <button onClick={() => alert('Pre-test exposure logic: encounters before last test that could not have been identified by that test are counted for the next test cycle.')}>i</button></span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor }}>At-Risk Encounters</span>
+                <button type="button" aria-label="Pre-test encounter counting information" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ width: 16, height: 16, padding: 0, borderRadius: 999, border: "1px solid #656568", background: "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, fontWeight: 700, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, cursor: "pointer", flexShrink: 0 }}>i</button>
+              </div>
+              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>
+                <span style={{ color: "#ec4899" }}>Post-test:</span> since your last test — at-risk encounters logged by you. <span style={{ color: "#10b981" }}>Pre-test:</span> exposures before that test which may not have been detectable yet, counted for your next test. Scale {ringScale}; grey buffer = {ringScale - totalAtRisk} (not a target ring).
+              </span>
+              {showEncounterRiskInfo && <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Pre-test encounters may fall within the test window period. They are included for the next test because that test may have been too early to detect an infection from the exposure.</span>}
             </div>
           </div>
         ) : null;

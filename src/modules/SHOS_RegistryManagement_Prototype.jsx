@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, PlusIcon as Plus, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CopyIcon as Copy, XIcon as X } from "@phosphor-icons/react";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
@@ -71,7 +71,7 @@ function RegistryRow({ entry, usage, isEditing, editingName, setEditingName, sta
           <input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingId(null); }}
             onBlur={commitEdit}
-            style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${color}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
+            style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${color}`, fontSize: 14, fontFamily: FONT_FAMILY }} />
         ) : (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => startEdit(entry)} style={{ flex: 1, cursor: "pointer" }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>{entry.name}</span>
@@ -217,7 +217,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   );
 
   return (
-    <div role="dialog" aria-label="Registry management" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Registry management" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
@@ -263,7 +263,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
         <div style={{ display: "flex", gap: 8 }}>
           <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder={t("registry.newEntry", `New ${label.toLowerCase()} entry`)}
             onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
-            style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+            style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
           <button onClick={handleAdd} style={{ padding: "0 16px", borderRadius: 8, border: "none", background: color, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             <Plus size={16} /> {t("common.add", "Add")}
           </button>

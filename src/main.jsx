@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import { FONT_FAMILY } from "./calculations/designTokens";
 import { I18nProvider } from "./i18n/index.js";
 // ADDED 3 Sep 2026 — real ask: an install-to-home-screen nudge tied to
 // notification reliability. Imported here (not lazily inside whatever
@@ -171,7 +172,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Inter', sans-serif", textAlign: "center" }}>
+        <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: FONT_FAMILY, textAlign: "center" }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: "#1B1B1F", marginBottom: 10 }}>Something went wrong</div>
           <div style={{ fontSize: 13, color: "#5B5B62", marginBottom: 20, maxWidth: 320 }}>
             SHOS hit an error and couldn't display normally. Your data is safe — nothing here touches it. Tap below to reset navigation state and reload.

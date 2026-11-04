@@ -30,7 +30,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -127,10 +127,10 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", read
         )}
       </div>
       {readOnly ? (
-        <div style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>{value || "—"}</div>
+        <div style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>{value || "—"}</div>
       ) : (
         <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       )}
     </div>
   );
@@ -192,7 +192,7 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
     return (
       <div style={{ padding: "8px 0" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Type</div>
-        <div style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>{value}</div>
+        <div style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>{value}</div>
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 4, fontStyle: "italic" }}>Type can't be changed on a Blood pressure entry — delete and re-add instead.</div>
       </div>
     );
@@ -222,7 +222,7 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
         onBlur={() => commit(value || "")}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(value || ""); e.target.blur(); } }}
         placeholder="e.g. Testosterone, Weight, CD4 count"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -288,7 +288,7 @@ function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T, ty
             </div>
           )}
           <input value={unit ?? ""} onChange={(e) => onUnitChange(e.target.value)} placeholder={hints.unit}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
         </div>
       </div>
     </div>
@@ -330,7 +330,7 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
             </div>
           )}
           <input value={clinicName ?? ""} onChange={(e) => onClinicNameChange(e.target.value)} placeholder="e.g. 56 Dean Street"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
         </>
       )}
     </div>
@@ -570,7 +570,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
           <div style={{ padding: "8px 0 20px" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
             <textarea value={form.note} onChange={(e) => set("note")(e.target.value)} rows={3} aria-label="Notes"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
@@ -691,7 +691,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
   const showsConversion = !isBP && m.enteredUnit && m.enteredUnit !== m.unit;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -745,10 +745,10 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
                   <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 6 }}>Normal range for {m.type} ({m.unit})</div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <input type="number" value={rangeLow} onChange={(e) => setRangeLow(e.target.value)} placeholder="Low" aria-label="Low"
-                      style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+                      style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
                     <span style={{ color: T.textSecondary }}>–</span>
                     <input type="number" value={rangeHigh} onChange={(e) => setRangeHigh(e.target.value)} placeholder="High" aria-label="High"
-                      style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+                      style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
                     <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={saveRange} style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginLeft: 4}}>Save</span>
                     <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setEditingRange(false)} style={{ fontSize: 13, color: T.textSecondary, cursor: "pointer"}}>Cancel</span>
                     {existingRange && <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={clearRange} style={{ fontSize: 13, color: T.actionRed, cursor: "pointer"}}>Clear</span>}
@@ -845,7 +845,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
   const readingLabel = (m) => displayReading(m, prefs) || "—";
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       {/* FIXED 16 Sep 2026 — real bug: same as Testing/Clinic Visits/
           Vaccinations/Symptom Log's own sticky sub-headings — the
           sticky-header status-bar fix moved Healthcare's banner from
@@ -913,7 +913,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
       )}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by type"
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       </div>
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {byTypeGroups.length > 0 ? `${byTypeGroups.reduce((sum, g) => sum + g.entries.length, 0)} measurements${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No measurements match" : "No measurements logged"}
@@ -1035,13 +1035,13 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
     <div role="dialog" aria-label="Manage groups" ref={manageRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
+        <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
       </div>
       <div style={{ padding: "16px 20px 100px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New group name, e.g. HRT panel"
             onKeyDown={(e) => { if (e.key === "Enter") createGroup(); }}
-            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
           <button onClick={createGroup} style={{ padding: "0 16px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Add</button>
         </div>
         {groups.length === 0 && (
@@ -1141,7 +1141,7 @@ function detectUnitSystem(prefs) {
     <div role="dialog" aria-label="Measurement preferences" ref={prefsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>
+          <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close measurement preferences" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
@@ -1168,7 +1168,7 @@ function detectUnitSystem(prefs) {
               <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
                 <span style={{ fontSize: 13, color: T.textPrimary }}>{type}</span>
                 <select value={current} onChange={(e) => setPreferred(type, e.target.value)}
-                  style={{ padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }}>
+                  style={{ padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }}>
                   {units.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
@@ -1284,7 +1284,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   else if (screen.name === "detail") content = <MeasurementDetail T={T} measurementId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
+    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-label={editUndo.toast.mode === "undo" ? "Undo edit" : "Redo edit"} aria-live="polite"

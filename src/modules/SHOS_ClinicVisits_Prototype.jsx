@@ -46,7 +46,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -138,7 +138,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
         )}
       </div>
       <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -159,7 +159,7 @@ function DateTimeField({ label, value, onChange, T }) {
       </div>
       <input type="datetime-local" value={inputVal} aria-label={label}
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -173,7 +173,7 @@ function SelectField({ label, value, onChange, options, T, listName }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
@@ -228,7 +228,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
       )}
       {available.length > 0 && (
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search to find one not shown below…"
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -325,7 +325,7 @@ function ClinicianField({ value, onChange, T }) {
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addClinician(draft); } }}
         onBlur={() => addClinician(draft)}
         placeholder="e.g. Lucy — leave blank if unknown"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -402,7 +402,7 @@ function ReasonForVisitField({ value, onChange, options, T, listName }) {
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addReason(draft); } }}
         onBlur={() => addReason(draft)}
         placeholder="e.g. Routine screening — type to filter or add new"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -515,7 +515,7 @@ function ClinicVisitLocationField({ value, onChange, locationId, onLocationIdCha
         </div>
       )}
       <input value={value ?? ""} onChange={(e) => typeName(e.target.value)} placeholder="e.g. 56 Dean Street, London — leave blank if unknown"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -613,7 +613,7 @@ function TakeHomeMedicationsField({ value, onChange, meds, T }) {
                 onChange={(ev) => setQty(i, ev.target.value)}
                 aria-label={`Quantity of ${nameFor(e.medicationId)} to take home, in ${unit}`}
                 placeholder="Qty"
-                style={{ width: 78, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+                style={{ width: 78, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
               />
               <div role="button" tabIndex={0}
                 onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
@@ -634,7 +634,7 @@ function TakeHomeMedicationsField({ value, onChange, meds, T }) {
             value={query} onChange={(ev) => setQuery(ev.target.value)}
             placeholder="Add a medication to take home..."
             aria-label="Add a medication to take home"
-            style={{ width: "100%", padding: "9px 11px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "9px 11px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
           />
           {suggestions.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
@@ -817,7 +817,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
                     value={dose} onChange={(e) => setDose(e.target.value)}
                     placeholder="Dose (optional)"
                     aria-label={`Dose for ${m.name}`}
-                    style={{ width: 120, padding: "6px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }}
+                    style={{ width: 120, padding: "6px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box" }}
                   />
                   <span style={{ fontSize: 11, color: T.textDisabled }}>{tr("clinicVisits.addsToMedicationDashboard", "adds it to Medication Dashboard")}</span>
                   <div role="button" tabIndex={0}
@@ -1432,7 +1432,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.clinicalNotes", "Clinical notes")}</div>
             <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3} aria-label="Clinical notes"
               placeholder="e.g. Discussed PrEP adherence, no concerns raised. Advised to continue current regimen."
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </SectionCard>
 
@@ -1518,7 +1518,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
   if (!visit) return null;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -1541,7 +1541,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: T.healthcareBlue, display: "inline-block" }} />
           <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{visit.title || "Untitled visit"}</h1>
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDateTime(visit.date)}</div>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>{formatDateTime(visit.date)}</div>
 
         <SectionCard title="Overview" T={T}>
           <ReadRow label="Clinician" value={visit.clinician} T={T} />
@@ -1760,7 +1760,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
   // ClinicVisitsModule, shared with VisitDetail.
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       {/* CHANGED 26 Aug 2026 — real ask: this had the same full
           prominence as Healthcare's own title banner right above it —
           redundant, since this is always a sub-tab within Healthcare
@@ -1833,7 +1833,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       {/* ADDED 26 Aug 2026 — real ask: search within module. */}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search clinic visits"
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       </div>
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {sorted.length > 0 ? `${sorted.length} clinic visits${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No clinic visits match" : "No clinic visits logged"}
@@ -1934,7 +1934,7 @@ function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, on
         <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || tr("clinicVisits.untitledVisit", "Untitled visit")}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
         {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
       </div>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>{formatDate(v.date)}</div>
       {!isRecent && <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{tr("clinicVisits.olderVisit", "Older visit")}</div>}
       {v.clinician.length > 0 && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
       {v.location && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}

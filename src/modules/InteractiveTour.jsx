@@ -27,7 +27,7 @@
 import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { useReducedMotion } from "../calculations/useReducedMotion";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X } from "@phosphor-icons/react";
-import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACCENT_TEXT_SAFE, RADIUS, TYPE } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACCENT_TEXT_SAFE, RADIUS, TYPE } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 import { useTranslation } from "../i18n/index.js";
@@ -207,7 +207,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
     // way a <span>/<div> does (a real, confirmed browser default,
     // verified live — both buttons still rendered in Arial after this
     // fix alone, only the surrounding text switched to Inter).
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: FONT_FAMILY,
   };
 
   const card = (
@@ -221,11 +221,11 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
         <div style={{ fontSize: 12, color: textSecondary }}>{index + 1} / {steps.length}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {!isFirst && (
-            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer"}}>
+            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, fontFamily: FONT_FAMILY, cursor: "pointer"}}>
               <ChevronLeft size={14} weight="bold" /> Back
             </button>
           )}
-          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer"}}>
+          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: FONT_FAMILY, cursor: "pointer"}}>
             {isLast ? "Done" : "Next"} {!isLast && <ChevronRight size={14} weight="bold" />}
           </button>
         </div>

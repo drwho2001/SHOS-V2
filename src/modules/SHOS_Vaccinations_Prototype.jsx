@@ -27,7 +27,7 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -100,7 +100,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
         )}
       </div>
       <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -167,7 +167,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
       )}
       {available.length > 0 && (
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or clinician…"
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -230,7 +230,7 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
         onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
         placeholder="e.g. MENACWY"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -359,27 +359,27 @@ function DoseByDose({ doses, onChange, vaccineName, T }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Date</div>
-              <input type="date" value={dose.date ?? ""} onChange={(e) => updateDose(index, "date", e.target.value)} aria-label="Date" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+              <input type="date" value={dose.date ?? ""} onChange={(e) => updateDose(index, "date", e.target.value)} aria-label="Date" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Time</div>
-              <input type="time" value={dose.time ?? ""} onChange={(e) => updateDose(index, "time", e.target.value)} aria-label="Time" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+              <input type="time" value={dose.time ?? ""} onChange={(e) => updateDose(index, "time", e.target.value)} aria-label="Time" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Provider</div>
-              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label="Provider" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label="Provider" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Injection site</div>
-              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label="Injection site" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label="Injection site" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Next due</div>
-              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label="Next due" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label="Next due" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Dose #</div>
@@ -389,7 +389,7 @@ function DoseByDose({ doses, onChange, vaccineName, T }) {
           <div style={{ padding: "8px 0 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
             <textarea value={dose.notes ?? ""} onChange={(e) => updateDose(index, "notes", e.target.value)} rows={2} aria-label="Dose notes"
-              style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
           <EarlyDoseNotice doses={doses} index={index} vaccineName={vaccineName} T={T} />
         </div>
@@ -464,7 +464,7 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
             value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Find a clinic visit..."
             aria-label="Find a clinic visit to link this vaccination to"
-            style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
           />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
             {candidates.length === 0 && <span style={{ fontSize: 11, color: T.textDisabled }}>No matching visits.</span>}
@@ -618,7 +618,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
           <div style={{ padding: "8px 0 20px" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
             <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
@@ -667,7 +667,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
   const overdue = isVaccinationOverdue(v);
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -689,7 +689,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: overdue ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
           <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{v.title}</h1>
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>{formatDate(v.date)}</div>
 
         <SectionCard title="Overview" T={T}>
           <ReadRow label="Vaccine" value={v.vaccine} T={T} />
@@ -849,7 +849,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   // VaccinationsModule, shared with VaccinationDetail.
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       {/* CHANGED 26 Aug 2026 — real ask: this had the same full
           prominence as Healthcare's own title banner right above it —
           redundant, since this is always a sub-tab within Healthcare
@@ -950,7 +950,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
       {/* ADDED 26 Aug 2026 — real ask: search within module. */}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search vaccinations"
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       </div>
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {sorted.length > 0 ? `${sorted.length} vaccinations${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No vaccinations match" : "No vaccinations logged"}
@@ -1044,7 +1044,7 @@ function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen,
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: overdue ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
       </div>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>{formatDate(v.date)}</div>
       {rowNextDue && (
         <div style={{ fontSize: 12, color: overdue ? T.actionRed : T.textSecondary, marginLeft: 16, marginTop: 2, fontWeight: overdue ? 700 : 400 }}>
           {overdue ? "Overdue since" : "Next due"} {formatDate(rowNextDue)}
@@ -1187,7 +1187,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} onNavigateToRecord={onNavigateToRecord} />;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
+    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
       {/* CHANGED — real ask: this sat at top:12, directly on top of

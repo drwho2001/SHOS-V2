@@ -16,7 +16,7 @@
 // on first open). This file keeps the top-level SettingsScreen menu,
 // the three export sheets, and the lazy wiring. Behavior unchanged.
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback } from "react";
-import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor, ShareNetworkIcon as ShareNetwork } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../calculations/statsCalculations";
@@ -142,7 +142,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: FONT_FAMILY }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
@@ -256,7 +256,7 @@ function CSVExportSheet({ onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: FONT_FAMILY }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
           <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Export as CSV</span>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4 }}>Pick one record type — spreadsheet-readable (Excel, Sheets), for reading elsewhere, not for restoring into SHOS itself (use a backup for that).</div>
@@ -399,7 +399,7 @@ function EncryptedExportSheet({ onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: FONT_FAMILY }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
           <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Export encrypted backup</span>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4 }}>Password-protected — safe to store or send somewhere less trusted than this device. There's no password recovery: forgetting it makes this specific file permanently unreadable.</div>
@@ -750,7 +750,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     // problem. env() was measured on the device at 48px bottom / 35px top,
     // matching the OS 130/94 physical px at dpr 2.75, so the inset resolves
     // correctly inside this WebView.
-    <div ref={dialogRef} role="dialog" aria-label="Settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
@@ -919,7 +919,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             (5.07:1) so it was purely a visual jolt, but it sat directly on top
             of the dark app. App.jsx's own equivalent fallback already branches
             on darkMode — this was the one that hadn't been converted. */}
-        <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: "'Inter', sans-serif", fontSize: 13 }}>Loading...</div>}>
+        <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: FONT_FAMILY, fontSize: 13 }}>Loading...</div>}>
       {showSelectiveExport && (
         <SelectiveExportSheet onClose={() => setShowSelectiveExport(false)} />
       )}

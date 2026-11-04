@@ -110,7 +110,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useReducedMotion } from "../calculations/useReducedMotion";
 import { useTranslation } from "../i18n/index.js";
@@ -174,7 +174,7 @@ function loadContacts() {
 }
 
 function btnStyle(color, variant) {
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", minHeight: 44, border: variant === "outline" ? `1px solid ${color}` : "none", background: variant === "filled" ? color : "transparent", color: variant === "filled" ? "#FFFFFF" : color };
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: "pointer", minHeight: 44, border: variant === "outline" ? `1px solid ${color}` : "none", background: variant === "filled" ? color : "transparent", color: variant === "filled" ? "#FFFFFF" : color };
 }
 
 function focusNextField(el) {
@@ -382,7 +382,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
     <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>{tr("contacts.importSharedProfile", "Import shared profile")}</span>
+        <span style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 16, color: T.textPrimary }}>{tr("contacts.importSharedProfile", "Import shared profile")}</span>
       </div>
       <div style={{ padding: 16 }}>
         <SectionCard title="Import a shared profile" T={T}>
@@ -393,7 +393,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.pasteSharedProfile", "Paste a shared profile")}</div>
             <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={4} aria-label="Paste a shared profile"
               placeholder="Paste the JSON text someone sent you"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box", resize: "vertical" }} />
           </div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doImportPaste} style={{ textAlign: "center", padding: "10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", background: pasteText.trim() ? T.contactsTeal : T.surfaceVariant, color: pasteText.trim() ? "#FFFFFF" : T.textDisabled, marginBottom: 10}}>
             Import from pasted text
@@ -430,7 +430,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", help
         onChange={(e) => onChange(type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
         placeholder={placeholder}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       {helper && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 3 }}>{helper}</div>}
     </div>
   );
@@ -461,7 +461,7 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
         onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
         placeholder={placeholder} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -472,7 +472,7 @@ function SelectField({ label, value, onChange, options, T, helper }) {
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
         {helper && <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 4, fontStyle: "italic" }}>{helper}</div>}
         <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {/* FIXED 1 Oct 2026 - identical to the My Profile copy of this component,
             which had been throwing React error #31. Accepts both plain strings
@@ -514,7 +514,7 @@ function ComboField({ label, value, onChange, T, options, placeholder }) {
       <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
         placeholder={placeholder || "Choose or type a new one"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -618,7 +618,7 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder || "Start typing an address..."} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       {open && (loading || results.length > 0) && (
         <div tabIndex={0} style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
           {loading && <div style={{ padding: 10, fontSize: 12, color: T.textDisabled }}>Searching…</div>}
@@ -711,7 +711,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
           <input value={newValue} onChange={(e) => setNewValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitNew(); } }}
             placeholder="+ Add new option"
-            style={{ flex: 1, padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+            style={{ flex: 1, padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box" }} />
         </div>
       )}
     </div>
@@ -814,7 +814,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(e.target); } }}
         onBlur={() => commitDraft(null)}
         placeholder={placeholder || "Type one or more, comma-separated, then press Enter"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
           {visibleSuggestions.map((s) => (
@@ -1119,7 +1119,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(e.target); } }}
         onBlur={() => commitDraft(null)}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       {/* ADDED — real ask: "did you mean...?" prompt. Shown instead of
           silently deciding for the user — accepting a suggestion or
           keeping the typed word exactly as-is are both one tap away,
@@ -1198,7 +1198,7 @@ function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <input type="number" value={age ?? ""} onChange={(e) => onChangeAge(e.target.value === "" ? null : Number(e.target.value))} aria-label="Age"
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
-          style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+          style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChangeApprox(!ageIsApprox)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", minHeight: 44 }}>
           <ToggleSwitch T={T} value={ageIsApprox} onChange={onChangeApprox} />
           <span style={{ fontSize: 12, color: T.textSecondary }}>{tr("contacts.approximate", "Approximate")}</span>
@@ -1722,7 +1722,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
           style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none", alignItems: "center", justifyContent: "center"}} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
+        <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
         {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
             too small a jump, 12px vs 15px reading as a much bigger drop
@@ -2036,7 +2036,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             close button instead of a back arrow — same principle,
             right control for this screen's actual navigation model. */}
         <div style={{ background: T.contactsTeal, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? tr("contacts.addContact", "Add contact") : tr("contacts.editContact", "Edit contact")}</span>
+          <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? tr("contacts.addContact", "Add contact") : tr("contacts.editContact", "Edit contact")}</span>
           <X size={20} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose(); } }} />
         </div>
@@ -2350,7 +2350,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
 
         <SectionCard T={T} title="Notes">
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes" placeholder="e.g. how you met, preferences, things to remember before meeting again"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
         <SectionCard T={T} title="Linked contacts">
@@ -2551,7 +2551,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               had no heading at all — the contact's own name is the
               natural, real title here. Same <h1>/margin:0 treatment as
               every other screen title this app already uses. */}
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 20, color: T.textPrimary, margin: 0 }}>{anonymise ? MASKED : displayName(contact)}</h1>
+          <h1 style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 20, color: T.textPrimary, margin: 0 }}>{anonymise ? MASKED : displayName(contact)}</h1>
           {/* FIXED 6 Oct 2026 (t077) - same weak guard as the card had, fixed at
               the same time from the same shared predicate. The profile header has
               no leading dot, so the symptom here was a bare number-ish span
@@ -2605,24 +2605,24 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               <>
                 <div style={{ display: "flex", gap: 16, padding: "8px 0 14px", flexWrap: "wrap" }}>
                   <div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.count}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: FONT_FAMILY }}>{summary.count}</div>
                     <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.encounters", "Encounters")}</div>
                   </div>
                   {summary.averageEnjoyment != null && (
                     <div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{Math.round(summary.averageEnjoyment)}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: FONT_FAMILY }}>{Math.round(summary.averageEnjoyment)}</div>
                       <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.avgEnjoyment", "Avg enjoyment")}</div>
                     </div>
                   )}
                   {summary.highestEnjoyment != null && (
                     <div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.highestEnjoyment}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: FONT_FAMILY }}>{summary.highestEnjoyment}</div>
                       <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.highest", "Highest")}</div>
                     </div>
                   )}
                   {summary.lastInteraction && (
                     <div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{formatRelativeDate(summary.lastInteraction)}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: FONT_FAMILY }}>{formatRelativeDate(summary.lastInteraction)}</div>
                       <div style={{ fontSize: 11, color: T.textSecondary }}>{tr("contacts.lastSeen", "Last seen")}</div>
                     </div>
                   )}
@@ -3259,7 +3259,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 
       <div style={{ padding: "0 16px 10px", display: "flex", alignItems: "center", gap: 8 }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts" aria-label="Search contacts"
-          style={{ flex: 1, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", minHeight: 44 }} />
+          style={{ flex: 1, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44 }} />
         {/* ADDED 26 Aug 2026 — real ask: filter by role/position, not
             just search. */}
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${activeFilterCount > 0 ? T.contactsTeal : T.border}`, color: activeFilterCount > 0 ? T.contactsTeal : T.textSecondary, fontSize: 12, fontWeight: 600, flexShrink: 0}}>
@@ -3486,7 +3486,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
   useEffect(() => { settingsRef.current?.focus(); }, []);
 
   return (
-    <div role="dialog" aria-label="Contacts settings" ref={settingsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Contacts settings" ref={settingsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("contacts.settings", "Contacts settings")}</h1>
@@ -3658,7 +3658,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
+    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same visual pattern
           as Medication's own, kept consistent. */}
       {/* CHANGED — real ask: this sat at top:12, directly on top of

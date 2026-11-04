@@ -5,7 +5,7 @@ import { resolveQuickExitPlan } from "./calculations/quickExit";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { syncAllWidgets } from "./calculations/syncAllWidgets";
 import { useDarkModePreference } from "./calculations/darkModePreference";
-import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
 import HomeScreen from "./modules/SHOS_Home_Prototype";
 import { exportBackup, inspectBackupFile, decryptBackupEnvelope, restoreFromParsedBackup } from "./storage/backupService";
@@ -504,7 +504,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
 
   if (recoveryMode) {
     return (
-      <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px", zIndex: 999, fontFamily: FONT_FAMILY }}>
         <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
         <div style={{ ...TYPE.subScreenTitle, color: "#FFFFFF", marginBottom: 6, textAlign: "center" }}>Unlock with your recovery string</div>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 18, textAlign: "center", lineHeight: 1.5 }}>
@@ -529,7 +529,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999, fontFamily: FONT_FAMILY }}>
       <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
       <div style={{ ...TYPE.subScreenTitle, color: "#FFFFFF", marginBottom: 16 }}>Enter PIN to unlock</div>
       {biometricAvailable && (
@@ -634,7 +634,7 @@ function DecoyHome({ onLockNow, darkMode }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: N.bg, display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", zIndex: 999 }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: N.bg, display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY, zIndex: 999 }}>
       <div style={{ padding: "20px 20px 12px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ ...TYPE.recordTitle, color: N.textPrimary }}>SHOS</div>
         {onLockNow && <Lock size={19} weight="bold" color={N.textPrimary} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />}
@@ -696,7 +696,7 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
     // accurate here than "region" — this is a transient, dismissible
     // prompt, not a distinct section of app content.
     <div role="dialog" aria-label="Want to lock the app with a PIN?" style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={onDismiss}>
-      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: FONT_FAMILY }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <Eye size={20} color={ACCENTS.home} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Want to lock the app with a PIN?</span>
@@ -801,7 +801,7 @@ function OnboardingScreen({ onFinish }) {
   const isDesktopWidth = useIsDesktopWidth();
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: FONT_FAMILY }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center", ...(isDesktopWidth ? { maxWidth: 560, margin: "0 auto" } : {}) }}>
         {/* CHANGED — real ask: use the actual app icon here too, not
             the hand-drawn PulseLogo SVG — same real image
@@ -926,7 +926,7 @@ function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose 
         // with a full-width action button, and on a gesture-nav device that
         // button sat under the system bar. Same treatment the 24 Sep pass gave
         // every other fixed overlay in the app.
-        style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", maxHeight: "100%", overflowY: "auto", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: "calc(20px + env(safe-area-inset-bottom))", fontFamily: "'Inter', sans-serif" }}
+        style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", maxHeight: "100%", overflowY: "auto", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: "calc(20px + env(safe-area-inset-bottom))", fontFamily: FONT_FAMILY }}
         onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
           Stop reminding me about this
@@ -2839,7 +2839,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           measurement code for something that should essentially never
           fire in normal use. */}
       {saveFailedBanner && (
-        <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: ACTION.red, color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: "'Inter', sans-serif" }}>
+        <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: ACTION.red, color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: FONT_FAMILY }}>
           <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Your last change may not have saved</div>
@@ -2858,7 +2858,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           both are rare, non-recurring, and must outrank the due-reminder
           banners without touching their height-offset measurement code. */}
       {readFailedBanner && (
-        <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: "#8A2D2D", color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: "'Inter', sans-serif" }}>
+        <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: "#8A2D2D", color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: FONT_FAMILY }}>
           <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Some of your records could not be read</div>
@@ -2887,7 +2887,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // reminder or pending update active at the time. role="region"
         // (not "alert" — this persists across a session, not a one-shot
         // announcement) matches this project's own established pattern.
-        <div role="region" aria-label="Due reminders" style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
+        <div role="region" aria-label="Due reminders" style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: FONT_FAMILY }}>
         <div style={{ margin: "8px 10px 0", borderRadius: RADIUS.md, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
           {isBannerVisible(suppressState(REMINDER_KIND.MEDS, dueMeds.length, medsSignature)) && (
             <div ref={dueBannerCallbackRef} style={{ background: ACCENTS.medication }}>
@@ -3105,7 +3105,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       )}
 
       {notifToast && (
-        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis", fontFamily: FONT_FAMILY }}>
           {notifToast}
         </div>
       )}
@@ -3131,7 +3131,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // above; role="status" (not "region") since notifToast right
         // above already uses that role for the same "persistent,
         // non-urgent notice" shape.
-        <div role="status" style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif", pointerEvents: "none" }}>
+        <div role="status" style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: FONT_FAMILY, pointerEvents: "none" }}>
           <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version is ready. Back up your data first, then refresh.</span>
           {/* FIXED — real accessibility finding (10 Sep 2026, automated
               axe-core scan): ACCENTS.healthcare (#09582E, a dark green)
@@ -3175,7 +3175,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
-          <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif" }}>Loading...</div>}>
+          <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY }}>Loading...</div>}>
             <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
@@ -3185,7 +3185,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               openClinicCardOnDeepLink={pendingOpenClinicCard} onConsumedClinicCardDeepLink={() => setPendingOpenClinicCard(false)} />
           </Suspense>
         ) : (
-          <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: FONT_FAMILY }}>
             <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{activeTab.label} isn't built yet</div>
             <div style={{ fontSize: 13 }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>
@@ -3216,7 +3216,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           missing a landmark). role="navigation"+aria-label closes the
           landmark gap; each tab below gets tabIndex/onKeyDown/
           aria-current to actually be operable, not just labeled. */}
-      <div role="navigation" aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(7px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
+      <div role="navigation" aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(7px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: FONT_FAMILY }}>
         {getOrderedTabs(tabOrder).map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";
@@ -3365,7 +3365,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
             background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary,
             border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRadius: 999,
             padding: "9px 16px", boxShadow: "0 4px 16px rgba(0,0,0,.14)", zIndex: 100,
-            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ChevronLeft size={15} weight="bold" style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             Back to search results
@@ -3410,7 +3410,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       {/* Lazy overlays suspend on first open until their chunk loads — without this
           boundary that first open throws React #426 straight to the ErrorBoundary
           (found live 24 Sep 2026: opening Settings crashed the app). */}
-      <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif", fontSize: 13 }}>Loading...</div>}>
+      <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY, fontSize: 13 }}>Loading...</div>}>
       {showSettings && (
         <SettingsScreen onClose={() => { setShowSettings(false); setSettingsInitialScreen(null); }} onExport={exportBackup} onImportClick={handleImportClick} status={status} onNavigateToRecord={navigateToRecord} initialScreen={settingsInitialScreen} registerModuleBackHandler={registerModuleBackHandler} onStartTour={() => {
           // Real reason to force Home here rather than trusting whatever
@@ -3453,7 +3453,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       )}
       {showImportModeDialog && (
         <div role="dialog" aria-label="Import backup" style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setShowImportModeDialog(false)}>
-          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: FONT_FAMILY }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               Import backup
             </div>
@@ -3478,7 +3478,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           backup never reaches this, it restores immediately instead. */}
       {pendingEncryptedEnvelope && (
         <div role="dialog" aria-label="This backup is encrypted" style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }}>
-          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: FONT_FAMILY }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               This backup is encrypted
             </div>

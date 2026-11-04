@@ -28,7 +28,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { getVaccinationNextDue, getVaccinationDate } from "../calculations/vaccinationCalculations";
@@ -443,7 +443,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }, [contactsRaw, encounters, cutoffDate, anonymise]);
 
   return (
-    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
@@ -501,7 +501,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         </div>
         {timeframe === "custom" && (
           <input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} aria-label="Custom date"
-            style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+            style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
         )}
         {timeframe === "sinceLastTest" && !lastTestDate && (
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6, fontStyle: "italic" }}>{tr("clinicCard.noTestsShowingAll", "No tests logged yet — showing all time instead.")}</div>
@@ -556,7 +556,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
                 <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
                 <input value={identityDraft[key] ?? ""} onChange={(e) => setIdentityDraft({ ...identityDraft, [key]: e.target.value })}
                   placeholder={placeholder}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
               </div>
             ))}
             <div style={{ display: "flex", gap: 8 }}>

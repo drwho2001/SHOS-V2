@@ -56,7 +56,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // genuinely hand-tuned per-value for dark-surface contrast/design
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useTranslation } from "../i18n/index.js";
 // `Info` is the shared tap-to-reveal affordance used across this app for
@@ -236,7 +236,7 @@ function HoldButton({ onStep, dir, children, style }) {
 function StatTile({ label, value, tint, subtitle, onClick, T }) {
   return (
      <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : -1} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: "14px 16px", flex: "1 1 0", minWidth: 0, cursor: onClick ? "pointer" : "default" }}>
-      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 600, color: tint || T.textPrimary }}>{value}</div>
+      <div style={{ fontFamily: FONT_FAMILY, fontSize: 22, fontWeight: 600, color: tint || T.textPrimary }}>{value}</div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{label}</div>
       {subtitle && <div style={{ fontSize: 11, color: tint || T.textSecondary, marginTop: 3, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>}
     </div>
@@ -283,7 +283,7 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
   if (!hasData) {
     return (
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: T.textDisabled, lineHeight: 1.25, maxWidth: 110, margin: "0 auto" }}>
+        <div style={{ fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, color: T.textDisabled, lineHeight: 1.25, maxWidth: 110, margin: "0 auto" }}>
           No doses logged yet
         </div>
       </div>
@@ -291,7 +291,7 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
   }
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>
+      <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>
       <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
         {label} · {pct}%
         {/* FIXED 28 Oct 2026 (Lily, t200) — the touch-target sweep had put
@@ -423,7 +423,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue, display: "inline-block" }} />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{med.name}</span>
+          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{med.name}</span>
           {med.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
         </div>
         <MoreVertical size={20} color={T.textSecondary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => onToggleMenu(med.id)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleMenu(med.id); } }} />
@@ -504,7 +504,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
       {stock.tracked ? (
         <>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 600, color: stock.needsAction && !requested ? T.actionRed : T.textPrimary }}>{stock.currentStock}</span>
+            <span style={{ fontFamily: FONT_FAMILY, fontSize: 26, fontWeight: 600, color: stock.needsAction && !requested ? T.actionRed : T.textPrimary }}>{stock.currentStock}</span>
             <span style={{ fontSize: 12, color: T.textSecondary }}>{med.unit}s left</span>
           </div>
           <div style={{ height: 4, background: T.surfaceVariant, borderRadius: radius.full, marginTop: 8, overflow: "hidden" }}>
@@ -579,7 +579,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
               return (
             <div style={{ display: "flex", justifyContent: "space-around", gap: 12, background: glowBg, border: `1px solid ${glowBorder}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
+                <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
                 <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 2 }}>{tr("medication.streak", "streak")}</div>
               </div>
               <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
@@ -676,7 +676,7 @@ function btnStyle(color, variant, disabled, T) {
   const textColor = disabled ? disText : (variant === "filled" ? "#FFFFFF" : color);
   const borderColor = disabled ? disBorder : (variant === "outline" ? color : "none");
   const bgColor = disabled ? disBg : (variant === "filled" ? color : "transparent");
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", border: variant === "outline" ? `1px solid ${borderColor}` : "none", background: bgColor, color: textColor };
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", border: variant === "outline" ? `1px solid ${borderColor}` : "none", background: bgColor, color: textColor };
 }
 
 // ADDED — real ask: "an option... for medication to update each stock
@@ -699,12 +699,12 @@ function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
     <div ref={dialogRef} role="dialog" aria-label="Correct stock level" tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Correct stock level — {med.name}</span>
+          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Correct stock level — {med.name}</span>
           <X size={20} color={T.textPrimary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 14 }}>App currently shows {currentStock} left. Enter what you've actually counted.</div>
         <input type="number" value={actualStock} onChange={(e) => setActualStock(e.target.value === "" ? "" : Number(e.target.value))} aria-label="Actual stock"
-          style={{ width: "100%", padding: "12px 14px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 700, textAlign: "center", boxSizing: "border-box", marginBottom: 8 }} />
+          style={{ width: "100%", padding: "12px 14px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 20, fontWeight: 700, textAlign: "center", boxSizing: "border-box", marginBottom: 8 }} />
         {actualStock !== "" && delta !== 0 && (
           <div style={{ fontSize: 12, color: T.textSecondary, textAlign: "center", marginBottom: 14 }}>
             {delta > 0 ? `Logged as a +${delta} correction` : `Logged as a ${delta} correction`}
@@ -732,7 +732,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
     <div ref={dialogRef} role="dialog" aria-label="Log refill" tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{isRefill ? "Log refill" : "Log waste/lost"} — {med.name}</span>
+          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{isRefill ? "Log refill" : "Log waste/lost"} — {med.name}</span>
           <X size={20} color={T.textPrimary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         {/* Duplicated from the Registry card, not moved — useful right at the point of logging too */}
@@ -749,7 +749,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: 8 }}>
           {amount > 1 ? <HoldButton onStep={step} dir={-1} style={stepperBtn(T)}>−</HoldButton> : <div style={{ width: 44, height: 44 }} />}
           <input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))} aria-label="Amount"
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
+            style={{ fontFamily: FONT_FAMILY, fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
           <HoldButton onStep={step} dir={1} style={stepperBtn(T)}>+</HoldButton>
         </div>
         <div style={{ textAlign: "center", fontSize: 12, color: T.textSecondary, marginBottom: 18 }}>
@@ -778,7 +778,7 @@ function DateTimeField({ label, value, onChange, T }) {
       </div>
       <input type="datetime-local" value={inputVal} aria-label={label}
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -807,7 +807,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
     <div ref={dialogRef} role="dialog" aria-label="Edit entry" tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit entry — {med.name}</span>
+          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit entry — {med.name}</span>
           <X size={20} color={T.textPrimary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{typeLabel}</div>
@@ -822,7 +822,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
             onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
             disabled={confirmVoid}
             aria-label="Amount"
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: confirmVoid ? T.actionRed : T.textPrimary, textDecoration: confirmVoid ? "line-through" : "none", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
+            style={{ fontFamily: FONT_FAMILY, fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: confirmVoid ? T.actionRed : T.textPrimary, textDecoration: confirmVoid ? "line-through" : "none", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
           {!confirmVoid && <HoldButton onStep={step} dir={1} style={stepperBtn(T)}>+</HoldButton>}
         </div>
         {/* ADDED — real ask: option to change WHEN the dose happened, not
@@ -963,7 +963,7 @@ function LogTab({ meds, T, onOpenCorrection }) {
                         </div>
                       )}
                     </div>
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: typeColor(r), textDecoration: r.voided ? "line-through" : "none" }}>{r.delta > 0 ? "+" : ""}{r.delta}</span>
+                    <span style={{ fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, color: typeColor(r), textDecoration: r.voided ? "line-through" : "none" }}>{r.delta > 0 ? "+" : ""}{r.delta}</span>
                   </div>
                 ))}
               </div>
@@ -1007,7 +1007,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
                 <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
+                <span style={{ fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
                   {s.tracked ? `${s.currentStock} ${m.unit}s` : "—"}
                 </span>
                 {s.tracked && <RefreshCcw size={20} color={T.textSecondary} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={() => onCorrectStock(m.id)} role="button" tabIndex={0} aria-label="Correct stock level" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCorrectStock(m.id); } }} title="Correct stock level" />}
@@ -1057,7 +1057,7 @@ function NumberField({ label, value, onChange, min = 0, step = 1, T }) {
         <input
           type="number" inputMode="decimal" value={value}
           onChange={(e) => onChange(e.target.value === "" ? 0 : Math.max(min, Number(e.target.value)))}
-          style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, width: 44, textAlign: "center", color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "3px 2px" }}
+          style={{ fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, width: 44, textAlign: "center", color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "3px 2px" }}
         />
         <HoldButton onStep={(dir) => onChange(Math.max(min, +(value + dir * step).toFixed(2)))} dir={1} style={{ ...stepperBtn(T), width: 32, height: 32, fontSize: 16 }}>+</HoldButton>
       </div>
@@ -1152,7 +1152,7 @@ function ScheduledTimesField({ dosesPerDay, value, onChange, T }) {
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {count > 1 && <span style={{ fontSize: 12, color: T.textSecondary, width: 56, flexShrink: 0 }}>Dose {i + 1}</span>}
             <input type="time" value={value[i] || ""} onChange={(e) => setSlot(i, e.target.value)}
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "8px 10px" }} />
+              style={{ fontFamily: FONT_FAMILY, fontSize: 14, color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "8px 10px" }} />
           </div>
         ))}
       </div>
@@ -1178,7 +1178,7 @@ function SelectRow({ label, value, onChange, options, T, listName }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
       <select value={value} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
       </select>
@@ -1238,7 +1238,7 @@ function MultiSelectRow({ label, value, onChange, options, T, onAddNew, listName
           <input value={newValue} onChange={(e) => setNewValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNew(); } }}
             placeholder="Add your own…"
-            style={{ flex: 1, padding: "7px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+            style={{ flex: 1, padding: "7px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box" }} />
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addNew} style={{ padding: "7px 12px", borderRadius: radius.sm, background: T.medsBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center" }}>Add</div>
         </div>
       )}
@@ -1273,12 +1273,12 @@ function DoseComponentsField({ value, onChange, T }) {
         <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
           {components.length > 1 && (
             <input value={c.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder="Ingredient"
-              style={{ flex: "1 1 40%", minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              style={{ flex: "1 1 40%", minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
           )}
           <input value={c.value} onChange={(e) => setRow(i, { value: e.target.value })} placeholder="e.g. 245" inputMode="decimal"
-            style={{ flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+            style={{ flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
           <select value={c.unit} onChange={(e) => setRow(i, { unit: e.target.value })}
-            style={{ width: 90, flexShrink: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
+            style={{ width: 90, flexShrink: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}>
             <option value="">—</option>
             {DOSE_UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
@@ -1336,7 +1336,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
     <div ref={dialogRef} role="dialog" aria-label="Update dose" tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div tabIndex={0} onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
+          <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
           <X size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ padding: "8px 20px 20px" }}>
@@ -1347,12 +1347,12 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.unitsPerDose", "Units per dose")}</div>
             <input type="number" min="1" value={unitsPerDose} onChange={(e) => setUnitsPerDose(e.target.value)} aria-label="Units per dose"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
           </div>
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.noteOptional", 'Note (optional — e.g. "GP increased dose")')}</div>
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason for the change"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
           </div>
           {/* ADDED 26 Aug 2026 — real ask: option to update stock at
               the same time as the dose change (e.g. new prescription
@@ -1369,7 +1369,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("medication.stockChange", "Stock change (+ for adding, − for removing)")}</div>
               <input type="number" value={stockDelta} onChange={(e) => setStockDelta(e.target.value)} placeholder="e.g. 30 or -5" aria-label="Stock change"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
             </div>
           )}
         </div>
@@ -1473,7 +1473,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
           exactly — same full-width, accent-colored, large button. */}
       <div style={{ background: T.surface, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{tr("medication.editMedication", "Edit medication")}</span>
+          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{tr("medication.editMedication", "Edit medication")}</span>
           <X size={20} color={T.textPrimary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, padding: "0 20px 12px", flexShrink: 0 }}>{tr("medication.editMedicationDesc", "Changes how stock/adherence are calculated going forward — doesn't touch past log entries.")}</div>
@@ -1486,7 +1486,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <div style={{ padding: "6px 0 10px" }}>
           <input value={form.name} onChange={(e) => set("name")(e.target.value)}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, boxSizing: "border-box" }} />
         </div>
 
         {/* REORDERED 19 Aug 2026 — same reasoning as Add medication:
@@ -1536,7 +1536,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         <div style={{ padding: "10px 0" }}>
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
         </div>
         {/* ADDED — real bug fix: a real Notes field, genuinely wired to
             edit/save/card display — see the `notes` field comment above
@@ -1545,7 +1545,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         <div style={{ padding: "10px 0" }}>
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         {/* ADDED 26 Aug 2026 — real ask: dose history display, showing
             the real embedded history built by updateDose() — the same
@@ -1671,7 +1671,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("medication.addMedication", "Add medication")}</span>
+          <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("medication.addMedication", "Add medication")}</span>
           <X size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         {draftRestored && (
@@ -1683,7 +1683,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <div style={{ padding: "6px 0 10px" }}>
           <input value={form.name} onChange={(e) => set("name")(e.target.value)} placeholder="Medication name" autoFocus
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
           {exactNameMatch && (
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 5, lineHeight: 1.4 }}>
               You already track a medication called "{trimmedName}" — this adds a separate entry (e.g. a new course), it won't merge with the existing one.
@@ -1737,12 +1737,12 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         <div style={{ padding: "10px 0" }}>
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
         </div>
         <div style={{ padding: "10px 0" }}>
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         </div>
 
@@ -1762,7 +1762,7 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
     <div style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 358, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, boxShadow: "0 8px 24px rgba(0,0,0,.18)", padding: 16, zIndex: 220 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <Pill size={16} color={T.medsBlue} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, color: T.textPrimary }}>Time for {med.name}</span>
+        <span style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 14, color: T.textPrimary }}>Time for {med.name}</span>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12 }}>{tr("medication.demoNotification", "Demo notification — real delivery needs native scheduling (Doc 5 §9)")}</div>
       <div style={{ display: "flex", gap: 8 }}>
@@ -1807,7 +1807,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Medication settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Medication settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("medication.settings", "Medication settings")}</h1>
@@ -2309,7 +2309,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, transition: reducedMotion ? "none" : "background 200ms ease" }}>
+    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, transition: reducedMotion ? "none" : "background 200ms ease" }}>
       {/* CHANGED — real ask: "Medications module is the only one
           designed like a phone screen — not full width on laptop."
           Was a fixed 390px regardless of viewport; now genuinely
@@ -2494,7 +2494,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {/* ADDED 26 Aug 2026 — real ask: search within module. */}
             <div style={{ padding: "0 16px 8px" }}>
               <input ref={medSearchInputRef} value={medQuery} onChange={(e) => setMedQuery(e.target.value)} placeholder="Search medications"
-                style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
             </div>
             <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
               {activeMeds.filter(matchesMedSearch).length > 0 ? `${activeMeds.filter(matchesMedSearch).length} medications${medQuery.trim() ? `, searched "${medQuery}"` : ""}` : medQuery.trim() ? "No medications match" : `${activeMeds.length} medications`}

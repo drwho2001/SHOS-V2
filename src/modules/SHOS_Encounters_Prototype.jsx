@@ -75,7 +75,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -177,7 +177,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
       <input type={type} value={value ?? ""} aria-label={label}
         onChange={(e) => onChange(type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}
         placeholder={placeholder}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -218,7 +218,7 @@ function DateTimeField({ label, value, onChange, T }) {
       </div>
       <input type="datetime-local" value={inputVal} aria-label="Date & time"
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -228,7 +228,7 @@ function SelectField({ label, value, onChange, options, T }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
@@ -623,7 +623,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       {/* ADDED — real ask: "did you mean...?" prompt, same behavior as
           Contacts — accepting a suggestion or keeping exactly what was
           typed are both one tap, neither forced. */}
@@ -922,7 +922,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         placeholder={placeholder || "Pick existing or type a new one"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -976,7 +976,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
         </div>
       )}
       <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts to add…"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       {matches.length > 0 && (
         <div style={{ marginTop: 6, border: `1px solid ${T.border}`, borderRadius: radius.sm, overflow: "hidden" }}>
           {matches.map((c) => (
@@ -1098,7 +1098,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
             <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
+            <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
           </div>
           <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4, marginLeft: 16 }}>
             <span>
@@ -1117,7 +1117,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
           </div>
         </div>
 {encounter.enjoymentRating != null && (
-  <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif", color: T.textSecondary, display: "flex", alignItems: "center", gap: 3, marginLeft: 16 }}>
+  <div style={{ fontSize: 12, fontFamily: FONT_FAMILY, color: T.textSecondary, display: "flex", alignItems: "center", gap: 3, marginLeft: 16 }}>
     <Heart size={12} color={T.encountersPink} /> {encounter.enjoymentRating}
   </div>
 )}
@@ -1402,7 +1402,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             placement/pattern as every sibling module's own search box. */}
         <div style={{ padding: "8px 16px 0" }}>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search encounters"
-            style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
         </div>
         {activeSession && (
           <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}`, overflow: "hidden" }}>
@@ -1709,7 +1709,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             landing's own <h1> unmounts when detail is shown, confirmed
             live, not assumed), so this detail view had zero headings
             of its own. Same real <h1> treatment as the landing title. */}
-        <h1 style={{ fontFamily: "'Inter', sans-serif", ...TYPE.recordTitle, margin: 0, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
+        <h1 style={{ fontFamily: FONT_FAMILY, ...TYPE.recordTitle, margin: 0, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
           {encounter.title || (encounter.date ? formatStoredDate(encounter.date) : tr("encounters.title", "Encounter"))}
         </h1>
         <div style={{ position: "relative", flexShrink: 0 }}>
@@ -2277,7 +2277,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
 
         <SectionCard title={tr("encounters.notes", "Notes")} T={T}>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", marginTop: 8 }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box", marginTop: 8 }} />
         </SectionCard>
         </div>
         </FormTabs>
@@ -2412,7 +2412,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   // fontFamily: 'Public Sans' AND loads the actual Google Font via a
   // <style>@import</style> tag. This module never did either — it just
   // returned each screen's content directly. Individual elements that
-  // explicitly set fontFamily: "'Inter', sans-serif" would still
+  // explicitly set fontFamily: FONT_FAMILY would still
   // fall through to the browser's default serif font, because Public
   // Sans itself was never actually loaded here, and anything that
   // *didn't* set its own fontFamily had nothing to inherit from either.
@@ -2460,7 +2460,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   }
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <EditUndoToast toast={editUndo.toast} onUndo={editUndo.undo} onRedo={editUndo.redo} T={T} />
       {screenContent}
     </div>

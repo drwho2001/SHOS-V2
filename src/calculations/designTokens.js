@@ -469,6 +469,9 @@ export const TYPE = {
   bodyEmphasis: { fontSize: 14, fontWeight: 600 },
   caption: { fontSize: 12, fontWeight: 400 },
   captionEmphasis: { fontSize: 12, fontWeight: 600 },
+  // ADDED — C9: documented floor for micro-text (badges, chips, status
+  // lines). 9px DEMO badge stays as an explicit exception.
+  microLabel: { fontSize: 11, fontWeight: 600 },
   monoLabel: { fontSize: 12, fontFamily: "'JetBrains Mono', monospace" },
 };
 

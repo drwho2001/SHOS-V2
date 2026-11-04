@@ -21,7 +21,7 @@ import { EncounterRepository } from "../repositories/encounterRepository";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { exportTextFile } from "../storage/fileExportHelper";
-import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -157,7 +157,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
       <div style={{ position: "relative", marginBottom: 12 }}>
         <Search size={15} color={T.textDisabled} style={{ position: "absolute", left: 12, top: 12 }} />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts…"
-          style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       </div>
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", columnCount: isDesktopWidth && visible.length > 0 ? 2 : undefined, columnGap: 0 }}>
@@ -310,15 +310,15 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
               <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, textDecoration: item.notified ? "line-through" : "none", opacity: item.notified ? 0.6 : 1 }}>{liveName(item)}</span>
             </div>
             <textarea value={liveMethods(item)} onChange={(e) => { editField(item.contactId, "methods", e.target.value); editField(item.contactId, "methodsOverridden", true); }} placeholder="Contact method(s) — e.g. Phone: 07700 900123 / Snapchat: @handle" rows={2} aria-label={`Contact methods for ${liveName(item)}`}
-              style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", resize: "vertical", marginBottom: list.clinical ? 8 : 0 }} />
+              style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", resize: "vertical", marginBottom: list.clinical ? 8 : 0 }} />
             {list.clinical && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input value={item.dob} onChange={(e) => editField(item.contactId, "dob", e.target.value)} placeholder="DOB" aria-label={`Date of birth for ${liveName(item)}`}
-                  style={{ flex: "1 1 90px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+                  style={{ flex: "1 1 90px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box" }} />
                 <input value={item.age ?? ""} onChange={(e) => editField(item.contactId, "age", e.target.value === "" ? null : Number(e.target.value))} type="number" placeholder="Age" aria-label={`Age for ${liveName(item)}`}
-                  style={{ flex: "1 1 70px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+                  style={{ flex: "1 1 70px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box" }} />
                 <input value={item.address} onChange={(e) => editField(item.contactId, "address", e.target.value)} placeholder="Address" aria-label={`Address for ${liveName(item)}`}
-                  style={{ flex: "2 1 140px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+                  style={{ flex: "2 1 140px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box" }} />
               </div>
             )}
           </div>
@@ -407,7 +407,7 @@ export default function PartnerNotificationSheet({ testId, onClose, onQuickExit 
   };
 
   return (
-    <div role="dialog" aria-label="Partner notification" ref={sheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Partner notification" ref={sheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency.

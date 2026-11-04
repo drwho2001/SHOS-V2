@@ -7,7 +7,7 @@ import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED 19 Aug 2026 — maps OPTION_LIST_ICONS' string names to the real
 // lucide components. Kept as a lookup table (not a giant switch) so
 // adding a 17th category later is one line here, matching the same
@@ -168,7 +168,7 @@ export function OptionListDetail({ listName, onClose }) {
   };
 
   return (
-    <div role="dialog" aria-label={`Manage ${OPTION_LIST_LABELS[listName] || listName}`} ref={detailRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label={`Manage ${OPTION_LIST_LABELS[listName] || listName}`} ref={detailRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
@@ -180,7 +180,7 @@ export function OptionListDetail({ listName, onClose }) {
           <input value={addingValue} onChange={(e) => setAddingValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
             placeholder={t("optionList.addNew", "Add a new option")}
-            style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+            style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, fontSize: 14, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
           <button onClick={handleAdd} style={{ padding: "0 16px", borderRadius: 8, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             <Plus size={16} /> {t("common.add", "Add")}
           </button>
@@ -205,7 +205,7 @@ export function OptionListDetail({ listName, onClose }) {
                 <input autoFocus value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingIndex(null); }}
                   onBlur={commitEdit}
-                  style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${ACCENTS.healthcare}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
+                  style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${ACCENTS.healthcare}`, fontSize: 14, fontFamily: FONT_FAMILY }} />
               ) : protectedValue ? (
                 <span style={{ flex: 1, fontSize: 14, color: T.textPrimary, cursor: "default" }}>{opt}</span>
               ) : (
@@ -308,7 +308,7 @@ export default function OptionListsScreen({ onClose }) {
   }, [], {});
 
   return (
-    <div role="dialog" aria-label={t("optionList.title", "Option lists")} ref={optionListsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label={t("optionList.title", "Option lists")} ref={optionListsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />

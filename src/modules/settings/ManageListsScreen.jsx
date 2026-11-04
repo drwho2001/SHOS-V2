@@ -1,7 +1,7 @@
 // ManageListsScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useRef, useEffect } from "react";
-import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ListChecksIcon as ClipboardCheck, FireIcon as Flame, MicroscopeIcon as Microscope, PillIcon as Pill, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MapPinIcon as MapPin } from "@phosphor-icons/react";
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -35,7 +35,7 @@ function LocationExtraFields({ entry, refresh, T, color }) {
   const commitPostcode = async () => { await LocationsRepository.update(entry.id, { postcode: postcode.trim() }); refresh(); };
   const commitNotes = async () => { await LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
   const setRelatedContact = async (id) => { await LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
-  const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", marginBottom: 8 };
+  const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box", marginBottom: 8 };
   return (
     <div style={{ paddingTop: 4 }}>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Type</div>
@@ -102,7 +102,7 @@ export function ManageListsScreen({ onClose }) {
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label={t("manageLists.title", "Manage lists")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("manageLists.title", "Manage lists")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("manageLists.title", "Manage lists")}</h1>

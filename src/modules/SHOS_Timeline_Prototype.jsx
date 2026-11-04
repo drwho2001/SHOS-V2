@@ -22,7 +22,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -190,7 +190,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
         </div>
       )}
       <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5} aria-label="Message draft"
-        style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+        style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
         <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
           <Copy size={13} /> Copy
@@ -208,7 +208,7 @@ function TextField({ label, value, onChange, T, placeholder }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -221,7 +221,7 @@ function SelectField({ label, value, onChange, options, T, listName }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
@@ -259,7 +259,7 @@ function SingleEncounterSelect({ value, onChange, T, items }) {
         </div>
       ) : (
         <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label="Start — the exposure Encounter"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
           <option value="">Select an Encounter…</option>
           {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
@@ -339,7 +339,7 @@ function StartSheet({ onSave, onClose, T }) {
     <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Start an episode</span>
+          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Start an episode</span>
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={title} onChange={setTitle} T={T} placeholder="e.g. Chlamydia exposure, Aug 2026" />
@@ -549,7 +549,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
@@ -576,7 +576,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
           <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{episode.title}</h1>
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>
           {episodeStatusLabel(episode, hasPositive, formatDate, { showResolution: true })}
         </div>
 
@@ -653,7 +653,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 
         <SectionCard title="Notes" T={T}>
           <textarea value={episode.notes} onChange={(e) => update({ notes: e.target.value })} rows={3} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
         {isOpen ? (
@@ -677,7 +677,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
               <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }} aria-label="End date"
-                style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+                style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
               {RESOLUTION_OPTIONS.map((opt) => (
@@ -695,7 +695,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
                 <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }} aria-label="End date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
               </div>
               {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (
                 <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Save</button>
@@ -758,7 +758,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   }, [], { total: 0, findings: [], byKind: {} });
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
@@ -843,7 +843,7 @@ function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>{e.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
       </div>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>
         {e.triggerReason || "—"} · {episodeStatusLabel(e, hasPositive, formatDate)}
       </div>
     </div>
@@ -952,7 +952,7 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   }, [screen, registerModuleBackHandler, onClose]);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       {/* CHANGED 13 Oct 2026 (t063) - `display: flex; flexDirection: column`
           removed from this scroller. t063 listed this one as "possibly not the
           same bug, check separately" because it has no justifyContent - it IS

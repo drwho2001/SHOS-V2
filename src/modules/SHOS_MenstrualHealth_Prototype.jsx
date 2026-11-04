@@ -44,7 +44,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
 import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -156,10 +156,10 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", read
         )}
       </div>
       {readOnly ? (
-        <div style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>{value || "—"}</div>
+        <div style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>{value || "—"}</div>
       ) : (
         <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       )}
     </div>
   );
@@ -172,7 +172,7 @@ function SelectField({ label, value, onChange, options, T, hint, listName }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}{hint && <span style={{ color: T.textDisabled, fontWeight: 400 }}> — {hint}</span>}</div>
       <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
@@ -248,7 +248,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder, searchP
       )}
       {available.length > 0 && (
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={searchPlaceholder}
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -282,7 +282,7 @@ function FreeTextSuggestField({ label, value, onChange, options, onAddNew, T, pl
         onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
         placeholder={placeholder}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -424,7 +424,7 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
@@ -693,9 +693,9 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Renewal interval (optional — e.g. every 12 weeks for a depot shot, every 60 months for a 5-year IUD)</div>
         <div style={{ display: "flex", gap: 8 }}>
           <input type="number" value={intervalDisplayValue} onChange={(e) => setIntervalValue(e.target.value)} placeholder="e.g. 12" aria-label="Interval value"
-            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
           <select value={intervalUnit} onChange={(e) => changeIntervalUnit(e.target.value)}
-            style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14 }}>
+            style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14 }}>
             {CONTRACEPTION_INTERVAL_UNITS.map((u) => <option key={u}>{u}</option>)}
           </select>
         </div>
@@ -709,7 +709,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
           <span style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic" }}>{form.intervalDays ? "from interval above" : "sets the interval above"}</span>
         </div>
         <input type="date" value={form.nextDueDate ?? ""} onChange={(e) => setNextDueDate(e.target.value)} aria-label="Next due date"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       </div>
       {visits.length > 0 && (
         <SelectField label="Linked clinic visit (optional)" value={form.linkedClinicVisitId || ""} onChange={set("linkedClinicVisitId")}
@@ -718,7 +718,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
@@ -897,7 +897,7 @@ function PregnancySheet({ pregnancy, onSave, onClose, T }) {
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
@@ -1112,7 +1112,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   ];
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ fontFamily: FONT_FAMILY }}>
       {/* FIXED 16 Sep 2026 — real bug: same as Testing/Clinic Visits/
           Vaccinations/Symptom Log/Measurements' own sticky
           sub-headings — the sticky-header status-bar fix moved
