@@ -32,6 +32,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby, SyringeIcon as Syringe, BandaidsIcon as Bandaids, AnchorSimpleIcon as AnchorSimple } from "@phosphor-icons/react";
 import { MenstrualCycleRepository, DEFAULT_CYCLE } from "../repositories/menstrualCycleRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";
 import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS } from "../repositories/pregnancyRepository";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -576,7 +577,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         </div>
       </div>
       <div style={isDesktopWidth ? { padding: "12px 16px 100px", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { padding: "12px 16px 100px", flexDirection: "column", gap: 8 }}>
-        {cycles.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No periods logged yet. Tap + to add one.</div>}
+        {cycles.length === 0 && <EmptyState T={T} message="No periods logged yet. Tap + to add one." />}
         {cycles.map((c) => (
           <ListRow key={c.id} T={T} isDemo={c.isDemo} onClick={() => setScreen({ name: "detail", id: c.id })} label={`${formatDate(c.startDate)}${c.endDate ? ` to ${formatDate(c.endDate)}` : " (ongoing)"}`}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -821,7 +822,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         </div>
       </div>
       <div style={{ padding: "12px 16px 100px" }}>
-        {all.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No contraception logged yet. Tap + to add one.</div>}
+        {all.length === 0 && <EmptyState T={T} message="No contraception logged yet. Tap + to add one." />}
         {active.length > 0 && (
           <div style={{ marginBottom: 18 }}>
             <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 6 }}>Currently active</div>
@@ -1011,7 +1012,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
         </div>
       </div>
       <div style={isDesktopWidth ? { padding: "12px 16px 100px", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { padding: "12px 16px 100px", flexDirection: "column", gap: 8 }}>
-        {all.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No pregnancy tests logged yet. Tap + to add one.</div>}
+        {all.length === 0 && <EmptyState T={T} message="No pregnancy tests logged yet. Tap + to add one." />}
         {all.map((p) => {
           const masked = isMasked(p);
           return (

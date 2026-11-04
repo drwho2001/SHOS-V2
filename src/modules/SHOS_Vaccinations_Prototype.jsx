@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X } from "@phosphor-icons/react";
 import { VaccinationRepository, DEFAULT_VACCINATION } from "../repositories/vaccinationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 19 Aug 2026 — VACCINE_OPTIONS/REASON_OPTIONS/INJECTION_SITE_OPTIONS
@@ -972,9 +973,10 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
       {isDesktopWidth ? (
         <div style={{ padding: "12px 16px 100px" }}>
           {sorted.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              {query.trim() ? "No vaccinations match your search." : "No vaccinations logged yet. Tap + to add one."}
-            </div>
+            <EmptyState
+              T={T}
+              message={query.trim() ? "No vaccinations match your search." : "No vaccinations logged yet. Tap + to add one."}
+            />
           )}
           {/* ADDED — real ask: desktop grid grouped consecutively by
               month, see dateGrouping.js. */}
@@ -992,9 +994,10 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
       ) : (
         <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              {query.trim() ? "No vaccinations match your search." : "No vaccinations logged yet. Tap + to add one."}
-            </div>
+            <EmptyState
+              T={T}
+              message={query.trim() ? "No vaccinations match your search." : "No vaccinations logged yet. Tap + to add one."}
+            />
           )}
           {sorted.map((v) => (
             <VaccinationRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />

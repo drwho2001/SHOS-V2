@@ -4,6 +4,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as Chevr
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // FIXED 10 Sep 2026 — real bug found by adding ESLint to the project:
 // findClosestMatch (the "did you mean?" typo-suggestion check, used
@@ -1512,9 +1513,10 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
       {isDesktopWidth ? (
         <div style={{ padding: "12px 16px 100px" }}>
           {sorted.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              {query.trim() ? tr("testing.noTestsMatchSearch", "No tests match your search.") : tr("testing.emptyList", "No tests logged yet. Tap + to add one.")}
-            </div>
+            <EmptyState
+              T={T}
+              message={query.trim() ? tr("testing.noTestsMatchSearch", "No tests match your search.") : tr("testing.emptyList", "No tests logged yet. Tap + to add one.")}
+            />
           )}
           {/* ADDED — real ask: desktop grid grouped consecutively by
               month, see dateGrouping.js — `sorted` is already newest-
@@ -1533,9 +1535,10 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
       ) : (
         <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              {query.trim() ? tr("testing.noTestsMatchSearch", "No tests match your search.") : tr("testing.emptyList", "No tests logged yet. Tap + to add one.")}
-            </div>
+            <EmptyState
+              T={T}
+              message={query.trim() ? tr("testing.noTestsMatchSearch", "No tests match your search.") : tr("testing.emptyList", "No tests logged yet. Tap + to add one.")}
+            />
           )}
           {sorted.map((t) => (
             <TestRow key={t.id} t={t} tests={tests} resultNameById={resultNameById} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />

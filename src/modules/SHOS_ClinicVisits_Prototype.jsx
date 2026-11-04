@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair, StethoscopeIcon as Stethoscope } from "@phosphor-icons/react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 // ADDED — real ask: "use current location" on Clinic Visits, the last
 // of the three modules with a location-ish field (Contacts/Encounters
 // already have it) — same Nominatim reverse-geocode service, no second
@@ -1852,9 +1853,11 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       {isDesktopWidth ? (
         <div style={{ padding: "12px 16px 100px" }}>
           {sorted.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              {query.trim() ? "No clinic visits match your search." : "No clinic visits logged yet. Tap + to add one."}
-            </div>
+            <EmptyState
+              T={T}
+              icon={<Stethoscope size={32} />}
+              message={query.trim() ? "No clinic visits match your search." : "No clinic visits logged yet. Tap + to add one."}
+            />
           )}
           {/* ADDED — real ask: desktop grid grouped consecutively by
               month, see dateGrouping.js. */}
@@ -1872,9 +1875,11 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       ) : (
         <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              {query.trim() ? "No clinic visits match your search." : "No clinic visits logged yet. Tap + to add one."}
-            </div>
+            <EmptyState
+              T={T}
+              icon={<Stethoscope size={32} />}
+              message={query.trim() ? "No clinic visits match your search." : "No clinic visits logged yet. Tap + to add one."}
+            />
           )}
           {sorted.map((v) => (
             <VisitRow key={v.id} v={v} allVisits={visits} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />

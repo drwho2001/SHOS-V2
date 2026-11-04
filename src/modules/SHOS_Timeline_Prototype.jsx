@@ -8,6 +8,7 @@ import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRe
 // merely unused but impossible.
 import { TrashRepository } from "../repositories/trashRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
 // in-app editable option list.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
@@ -793,19 +794,24 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
       })()}
       <div style={{ padding: "12px 16px 100px" }}>
         {sorted.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records.
-            {/* FIXED 27 Sep 2026 — this line used to end "Tap + to start one
-                from an existing Encounter", which is an instruction a
-                first-time user cannot follow: with no Encounters yet, the
-                episode form's own Encounter picker is empty and can never
-                satisfy its own save condition. Branch on whether there's
-                anything to start one FROM, so the copy matches what's
-                actually possible. */}
-            {encounterCount === 0
-              ? " An episode always starts from an Encounter, so log an Encounter first — then you can group the tests and treatment that followed it."
-              : " Tap + to start one from an existing Encounter."}
-          </div>
+          <EmptyState
+            T={T}
+            message={
+              <>
+                No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records.
+                {/* FIXED 27 Sep 2026 — this line used to end "Tap + to start one
+                    from an existing Encounter", which is an instruction a
+                    first-time user cannot follow: with no Encounters yet, the
+                    episode form's own Encounter picker is empty and can never
+                    satisfy its own save condition. Branch on whether there's
+                    anything to start one FROM, so the copy matches what's
+                    actually possible. */}
+                {encounterCount === 0
+                  ? " An episode always starts from an Encounter, so log an Encounter first — then you can group the tests and treatment that followed it."
+                  : " Tap + to start one from an existing Encounter."}
+              </>
+            }
+          />
         )}
         {isDesktopWidth ? (
           episodeGroups.map((group) => (

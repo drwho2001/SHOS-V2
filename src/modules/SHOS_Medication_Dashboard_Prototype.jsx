@@ -5,6 +5,7 @@ import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, Arr
 // looks or behaves changes; this just moves WHERE the facts actually live.
 import { MedicationRepository, DOSE_UNIT_OPTIONS } from "../repositories/medicationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -923,9 +924,10 @@ function LogTab({ meds, T, onOpenCorrection }) {
           Matching the Registry tab's existing wording rather than inventing a
           new shape. */}
       {byDay.length === 0 && !anyVoided && (
-        <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-          No doses or refills logged yet. Add a medication first, then logging a dose or refill from its card builds this history.
-        </div>
+        <EmptyState
+          T={T}
+          message="No doses or refills logged yet. Add a medication first, then logging a dose or refill from its card builds this history."
+        />
       )}
       {anyVoided && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowVoided((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", minHeight: 44, padding: "8px 0 4px", fontSize: 12, color: T.textSecondary, fontWeight: 600 }}>
@@ -992,9 +994,10 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
       {/* FIXED 27 Sep 2026 — same blank-tab bug as LogTab above, same round,
           same file. `meds.map` with no fallback rendered nothing at all. */}
       {meds.length === 0 && (
-        <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-          Nothing in stock yet. Add a medication with stock tracking on, and its current level appears here.
-        </div>
+        <EmptyState
+          T={T}
+          message="Nothing in stock yet. Add a medication with stock tracking on, and its current level appears here."
+        />
       )}
       {meds.map((m) => {
         const s = computeStock(m);
@@ -2519,9 +2522,10 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                   empty state at all — an empty list, or a search
                   matching nothing, both silently rendered nothing. */}
               {activeMeds.filter(matchesMedSearch).length === 0 && (
-                <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-                  {medQuery.trim() ? "No medications match your search." : "No medications yet. Tap + to add one."}
-                </div>
+                <EmptyState
+                  T={T}
+                  message={medQuery.trim() ? "No medications match your search." : "No medications yet. Tap + to add one."}
+                />
               )}
               {activeMeds.map((med, idx) => {
                 if (!matchesMedSearch(med)) return null;

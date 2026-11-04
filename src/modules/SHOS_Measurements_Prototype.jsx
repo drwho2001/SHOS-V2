@@ -20,6 +20,7 @@ import { classifyMeasurement } from "../calculations/measurementCalculations";
 import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
@@ -925,9 +926,10 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
       </div>
       <div style={{ padding: "12px 16px 100px" }}>
         {byTypeGroups.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            {query.trim() ? "No measurements match your search." : "No measurements logged yet. Tap + to add one."}
-          </div>
+          <EmptyState
+            T={T}
+            message={query.trim() ? "No measurements match your search." : "No measurements logged yet. Tap + to add one."}
+          />
         )}
         {(() => {
           const renderTypeSection = (group) => (

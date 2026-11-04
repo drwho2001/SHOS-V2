@@ -15,6 +15,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { FormTabs } from "../components/FormTabs";
 // ADDED 9 Oct 2026 (t052) — the point-of-use explanation for "2-1-1" and for
 // the role chips' Vers/Switch, which the Glossary defines but this form used
@@ -1532,9 +1533,10 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         )}
       <div style={{ padding: "4px 16px" }}>
         {visible.length === 0 && (
-          <div style={{ textAlign: "center", color: T.textDisabled, fontStyle: "italic", padding: "40px 0" }}>
-            {query.trim() ? tr("encounters.noEncountersMatchSearch", "No encounters match your search.") : tr("encounters.noEncountersLoggedYet", "No encounters logged yet.")}
-          </div>
+          <EmptyState
+            T={T}
+            message={query.trim() ? tr("encounters.noEncountersMatchSearch", "No encounters match your search.") : tr("encounters.noEncountersLoggedYet", "No encounters logged yet.")}
+          />
         )}
         {/* FIXED 16 Sep 2026 — real report: same "cards read as mobile-
             width content stretched into a wide row" gap already fixed

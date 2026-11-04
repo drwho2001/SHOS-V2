@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import ConfirmDeleteCard from "../../components/ConfirmDeleteCard";
+import EmptyState from "../../components/EmptyState";
 import { CheckIcon as Check, CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -149,7 +150,15 @@ export function TrashScreen({ onClose }) {
           Deleted items stay here for 30 days before they're no longer shown. This is separate from the "tap to undo" that appears right after deleting something.
         </div>
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontSize: 13 }}>{t("trash.empty", "Nothing in the trash.")}</div>
+          <EmptyState
+            T={{
+              textDisabled: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled,
+              textPrimary: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary,
+              border: darkMode ? DARK.border : NEUTRAL.border,
+              surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant,
+            }}
+            message={t("trash.empty", "Nothing in the trash.")}
+          />
         ) : (
           <>
             {/* ADDED 26 Aug 2026 — real ask: "restore all" and "delete

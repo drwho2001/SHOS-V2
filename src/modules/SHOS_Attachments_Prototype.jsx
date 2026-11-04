@@ -14,6 +14,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 // single tap with zero confirmation, unlike ~15 other real destructive
 // deletes app-wide that all go through this one shared component.
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useTranslation } from "../i18n/index.js";
@@ -163,9 +164,10 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 
       <div style={{ padding: "0 16px 24px" }}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            {all.length === 0 ? t("attachments.empty", "No attachments yet — add one from a Test or Clinic Visit.") : t("attachments.noMatch", "Nothing matches this filter.")}
-          </div>
+          <EmptyState
+            T={T}
+            message={all.length === 0 ? t("attachments.empty", "No attachments yet — add one from a Test or Clinic Visit.") : t("attachments.noMatch", "Nothing matches this filter.")}
+          />
         ) : isDesktopWidth ? (
           // ADDED — real ask: desktop grid grouped consecutively by
           // month, see dateGrouping.js.
