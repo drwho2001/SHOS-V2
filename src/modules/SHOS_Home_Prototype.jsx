@@ -1110,19 +1110,19 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         const encounterRiskRing = (encounterPostCount > 0 || encounterPreCount > 0) ? (
           <div key="encounterRisk" style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260 }}>
             <div style={{ position: "relative", width: isDesktopWidth ? 96 : 64, height: isDesktopWidth ? 96 : 64, flexShrink: 0 }}>
-              <svg width={isDesktopWidth ? 96 : 64} height={isDesktopWidth ? 96 : 64} viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }}>
-                <circle cx="50" cy="50" r="42" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="79.2 184.7" strokeDashoffset="-66" strokeLinecap="round" />
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="26.4 237.5" strokeDashoffset="-145" strokeLinecap="round" />
+              <svg width={isDesktopWidth ? 96 : 64} height={isDesktopWidth ? 96 : 64} viewBox="0 0 100 100" role="img" aria-label="At-risk encounters ring">
+                <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
+                <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="79.2 184.7" strokeDashoffset="-66" strokeLinecap="butt" />
+                <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="26.4 237.5" strokeDashoffset="-145" strokeLinecap="butt" />
+                <text x="50" y="56" text-anchor="middle" font-size="22" font-weight="800" fill="#111827">{encounterPostCount + encounterPreCount}</text>
+                <text x="50" y="68" text-anchor="middle" font-size="13" font-weight="700">
+                  <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill="#111827">+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
+                </text>
               </svg>
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 22 : 16, fontWeight: 800, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounterPostCount + encounterPreCount}</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
               <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>At-Risk Encounters</span>
               <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Counts all encounters containing an at-risk activity <span style={{ color: "#ec4899" }}>since last test</span> - both logged by you. It also counts any <span style={{ color: "#10b981" }}>exposures before last test</span> where testing would not then have identified an infection.</span>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: "#10b981" }}>{encounterPreCount}</span>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>+</span>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: "#ec4899" }}>{encounterPostCount}</span>
             </div>
           </div>
         ) : null;
