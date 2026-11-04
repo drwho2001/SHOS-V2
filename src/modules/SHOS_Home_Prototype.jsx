@@ -1171,7 +1171,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
-                {testingRing}{adherenceRing}{containerRing}{encounterRiskRing}{cycleRing}{contraRing}
+                {adherenceRing}{containerRing}{testingRing}{encounterRiskRing}{cycleRing}{contraRing}
               </div>
             )}
             </section>
