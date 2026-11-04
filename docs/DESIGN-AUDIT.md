@@ -518,11 +518,11 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 
 ## 10. Not covered by this pass
 
-- Gesture navigation (the device uses 3-button nav). Bottom-inset behaviour with a gesture bar is unverified.
-- Landscape and tablet widths on the device (the web pass was desktop-width only).
-- Localisation: only English strings were rendered; the long-string rule was not exercised.
+- Gesture navigation (the device uses 3-button nav). Bottom-inset behaviour with a gesture bar is unverified — the app uses `env(safe-area-inset-bottom)` which handles both nav modes, but was not tested with gesture nav enabled (changing the system nav mode risks dropping the adb connection).
+- Landscape and tablet widths: the app supports landscape (no `screenOrientation` lock in `AndroidManifest.xml`; `configChanges` includes `orientation`). Landscape could not be captured via `adb exec-out screencap` (returns native portrait framebuffer). Code uses `useIsDesktopWidth` for wider layouts; no landscape-specific breakpoints found.
+- Localisation: the app is English-only (no language picker found; `tr()` is used for future i18n but no locale selector exists). The long-string rule could not be exercised. Manual §11's "test long translated strings" guidance is untestable until a second language is added.
 - Reduced motion on module screens: all module files that animate import `useReducedMotion` (verified); 4 settings screens do not (D5). Coverage is code-level only.
-- Dark-mode web: verified via OS-default dark path (body bg = `#121214`, B3 confirmed via computed style). Interactive toggle not exercisable (encrypted preferences). All B-series findings apply identically.
+- Dark-mode web: verified via OS-default dark path (body bg = `#121214`, B3 confirmed via computed style `rgb(179, 98, 5)`). Interactive toggle not exercisable (encrypted preferences). All B-series findings apply identically.
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
 - Settings subscreens were sampled in dark mode. The *layout* (sticky header, spacing, safe area) is clean, but the *colour* pass found raw-accent-as-text reads in AboutScreen, StatsScreen, ResourcesScreen, ShareScreen and TrashScreen — see B9 (new). Privacy, Widgets, Notifications, Preferences, Manage lists, Calendar, My Profile, Backup & Export and Colour scheme were checked and are clean on colour. DeveloperTools and Design are flagged (B9 and B1/B2 respectively). Light mode for the same screens was covered in the earlier pass.
