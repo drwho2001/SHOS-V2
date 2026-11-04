@@ -871,8 +871,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
     <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: onClick ? "pointer" : "default" }}>
-      <span style={{ fontSize: 13, color: moduleColor || (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, textAlign: "right" }}>{value}</span>
+      <span style={{ fontSize: 13, color: moduleColor || (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", paddingRight: 12 }}>{label}</span>
+      <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, textAlign: "right", minWidth: 0, overflowWrap: "anywhere" }}>{value}</span>
     </div>
   );
 
@@ -1127,15 +1127,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
                 <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="79.2 184.7" strokeDashoffset="-66" strokeLinecap="butt" />
                 <path d="M50 8 A42 42 0 0 0 50 92 A42 42 0 0 0 50 8" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="26.4 237.5" strokeDashoffset="-145" strokeLinecap="butt" />
-                <text x="50" y="56" text-anchor="middle" font-size="22" font-weight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{encounterPostCount + encounterPreCount}</text>
-                <text x="50" y="68" text-anchor="middle" font-size="13" font-weight="700">
+                <text x="50" y="52" text-anchor="middle" font-size="22" font-weight="800" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{encounterPostCount + encounterPreCount}</text>
+                <text x="50" y="72" text-anchor="middle" font-size="13" font-weight="700">
                   <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
                 </text>
               </svg>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
               <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>At-Risk Encounters</span>
-              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Counts all encounters containing an at-risk activity <span style={{ color: "#ec4899" }}>since last test</span> - both logged by you. It also counts any <span style={{ color: "#10b981" }}>exposures before last test</span> where testing would not then have identified an infection.</span>
+              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Post-test (pink): since last test. Pre-test (green): before last test; counted for next. <button onClick={() => alert('Pre-test exposure logic: encounters before last test that could not have been identified by that test are counted for the next test cycle.')}>i</button></span>
             </div>
           </div>
         ) : null;
