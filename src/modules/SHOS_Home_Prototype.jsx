@@ -254,7 +254,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         const pre = atRisk.filter(e => { const d = new Date(e.date||e.createdAt||0); return d < lastTestDate; }).length;
         setEncounterPostCount(post);
         setEncounterPreCount(pre);
-      } catch { /* demo fallback unchanged */ }
+      } catch { /* demo fallback */ setEncounterPostCount(13); setEncounterPreCount(40); }
     })();
   }, []);
   const [showMyProfile, setShowMyProfile] = useState(false);
