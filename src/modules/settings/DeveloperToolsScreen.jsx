@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug, WarningDiamondIcon as WarningDiamond } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
+import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
@@ -131,7 +131,7 @@ export function OrphanRow({ orphan, onRepaired, darkMode }) {
       </div>
 
       {undo !== null && (
-        <div style={{ fontSize: 11, color: ACCENTS.home, marginTop: 5 }}>
+        <div style={{ fontSize: 11, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home, marginTop: 5 }}>
           Cleared it.{" "}
           <span role="button" tabIndex={0} aria-label={`Undo the repair to ${orphan.field}`} onClick={() => run(() => undoRepair(orphan, undo))}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(() => undoRepair(orphan, undo)); } }}
@@ -169,7 +169,7 @@ export function OrphanRow({ orphan, onRepaired, darkMode }) {
                 {shape.canRepoint && (
                   <span role="button" tabIndex={0} aria-label={`Point ${orphan.field} at a different ${orphan.targetType}`} onClick={openPicker}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPicker(); } }}
-                    style={{ ...btn, color: ACCENTS.home, opacity: busy ? 0.5 : 1 }}>
+                    style={{ ...btn, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home, opacity: busy ? 0.5 : 1 }}>
                     {busy ? "Loading…" : "Point it at…"}
                   </span>
                 )}
@@ -188,7 +188,7 @@ export function OrphanRow({ orphan, onRepaired, darkMode }) {
                   <span key={opt.id} role="button" tabIndex={0} aria-label={`Point ${orphan.field} at ${opt.label}`}
                     onClick={() => run(() => repointDanglingReference(orphan, opt.id))}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(() => repointDanglingReference(orphan, opt.id)); } }}
-                    style={{ ...btn, color: ACCENTS.home }}>
+                    style={{ ...btn, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home }}>
                     {opt.label}
                   </span>
                 ))}
@@ -465,7 +465,7 @@ export function DeveloperToolsScreen({ onClose }) {
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.brokenReferences", "Broken references")}</span>
           <span onClick={recheckOrphans} role="button" tabIndex={0} aria-label="Check again"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckOrphans(e); } }}
-            style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
+            style={{ fontSize: 11, fontWeight: 700, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
             {orphanChecking ? "Checking…" : "Check again"}
           </span>
           <span style={{ fontSize: 13, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
@@ -502,7 +502,7 @@ export function DeveloperToolsScreen({ onClose }) {
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.recordsWorthLook", "Records worth a look")}</span>
           <span onClick={recheckAnomalies} role="button" tabIndex={0} aria-label="Check records again"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckAnomalies(e); } }}
-            style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
+            style={{ fontSize: 11, fontWeight: 700, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
             {anomalyChecking ? "Checking…" : "Check again"}
           </span>
           <span style={{ fontSize: 13, color: anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>

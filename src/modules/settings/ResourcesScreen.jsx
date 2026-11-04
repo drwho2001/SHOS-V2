@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, PencilSimpleIcon as PencilSimple } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
+import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { BASHH_TESTING_SOURCE_URL } from "../../calculations/statsCalculations";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
@@ -58,7 +58,7 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
         )}
       </div>
       {!expanded && entry.link && (
-        <div style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2, textDecoration: "underline" }}>{entry.link}</div>
+        <div style={{ fontSize: 11, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, marginTop: 2, textDecoration: "underline" }}>{entry.link}</div>
       )}
       {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>{t("resources.noLink", "No link saved yet — tap the pencil to add one")}</div>}
     </div>
@@ -206,7 +206,7 @@ function ClinicalJustificationsCategory({ darkMode }) {
           <div key={item.title} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 3 }}>{item.title}</div>
             <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{item.body}</div>
-            {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 4, display: "inline-block" }}>{item.link}</a>}
+            {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, marginTop: 4, display: "inline-block" }}>{item.link}</a>}
           </div>
         ))}
       </div>

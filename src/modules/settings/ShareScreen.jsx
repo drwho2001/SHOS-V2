@@ -5,7 +5,7 @@
 import React, { useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
-import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
+import { ACCENTS, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { useTranslation } from "../../i18n/index.js";
@@ -37,7 +37,7 @@ export function ShareScreen({ onClose }) {
       <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{title}</div>
       <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12, lineHeight: 1.4 }}>{sub}</div>
       <img src={qrSrc} alt={title + " QR code"} style={{ width: "100%", maxWidth: 220, height: "auto", borderRadius: 8, background: "#FFFFFF" }} />
-      <a href={href} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 10, fontSize: 12, color: ACCENTS.medication, fontWeight: 600, wordBreak: "break-all" }}>{linkText}</a>
+      <a href={href} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 10, fontSize: 12, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600, wordBreak: "break-all" }}>{linkText}</a>
     </div>
   );
 

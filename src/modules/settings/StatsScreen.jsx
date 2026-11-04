@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "../../i18n/index.js";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
+import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
 import { computeAdherence } from "../../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../../calculations/doxyPepCalculations";
 import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../../calculations/statsCalculations";
@@ -51,7 +51,7 @@ function StatRow({ label, value, explanation, sourceUrl }) {
           {explanation}
           {sourceUrl && (
             <div style={{ marginTop: 4 }}>
-              <a href={sourceUrl} target="_blank" rel="noreferrer" style={{ color: ACCENTS.medication, fontSize: 11 }}>View source guidance →</a>
+              <a href={sourceUrl} target="_blank" rel="noreferrer" style={{ color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontSize: 11 }}>View source guidance →</a>
             </div>
           )}
         </div>
@@ -218,7 +218,7 @@ export function StatsScreen({ onClose }) {
 
         {/* Activity */}
         {visibleStats.encounters && <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
-        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7") : ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", gap: 16, flexWrap: "wrap" }}>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).length}</div></div>
@@ -300,7 +300,7 @@ export function StatsScreen({ onClose }) {
 
         {visibleStats.healthcare && <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Healthcare */}
-        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Healthcare</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, padding: "0 0 6px" }}>Healthcare</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <StatRow label={t("stats.testsLogged", "Tests logged")} value={testingStats.testCount}
             explanation={t("stats.explTestsLogged", "Total non-archived tests with a real (not future-scheduled) date.")} />
@@ -358,7 +358,7 @@ export function StatsScreen({ onClose }) {
         {/* ADDED — real ask: "expand stats". Symptoms had no stats
             section at all before this — same "Top X" list pattern
             already established for kinks above. */}
-        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Symptoms</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, padding: "0 0 6px" }}>Symptoms</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
             <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Most logged symptoms</div>
@@ -376,7 +376,7 @@ export function StatsScreen({ onClose }) {
         {/* ADDED — real ask: "expand stats". Clinic Visits had no stats
             section at all before this — same monthly-bar-chart pattern
             already established for Activity/Contacts below. */}
-        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Clinic visits</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, padding: "0 0 6px" }}>Clinic visits</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
@@ -400,7 +400,7 @@ export function StatsScreen({ onClose }) {
 
         {visibleStats.medication && <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Medication */}
-        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.medication, padding: "0 0 6px" }}>Medication</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, padding: "0 0 6px" }}>Medication</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <StatRow label={t("stats.overallAdherence7d", "Overall adherence (7-day)")} value={adherence != null ? `${adherence}%` : "Not enough data"}
             explanation={t("stats.explAdherence", "Average of each daily/scheduled medication's own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications aren't included — there's no fixed expected schedule to measure against.")} />
@@ -431,7 +431,7 @@ export function StatsScreen({ onClose }) {
 
         <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Contacts */}
-        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.contacts, padding: "0 0 6px" }}>Contacts</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)) : ACCENTS.contacts, padding: "0 0 6px" }}>Contacts</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>

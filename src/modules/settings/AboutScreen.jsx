@@ -5,7 +5,7 @@ import packageJson from "../../../package.json";
 const APP_VERSION = packageJson.version;
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
-import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
+import { ACCENTS, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { useTranslation } from "../../i18n/index.js";
@@ -61,7 +61,7 @@ export function AboutScreen({ onClose }) {
               stay off this page by design (direct releases link only). */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.install", "Install / open on this device")}</span>
-            <a href="https://drwho2001.github.io/SHOS-V2/landing.html" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+            <a href="https://drwho2001.github.io/SHOS-V2/landing.html" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
               {t("about.installCta", "Get the app")}
             </a>
           </div>
@@ -70,7 +70,7 @@ export function AboutScreen({ onClose }) {
               builds/releases now come from is SHOS-V2. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.repository", "Repository")}</span>
-            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
               {t("about.github", "GitHub")}
             </a>
           </div>
@@ -79,19 +79,19 @@ export function AboutScreen({ onClose }) {
               or a computer who can't install the APK. */}
            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.webApp", "Web app (iPhone / computer)")}</span>
-             <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+             <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
                {t("about.open", "Open")}
              </a>
            </div>
            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.checkUpdates", "Check for updates")}</span>
-             <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+             <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
                {t("about.latest", "Latest")}
              </a>
            </div>
            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.reportCrash", "Report a crash")}</span>
-             <a href={"https://github.com/drwho2001/SHOS-V2/issues/new?title=" + encodeURIComponent("Crash report - SHOS " + APP_VERSION) + "&body=" + encodeURIComponent("## What happened\n\n(describe what you were doing)\n\n## App info\n- Version: " + APP_VERSION + "\n- Build: " + (typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev") + "\n- Platform: " + (typeof navigator !== "undefined" ? navigator.userAgent : "unknown") + "\n\n## Error log\n(paste from Settings -> Developer tools -> Error log -> Copy report)\n")} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
+             <a href={"https://github.com/drwho2001/SHOS-V2/issues/new?title=" + encodeURIComponent("Crash report - SHOS " + APP_VERSION) + "&body=" + encodeURIComponent("## What happened\n\n(describe what you were doing)\n\n## App info\n- Version: " + APP_VERSION + "\n- Build: " + (typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev") + "\n- Platform: " + (typeof navigator !== "undefined" ? navigator.userAgent : "unknown") + "\n\n## Error log\n(paste from Settings -> Developer tools -> Error log -> Copy report)\n")} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
                {t("about.report", "Report")}
              </a>
            </div>
