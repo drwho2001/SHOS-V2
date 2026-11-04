@@ -120,6 +120,7 @@ export const localStorageAdapter = {
       unreadableKeys.delete(key);
       return parsed;
     } catch (err) {
+      let activeErr = err;
       if (isVaultLockedError(err) && raw && vaultExists()) {
         // FIXED 30 Oct 2026 — see waitForVaultUnlocked()'s own comment in
         // cryptoService.js for the real incident behind this. Real
@@ -145,7 +146,7 @@ export const localStorageAdapter = {
           } catch (retryErr) {
             // Fall through to the classification below with the retry's own
             // error, which is the more informative one.
-            err = retryErr;
+            activeErr = retryErr;
           }
         }
         if (!isVaultUnlocked()) {
@@ -156,8 +157,8 @@ export const localStorageAdapter = {
           return emptyLike(fallback);
         }
       }
-      console.error(`Storage load failed for "${key}":`, err);
-      if (isVaultLockedError(err)) {
+      console.error(`Storage load failed for "${key}":`, activeErr);
+      if (isVaultLockedError(activeErr)) {
         // Locked and nothing stored yet — nothing to protect.
         return fallback;
       }
