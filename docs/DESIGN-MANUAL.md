@@ -115,6 +115,7 @@ Use these only where an accent is literally used as text on its own tinted backg
 
 - Home's active-session border previously used `ACCENTS.encounters` in dark mode without `resolveDarkAccent`. This is an open audit item, not a pattern to copy.
 - Menstrual accent text reaches only 3.56:1 on white. It is accepted for icons, large text, and UI components, but not small body text.
+- **Raw accents used as text/labels without dark resolution (B1–B9):** Contacts, Home, Menstrual and MyProfile have no dark companion, so their accents used as text fail in dark mode (3.78:1 for Contacts). DesignScreen's "Customise" link uses raw `ACCENTS.medication` (1.50:1). Encounters kink tags use raw `ACTION.red` as decoration (3.70:1). The "Incomplete" chip hardcodes light-only `#926100`/`#FFF3C4`. Contacts select-mode bar hardcodes `#1B1B1F`. Settings subscreens (About, Stats, Resources, Share, DeveloperTools) use raw accents as text/labels. Do not copy these; resolve with `resolveDarkAccent` and a hand-picked companion.
 
 ## 4. Typography
 
@@ -127,7 +128,7 @@ Fonts are self-hosted through `@fontsource/*` and imported in `src/main.jsx`. Do
 
 | Token | Size / weight | Use |
 |---|---:|---|
-| `TYPE.screenTitle` | 22 / 700 | Primary module banner |
+| `TYPE.screenTitle` | 22 / 700 | Primary module banner (Contacts, Encounters, Medication, Healthcare, Settings) |
 | `TYPE.recordTitle` | 20 / 700 | Record or detail title |
 | `TYPE.subScreenTitle` | 16 / 700 | Settings and drill-down headers |
 | `TYPE.sheetTitle` | 18 / 700 | Full-bleed add/edit sheet title |
@@ -136,6 +137,7 @@ Fonts are self-hosted through `@fontsource/*` and imported in `src/main.jsx`. Do
 | `TYPE.bodyEmphasis` | 14 / 600 | Labels, values, short actions |
 | `TYPE.caption` | 12 / 400 | Secondary information and helper text |
 | `TYPE.captionEmphasis` | 12 / 600 | Status labels and compact metadata |
+| `TYPE.microLabel` | 11 / 600 | Micro-text floor: badges, chips, status lines. Do not go below 11px except the 9px DEMO badge (explicit exception). |
 | `TYPE.monoLabel` | 12, JetBrains Mono | Identifiers, codes, technical values |
 
 ![Typography scale](design-manual/typography-scale.svg)
