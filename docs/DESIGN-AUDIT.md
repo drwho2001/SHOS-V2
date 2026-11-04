@@ -509,9 +509,10 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 
 - Safe-area handling: `env(safe-area-inset-*)` resolves to 0 on desktop, so sticky headers sit at `top: 0` with no gap — correct. On a notched PWA install the browser supplies the insets.
 - Dynamic viewport: the root uses `100dvh` (verified via `CSS.supports`), so the bottom nav is not cut off by a mobile browser's collapsing address bar.
-- Theme: the app keeps its own light/dark toggle rather than following `prefers-color-scheme`; consistent with Android. All colour findings in §§2–4 apply to web.
+- Theme: the app's default follows `prefers-color-scheme` (verified: browser reports dark, app launches with `body` background `#121214`). Explicit toggle is encrypted in preferences and could not be exercised via automation. All colour findings in §§2–4 apply to web identically — B3 confirmed via computed style (`contactsLabel` = `rgb(179, 98, 5)` = `#B36205` on dark surface in web dark mode).
 - Navigation: Settings is presented as a dialog on web vs a full screen on Android — a deliberate platform difference, documented in §11.5. In-app back controls are present.
 - The App Lock prompt is a dialog on web — same as Android.
+- Dark-mode web: verified via OS-default dark path (body bg = `#121214`). Interactive colour-scheme toggle could not be exercised (encrypted preferences). All B-series findings apply identically.
 
 ---
 
@@ -521,7 +522,7 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 - Landscape and tablet widths on the device (the web pass was desktop-width only).
 - Localisation: only English strings were rendered; the long-string rule was not exercised.
 - Reduced motion on module screens: all module files that animate import `useReducedMotion` (verified); 4 settings screens do not (D5). Coverage is code-level only.
-- Dark-mode web: could not be toggled via browser automation (preferences are encrypted). Same React code as Android, so all B-series findings apply, but not independently verified.
+- Dark-mode web: verified via OS-default dark path (body bg = `#121214`, B3 confirmed via computed style). Interactive toggle not exercisable (encrypted preferences). All B-series findings apply identically.
 - The five other Healthcare sub-tabs were verified in code against A2, not scrolled on device.
 - The three pre-existing CI failures (lint at `storageAdapter.js:148`, unit test at `clearSampleData.test.js:510`, smoke flow 1/32) are unrelated to this audit and still open.
 - Settings subscreens were sampled in dark mode. The *layout* (sticky header, spacing, safe area) is clean, but the *colour* pass found raw-accent-as-text reads in AboutScreen, StatsScreen, ResourcesScreen, ShareScreen and TrashScreen — see B9 (new). Privacy, Widgets, Notifications, Preferences, Manage lists, Calendar, My Profile, Backup & Export and Colour scheme were checked and are clean on colour. DeveloperTools and Design are flagged (B9 and B1/B2 respectively). Light mode for the same screens was covered in the earlier pass.
