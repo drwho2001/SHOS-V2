@@ -347,7 +347,7 @@ Manual §10.5 says "Loading states should preserve the final layout shape where 
 
 ### C19 · Empty states are text-only, with no icon or action
 
-Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3355`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of text with no icon and no action. Only Encounters uses `fontStyle: "italic"`; the other three are plain `textDisabled`. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) The 69 "empty-text" sites across 25 files conflate the two; only the list-level ones are in scope for this finding. The Medication dashboard empty state (`:925–928`) is also non-italic.
+Manual §10.5 says "Empty states should use an icon, one sentence, and an optional action." The list-level empty states in Contacts (`:3355`), Encounters (`:1535`), Clinic Visits (`:1855`) and Testing (`:1515`) render a single line of text with no icon and no action. Only Encounters uses `fontStyle: "italic"`; the other three are plain `textDisabled`. (Field-level placeholders such as "No notes yet" at `SHOS_Contacts_Prototype.jsx:2853` and `SHOS_Encounters_Prototype.jsx:1814` are a different category and are not counted here.) A grep for centred empty-state containers (`textAlign: center; padding: 40/60px`) finds 20 sites across 13 files — these are the list-level ones in scope. The 69 "empty-text" sites across 25 files conflate list-level and field-level (the latter are not empty states). The Medication dashboard empty state (`:925–928`) is also non-italic.
 
 **Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
 
@@ -532,9 +532,9 @@ The web/PWA specific count in the headline table drops from 2 to 1.
 These are sites the manual's rules would flag but this pass did not enumerate as defects. Raw counts are review candidates, not violation counts — they include legitimate uses (designTokens definitions, intentional dark surfaces, accent fills). Listed so the next pass has a starting point.
 
 - **`minHeight: 44` on inline SVGs** (manual §5.1): ~11 inline Phosphor icons (of 117 total `minHeight: 44` sites). See D4.
-- **Hardcoded hex beyond the cited sites:** 495 hex literals across 41 files. Examples: `#FFF3C4`/`#926100` at `SHOS_Contacts_Prototype.jsx:2064–2071, 3103–3104, 3141–3142` (B5 lists six; the `#B42318`/`#FEE4E2` pair at `:3141–3142` is a second colour family), `#1B1B1F` toast bars, `#656568` disabled buttons in `SHOS_Settings_Prototype.jsx`.
-- **RADIUS literals beyond 14** (see C11's scope note): 299 `borderRadius: <number>` sites across 41 files using 12, 10, 8, 4.
-- **FONT_FAMILY bypass:** most screens use the literal `"'Inter', sans-serif"` rather than the token. Visually identical but token drift.
+- **Hardcoded hex beyond the cited sites:** 498 hex literals across 41 files. Top distinct values: `#FFFFFF` (343, mostly on coloured fills), `#1B1B1F` (51, dark surface/toast bars), `#FF7A7E`/`#5FD9A4` (32/18, dark companions), `#0E8144` (18, healthcare dark), `#656568` (9, disabled), `#926100` (6, Incomplete chip). Many are legitimate (dark companions, intentional surfaces); the count is a review candidate, not a violation count.
+- **RADIUS literals beyond 14** (see C11's scope note): 299 `borderRadius: <number>` sites across 41 files. Values: 999 (180 = RADIUS.full), 8 (60 = RADIUS.sm), 12 (21), 10 (13), 4 (13), 3 (5), 14 (2), 6 (2), 32 (1). The 999 and 8 are token-equivalent (just not using the token). The rest (12, 10, 4, 3, 14, 6, 32) are non-token values.
+- **FONT_FAMILY bypass:** 262 literal sites across 43 files vs 2 token consumers. Visually identical but token drift (C18).
 - (Resolved above: dark companions for Home and Menstrual are now part of B8.)
 - **Empty states** (manual §10.5): code-checked (C19); device verification of the actual empty states not done.
 - **Loading states** (manual §10.5): code-checked (C20); device verification not done.
