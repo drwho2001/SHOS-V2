@@ -1089,7 +1089,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // that is labelled two different ways in two places is the defect this
         // project keeps finding.
         const containerRing = containerAdherence != null ? (
-          <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="This container"
+          <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="Current container adherence"
             info="Average across your meds: doses logged vs. due since each one's own last refill, capped at one container's worth."
             onClick={() => onNavigateToRecord("medication")} />
         ) : null;
@@ -1135,7 +1135,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               </svg>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>At-Risk Encounters</span>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor }}>At-Risk Encounters</span>
               <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Post-test (pink): since last test. Pre-test (green): before last test; counted for next. <button onClick={() => alert('Pre-test exposure logic: encounters before last test that could not have been identified by that test are counted for the next test cycle.')}>i</button></span>
             </div>
           </div>
