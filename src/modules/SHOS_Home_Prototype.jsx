@@ -1099,19 +1099,30 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
           />
         ) : null;
+        // STRESS TEST — ring spacing: y (scale) must always > x (total) so grey buffer always visible; not target.
+        const totalAtRisk = encounterPostCount + encounterPreCount;
+        const ringScale = Math.max(10, Math.ceil(totalAtRisk / 10) * 10); // next 10-unit bucket above count
+        const postFrac = Math.min(encounterPostCount / ringScale, 1);
+        const preFrac = Math.min(encounterPreCount / ringScale, 1);
+        const greyFrac = Math.max(0, 1 - postFrac - preFrac);
+        // Verify: grey always > 0 when not full
+        if (postFrac + preFrac > 1) { console.warn("At-risk ring overflow: scale too small for counts", totalAtRisk, ringScale); }
         const encounterRiskRing = (encounterPostCount > 0 || encounterPreCount > 0) ? (
           <div key="encounterRisk" style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260 }}>
             <div style={{ position: "relative", width: isDesktopWidth ? 96 : 64, height: isDesktopWidth ? 96 : 64, flexShrink: 0 }}>
               <svg width={isDesktopWidth ? 96 : 64} height={isDesktopWidth ? 96 : 64} viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }}>
                 <circle cx="50" cy="50" r="42" fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={isDesktopWidth ? 8 : 6} />
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="132 264" strokeDashoffset="-66" strokeLinecap="round" />
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="53 211" strokeDashoffset="-145" strokeLinecap="round" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#ec4899" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="79.2 184.7" strokeDashoffset="-66" strokeLinecap="round" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#10b981" strokeWidth={isDesktopWidth ? 8 : 6} strokeDasharray="26.4 237.5" strokeDashoffset="-145" strokeLinecap="round" />
               </svg>
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounterPostCount}</div>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 22 : 16, fontWeight: 800, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{encounterPostCount + encounterPreCount}</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: "#ec4899" }}>Encounter risk</span>
-              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Since last test: post-test at-risk; pre-test inside incubation window.</span>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>At-Risk Encounters</span>
+              <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>Counts all encounters containing an at-risk activity <span style={{ color: "#ec4899" }}>since last test</span> - both logged by you. It also counts any <span style={{ color: "#10b981" }}>exposures before last test</span> where testing would not then have identified an infection.</span>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: "#10b981" }}>{encounterPreCount}</span>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>+</span>
+              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: "#ec4899" }}>{encounterPostCount}</span>
             </div>
           </div>
         ) : null;
