@@ -89,7 +89,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -1080,7 +1080,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
       </div>
 
       <div style={{ padding: "0 16px 100px" }}>
-        <FormTabs tabs={PROFILE_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab}
+        <FormTabs tabs={PROFILE_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab} stickyTop={STICKY_SUBHEADING_TOP}
           ariaLabel="My Profile form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
           textColor={T.textSecondary} border={T.border} surface={T.bg} tabListPadding="0 0 8px">
         <div>

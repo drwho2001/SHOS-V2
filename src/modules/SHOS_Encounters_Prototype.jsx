@@ -75,7 +75,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -1460,7 +1460,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             </div>
           </div>
         )}
-        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "calc(env(safe-area-inset-top) + 60px)", zIndex: 5, background: T.bg }}>
+        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 5, background: T.bg }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
               {showArchived ? "Hide archived" : "Show archived"}
@@ -2127,7 +2127,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
       )}
 
       <div style={{ padding: "0 16px 60px" }}>
-        <FormTabs tabs={ENCOUNTER_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab}
+        <FormTabs tabs={ENCOUNTER_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab} stickyTop={STICKY_SUBHEADING_TOP}
           ariaLabel="Encounter form sections" accent={T.encountersPink} accentText={T.encountersPink}
           textColor={T.textSecondary} border={T.border} surface={T.bg}>
         <div>

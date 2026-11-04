@@ -6,7 +6,7 @@
 // to be routing/global-state shell, not feature screens). Pure code
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
@@ -52,6 +52,27 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
     // itself reads quickAddTarget below to land on the right INNER tab.
     (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception") ? "menstrualHealth" : "testing"
   );
+  // A2 fix: measure the sticky header height so sub-tab sticky subheadings
+  // pin below it instead of at a hardcoded 58px that assumes a single band.
+  const healthcareHeaderRef = useRef(null);
+  const [healthcareHeaderHeight, setHealthcareHeaderHeight] = useState(0);
+  useLayoutEffect(() => {
+    const node = healthcareHeaderRef.current;
+    if (!node) return;
+    const measure = () => setHealthcareHeaderHeight(node.getBoundingClientRect().height);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => {
+    if (healthcareHeaderHeight > 0) {
+      document.documentElement.style.setProperty("--shos-sticky-header-h", `${healthcareHeaderHeight}px`);
+    }
+    return () => {
+      document.documentElement.style.removeProperty("--shos-sticky-header-h");
+    };
+  }, [healthcareHeaderHeight]);
   // ADDED 26 Aug 2026 — real gap found and fixed: tapping a linked
   // test from a Clinic Visit's own detail view used to only switch to
   // the Testing sub-tab, discarding the specific test id VisitDetail
@@ -237,7 +258,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           the notch. */}
       {/* One sticky stack: the blue title band remains visually distinct
           from the dark sub-tabs, while both stay attached during scrolling. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+      <div ref={healthcareHeaderRef} style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
         <div style={{ position: "relative", background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
           <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
           <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>

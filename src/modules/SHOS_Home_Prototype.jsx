@@ -152,7 +152,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>{tr("home.enableNotifications", "Enable notifications")}</button>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{tr("home.notNow", "Not now")}</span>
         </div>
@@ -899,8 +899,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Dashboard, rolled out here for consistency. */}
       <div style={{ width: "100%", padding: "20px 16px", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
       <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {profileName ? tr("home.dashboardTitle", "{name}'s dashboard", { name: profileName }) : tr("home.yourDashboard", "Your dashboard")}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{profileName ? tr("home.dashboardTitle", "{name}'s dashboard", { name: profileName }) : tr("home.yourDashboard", "Your dashboard")}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
               which points to no manual relock button... also for real
               workspace not fake pin." Only shown when App Lock is

@@ -1369,6 +1369,7 @@ export default function App() {
   // yet collected. Passive by design: it is shown, never nagged about.
   const [refillAwaiting, setRefillAwaiting] = useState([]);
   const [refillBannerHeight, refillBannerCallbackRef] = useMeasuredBannerHeight();
+const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasuredBannerHeight();
   const [testingDue, setTestingDue] = useState(null);
   const [testingBannerHeight, testingBannerCallbackRef] = useMeasuredBannerHeight();
   const [clinicVisitDue, setClinicVisitDue] = useState(null);
@@ -2960,7 +2961,8 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                 constant the medication lockout fell into before the NHS figures
                 were found. */}
             {refillAwaitingVisible && (
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 16px", background: ACCENTS.medication, borderTop: "1px solid rgba(255,255,255,.25)" }}>
+              <div ref={refillAwaitingBannerCallbackRef} style={{ background: ACCENTS.medication, borderTop: "1px solid rgba(255,255,255,.25)" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 16px" }}>
                 <Clock size={18} color="rgba(255,255,255,.9)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.95)" }}>
@@ -2991,6 +2993,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                 >
                   <X size={18} />
                 </button>
+              </div>
               </div>
             )}
 
@@ -3167,7 +3170,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           is active, so it's the correct, single place for the
           landmark — no layout change, `<main>`'s own default display
           matches the `<div>` it replaces. */}
-      <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
+      <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
