@@ -241,8 +241,21 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // medication has a logged refill, so there is nothing to measure a container
   // from - and this app shows no empty rings on a fresh install.
   const [containerAdherence, setContainerAdherence] = useState(null);
-  const [encounterPostCount, setEncounterPostCount] = useState(3);
-  const [encounterPreCount, setEncounterPreCount] = useState(1);
+  const [encounterPostCount, setEncounterPostCount] = useState(0);
+  const [encounterPreCount, setEncounterPreCount] = useState(0);
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await EncounterRepository.getAll();
+        const lastTest = await TestingRepository.getAll().then(t => t.sort((a,b)=>(new Date(b.date||0)-new Date(a.date||0)))[0]);
+        const lastTestDate = lastTest ? new Date(lastTest.date||lastTest.createdAt||0) : new Date(0);
+        const post = all.filter(e => { const d = new Date(e.date||e.createdAt||0); return !e.isArchived && d >= lastTestDate; }).length;
+        const pre = all.filter(e => { const d = new Date(e.date||e.createdAt||0); return !e.isArchived && d < lastTestDate; }).length;
+        setEncounterPostCount(post);
+        setEncounterPreCount(pre);
+      } catch { /* demo fallback unchanged */ }
+    })();
+  }, []);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
   // ADDED 15 Sep 2026 — real report: back-navigation-to-Clinic-Card fix,
