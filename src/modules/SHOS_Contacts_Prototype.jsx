@@ -1865,7 +1865,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           haven't been explicitly marked done. */}
       {isContactIncomplete(contact) && (
         <div style={{ marginLeft: 16, marginTop: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#926100", background: "#FFF3C4", borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: T.actionAmberText, background: T.actionAmberSurface, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
         </div>
       )}
       {flaggedDontMeetAgain ? (
@@ -2061,14 +2061,14 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           <PhotoPicker T={T} value={form.profilePicture} onChange={set("profilePicture")} />
           <TextField T={T} label="Full name" value={form.name} onChange={set("name")} placeholder="Full name" />
           {possibleDuplicate && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: radius.sm, background: "#FFF3C4", marginTop: -4, marginBottom: 8 }}>
-              <AlertTriangle size={13} color="#926100" />
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: radius.sm, background: T.actionAmberSurface, marginTop: -4, marginBottom: 8 }}>
+              <AlertTriangle size={13} color={T.actionAmberText} />
               {/* FIXED 28 Sep 2026 — Anonymise mode. The warning itself is
                   still shown, because "you may already have this person" is
                   useful to know, but the OTHER person's name is not: this
                   renders inside the edit sheet, which the review flagged as a
                   surface that a masked contact could be opened into. */}
-              <span style={{ fontSize: 12, color: "#926100" }}>
+              <span style={{ fontSize: 12, color: T.actionAmberText }}>
                 Possible duplicate{anonymise ? "" : ` of "${possibleDuplicate.nickname || possibleDuplicate.name}"`} — check before saving a second entry.
               </span>
             </div>
@@ -3101,7 +3101,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               a same-name exact flag. */}
           {duplicateCandidates.length > 0 && (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#926100", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
-              <AlertTriangle size={12} color="#926100" /> {duplicateCandidates.length}
+              <AlertTriangle size={12} color={T.actionAmberText} /> {duplicateCandidates.length}
             </div>
           )}
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
