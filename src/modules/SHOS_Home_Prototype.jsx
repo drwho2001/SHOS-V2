@@ -18,7 +18,7 @@ import ClearSampleDataConfirm from "../components/ClearSampleDataConfirm";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent, deriveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
 // activity looks awry — might match period colour." Root cause found:
@@ -188,7 +188,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
   const actionRedColor = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
   const actionGreenColor = darkMode ? resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4") : ACTION.green;
-  const homeColor = darkMode ? resolveDarkAccent("home", ACCENTS.home) : ACCENTS.home;
+  const homeColor = darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home;
   // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: a darker
   // stand-in used only where homeColor is literal text sitting on its
   // own light self-tint background (the "Update available" link) — dark

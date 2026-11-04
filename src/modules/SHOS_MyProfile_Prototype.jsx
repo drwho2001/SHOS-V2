@@ -89,7 +89,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -124,11 +124,11 @@ function buildDark() {
     // CHANGED — real architecture fix, same as Contacts' own comment:
     // resolveDarkAccent() keeps today's exact behaviour by default, only
     // brightening once a real colour override exists.
-    contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
     // Dark mode's resolved accents already have real contrast headroom
     // against a near-black background — no separate darker text variant
     // needed, so these just reuse the same values as above.
-    contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
     navActive: ACCENTS.contacts, fabBg: NEUTRAL_DARK.textPrimary, fabIcon: NEUTRAL_DARK.surface,
   };
 }
