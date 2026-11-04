@@ -210,7 +210,12 @@ export const ACTION = {
   red: overrides.actionRed || DEFAULT_ACTION_COLORS.red,
   green: overrides.actionGreen || DEFAULT_ACTION_COLORS.green,
   amber: "#F59E0B",
-  // CHANGED 15 Sep 2026 — real report: the old burnt-orange gold
+  // ADDED — amber warning chip tokens (Incomplete badge). Hand-tuned,
+  // not derived: see B5 in DESIGN-AUDIT.md. amberText is the text-safe
+  // stand-in; amberSurface is the light tint.
+  amberText: "#926100",
+  amberSurface: "#FFF3C4",
+  // CHANGED 15 Sep 2026 - real report: the old burnt-orange gold
   // (#B45309, hue ~24°) read too close to ACTION.red (#D93838, hue
   // ~2°) at a glance — exactly the confusion this "archive" tone
   // (Testing's not-recent-test dot, per computeTestDotColor's own
@@ -285,6 +290,12 @@ export const ACCENT_TEXT_SAFE = {
 export const ACTION_TEXT_SAFE = {
   red: "#C52626",
   green: "#11781A",
+  // ADDED — amber warning chip text (Incomplete badge, duplicate
+  // confidence chip). Hand-tuned stand-in, not derived from
+  // ACTION.amber (#F59E0B) — deriveLightAccent leaves #F59E0B
+  // unchanged (lightness already above target) and #F59E0B on
+  // #FFF3C4 is 1.93:1, far below 4.5:1. See B5 in DESIGN-AUDIT.md.
+  amber: "#926100",
 };
 
 // ADDED — Phase 3 (Sep 2026): the real replacement for the old
@@ -303,6 +314,8 @@ export function applyRealAccentOverrides(realOverrides) {
     red: realOverrides.actionRed || DEFAULT_ACTION_COLORS.red,
     green: realOverrides.actionGreen || DEFAULT_ACTION_COLORS.green,
     amber: "#F59E0B",
+    amberText: "#926100",
+    amberSurface: "#FFF3C4",
     gold: "#7A6500",
   });
 }

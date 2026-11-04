@@ -127,7 +127,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 function buildLight() {
   return {
     ...NEUTRAL,
-    contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
+    contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green, actionAmberText: ACTION.amberText, actionAmberSurface: ACTION.amberSurface,
     // ADDED 10 Sep 2026 — real accessibility fix: darker stand-ins used
     // ONLY where the accent is literal text colour sitting on its own
     // light self-tint background (e.g. active filter chips, status
@@ -153,7 +153,7 @@ function buildDark() {
     // fixed literals ignoring ACTION.red/green entirely. resolveDarkAccent()
     // keeps today's exact behaviour by default, only brightening once a
     // real override exists — see designTokens.js's own comment.
-    contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"), actionAmberText: resolveDarkAccent("actionAmberText", ACTION.amberText, "#D08A2E"), actionAmberSurface: "#2A2520",
     // Dark mode's own resolved accents already read fine against a
     // near-black background (real headroom, not just barely-passing) —
     // no separate darker text variant needed there, so these just reuse
