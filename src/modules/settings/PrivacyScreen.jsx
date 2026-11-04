@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, EyeIcon as Eye, EyeSlashIcon as EyeOff, L
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { DISCLOSURE_LEVELS, normaliseDisclosureLevel } from "../../calculations/disclosureLevel";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useReducedMotion } from "../../calculations/useReducedMotion";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useTranslation } from "../../i18n/index.js";
 import { useIsDesktopWidth } from "../../calculations/responsive";
@@ -20,6 +21,7 @@ export function PrivacyScreen({ onClose }) {
   useEscapeToClose(onClose);
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
+  const reducedMotion = useReducedMotion();
   // ADDED — real audit finding (desktop full-width sweep): a real
   // multi-column grid was considered (the audit's own suggestion —
   // grid top-level cards only, leaving nested sub-controls like
@@ -833,8 +835,8 @@ useEffect(() => {
               <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.allowScreenshots", "Allow screenshots")}</span>
               <div onClick={toggleScreenshots} role="switch" tabIndex={0} aria-checked={settings.allowScreenshots} aria-label="Allow screenshots"
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleScreenshots(); } }}
-                style={{ width: 44, height: 26, borderRadius: 999, background: settings.allowScreenshots ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: settings.allowScreenshots ? 21 : 3, transition: "left 0.15s" }} />
+                style={{ width: 44, height: 26, borderRadius: 999, background: settings.allowScreenshots ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: reducedMotion ? "none" : "background 0.15s", flexShrink: 0 }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: settings.allowScreenshots ? 21 : 3, transition: reducedMotion ? "none" : "left 0.15s" }} />
               </div>
             </div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n/index.js";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
+import { useReducedMotion } from "../../calculations/useReducedMotion";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, ArrowUUpLeftIcon as ResetIcon } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../../repositories/moduleColorRepository";
@@ -281,6 +282,7 @@ export function DesignScreen({ onClose }) {
   // useDarkModePreference() hook/storage key as before — only the
   // location of the control changed, not the preference itself.
   const [darkMode, setDarkMode] = useDarkModePreference();
+  const reducedMotion = useReducedMotion();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
@@ -361,8 +363,8 @@ export function DesignScreen({ onClose }) {
                 shadow those use for depth against a light track. */}
             <div onClick={() => setDarkMode((d) => !d)} role="switch" tabIndex={0} aria-checked={darkMode} aria-label={t("design.darkMode", "Dark mode")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDarkMode((d) => !d); } }}
-              style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? ACCENTS.home : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
+              style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? ACCENTS.home : "#DCDCE1", position: "relative", cursor: "pointer", transition: reducedMotion ? "none" : "background 0.15s" }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: reducedMotion ? "none" : "left 0.15s" }} />
             </div>
           </div>
         </div>
@@ -372,8 +374,8 @@ export function DesignScreen({ onClose }) {
               <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Colour-blind friendly palette</span>
               <div onClick={toggleCvdPalette} role="switch" tabIndex={0} aria-checked={cvdActive} aria-label={t("design.cvdPalette", "Colour-blind friendly palette")}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCvdPalette(); } }}
-                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: cvdActive ? 21 : 3, transition: "left 0.15s" }} />
+                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: reducedMotion ? "none" : "background 0.15s", flexShrink: 0 }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: cvdActive ? 21 : 3, transition: reducedMotion ? "none" : "left 0.15s" }} />
               </div>
             </div>
             {/* ADDED — real ask: brief, honest explanation of what this

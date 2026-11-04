@@ -3100,7 +3100,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               that screen's red — this is a softer, scored signal, not
               a same-name exact flag. */}
           {duplicateCandidates.length > 0 && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#926100", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: T.actionAmberSurface, color: T.actionAmberText, fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
               <AlertTriangle size={12} color={T.actionAmberText} /> {duplicateCandidates.length}
             </div>
           )}

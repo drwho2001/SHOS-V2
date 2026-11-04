@@ -5,6 +5,7 @@ import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designToke
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { useReducedMotion } from "../../calculations/useReducedMotion";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { isCustomAutoExportFolderAvailable, pickAutoExportFolder } from "../../storage/fileExportHelper";
 import { getLastBackupInfo } from "../../storage/backupService";
@@ -35,6 +36,7 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
 export function AutomaticBackupsScreen({ onClose }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
+  const reducedMotion = useReducedMotion();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [lastBackupInfo, setLastBackupInfo] = useLoadedState(() => getLastBackupInfo(), [], { lastAt: null, daysSince: null, dueForReminder: false });
   const dialogRef = useRef(null);
@@ -86,8 +88,8 @@ export function AutomaticBackupsScreen({ onClose }) {
             <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("autoBackup.title", "Automatic backups")}</span>
             <div onClick={toggleAutoExport} role="switch" tabIndex={0} aria-checked={prefs.autoExportEnabled} aria-label={t("autoBackup.title", "Automatic backups")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAutoExport(); } }}
-              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: prefs.autoExportEnabled ? 21 : 3, transition: "left 0.15s" }} />
+              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: reducedMotion ? "none" : "background 0.15s", flexShrink: 0 }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: prefs.autoExportEnabled ? 21 : 3, transition: reducedMotion ? "none" : "left 0.15s" }} />
             </div>
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: prefs.autoExportEnabled ? 12 : 0 }}>
