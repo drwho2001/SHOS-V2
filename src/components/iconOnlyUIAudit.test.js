@@ -304,6 +304,17 @@ const VERDICTS = {
       "verdict list rather than waved away, because 'I could not prove it' and " +
       "'it is fine' are different claims and only one of them is this.",
   },
+  "src/modules/SHOS_Home_Prototype.jsx|svg": {
+    count: 1,
+    reason:
+      "B1 status ring tile (ring commits 3528a7a/c5603a0). The scanner flags the " +
+      "clickable wrapper because the ring child is a raw <svg> and its centre text " +
+      "is {centerText}, an Identifier the text detector refuses to guess at (defect " +
+      "#1 policy). Read by hand: the centre text IS visible (the percentage pluck under " +
+      "the arc), the wrapper carries role=\"button\"/aria-label={caption} whenever it is " +
+      "clickable, and the svg itself is now aria-hidden decorative. Explained by " +
+      "label + visible centre text; recorded here so the count is pinned, not waved.",
+  },
 };
 
 describe("icon-only UI rule", () => {

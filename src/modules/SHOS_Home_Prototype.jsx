@@ -841,7 +841,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     return (
       <div style={{ ...statusTileStyle(color), display: "flex", alignItems: "flex-start", gap: 8, flex: isDesktopWidth ? "1 1 220px" : "1 1 0", maxWidth: isDesktopWidth ? 340 : "none", minWidth: 0 }}>
         <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} aria-label={onClick ? caption : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ position: "relative", width: size, height: size, flexShrink: 0, cursor: onClick ? "pointer" : "default" }}>
-          <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+          <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }} aria-hidden="true">
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: reducedMotion ? "none" : "stroke-dashoffset 300ms ease" }} />
           </svg>

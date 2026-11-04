@@ -1010,8 +1010,8 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
                 <span style={{ fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
                   {s.tracked ? `${s.currentStock} ${m.unit}s` : "—"}
                 </span>
-                {s.tracked && <RefreshCcw size={20} color={T.textSecondary} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={() => onCorrectStock(m.id)} role="button" tabIndex={0} aria-label="Correct stock level" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCorrectStock(m.id); } }} title="Correct stock level" />}
-                <Settings2 size={20} color={T.textSecondary} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={() => onEditMedication(m.id)} role="button" tabIndex={0} aria-label="Edit medication" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEditMedication(m.id); } }} />
+                {s.tracked && <RefreshCcw size={20} color={T.textSecondary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12 }} onClick={() => onCorrectStock(m.id)} role="button" tabIndex={0} aria-label="Correct stock level" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCorrectStock(m.id); } }} title="Correct stock level" />}
+                <Settings2 size={20} color={T.textSecondary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12 }} onClick={() => onEditMedication(m.id)} role="button" tabIndex={0} aria-label="Edit medication" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEditMedication(m.id); } }} />
               </div>
             </div>
 
@@ -2353,8 +2353,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {/* CHANGED 26 Aug 2026 — real content now exists (dose
                 reminders), so this is wired up for real — was
                 deliberately a visual-only stub until this existed. */}
-            <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44, padding: 10, margin: "-10px 0" }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
-            {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+            <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
+            {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
           </div>
           </div>
           <div style={{ background: T.bg, padding: "6px 16px 0" }}>

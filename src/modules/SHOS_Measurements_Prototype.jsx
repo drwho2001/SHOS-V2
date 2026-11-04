@@ -862,7 +862,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
           {/* ADDED — real ask: default unit preferences + manage
               groups, same "gear icon within the module itself" pattern
               already used by Medication's own preferences. */}
-          <Gear size={20} color={T.healthcareBlue} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onOpenPreferences} role="button" tabIndex={0} aria-label="Measurement preferences" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPreferences(); } }} />
+          <Gear size={20} color={T.healthcareBlue} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginBottom: -12, marginLeft: -12, marginRight: -12 }} onClick={onOpenPreferences} role="button" tabIndex={0} aria-label="Measurement preferences" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPreferences(); } }} />
            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit select mode" : "Enter select mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer"}}>
              {selectMode ? "Done" : "Select"}
            </span>
