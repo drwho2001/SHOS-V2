@@ -35,6 +35,8 @@ A finding only becomes **device-confirmed** when the rendered pixels show it. Co
 | Investigated and **not** defects | 14 |
 | Manual corrections needed | 15 |
 
+*P3 count excludes reclassified items (C6, C13) which are listed in §6 instead. Web/PWA count is 0 (W1 reclassified as intentional, W2 withdrawn).*
+
 One existing unit test, `src/components/stickySubheadingGuard.test.js`, is **already red** and its failure is finding C10 — the guard is correctly reporting two hardcoded sticky offsets. Fixing C10 turns it green.
 
 ---
@@ -474,7 +476,7 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 
 **Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy), C19 (empty states), C20 (loading states). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
-**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done. Remaining: C3 (search field — D1 already standardized Contacts; standardize remaining), D4 (minHeight on SVGs), D5 (reduced motion — done for 4 settings screens). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
+**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done (banner/header icons). Remaining: C3 (search field — D1 already standardized Contacts; standardize remaining), D4 (minHeight on ~11 inline SVGs — row-level, not header), D5 (reduced motion — done for 4 settings screens). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 
@@ -538,7 +540,7 @@ These are sites the manual's rules would flag but this pass did not enumerate as
 - **`minHeight: 44` on inline SVGs** (manual §5.1): ~11 inline Phosphor icons (of 117 total `minHeight: 44` sites). See D4.
 - **Hardcoded hex beyond the cited sites:** 498 hex literals across 41 files. Top distinct values: `#FFFFFF` (343, mostly on coloured fills), `#1B1B1F` (51, dark surface/toast bars), `#FF7A7E`/`#5FD9A4` (32/18, dark companions), `#0E8144` (18, healthcare dark), `#656568` (9, disabled), `#926100` (6, Incomplete chip). Many are legitimate (dark companions, intentional surfaces); the count is a review candidate, not a violation count.
 - **RADIUS literals beyond 14** (see C11's scope note): 299 `borderRadius: <number>` sites across 41 files. Values: 999 (180 = RADIUS.full), 8 (60 = RADIUS.sm), 12 (21), 10 (13), 4 (13), 3 (5), 14 (2), 6 (2), 32 (1). The 999 and 8 are token-equivalent (just not using the token). The rest (12, 10, 4, 3, 14, 6, 32) are non-token values.
-- **FONT_FAMILY bypass:** 262 literal sites across 43 files vs 2 token consumers. Visually identical but token drift (C18).
+- **FONT_FAMILY bypass:** ✅ resolved (C18, commit 8c5b8d6). All 43 files now import and use `FONT_FAMILY`. Only the token definition remains as a literal. (Blind spot entry retained for history.)
 - (Resolved above: dark companions for Home and Menstrual are now part of B8.)
 - **Empty states** (manual §10.5): code-checked (C19); device verification of the actual empty states not done.
 - **Loading states** (manual §10.5): code-checked (C20); device verification not done.
