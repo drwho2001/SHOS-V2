@@ -921,17 +921,17 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               onKeyDown/a real aria-label to all 4, matching that
               precedent. */}
           {onLockNow && appLockEnabled && (
-            <Lock size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onLockNow} title="Lock now" aria-label="Lock now"
+            <Lock size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onLockNow} title="Lock now" aria-label="Lock now"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onLockNow(); } }} />
           )}
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
               per Doc 1, same treatment as the Settings gear icon right
               next to it. */}
-          <Search data-tour="search-icon" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onOpenSearch} title="Search" aria-label="Search"
+          <Search data-tour="search-icon" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenSearch} title="Search" aria-label="Search"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenSearch(); } }} />
           {/* ADDED 19 Aug 2026 — My Profile access on Home too, per
               the user's ask, alongside the existing Contacts shortcut. */}
-          <User size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={() => setShowMyProfile(true)} title="My Profile" aria-label="My Profile"
+          <User size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowMyProfile(true)} title="My Profile" aria-label="My Profile"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMyProfile(true); } }} />
           {/* ADDED 19 Aug 2026 — canonical Settings location per Doc 1:
               "gear icon in the Top App Bar, canonically on Home." */}
@@ -940,10 +940,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               lines, not too weighty — weight="bold" keeps this an
               outline icon (not a filled/solid one), just a heavier
               stroke, color darkened from grey to near-black. */}
-          <SettingsIcon data-tour="settings-icon" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onOpenSettings} title="Settings" aria-label="Settings"
+          <SettingsIcon data-tour="settings-icon" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenSettings} title="Settings" aria-label="Settings"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenSettings(); } }} />
           {onQuickExit && (
-            <SignOut data-tour="quick-exit" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 4 }} onClick={onQuickExit} title={tr("home.quickExit", "Quick exit")} aria-label={tr("home.quickExit", "Quick exit")}
+            <SignOut data-tour="quick-exit" size={24} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} title={tr("home.quickExit", "Quick exit")} aria-label={tr("home.quickExit", "Quick exit")}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />
           )}
         </div>

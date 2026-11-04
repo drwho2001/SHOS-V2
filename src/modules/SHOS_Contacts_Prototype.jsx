@@ -3118,7 +3118,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               screen (see ContactsSettingsScreen's own comment above),
               matching Medication Dashboard's own gear-icon placement. */}
           {onOpenContactsSettings && <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
-          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 4 }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} title="Quick exit" />}
+          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", minHeight: 44, padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} title="Quick exit" />}
         </div>
       </div>
 
@@ -3205,7 +3205,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 visible (respects an active search/filter, same as
                 everything else this screen shows). */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((c) => c.id))}
-              style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
+              style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
               {selectedIds.length === filtered.length ? "Deselect all" : "Select all"}
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
@@ -3213,15 +3213,15 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
             <span role="button" tabIndex={0} aria-label="Export contact" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
+              style={{ fontSize: 13, color: selectedIds.length === 1 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Export</span>
             <span role="button" tabIndex={0} aria-label="Archive contacts" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Archive</span>
             {/* CHANGED 10 Sep 2026 — standardised delete confirmation:
                 was a native window.confirm() dialog, now the same shared
                 inline card every module uses. */}
             <span role="button" tabIndex={0} aria-label="Delete contacts" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Delete</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Cancel</span>
           </div>
         </div>
       )}
@@ -3258,9 +3258,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       </div>
 
       <div style={{ padding: "0 16px 10px", display: "flex", alignItems: "center", gap: 8 }}>
-        <Search size={16} color={T.textSecondary} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts"
-          style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "'Inter', sans-serif", fontSize: 14, color: T.textPrimary }} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts" aria-label="Search contacts"
+          style={{ flex: 1, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", minHeight: 44 }} />
         {/* ADDED 26 Aug 2026 — real ask: filter by role/position, not
             just search. */}
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${activeFilterCount > 0 ? T.contactsTeal : T.border}`, color: activeFilterCount > 0 ? T.contactsTeal : T.textSecondary, fontSize: 12, fontWeight: 600, flexShrink: 0}}>
