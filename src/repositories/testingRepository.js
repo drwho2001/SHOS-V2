@@ -138,7 +138,7 @@ function generateAttachmentId() {
 // approach used throughout this session's other seed data.
 function daysAgo(n, hour = 10, minute = 0) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }

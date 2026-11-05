@@ -212,7 +212,7 @@ export { generateAdHocMedId };
 // other seed data.
 function daysAgo(n, hour = 14, minute = 0) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }

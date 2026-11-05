@@ -3076,7 +3076,14 @@ function todayAsStoredDate() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-function demoComparable(record, fallbackReference) {
+function isEmptyDefaultValue(v) {
+  if (v === "" || v === 0 || v === "0" || v === false || v == null) return true;
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object") return Object.values(v).every(isEmptyDefaultValue);
+  return false;
+}
+
+function demoComparable(record, fallbackReference, counterpartKeys) {
   const out = {};
   // A record's own creation date is the better epoch when it has one, because a
   // seed that hard-codes its dates stays stable against its own createdAt. The
@@ -3092,6 +3099,12 @@ function demoComparable(record, fallbackReference) {
     // defaults, but older frozen seed snapshots do not contain them. Ignore
     // only their empty default values; a meaningful user edit still makes the
     // seed diverge and therefore remain protected from Clear Sample Data.
+    //
+    // The general form (below) covers any such field without naming it: a key
+    // the other side does not have at all, carrying only an empty default.
+    // Naming them one at a time is how `piercings` and `tattoos` slipped
+    // through and made every seeded contact read as the user's own data.
+    if (counterpartKeys && !counterpartKeys.has(k) && isEmptyDefaultValue(record[k])) continue;
     if (k === "sessionId" && record[k] === "") continue;
     if (["loadsCount", "fistCount"].includes(k) && (record[k] === 0 || record[k] === "0" || record[k] == null)) continue;
     if (k === "activityDetails" && Array.isArray(record[k]) && record[k].length === 0) continue;
@@ -3225,8 +3238,8 @@ export function isDemoData(record) {
   const definition = legacyDefinitionFor(record);
   if (!definition) return false;
   return (
-    JSON.stringify(demoComparable(record, todayAsStoredDate())) ===
-    JSON.stringify(demoComparable(definition, SNAPSHOT_TAKEN_AT))
+    JSON.stringify(demoComparable(record, todayAsStoredDate(), new Set(Object.keys(definition)))) ===
+    JSON.stringify(demoComparable(definition, SNAPSHOT_TAKEN_AT, new Set(Object.keys(record))))
   );
 }
 /**

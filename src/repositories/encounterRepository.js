@@ -185,7 +185,7 @@ export const DEFAULT_ENCOUNTER = {
 // contactRepository.js's own seed data.
 function daysAgo(n, hour = 19, minute = 0) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }

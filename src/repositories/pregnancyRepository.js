@@ -77,12 +77,12 @@ export const DEFAULT_PREGNANCY = {
 // synthetic distressing entry to demonstrate it.
 function daysAgo(n) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   return d.toISOString().slice(0, 10);
 }
 function addDays(n, isoDate) {
   const d = new Date(isoDate);
-  d.setDate(d.getDate() + n);
+  d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 const seedPositiveTestDate = daysAgo(75);

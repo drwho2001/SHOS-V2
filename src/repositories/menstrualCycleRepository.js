@@ -40,12 +40,12 @@ export const DEFAULT_CYCLE = {
 // compute from on a fresh install, not just an empty state.
 function daysAgo(n) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   return d.toISOString().slice(0, 10);
 }
 function addDays(dateStr, n) {
   const d = new Date(dateStr);
-  d.setDate(d.getDate() + n);
+  d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 const seedStart1 = daysAgo(58);

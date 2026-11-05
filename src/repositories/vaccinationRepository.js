@@ -69,7 +69,7 @@ export const DEFAULT_VACCINATION = {
 // after the treatment/TOC visit above.
 function daysAgo(n, hour = 11, minute = 0) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }
@@ -82,7 +82,7 @@ function daysAgo(n, hour = 11, minute = 0) {
 // date. Same sign convention as daysAgo(): negative n is in the future.
 function dateOnly(n) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   const p = (v) => String(v).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

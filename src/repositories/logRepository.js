@@ -53,7 +53,7 @@ const DEFAULT_LOG_ENTRY = { isDemo: false, reason: [], sideEffects: [], notes: "
 
 function daysAgo(n, hour = 9, minute = 30) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }

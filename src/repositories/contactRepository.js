@@ -312,7 +312,7 @@ export const DEFAULT_CONTACT = {
 // project's own established per-file convention).
 function daysAgo(n, hour = 9, minute = 0) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }

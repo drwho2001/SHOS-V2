@@ -51,12 +51,12 @@ export const DEFAULT_CONTRACEPTION_ENTRY = {
 // logic both have something real to show on a fresh install.
 function daysAgo(n) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   return d.toISOString().slice(0, 10);
 }
 function addDays(dateStr, n) {
   const d = new Date(dateStr);
-  d.setDate(d.getDate() + n);
+  d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 // CHANGED — real narrative fix: these dates now line up with the

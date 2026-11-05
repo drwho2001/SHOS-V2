@@ -62,7 +62,7 @@ export const DEFAULT_SYMPTOM_ENTRY = {
 // throughout the other repositories' seed data this session.
 function daysAgo(n, hour = 8, minute = 0) {
   const d = new Date();
-  d.setDate(d.getDate() - n);
+  d.setUTCDate(d.getUTCDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
 }

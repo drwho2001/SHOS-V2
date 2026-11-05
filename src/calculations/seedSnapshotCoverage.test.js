@@ -97,8 +97,28 @@ describe("the frozen seed snapshot covers every collection that has demo data", 
       .toBeGreaterThan(0);
   });
 
-  it("every repository with demo data is collected by the regenerator", () => {
-    const collected = new Set(
+  it("seed date helpers do arithmetic in UTC, not local time", () => {
+    // The failure this prevents is silent and seasonal. `daysAgo(n)` used
+    // `d.setDate(d.getDate() - n)` (local calendar) but formatted with
+    // `toISOString()` (UTC). On 5 Nov 2026 (GMT) that made `daysAgo(58)`
+    // return 7 Sep instead of 8 Sep, because the target date was still in
+    // BST - a one-day skew that breaks on exactly one side of a DST change.
+    // Live seed dates then sat 59 days before their own createdAt while the
+    // frozen snapshot held 58, so every seeded menstrual record stopped
+    // classifying as demo data and Clear Sample Data silently stopped
+    // clearing them.
+    //
+    // Static on purpose: the bug only reproduces on specific calendar days,
+    // so a behavioural test would pass for most of the year and say nothing.
+    const offenders = readdirSync(REPOS_DIR)
+      .filter((f) => f.endsWith("Repository.js"))
+      .filter((f) =>
+        /d\.setDate\(d\.getDate\(\)\s*[-+]\s*n\)/.test(readFileSync(join(REPOS_DIR, f), "utf8"))
+      );
+    expect(offenders, "use setUTCDate for seed date arithmetic").toEqual([]);
+  });
+
+  it("every repository with demo data is collected by the regenerator", () => {    const collected = new Set(
       [...regenSrc.matchAll(/import \{ (\w+) \} from "\.\.\/repositories\/(\w+)\.js"/g)].map((m) => m[2])
     );
     const missing = seedRepos.filter((r) => !collected.has(r.file.replace(/\.js$/, "")));
