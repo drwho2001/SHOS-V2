@@ -245,8 +245,8 @@ export function ResourcesScreen({ onClose }) {
         {/* ADDED 1 Sep 2026 — real ask: search, now that this list runs
             to 11 categories and ~30 entries after the real URL
             population pass. Matches name, link, or notes. */}
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("resources.search", "Search resources")}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("resources.search", "Search resources")} aria-label={t("resources.search", "Search resources")}
+          style={{ width: "100%", padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: 16 }} />
         <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
           {hasMatch ? `Results found${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No resources match" : "No query"}
         </div>

@@ -248,8 +248,8 @@ function RelationPicker({ label, value, onChange, T, items, placeholder, searchP
         </div>
       )}
       {available.length > 0 && (
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={searchPlaceholder}
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={searchPlaceholder} aria-label={searchPlaceholder}
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>

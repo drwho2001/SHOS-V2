@@ -246,7 +246,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - Labels use `TYPE.bodyEmphasis` or `TYPE.caption`, depending on density.
 - Keep related fields vertically spaced by 8-12px.
 - Validation errors use `ACTION.red` text and appear directly under the failed field.
-- **Standard search/filter field:** `surfaceVariant` background, 1px `border` outline, `RADIUS.sm`, 8/12px padding, 13px font, `minHeight: 44`. Contacts was the only module with a bare transparent input; it has been standardized (D1).
+- **Standard search/filter field:** `surfaceVariant` background, 1px `border` outline, `RADIUS.sm`, 8/12px padding, 13px font, `minHeight: 44`, and an `aria-label` matching the placeholder. Applies to every list filter, including in-sheet pickers (Testing's link pickers, Menstrual's suggestion picker). The one deliberate exception is the global search bar, which is borderless inside its own container so the container reads as the field.
 
 ### 10.2 Cards
 

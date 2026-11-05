@@ -224,7 +224,7 @@ At 6% black the difference is subtle in isolation, but it means Contact cards li
 
 **Fix.** Remove the shadow. If a lift is wanted, add it to all four or to none.
 
-### C3 · The Contacts search field is a different control from every other search field
+### C3 · The Contacts search field is a different control from every other search field — ✅ fixed
 
 | Screen | Padding | Font | Border | Background |
 |---|---|---|---|---|
@@ -236,6 +236,10 @@ At 6% black the difference is subtle in isolation, but it means Contact cards li
 Contacts therefore has no visible field boundary and a tap target about 20 dp tall. It also drops the magnifier inside the input — the other three do not.
 
 **Fix.** Adopt one list-search component and use it in all four. The filled `surfaceVariant` variant is the majority; make Contacts match it and give the field `minHeight: 44`.
+
+**Status.** ✅ Fixed. Contacts was standardised first (D1, commit `f451f86`). The remainder followed in the C3 pass: Testing's list filter and both link pickers, Menstrual's suggestion picker, and the Glossary and Resources filters — each now uses `surfaceVariant` + 1 px `border` + `RADIUS.sm` + 8/12 padding + 13 px + `minHeight: 44` + an `aria-label` matching the placeholder. Two were on `radius: 10` and 10/12 padding; the pickers were 12 px text with no label.
+
+The global search bar is a deliberate exception, not an oversight: it is borderless inside its own container so the container reads as the field. Documented in manual §10.1 rather than silently left different.
 
 ### C4 · Encounters' card title is the odd weight
 
@@ -482,7 +486,7 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 
 **Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18, C19, C20 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
-**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), D1-D3 done (banner/header icons), D4 (11 inline SVG icons), D5 (reduced motion in all four settings screens), B5 (amber chip tokens). Remaining: C3 (search field — D1 already standardized Contacts; standardize remaining). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
+**Batch 4 — typography, icons, touch.** ✅ C9 (microLabel added), C3 (all remaining search fields), D1-D5, B5 (amber chip tokens). C18 done in Batch 3. (C13 reclassified as not a defect; see §6.)
 
 **Batch 5 — manual (M1–M13).** Last, so it documents what shipped rather than what was planned.
 

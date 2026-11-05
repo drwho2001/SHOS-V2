@@ -80,8 +80,8 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.4, maxWidth: isDesktopWidth ? 520 : undefined, marginBottom: isDesktopWidth ? 0 : 16, flex: isDesktopWidth ? "1 1 auto" : undefined }}>
             {t("glossary.intro", "Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.")}
           </div>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("glossary.search", "Search terms")}
-            style={{ width: isDesktopWidth ? 300 : "100%", flexShrink: 0, padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", marginBottom: isDesktopWidth ? 0 : 16 }} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("glossary.search", "Search terms")} aria-label={t("glossary.search", "Search terms")}
+            style={{ width: isDesktopWidth ? 300 : "100%", flexShrink: 0, padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: isDesktopWidth ? 0 : 16 }} />
         </div>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>{t("glossary.noMatch", "No terms match your search.")}</div>

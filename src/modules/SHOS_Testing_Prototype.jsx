@@ -609,8 +609,8 @@ function LinkPicker({ items, onPick, T, placeholder }) {
   return (
     <div>
       {items.length > 3 && (
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder || tr("testing.searchByName", "Search by name…")}
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder || tr("testing.searchByName", "Search by name…")} aria-label={placeholder || tr("testing.searchByName", "Search by name…")}
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: 6 }} />
       )}
       {visible.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -1473,8 +1473,8 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
       <div style={{ padding: "8px 16px 0" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("testing.searchTests", "Search tests")}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("testing.searchTests", "Search tests")} aria-label={tr("testing.searchTests", "Search tests")}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44 }} />
           </div>
           <div style={{ minWidth: 180 }}>
             <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
