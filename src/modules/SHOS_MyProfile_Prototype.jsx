@@ -518,7 +518,7 @@ function AgeField({ age, onChangeAge, T }) {
 
 // Same TagInput shape as Contacts' — free-text tags, used only for
 // contactableVia here (extra platforms beyond the named fields below).
-function TagInput({ label, value, onChange, T, placeholder }) {
+function TagInput({ label, value, onChange, T, tr, placeholder }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "any other fuzzy matching/auto suggestions... to
   // avoid dupes." This field has no other-record suggestion source (My
@@ -570,7 +570,7 @@ function TagInput({ label, value, onChange, T, placeholder }) {
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}" — already on this list? You typed "{pendingSuggestion.typedAs}".</span>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => setPendingSuggestion(null)} style={{ fontWeight: 700, color: T.contactsTealText, cursor: "pointer"}}>OK, skip it</div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer"}}>No, add as new</div>
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer"}}>{tr("myProfile.noAddAsNew", "No, add as new")}</div>
         </div>
       )}
       <input value={draft} onChange={(e) => setDraft(e.target.value)}
@@ -850,7 +850,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 // Same repeatable day/time rule builder as Contacts' non-availability
 // rules — same shape kept deliberately, since these end up on a
 // Contact record shaped identically once imported on the other end.
-function AvailabilityRuleBuilder({ rules, onChange, T }) {
+function AvailabilityRuleBuilder({ rules, onChange, T, tr }) {
   const [draft, setDraft] = useState({ type: "Unavailable", days: [], timeConstraint: "All day", time: "18:00", note: "" });
 
   const toggleDay = (day) => {
@@ -869,7 +869,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Availability exceptions</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("myProfile.availabilityExceptions", "Availability exceptions")}</div>
       {rules.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
           {rules.map((r) => (
@@ -957,7 +957,7 @@ function useResolvedHivStatus(stated) {
 }
 
 function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, initialTab = PROFILE_EDIT_TABS[0].key }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
     const [form, setForm] = useState(profile);
     const [activeFormTab, setActiveFormTab] = useState(initialTab);
     const editSheetRef = useRef(null);
@@ -1079,13 +1079,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
   const [revealPhysicalAnyway, setRevealPhysicalAnyway] = useState(false);
 
   return (
-    <div role="dialog" aria-label={t("myProfile.editTitle", "Edit My Profile")} ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
+    <div role="dialog" aria-label={tr("myProfile.editTitle", "Edit My Profile")} ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       {/* Keep the safe-area fill inside the sticky row. Putting it on this
           scroll root lets the inset scroll away and exposes content above the
           pinned title. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(16px + env(safe-area-inset-top)) 16px 16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onCancel} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("myProfile.editTitle", "Edit My Profile")}</h1>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("myProfile.editTitle", "Edit My Profile")}</h1>
         <div onClick={handleSave} role="button" tabIndex={0} aria-label="Save" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer"}}>Save</div>
       </div>
 
@@ -1130,7 +1130,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
           <TextField label="Fabguys" value={form.fabguys} onChange={set("fabguys")} T={T} placeholder="Username" />
           <TextField label="Fabswingers" value={form.fabswingers} onChange={set("fabswingers")} T={T} placeholder="Username" />
           <TextField label="Recon" value={form.recon} onChange={set("recon")} placeholder="Username" T={T} />
-          <TagInput label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} T={T} placeholder="Grindr, Tinder, etc." />
+          <TagInput label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} T={T} tr={tr} placeholder="Grindr, Tinder, etc." />
         </SectionCard>
 
         <SectionCard accent={T.contactsTeal} title="About me" T={T}>
@@ -1150,7 +1150,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
         <SectionCard accent={T.contactsTeal} title="Availability" T={T}>
           <MultiSelectChips label="General availability" value={form.availability} onChange={set("availability")} options={AVAILABILITY_OPTIONS} T={T} />
           <SelectField label="Readily available?" value={form.readilyAvailable} onChange={set("readilyAvailable")} options={READILY_AVAILABLE_OPTIONS} T={T} />
-          <AvailabilityRuleBuilder rules={form.nonAvailabilityRules} onChange={set("nonAvailabilityRules")} T={T} />
+          <AvailabilityRuleBuilder rules={form.nonAvailabilityRules} onChange={set("nonAvailabilityRules")} T={T} tr={tr} />
         </SectionCard>
 
         <SectionCard accent={T.contactsTeal} title="Into / Limits" T={T}>
@@ -1243,9 +1243,9 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
               actual Test records, not typed in manually — no longer
               editable here. */}
           <div style={{ padding: "8px 0" }}>
-<div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last HIV test</div>
+<div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("myProfile.lastHIVTest", "Last HIV test")}</div>
             <div style={{ fontSize: 14, color: T.textPrimary }}>
-              {lastTestedDate ? formatStoredDate(lastTestedDate) : "No HIV test logged yet"}
+              {lastTestedDate ? formatStoredDate(lastTestedDate) : tr("myProfile.noHIVTestLoggedYet", "No HIV test logged yet")}
             </div>
           </div>
           {/* ADDED 1 Oct 2026 - U=U, attached to the FIELD rather than floated
@@ -1268,7 +1268,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
               labelled as an override rather than as the field itself, so a
               reader can tell a recorded status from a derived one. */}
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>HIV status</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("myProfile.hivStatus", "HIV status")}</div>
             <div style={{ fontSize: 14, color: T.textPrimary, marginBottom: 6 }}>
               {anonymise
                 ? ANONYMISED
@@ -1319,7 +1319,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
           <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 8, fontStyle: "italic" }}>
             For your own Clinic Card only — excluded from Share/Export, even if you share your full profile with someone.
           </div>
-          <TagInput label="Allergies" value={form.allergies} onChange={set("allergies")} T={T} placeholder="e.g. Penicillin, Latex" />
+          <TagInput label="Allergies" value={form.allergies} onChange={set("allergies")} T={T} tr={tr} placeholder="e.g. Penicillin, Latex" />
           <TextField label="Emergency contact name" value={form.emergencyContactName} onChange={set("emergencyContactName")} T={T} placeholder="e.g. Mum" />
           <TextField label="Emergency contact phone" value={form.emergencyContactPhone} onChange={set("emergencyContactPhone")} T={T} placeholder="e.g. +44 7700 900123" />
           <TextAreaField label="Other emergency notes" value={form.emergencyNotes} onChange={set("emergencyNotes")} T={T} placeholder="e.g. blood type, relevant conditions" />
@@ -1564,7 +1564,7 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
 // wanted — but this remains the user's own placement call to make after
 // a real click-through, not something to move unilaterally.
 // risk, not where the buttons live.
-function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate }) {
+function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) {
   const [status, setStatus] = useState(null);
   const [confirming, setConfirming] = useState(null); // "file" | "text" | null
   // ADDED 26 Aug 2026 �?" real ask: last tested date should be
@@ -1629,7 +1629,7 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate }) {
           {includeLastTestedDate && <Check size={12} color="#FFFFFF" />}
         </div>
         <div>
-          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>Include last tested date</div>
+          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeLastTestedDate", "Include last tested date")}</div>
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>Just the date itself (±time) — never linked to the actual test record.</div>
         </div>
       </div>
@@ -1647,7 +1647,7 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate }) {
           {includeHivStatus && <Check size={12} color="#FFFFFF" />}
         </div>
         <div>
-          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>Include my HIV status</div>
+          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeHIVStatus", "Include my HIV status")}</div>
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>
             {includeHivStatus
               ? "Your status and the date it applies to will be written into this file. It stays off unless you tick it."
@@ -1703,7 +1703,7 @@ function ProfileSummary({ profile, T, onEdit }) {
 // optional, every existing call site keeps its current behavior by
 // simply not passing it.
 export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false, initialEditTab = "about", onOpenGlossary }) {
-  const { t } = useTranslation();
+  const { t: tr } = useTranslation();
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
   const [editing, setEditing] = useState(openEditingOnMount);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred
@@ -1793,13 +1793,13 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
               way. */}
           {onClose && <ChevronLeft size={20} color={T.textSecondary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />}
           <User size={18} color={T.contactsTeal} />
-          <span style={{ ...TYPE.sectionLabel, color: T.contactsTeal, flex: 1 }}>My Profile</span>
+          <span style={{ ...TYPE.sectionLabel, color: T.contactsTeal, flex: 1 }}>{tr("myProfile.title", "My Profile")}</span>
           <Share size={20} color={T.contactsTeal} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setShowShare((s) => !s)} title="Share profile" role="button" tabIndex={0} aria-label="Share profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
 
         <ProfileSummary profile={profile} T={T} onEdit={() => setEditing(true)} />
         <ProfileDataView profile={profile} T={T} onOpenGlossary={onOpenGlossary} />
-        {showShare && <ShareProfilePanel T={T} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} />}
+        {showShare && <ShareProfilePanel T={T} tr={tr} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} />}
 
         {editing && (
           <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} onOpenGlossary={onOpenGlossary} initialTab={initialEditTab} />

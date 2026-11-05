@@ -285,7 +285,14 @@
   },
   "myProfile": {
     "title": "My Profile",
-    "editTitle": "Edit My Profile"
+    "editTitle": "Edit My Profile",
+    "noAddAsNew": "No, add as new",
+    "availabilityExceptions": "Availability exceptions",
+    "lastHIVTest": "Last HIV test",
+    "hivStatus": "HIV status",
+    "includeLastTestedDate": "Include last tested date",
+    "includeHIVStatus": "Include my HIV status",
+    "noHIVTestLoggedYet": "No HIV test logged yet"
   },
   "common": {
     "save": "Save",
