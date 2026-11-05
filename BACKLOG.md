@@ -39,6 +39,9 @@ priority window periods (HIV 45d unless PrEP adequate, gonorrhoea/chlamydia 14d
 unless DoxyPEP taken), post = encounters on/after the last test by date.
 The hardcoded 40/13 demo fallback was removed.
 
-Residual: decide whether the ring should also expose the "cleared" encounters
-(older than every priority window) somewhere, since the ring no longer sums to
-the total encounter count.
+Residual: whether the ring should also expose the "cleared" encounters (older
+than every priority window) somewhere. **Decided: no.** A cleared encounter is a
+history fact, not a current decision — it cannot change behaviour today. Showing
+it would be visual noise and would blur the ring's meaning from "needs attention"
+to "all history". The ring intentionally does not sum to the total encounter
+count; cleared detail already lives in Timeline per encounter.
