@@ -346,7 +346,11 @@ Manual §10.5 says "Empty states should use an icon, one sentence, and an option
 
 **Fix.** Add a shared `EmptyState` component (icon + sentence + optional action) and migrate the list-level sites. Consolidate at the manual's three-copy threshold.
 
-**Status.** ✅ Fixed (commit b417b42). New `src/components/EmptyState.jsx` (theme via `T` prop, Phosphor `Tray` default icon, optional 44dp action). Migrated 16 list-level sites across 10 files: ClinicVisits ×2, Testing ×2, Vaccinations ×2, Encounters, Timeline, Medication ×3, Measurements, Attachments, Menstrual ×3, Trash. Field-level placeholders were left untouched as specified. Contacts' list empty state is covered by its own card-level component and was not changed here.
+**Status.** ✅ Fixed (commits b417b42, plus a challenger-review follow-up). New `src/components/EmptyState.jsx` (theme via `T` prop, Phosphor `Tray` default icon, optional 44dp action). Migrated 20 list-level sites across 13 files: ClinicVisits ×2, Testing ×2, Vaccinations ×2, Encounters, Timeline, Medication ×3, Measurements, Attachments, Menstrual ×3, Contacts, SymptomLog, Trash, NotificationHistory, ErrorLog. Field-level placeholders were left untouched as specified.
+
+Two corrections to an earlier draft of this status, both caught by review: Contacts *was* still an inline div at `:3352` (the first draft wrongly claimed it was covered by a card-level component), and SymptomLog `:784`, NotificationHistory `:60` and ErrorLog `:199` were also missed. All four are migrated now.
+
+Behaviour changes worth naming rather than smuggling in: Encounters' empty state lost `fontStyle: "italic"` (normalised to the shared component), long copy is capped at 420px rather than the old full width, and the default glyph means every migrated site gains an icon where it had none. Padding, colour and font size are unchanged.
 
 ### C18 · `FONT_FAMILY` is bypassed in 43 of 46 files — ✅ fixed (commit 8c5b8d6)
 
@@ -401,7 +405,9 @@ Manual §5.1 states: "Do not put `minHeight: 44` on an inline SVG icon. It scale
 
 **Fix.** A codemod that moves `minHeight: 44` from the icon's style to its parent container's style, replacing the icon's own with `padding`/`margin`. High-risk on dense rows; do file-by-file with a screenshot check per module.
 
-**Status.** ✅ Fixed (commits f8a0773, 840a914). All 11 icon sites corrected with three patterns chosen per context: banner icons (Contacts ×3, Medication ×2) had `minHeight` deleted outright (already 44px via `padding: 10` + 24px glyph); in-row icons (Timeline `Archive`, Medication ×2, Measurements `Gear`) use `padding: 12` + `boxSizing: content-box` + −12px margins, matching that file's own existing compliant chevron/trash pattern; the two Settings password-eye icons use `padding: 10` + content-box with `right/top` adjusted 8→2 so the glyph centre does not move. Verified no global `box-sizing: border-box` rule exists that would collapse the glyph.
+**Status.** ✅ Fixed (commits f8a0773, 840a914, plus a challenger-review follow-up). All 11 icon sites corrected with three patterns chosen per context: banner icons (Contacts ×3, Medication ×2) had `minHeight` deleted outright (already 44px via `padding: 10` + 24px glyph); in-row icons (Timeline `Archive`, Medication ×2, Measurements `Gear`) use `padding: 12` + `boxSizing: content-box` + −12px margins, matching that file's own existing compliant chevron/trash pattern; the two Settings password-eye icons use `padding: 10` + content-box with `right/top` adjusted 8→2 so the glyph centre does not move. Verified no global `box-sizing: border-box` rule exists that would collapse the glyph.
+
+**Review correction.** The −12px margin approach widened each icon's tap box to 44px inside rows whose gaps were 10px (Medication), 14px (Measurements) and 18px (Timeline). Neighbouring tap areas therefore overlapped — up to 14px in Medication, where the later `Settings2` sat on top of `RefreshCcw`, so a tap on the right edge of "Correct stock level" opened "Edit medication". Those three row gaps are now 24/26/24, which removes the overlap and restores the glyph spacing the padding change had compressed. The eye glyph position is unchanged (old `right 8 + padding 4` = 12px; new `right 2 + padding 10` = 12px, same for `top`).
 
 ### D5 · Four settings screens animate toggles without respecting reduced motion — ✅ fixed
 

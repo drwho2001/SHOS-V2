@@ -107,7 +107,7 @@ describe("the wiring is real", () => {
   });
 
   it("the line is rendered only when something is awaiting", () => {
-    expect(codeOnly(APP)).toMatch(/refillAwaiting\.length > 0 &&/);
+    expect(codeOnly(APP)).toMatch(/refillAwaiting\.length\s*>\s*0\s*&&/);
   });
 
   it("it does not reuse the red refill banner's signature", () => {

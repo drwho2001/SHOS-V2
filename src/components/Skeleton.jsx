@@ -3,9 +3,9 @@
 // C20 - loading states rendered a bare "Loading..." string, which does not
 // preserve the final layout shape the manual (§10.5) asks for.
 //
-// Deliberately small: a SkeletonRow matches ONE list row (the shape most of
-// these screens actually load), and SkeletonBlock is the escape hatch for a
-// card. Both are presentational, theme-aware through `T` (same convention as
+// Deliberately small: `SkeletonRow` matches ONE list row (the shape most of
+// these screens actually load), and `SkeletonList` stacks them. Both are
+// presentational, theme-aware through `T` (same convention as
 // SectionCard/EmptyState), and respect reduced motion by dropping the pulse.
 //
 // The pulse is an inline @keyframes injected once, because this codebase has
@@ -49,13 +49,16 @@ export function SkeletonRow({ T, reducedMotion, width = "100%", height = 14 }) {
 }
 
 export function SkeletonList({ T, reducedMotion, rows = 4, gap = 12, rowHeight = 14 }) {
+  // Read the preference ONCE per list rather than once per row.
+  const prefersReduced = useReducedMotion();
+  const still = reducedMotion === undefined ? prefersReduced : reducedMotion;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap, padding: "12px 16px" }} role="status" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
         <SkeletonRow
           key={i}
           T={T}
-          reducedMotion={reducedMotion}
+          reducedMotion={still}
           height={rowHeight}
           width={i === rows - 1 ? "60%" : "100%"}
         />

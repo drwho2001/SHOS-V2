@@ -1009,7 +1009,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
                 <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue }} />
                 <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <span style={{ fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
                   {s.tracked ? `${s.currentStock} ${m.unit}s` : "—"}
                 </span>

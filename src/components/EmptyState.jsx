@@ -16,8 +16,9 @@
 // and aliases; this component must not add a second import convention.
 //
 // Defaults reproduce the exact geometry the old inline divs used
-// (padding 40/20, 13px, textDisabled) so migrating a site is a visual no-op
-// until an icon is passed.
+// (padding 40/20, 13px, textDisabled), and a neutral Tray glyph is shown
+// when no `icon` is passed - so a migrated site gains an icon but keeps its
+// previous spacing, colour and size. Pass `icon={null}` to render no glyph.
 
 import React from "react";
 import { FONT_FAMILY, RADIUS, TYPE } from "../calculations/designTokens.js";
@@ -42,7 +43,7 @@ export default function EmptyState({ T, icon, message, actionLabel, onAction }) 
           {glyph}
         </div>
       ) : null}
-      <div style={{ ...TYPE.caption, fontSize: 13, color: T.textDisabled, maxWidth: 280 }}>{message}</div>
+      <div style={{ ...TYPE.caption, fontSize: 13, color: T.textDisabled, maxWidth: 420 }}>{message}</div>
       {hasAction ? (
         <button
           type="button"

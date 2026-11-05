@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import ConfirmDeleteCard from "../../components/ConfirmDeleteCard";
+import EmptyState from "../../components/EmptyState";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACTION, NEUTRAL, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
@@ -57,9 +58,15 @@ export function NotificationHistoryScreen({ darkMode, onClose }) {
       )}
       <div style={{ padding: 16 }}>
         {entries.length === 0 ? (
-          <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
-            {t("notifHistory.empty", "Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.")}
-          </div>
+          <EmptyState
+            T={{
+              textDisabled: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary,
+              textPrimary: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary,
+              border: darkMode ? DARK.border : NEUTRAL.border,
+              surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant,
+            }}
+            message={t("notifHistory.empty", "Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.")}
+          />
         ) : (
         <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
         {entries.map((e, i) => (

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { FormTabs } from "../components/FormTabs";
 import { HivStatusNote } from "../components/HivStatusNote";
 // ADDED 9 Oct 2026 (t052) — role-vs-position note, same shared copy as
@@ -3350,9 +3351,10 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       </div>
 
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: T.textDisabled, fontSize: 13 }}>
-          {activeContacts.length === 0 ? "No contacts yet." : "No contacts match your search."}
-        </div>
+        <EmptyState
+          T={T}
+          message={activeContacts.length === 0 ? "No contacts yet." : "No contacts match your search."}
+        />
       ) : (
         /* FIXED 16 Sep 2026 — real report: cards read as mobile-width
            content stretched into a wide row, all the empty width

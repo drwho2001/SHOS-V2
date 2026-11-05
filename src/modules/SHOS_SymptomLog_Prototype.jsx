@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X } from "@phosphor-icons/react";
 import { SymptomLogRepository, DEFAULT_SYMPTOM_ENTRY, SEVERITY_OPTIONS } from "../repositories/symptomLogRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import EmptyState from "../components/EmptyState";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -781,7 +782,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
             own desktop-only grid wrapper rather than one shared one. */}
         <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>Active ({activeCount})</div>
         {active.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "24px 20px", color: T.textDisabled, fontSize: 13 }}>Nothing active. Tap + to log a symptom.</div>
+          <EmptyState T={T} message="Nothing active. Tap + to log a symptom." />
         ) : isDesktopWidth ? (
           // ADDED — real ask: desktop grid grouped consecutively by
           // month (of dateStarted), see dateGrouping.js.

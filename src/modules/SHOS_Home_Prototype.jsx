@@ -1159,7 +1159,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // that is labelled two different ways in two places is the defect this
         // project keeps finding.
         const containerRing = containerAdherence != null ? (
-          <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="Current container adherence"
+          <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="This container"
             summary="Doses logged since each refill, capped at one supply."
             info="Average across your meds: doses logged vs. due since each one's own last refill, capped at one container's worth."
             onClick={() => onNavigateToRecord("medication")} />

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import ConfirmDeleteCard from "../../components/ConfirmDeleteCard";
+import EmptyState from "../../components/EmptyState";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useLoadedMemo, useLoadedState } from "../../calculations/loadedRepositoryState";
@@ -196,9 +197,15 @@ export function ErrorLogScreen({ darkMode, onClose }) {
         </div>
         {exportStatus && <div style={{ fontSize: 12, color: exportStatus.ok ? ACTION.green : ACTION.red, marginBottom: 12 }}>{exportStatus.msg}</div>}
         {entries.length === 0 ? (
-          <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
-            {t("errorLog.empty", "No errors logged. A real uncaught error or crash will show up here automatically.")}
-          </div>
+          <EmptyState
+            T={{
+              textDisabled: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary,
+              textPrimary: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary,
+              border: darkMode ? DARK.border : NEUTRAL.border,
+              surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant,
+            }}
+            message={t("errorLog.empty", "No errors logged. A real uncaught error or crash will show up here automatically.")}
+          />
         ) : (
         <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
         {entries.map((e, i) => (
