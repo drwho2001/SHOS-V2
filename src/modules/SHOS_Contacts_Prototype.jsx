@@ -23,12 +23,19 @@ import {
 const CONTACT_ICON_BASE = "/contact-platform-icons/";
 // Android/PWA launcher assets are bundled locally. Generic/unknown method
 // names still use the neutral chat fallback rather than a guessed brand mark.
+const GmailLogo = ({ size = 20 }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size}>
+    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#EA4335" />
+  </svg>
+);
+
 const PLATFORM_ICONS = [
   { test: /^(messenger|fb ?messenger|facebook ?messenger)$/i, file: "messenger-android-icon.png", edge: true },
   { test: /^telegram$/i, file: "telegram-android-icon.png", edge: true },
   { test: /^(instagram|insta|ig)$/i, file: "instagram-android-icon.png" },
   { test: /^(whatsapp|wa|phone\/whatsapp)$/i, file: "whatsapp-android-icon.png" },
   { test: /^snap(chat)?$/i, file: "snapchat-android-icon.png" },
+  { test: /^email$/i, icon: GmailLogo },
   { test: /^fab ?guys$/i, file: "fabguys-android-icon.png", edge: true },
   { test: /^fab ?swingers$/i, file: "fabswingers-android-icon.png", edge: true },
   { test: /^recon$/i, file: "recon-pwa-icon.png" },
@@ -279,7 +286,7 @@ function MethodBadge({ method, T, size }) {
     );
   }
   if (/^email$/i.test(method.trim())) {
-    return <div title="Email" style={{ ...box, background: T.surfaceVariant, color: T.textSecondary }}><Envelope size={size * 0.6} /></div>;
+    return <div title="Email" aria-label="Email" style={{ ...box, background: T.surfaceVariant }}><GmailLogo size={size * 0.6} color="#EA4335" /></div>;
   }
   const platform = platformIconFor(method);
   if (platform) {
@@ -1703,7 +1710,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   const GOLD = "#E8A33D";
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      style={{ position: "relative", width: "100%", maxWidth: 460, boxSizing: "border-box", margin: "0 auto", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch"}}>
+      style={{ position: "relative", width: "100%", maxWidth: 460, boxSizing: "border-box", margin: "0 auto", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, alignItems: "stretch"}}>
       {/* ADDED 17 Sep 2026 — real fix for a genuine axe `nested-interactive`
           violation: this card used to be role="button" itself, with the
           status dot below ALSO role="button" — an interactive widget
@@ -1779,7 +1786,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       {contact.profilePicture && !anonymise && (
         <img src={contact.profilePicture} alt="" style={{ width: 44, height: 44, borderRadius: radius.full, objectFit: "cover", flexShrink: 0 }} />
       )}
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
       {/* FIXED 6 Oct 2026 (t076) - two real layout defects on this row, both
           caused by the same thing: it is a flex row of inline items with no
           reserved space and no wrapping.
@@ -1838,7 +1845,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       </div>
         {/* Transport & accommodation icons — inline below the name row,
             flush-left with the name. Single row wraps if crowded. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           {transportIconComponent && React.createElement(transportIconComponent, {
             size: 20,
             color: T.textSecondary,
@@ -1897,23 +1904,23 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       {/* Status & social chips — inline row(s), flush-left with the name.
           When 1-2 social icons they sit inline with the status chips;
           when 3+ they wrap into a second line (2x2 grid feel). */}
+      {/* Status & social chips — social icons stay on the right-hand column,
+          status/relationship tags flush-left. Minimal vertical gaps. */}
       {(statusTags.length > 0 || relationshipTags.length > 0 || methods.length > 0) && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
-          {statusTags.length > 0 && (
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-              {matchedTags.map((tag) => <span key={`match-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>)}
-              {isContactIncomplete(contact) && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>}
-              {missingRequiredLabels.length > 0 && <span aria-label={`${tr("contacts.missingRequiredDetails", "Missing mandatory details")}: ${missingRequiredLabels.join(", ")}`} style={{ fontSize: 9, fontWeight: 700, color: T.actionRed, lineHeight: 1.35 }}>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.map((label) => `* ${label}`).join(", ")}</span>}
-            </div>
-          )}
+        <div style={{ display: "grid", gridTemplateColumns: methods.length > 0 ? "minmax(0, 1fr) 104px" : "minmax(0, 1fr)", columnGap: 8, rowGap: 4, alignItems: "flex-start", minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+            {matchedTags.map((tag) => <span key={`match-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>)}
+            {isContactIncomplete(contact) && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>}
+            {missingRequiredLabels.length > 0 && <span aria-label={`${tr("contacts.missingRequiredDetails", "Missing mandatory details")}: ${missingRequiredLabels.join(", ")}`} style={{ fontSize: 9, fontWeight: 700, color: T.actionRed, lineHeight: 1.35 }}>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.map((label) => `* ${label}`).join(", ")}</span>}
+          </div>
           {relationshipTags.length > 0 && (
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", marginTop: 4 }}>
               {contact.relationshipType.map((value) => <span key={`rel-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
               {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((value) => <span key={`role-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
               {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((value) => <span key={`position-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
             </div>
           )}
-          {methods.length > 0 && <MethodIcons methods={methods} T={T} />}
+          {methods.length > 0 && <MethodIcons methods={methods} T={T} style={{ gridColumn: 2, gridRow: statusTags.length > 0 ? "1 / span 2" : "1", height: "100%", justifySelf: "end", alignSelf: "start" }} />}
         </div>
       )}
       {availabilitySummary && (
