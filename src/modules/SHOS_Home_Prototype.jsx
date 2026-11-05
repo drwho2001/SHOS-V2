@@ -950,9 +950,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // CHANGED 26 Aug 2026 — real ask: white background, module-colour
   // outline, module-colour icon — was a tinted colour background
   // before.
-  const QuickAddButton = ({ icon: Icon, label, color, onClick }) => (
+  const QuickAddButton = ({ icon: Icon, label, color, onClick, first }) => (
     <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: RADIUS.md, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", minHeight: 44, background: "transparent", borderTop: first ? "none" : `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Icon size={22} color={color} />
         <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
@@ -960,6 +960,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <ChevronRight size={18} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
     </div>
   );
+  // C16 (option D): one card per group, so the parent/child relationship is
+  // structural rather than a single step of grey. Children are cloned with
+  // `first` so only the rows after the first draw a divider - a divider on
+  // every row would double up against the card's own bottom border.
+  const QuickAddGroup = ({ children }) => {
+    const rows = React.Children.toArray(children).filter(Boolean);
+    return (
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 16 }}>
+        {rows.map((row, i) => React.cloneElement(row, { first: i === 0 }))}
+      </div>
+    );
+  };
 
   return (
     <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
@@ -1389,7 +1401,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           </div>
           {onOpenCalendar && (
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
                 <Calendar size={20} color={homeColor} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.calendar", "Calendar")}</span>
               </div>
@@ -1399,8 +1411,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.quickAdd", "Quick add")}</div>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>{tr("home.personal", "Personal")}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "4px 0 6px" }}>{tr("home.personal", "Personal")}</div>
+      <QuickAddGroup>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
             the earlier Flame decision above: back to the same Pulse/
@@ -1427,9 +1439,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             draft), so it keeps the same explicit, visible tap every
             other write in this app requires. */}
         <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
-      </div>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>{tr("home.healthcare", "Healthcare")}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      </QuickAddGroup>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "0 0 6px" }}>{tr("home.healthcare", "Healthcare")}</div>
+      <QuickAddGroup>
         <QuickAddButton icon={TestTube} label="Log test" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "testing")} />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom
             gets Thermometer ("Bandage" isn't an icon this lucide-react
@@ -1486,19 +1498,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             SHOS_MenstrualHealth_Prototype.jsx's own quickAddTarget
             handling for how "menstrualContraception" is distinguished
             from plain "menstrualHealth". */}
-        {menstrualTrackingEnabled && (
-          <>
-            <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
-            {/* CHANGED 17 Sep 2026 — real report: "log contraception match
-                period colour" (most visible in dark mode, where the two
-                accents diverge more) — both are the same Menstrual &
-                Contraception sub-tab, so they now share one accent
-                instead of contraception borrowing Healthcare's own
-                green. */}
-            <QuickAddButton icon={Shield} label="Log contraception" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
-          </>
-        )}
-      </div>
+        {menstrualTrackingEnabled && <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />}
+        {/* CHANGED 17 Sep 2026 — real report: "log contraception match
+            period colour" (most visible in dark mode, where the two
+            accents diverge more) — both are the same Menstrual &
+            Contraception sub-tab, so they now share one accent
+            instead of contraception borrowing Healthcare's own
+            green. */}
+        {menstrualTrackingEnabled && <QuickAddButton icon={Shield} label="Log contraception" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />}
+      </QuickAddGroup>
 
       {/* ADDED 27 Sep 2026 - the sample-data disclosure. Placed FIRST, above
           every other banner, because it changes how a new user reads

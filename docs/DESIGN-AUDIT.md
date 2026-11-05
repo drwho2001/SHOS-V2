@@ -375,7 +375,7 @@ All 43 files now import and use `FONT_FAMILY` instead of the literal. `microLabe
 
 **Fix applied (this pass, verify in diff):** `marginBottom: 4` → `0` on the name row (`:1720`) and `marginTop: 4` → `0` on the relationship-type row (`:1830`), collapsing the gap the icon line created. The role/position/tag/Incomplete rows at `:1845`, `:1855`, `:1868` retain `marginTop: 4` (untouched, since the request was specifically about the name-to-relationship gap). The icons remain right-aligned.
 
-### C16 · Home's quick-add section hierarchy is encoded by one grey step
+### C16 · Home's quick-add section hierarchy is encoded by one grey step — ✅ fixed (option D)
 
 `src/modules/SHOS_Home_Prototype.jsx:1263-1293` renders three labels at identical `TYPE.sectionLabel` (12 / 700, uppercase) with the same `marginBottom: 6`:
 
@@ -386,6 +386,8 @@ All 43 files now import and use `FONT_FAMILY` instead of the literal. `microLabe
 On device these read as three peers, not as a parent and two children. The colour difference is one step of grey at the same size, with no indent, so `Personal` and `Healthcare` look like separate top-level sections. The same block also uses three card treatments at once — the Calendar card is a tinted fill (`homeColor 22` + accent border), the quick-add cards are `surface` + accent border, and the summary rows above are flat dividers — so the screen has no single card language.
 
 **Fix.** Make the hierarchy structural: either indent the children, drop them to `TYPE.caption`, or nest them under the parent with a leading rule. Pick one card treatment for the whole screen and apply it to the Calendar card too.
+
+**Status.** ✅ Fixed (option D, chosen 5 Nov 2026 from `docs/design-manual/c16-quickadd-options.html`). Each group is now one card: `Personal` and `Healthcare` each render a single surface card with neutral border, containing their rows separated by hairlines, instead of one card per action. The group labels moved from `textDisabled` to `textSecondary` per the C8 rule (they name action groups, not disabled values), so hierarchy is carried by the card structure rather than by a single step of grey. The Calendar shortcut was the screen's third card treatment (tinted fill + accent border) and now uses the same surface + neutral border, leaving the accent on its icon and label.
 
 ---
 
