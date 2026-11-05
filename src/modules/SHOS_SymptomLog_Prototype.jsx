@@ -782,7 +782,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
             own desktop-only grid wrapper rather than one shared one. */}
         <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>Active ({activeCount})</div>
         {active.length === 0 ? (
-          <EmptyState T={T} message="Nothing active. Tap + to log a symptom." />
+          <EmptyState T={T} padding="24px 20px" message="Nothing active. Tap + to log a symptom." />
         ) : isDesktopWidth ? (
           // ADDED — real ask: desktop grid grouped consecutively by
           // month (of dateStarted), see dateGrouping.js.

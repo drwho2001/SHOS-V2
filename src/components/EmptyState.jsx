@@ -24,7 +24,7 @@ import React from "react";
 import { FONT_FAMILY, RADIUS, TYPE } from "../calculations/designTokens.js";
 import { TrayIcon as Tray } from "@phosphor-icons/react";
 
-export default function EmptyState({ T, icon, message, actionLabel, onAction }) {
+export default function EmptyState({ T, icon, message, actionLabel, onAction, padding = "40px 20px" }) {
   const hasAction = Boolean(actionLabel && onAction);
   const glyph = icon === undefined ? <Tray size={32} /> : icon;
   return (
@@ -34,7 +34,7 @@ export default function EmptyState({ T, icon, message, actionLabel, onAction }) 
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        padding: "40px 20px",
+        padding,
         fontFamily: FONT_FAMILY,
       }}
     >

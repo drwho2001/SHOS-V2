@@ -3353,6 +3353,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       {filtered.length === 0 ? (
         <EmptyState
           T={T}
+          padding="60px 20px"
           message={activeContacts.length === 0 ? "No contacts yet." : "No contacts match your search."}
         />
       ) : (

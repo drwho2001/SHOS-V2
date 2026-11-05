@@ -30,10 +30,7 @@ function usePulse() {
   }, []);
 }
 
-export function SkeletonRow({ T, reducedMotion, width = "100%", height = 14 }) {
-  usePulse();
-  const prefersReduced = useReducedMotion();
-  const still = reducedMotion === undefined ? prefersReduced : reducedMotion;
+function RowShape({ T, still, width, height }) {
   return (
     <div
       aria-hidden="true"
@@ -48,17 +45,27 @@ export function SkeletonRow({ T, reducedMotion, width = "100%", height = 14 }) {
   );
 }
 
+// Standalone row: reads the preference itself, so it is safe to use alone.
+export function SkeletonRow({ T, reducedMotion, width = "100%", height = 14 }) {
+  usePulse();
+  const prefersReduced = useReducedMotion();
+  const still = reducedMotion === undefined ? prefersReduced : reducedMotion;
+  return <RowShape T={T} still={still} width={width} height={height} />;
+}
+
 export function SkeletonList({ T, reducedMotion, rows = 4, gap = 12, rowHeight = 14 }) {
-  // Read the preference ONCE per list rather than once per row.
+  // Read the preference ONCE per list: the inner rows use RowShape, which
+  // does not call the hook, so a six-row list subscribes once, not six times.
+  usePulse();
   const prefersReduced = useReducedMotion();
   const still = reducedMotion === undefined ? prefersReduced : reducedMotion;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap, padding: "12px 16px" }} role="status" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
-        <SkeletonRow
+        <RowShape
           key={i}
           T={T}
-          reducedMotion={still}
+          still={still}
           height={rowHeight}
           width={i === rows - 1 ? "60%" : "100%"}
         />
