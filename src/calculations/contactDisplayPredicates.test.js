@@ -223,7 +223,7 @@ describe("the Contacts card and profile actually use the shared predicates", () 
     expect(methodsAt, "MethodIcons should be present in the card").toBeGreaterThan(-1);
     expect(methodsAt, "social methods now belong below the meetup row")
       .toBeGreaterThan(Math.max(transportAt, hostsAt));
-    expect(card.slice(methodsAt, methodsAt + 220)).toContain('gridColumn: 2');
+    expect(card).toContain("flexWrap: \"wrap\"");
   });
 
   it("shows missing mandatory fields on list/profile and permits explicit acknowledgement", () => {

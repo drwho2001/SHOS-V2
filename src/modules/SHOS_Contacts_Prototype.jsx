@@ -313,7 +313,7 @@ function MethodIcons({ methods, T, size = 22, style = null }) {
       <div role="button" tabIndex={0} aria-label="Contact methods — tap for details"
         onClick={(e) => { e.stopPropagation(); setShowLegend((v) => !v); }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowLegend((v) => !v); } }}
-        style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", cursor: "pointer", minHeight: 44, maxWidth: "100%" }}>
+        style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", cursor: "pointer", minHeight: 44, maxWidth: "100%" }}>
         {unique.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
       </div>
       {showLegend && (
@@ -1830,25 +1830,15 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             profile sheet has always shown pronouns (gender + pronouns,
             now in its own section); the list card did not, so the two
             views disagreed. Anonymise mode hides it with the other
-            identity fields. CHANGED 5 Nov 2026 — it sat inside the name
-            ROW, after the marginLeft:auto icon group, so it wrapped to
-            the far right of the card instead of reading as part of the
-            name. It is now the second line of the name block: 2 px under
-            the name, indented to the name's own left edge, so it stays
-            tight even though the 44 px method-icon row makes the row tall. */}
+            identity fields. It now sits as the second line of the name
+            block, flush-left with the name row — no extra indent. */}
         {!anonymise && contact.pronouns && (
-          <div style={{ marginLeft: 16, fontSize: 10, fontWeight: 500, color: T.textSecondary, lineHeight: 1.3 }}>{contact.pronouns}</div>
+          <div style={{ fontSize: 10, fontWeight: 500, color: T.textSecondary, lineHeight: 1.3 }}>{contact.pronouns}</div>
         )}
       </div>
-        {/* ADDED 10 Sep 2026 — real ask: ONE icon for "how we'd meet
-            up", the highest tier only (Car > Cycle > Public transport >
-            Walk) — see getTransportIcon()'s own comment for the ranked
-            list and why `drives` folds into the Car tier.
-            CHANGED — real audit finding: no title/aria-label/tap
-            affordance at all. Now tappable (toggles the same caption
-            panel as the active-status dot), plus a real title/aria-label
-            for a hover or screen-reader user. */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        {/* Transport & accommodation icons — inline below the name row,
+            flush-left with the name. Single row wraps if crowded. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
           {transportIconComponent && React.createElement(transportIconComponent, {
             size: 20,
             color: T.textSecondary,
@@ -1860,45 +1850,32 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             onClick: (e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); },
             onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } },
           })}
-        {/* ADDED 18 Aug 2026 — hosts/travels indicator, the user's ask:
-            "house or car icon" — House if they host, an icon if they'll
-            travel to you instead. Mutually exclusive (hosts takes
-            priority if both apply) to keep the card from getting
-            cluttered with two icons meaning something similar. This is
-            deliberately separate from the transport-mode icon above,
-            which shows HOW they get around — a different fact from
-            `travels` (WILL they come to you). CHANGED 10 Sep 2026 —
-            swapped from MapPin to NavigationArrow now that MapPin is
-            the city pin above; two different pins on one row would
-            have read as the same fact twice.
-            CHANGED — real audit finding: same tap/title/aria-label
-            treatment as the transport icon above. */}
-        {contact.hosts === "Yes" ? (
-          <Home size={20} color={T.textSecondary} role="button" tabIndex={0} title="Hosts meetups" aria-label="Hosts meetups — tap for details"
-            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-            style={{ cursor: "pointer"}} />
-        ) : contact.travels === "Yes" ? (
-          <NavigationArrow size={20} color={T.textSecondary} role="button" tabIndex={0} title="Will travel to you" aria-label="Will travel to you — tap for details"
-            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-            style={{ cursor: "pointer"}} />
-        ) : null}
-        {contact.outdoorMeetup && (
-          <TreeEvergreen size={20} color={T.actionGreen} role="img" title="Outdoor/public meetup" aria-label="Outdoor/public meetup" />
-        )}
-        {contact.linkedContactIds.length > 0 && (
-          <Link2 size={20} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
-            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-            style={{ cursor: "pointer"}} />
-        )}
-        {flaggedDontMeetAgain && (
-          <AlertTriangle size={20} color={T.actionRed} role="button" tabIndex={0} title="Flagged: do not meet again" aria-label="Flagged: do not meet again — tap for details"
-            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-            style={{ cursor: "pointer"}} />
-        )}
+          {contact.hosts === "Yes" ? (
+            <Home size={20} color={T.textSecondary} role="button" tabIndex={0} title="Hosts meetups" aria-label="Hosts meetups — tap for details"
+              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+              style={{ cursor: "pointer"}} />
+          ) : contact.travels === "Yes" ? (
+            <NavigationArrow size={20} color={T.textSecondary} role="button" tabIndex={0} title="Will travel to you" aria-label="Will travel to you — tap for details"
+              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+              style={{ cursor: "pointer"}} />
+          ) : null}
+          {contact.outdoorMeetup && (
+            <TreeEvergreen size={20} color={T.actionGreen} role="img" title="Outdoor/public meetup" aria-label="Outdoor/public meetup" />
+          )}
+          {contact.linkedContactIds.length > 0 && (
+            <Link2 size={20} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
+              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+              style={{ cursor: "pointer"}} />
+          )}
+          {flaggedDontMeetAgain && (
+            <AlertTriangle size={20} color={T.actionRed} role="button" tabIndex={0} title="Flagged: do not meet again" aria-label="Flagged: do not meet again — tap for details"
+              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+              style={{ cursor: "pointer"}} />
+          )}
         </div>
       </div>
       {showStatusInfo && (() => {
@@ -1917,47 +1894,38 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           </div>
         );
       })()}
+      {/* Status & social chips — inline row(s), flush-left with the name.
+          When 1-2 social icons they sit inline with the status chips;
+          when 3+ they wrap into a second line (2x2 grid feel). */}
       {(statusTags.length > 0 || relationshipTags.length > 0 || methods.length > 0) && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: methods.length > 0 ? "minmax(0, 1fr) 112px" : "minmax(0, 1fr)",
-          gridTemplateRows: relationshipTags.length > 0 ? "auto auto" : "auto",
-          columnGap: 8,
-          rowGap: 4,
-          alignItems: "center",
-          marginLeft: 16,
-          // End the icon column just left of the favourite star, with a small
-          // visual buffer. Long social rows must never run underneath it.
-          marginRight: !selectMode && onToggleFavourite ? 22 : 0,
-          minWidth: 0,
-        }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
           {statusTags.length > 0 && (
-            <div style={{ gridColumn: 1, gridRow: 1, display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
               {matchedTags.map((tag) => <span key={`match-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>)}
               {isContactIncomplete(contact) && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>}
               {missingRequiredLabels.length > 0 && <span aria-label={`${tr("contacts.missingRequiredDetails", "Missing mandatory details")}: ${missingRequiredLabels.join(", ")}`} style={{ fontSize: 9, fontWeight: 700, color: T.actionRed, lineHeight: 1.35 }}>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.map((label) => `* ${label}`).join(", ")}</span>}
             </div>
           )}
           {relationshipTags.length > 0 && (
-            <div style={{ gridColumn: 1, gridRow: statusTags.length > 0 ? 2 : 1, display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
               {contact.relationshipType.map((value) => <span key={`rel-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
               {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((value) => <span key={`role-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
               {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((value) => <span key={`position-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
             </div>
           )}
-          {methods.length > 0 && <MethodIcons methods={methods} T={T} style={{ gridColumn: 2, gridRow: statusTags.length > 0 ? "1 / span 2" : "1", width: 112, justifySelf: "end", alignSelf: "start" }} />}
+          {methods.length > 0 && <MethodIcons methods={methods} T={T} />}
         </div>
       )}
       {availabilitySummary && (
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: 16, color: T.textSecondary, fontSize: 11, lineHeight: 1.35 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, color: T.textSecondary, fontSize: 11, lineHeight: 1.35 }}>
           <Clock size={13} color={T.contactsTeal} aria-hidden="true" />
           <span>{availabilitySummary}</span>
         </div>
       )}
       {flaggedDontMeetAgain ? (
-        <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600, marginLeft: 16 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
+        <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
       ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, marginLeft: 16, fontSize: 11, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, fontSize: 11, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic" }}>
           {anonymise ? <span>Activity hidden</span> : summary.count > 0 && <strong style={{ color: T.textSecondary, fontWeight: 600 }}>{summary.count} encounters</strong>}
           {!anonymise && summary.count > 2 && (summary.ratedCount || 0) >= 2 && summary.averageEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {Math.round(summary.averageEnjoyment)}/100 rated avg</span>}
           {!anonymise && !(summary.count > 2 && (summary.ratedCount || 0) >= 2) && summary.firstRatedEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {summary.firstRatedEnjoyment}/100 first rating</span>}
