@@ -250,7 +250,7 @@ The global search bar is a deliberate exception, not an oversight: it is borderl
 
 **Fix.** Pick 15/600 (the majority) and note the list-card title role in the manual so it stops being re-decided per module.
 
-### C5 · Banner control sets are arbitrary, and Select lives in two different places
+### C5 · Banner control sets are arbitrary, and Select lives in two different places — ✅ documented, code pending
 
 | Module | Banner holds |
 |---|---|
@@ -263,13 +263,15 @@ Healthcare is the real break: its Select sits *inside* the content, in the Clini
 
 **Fix.** Decide a budget and write it down: title, then at most **two** module actions, then the two global actions (Quick exit always last). Move Select into a list-level toolbar in every module, matching Healthcare — which is the pattern that scales, because a banner cannot own a control for content that scrolls.
 
+**Status.** The budget is now written in manual §7. The code does not yet comply: Contacts still carries 5 controls and Select in the banner, Medication carries Select + Search, Encounters carries Select. Moving those to a list toolbar is per-module work with real layout risk on the banner, so it is scoped as its own change rather than smuggled into a docs pass.
+
 ### C7 · "New encounter" and "New session" use the same icon
 
 `src/modules/SHOS_Home_Prototype.jsx:1271` and `:1272` both use `Activity`. They are different actions with different outcomes (a record vs a container).
 
 **Fix.** Give sessions their own Phosphor glyph (`Stack` is already imported and used for containers).
 
-### C8 · Section labels have three colour roles but the manual documents one
+### C8 · Section labels have three colour roles but the manual documents one — ✅ documented
 
 `TYPE.sectionLabel` is used 72 times (≈70 in code, 2 in a test comment), in three colours:
 
@@ -280,6 +282,8 @@ Healthcare is the real break: its Select sits *inside* the content, in the Clini
 The manual says section labels are grey. All three uses are defensible; the missing piece is the rule that says which one applies.
 
 **Fix.** Document it: accent when the label names a group *of the module's own records*; secondary when it names a field group inside a form or card; disabled only for a label that sits directly above an already-disabled value.
+
+**Status.** ✅ Documented in manual §7.1. Docs only; no code change, because all three uses are legitimate once the rule says which applies.
 
 ### C9 · Text below the documented scale — ✅ microLabel token added (commit 8c5b8d6)
 
@@ -324,11 +328,13 @@ The indent lines the metadata under the title *after* the 8 dp status dot plus g
 
 **Fix.** Use one shared list-row layout. If it stays inline, add the indent to Encounters for consistency.
 
-### C14 · The bottom nav stays on record detail and disappears in Settings
+### C14 · The bottom nav stays on record detail and disappears in Settings — ✅ documented
 
 Device-confirmed: Contact detail keeps the five-tab bar; Settings hides it. Both are reasonable (a record is still "inside" a module; Settings is a separate stack), but nothing states the rule, and the two were not decided together.
 
 **Fix.** Document the rule in the manual. No code change is required if the rule is "record screens keep the nav; settings and other full-screen stacks replace it".
+
+**Status.** ✅ Documented in manual §7 ("The bottom nav stays on record/detail screens and hides on Settings and other full-screen stacks"). Device-confirmed on 5 Nov 2026. No code change.
 
 ### C15 · List titles sit at three different weights *and* the metadata rules differ per module
 
@@ -441,7 +447,7 @@ Recorded so these do not get "fixed" later.
 | FormTabs' selected "About" pill is a faint tint | It also has a 1 px accent border and accent text — adequate, and consistent with the other two tabs' structure. |
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
 | Home centre tab has no active/inactive state | Intentional (user's explicit ask, `App.jsx:3268–3270`). Documented via M9, not a defect. (C13 reclassified.) |
-| Home quick-add saturated borders | Intentional or needs design decision (§10.2 ambiguous). (C6 reclassified.) |
+| Home quick-add saturated borders | **Resolved (decision 5 Nov 2026):** accent moved off the card border to the icon + label; border is now the neutral `border` token, so the eight cards no longer compete with the module banners. §10.2 unchanged — its rule was right. (C6.) |
 | No root max-width on desktop | Intentional (owner decision 15 Sep 2026, 14 sites). (W1 reclassified.) |
 
 ---

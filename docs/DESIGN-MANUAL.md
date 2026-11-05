@@ -211,6 +211,8 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 | Add/edit sheet title | `TYPE.sheetTitle` | Full-bleed coloured sheet |
 | Grouped field label | `TYPE.sectionLabel` | Card or form section |
 
+- **Section-label colour has three roles, not one.** Module accent when the label names a group *of the module's own records*; `textSecondary` when it names a field group inside a form or card; `textDisabled` only for a label sitting directly above an already-disabled value. Same size and weight in all three — the colour carries the role, so do not add a fourth variant for emphasis.
+
 - Module banners use the module accent background with white text.
 - **Home header** is a non-banner title (22/700) with up to 5 icons (Lock, Search, My Profile, Settings, Quick exit) and a 4 px accent bar underneath. Keep the icon count to 4 on narrow screens to avoid title wrap.
 - Settings headers are sticky at `top: 0` inside a root that already carries the safe-area top padding.
