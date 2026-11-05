@@ -965,7 +965,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
   };
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Attendees</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("encounters.attendeesLabel", "Attendees")}</div>
       {selected.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
           {selected.map((c) => (
@@ -1378,12 +1378,12 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               </span>
 {/* ADDED 26 Aug 2026 — real ask: export/print a single
                    record, enabled only when exactly one is selected. */}
-               <span role="button" tabIndex={0} aria-label="Export encounter" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("encounters", await EncounterRepository.getById(selectedIds[0])); }}
-                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-               <span role="button" tabIndex={0} aria-label="Archive encounters" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
-                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-               <span role="button" tabIndex={0} aria-label="Delete encounters" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-                 style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+               <span role="button" tabIndex={0} aria-label={tr("encounters.exportAria", "Export encounter")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("encounters", await EncounterRepository.getById(selectedIds[0])); }}
+                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
+               <span role="button" tabIndex={0} aria-label={tr("encounters.archiveAria", "Archive encounters")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
+               <span role="button" tabIndex={0} aria-label={tr("encounters.deleteAria", "Delete encounters")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+                 style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</span>
             </div>
           </div>
@@ -1413,7 +1413,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}`, overflow: "hidden" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch", minWidth: 0, width: "100%" }}>
               <div style={{ minWidth: 0, width: "100%" }}>
-                <div style={{ fontSize: 11, color: T.encountersPink, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>Live session</div>
+                <div style={{ fontSize: 11, color: T.encountersPink, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>{tr("encounters.liveSession", "Live session")}</div>
                 <div style={{ marginTop: 3, fontSize: 15, color: T.textPrimary, fontWeight: 800 }}>{activeSession.title || "Untitled session"}</div>
                 <div style={{ marginTop: 3, fontSize: 12, color: T.textSecondary }}>
                   {activeSession.items.length} activities · {activeSession.people} people · {activeSession.kinks} kinks
@@ -1770,7 +1770,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 
         <SectionCard title={tr("encounters.attendees", "Attendees")} T={T}>
           {encounter.attendeeIds.length === 0
-            ? <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "8px 0" }}>None recorded.</div>
+            ? <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "8px 0" }}>{tr("encounters.noneRecorded", "None recorded.")}</div>
             : encounter.attendeeIds.map((id) => (
               // CHANGED — real ask: "attendees should link through to
               // contact card and open if clicked." Real cross-module
@@ -2117,7 +2117,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
 
       {form.sessionId && sessions.find((s) => s.id === form.sessionId) && (
         <div style={{ margin: "10px 16px 0", padding: "10px 14px", borderRadius: radius.md, background: `${T.encountersPink}18`, border: `2px solid ${T.encountersPink}`, fontSize: 13, color: T.textPrimary, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6, color: T.encountersPink }}>Session</span>
+          <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6, color: T.encountersPink }}>{tr("encounters.session", "Session")}</span>
           {sessions.find((s) => s.id === form.sessionId)?.title || "Untitled session"}
           {sessions.find((s) => s.id === form.sessionId)?.status === "active" ? " (active)" : " (closed)"}
         </div>

@@ -104,7 +104,14 @@
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
     "deleteOneConfirm": "Delete this activity permanently? You'll have a few seconds to undo.",
-    "deleteManyConfirm": "Delete {count} activities permanently? You'll have a few seconds to undo."
+    "deleteManyConfirm": "Delete {count} activities permanently? You'll have a few seconds to undo.",
+    "attendeesLabel": "Attendees",
+    "exportAria": "Export encounter",
+    "archiveAria": "Archive encounters",
+    "deleteAria": "Delete encounters",
+    "liveSession": "Live session",
+    "noneRecorded": "None recorded.",
+    "session": "Session"
   },
   "testing": {
     "newTest": "New test",
