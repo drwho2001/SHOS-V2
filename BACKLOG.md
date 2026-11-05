@@ -2,15 +2,17 @@
 
 Deferred requests, captured so they are not lost. Not started unless noted.
 
-## 1. Render comparison: encounter pre-test segment treatment
+## 1. Render comparison: encounter pre-test segment treatment — DECIDED
 Requested: a single render comparison of four options for the pre-test segment —
 solid green, green hatch, pink hatch, grey hatch — to decide whether to encode
 the pre/post split by colour or by texture, without mixing colours.
 
-Deliverable: one HTML page rendering all four side by side, mobile + web, dark +
-light, with the same ring geometry as Home.
+Rendered and reviewed (hatch, double-hatch/crosshatch, polka dot, dotted line,
+stipple; mobile + web; dark + light). **Decision: keep solid green. No texture.**
+The ring's 6px mobile stroke cannot hold a readable pattern, and texture read as
+noise rather than a category cue. Nothing to build here.
 
-## 2. Navigation bar icons in module colours
+## 2. Navigation bar icons in module colours — DONE
 Requested: the four bottom-nav icons (Contacts, Encounters, Healthcare,
 Medications) should use their module key-colour instead of plain white while
 unselected. When that module is selected, the icon goes white on a module-colour
@@ -21,6 +23,13 @@ Notes:
   hardcoded hexes.
 - Selected state becomes white icon on a filled module-colour pill/box.
 - Applies wherever the main nav renders (mobile + web).
+
+Shipped in `7df19e8`: unselected icons read `resolveTabAccent(tab, darkMode)`;
+active tab still fills the pill with that colour and turns the icon white. Home
+keeps its raised circle. Contrast measured against both surfaces — all four
+accents clear 3:1 (Contacts 4.50/3.78 light/dark, Encounters 7.30/5.60,
+Medication 11.32/4.95, Healthcare 8.58/3.43). Verified rendering in the web
+build. Device APK install still outstanding (device was offline at build time).
 
 ## 3. Encounter ring: verify and document the corrected pre/post logic
 Done in `a9cb831` / deployed `01ecc67`: pre = encounters still inside the
