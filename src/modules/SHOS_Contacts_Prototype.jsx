@@ -136,6 +136,16 @@ function buildLight() {
     // ACTION_TEXT_SAFE for why this isn't just contactsTeal/actionRed/
     // actionGreen redefined outright.
     contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    // ADDED 5 Nov 2026 — real report: "contacts module colour seems to have
+    // changed - especially the title. its gone paler ... i prefer the + FAB,
+    // and the navbar module colour". The FAB and the nav icon use the raw
+    // accent; the title bar and the two sheet headers use contactsTeal, which
+    // dark mode resolves to a brightened amber. On a *filled* surface with
+    // white text that brightening is wrong: it is a fix for thin strokes on a
+    // dark background, and it drops the white title to roughly 2.5:1. Big
+    // filled surfaces with white text therefore take the raw accent in both
+    // themes, same value as the FAB and the nav icon.
+    contactsBanner: ACCENTS.contacts,
     navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
   };
 }
@@ -160,6 +170,9 @@ function buildDark() {
     // no separate darker text variant needed there, so these just reuse
     // the same values as above.
     contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    // Filled surfaces with white text keep the raw accent in dark mode too -
+    // see buildLight's comment. Matches the FAB and the nav icon exactly.
+    contactsBanner: ACCENTS.contacts,
     navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
   };
 }
@@ -1810,6 +1823,15 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             the leading icons from being pushed onto a second line first. */}
         <MethodIcons methods={methods} T={T} />
         </div>
+        {/* ADDED 5 Nov 2026 — real ask: "pronouns missing on contacts -
+            small byline undername extracted from profile details". The
+            profile sheet has always shown pronouns (gender + pronouns,
+            now in its own section); the list card did not, so the two
+            views disagreed. Anonymise mode hides it with the other
+            identity fields. */}
+        {!anonymise && contact.pronouns && (
+          <div style={{ fontSize: 11, fontWeight: 600, color: T.textSecondary, marginTop: 2, lineHeight: 1.3 }}>{contact.pronouns}</div>
+        )}
       </div>
       {showStatusInfo && (() => {
         const transportLabel = getTransportLabel(contact);
@@ -1827,10 +1849,18 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           </div>
         );
       })()}
+      {/* CHANGED 5 Nov 2026 — real report: the relationship chips ("Hookup",
+          "Friends with benefits") and the amber "Incomplete" chip read as the
+          same colour. Both were warm: relationship used the Contacts accent
+          (itself a burnt amber) at 15%, Incomplete uses ACTION.amberSurface.
+          Relationship, role and position are *facts about the person*, not
+          status, so they are now neutral metadata chips; amber is left to mean
+          one thing only on this card — "Incomplete". Search-hit tags stay
+          accent-filled because they mark a match, not a fact. */}
       {contact.relationshipType.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 0, flexWrap: "wrap" }}>
           {contact.relationshipType.map((rt) => (
-            <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
+            <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
           ))}
         </div>
       )}
@@ -1845,17 +1875,17 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       {showRoleOnCards && !anonymise && ((contact.bdsmRole || []).length > 0 || (contact.sexualPosition || []).length > 0) && (
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {(contact.bdsmRole || []).map((r) => (
-            <span key={`role-${r}`} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{r}</span>
+            <span key={`role-${r}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{r}</span>
           ))}
           {(contact.sexualPosition || []).map((p) => (
-            <span key={`pos-${p}`} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{p}</span>
+            <span key={`pos-${p}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{p}</span>
           ))}
         </div>
       )}
       {matchedTags.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {matchedTags.map((tag) => (
-            <span key={tag} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsTeal, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>
+            <span key={tag} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>
           ))}
         </div>
       )}
@@ -2036,7 +2066,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             via X, not a back chevron), so the banner carries the
             close button instead of a back arrow — same principle,
             right control for this screen's actual navigation model. */}
-        <div style={{ background: T.contactsTeal, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
+        <div style={{ background: T.contactsBanner, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? tr("contacts.addContact", "Add contact") : tr("contacts.editContact", "Edit contact")}</span>
           <X size={20} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose(); } }} />
@@ -3078,7 +3108,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           The safe-area inset moved from `top` into the banner's own
           top padding, so only the title/icons — not the colour — sit
           below the notch. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsBanner, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("contacts.title", "Contacts")}</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
@@ -3126,7 +3156,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       {showDuplicates && (
         <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsTeal, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsBanner, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
               <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>Possible duplicates</span>
               <X size={20} color="#FFFFFF" style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
@@ -3453,7 +3483,7 @@ function InactiveThresholdCard({ T }) {
         <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
           style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.surfaceVariant, color: T.textPrimary }} />
         <span style={{ fontSize: 13, color: T.textSecondary }}>days</span>
-        <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: T.contactsTeal, color: "#FFFFFF", fontWeight: 700, cursor: "pointer"}}>
+        <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: T.contactsBanner, color: "#FFFFFF", fontWeight: 700, cursor: "pointer"}}>
           Save
         </button>
       </div>

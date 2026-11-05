@@ -950,9 +950,17 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // CHANGED 26 Aug 2026 — real ask: white background, module-colour
   // outline, module-colour icon — was a tinted colour background
   // before.
-  const QuickAddButton = ({ icon: Icon, label, color, onClick, first }) => (
+  // CHANGED 5 Nov 2026 — real ask: "consider accent borders around these
+  // instead of infill to make easier at a glance on white as little module
+  // colour present per button otherwise". The rows are still grouped under
+  // one heading each, but each row now carries its own module-coloured
+  // outline on a plain surface fill, so the colour reads at a glance without
+  // tinting the whole button. The group itself is layout only (no card fill
+  // or border): a bordered card wrapping bordered rows would double every
+  // edge on screen.
+  const QuickAddButton = ({ icon: Icon, label, color, onClick }) => (
     <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", minHeight: 44, background: "transparent", borderTop: first ? "none" : `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, cursor: "pointer" }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", minHeight: 44, borderRadius: RADIUS.sm, border: `1px solid ${color}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Icon size={22} color={color} />
         <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
@@ -960,15 +968,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <ChevronRight size={18} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
     </div>
   );
-  // C16 (option D): one card per group, so the parent/child relationship is
-  // structural rather than a single step of grey. Children are cloned with
-  // `first` so only the rows after the first draw a divider - a divider on
-  // every row would double up against the card's own bottom border.
+  // C16 (option D): one heading per group. The group is the shared structure;
+  // the rows keep their own accents (see above), so grouping is conveyed by
+  // the heading and the spacing rather than by a nested card.
   const QuickAddGroup = ({ children }) => {
     const rows = React.Children.toArray(children).filter(Boolean);
     return (
-      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 16 }}>
-        {rows.map((row, i) => React.cloneElement(row, { first: i === 0 }))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        {rows}
       </div>
     );
   };
@@ -1372,16 +1379,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           900px+ renders the merged one-row-of-3. */}
       {isDesktopWidth ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowClinicCard(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowClinicCard(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
             <CreditCard size={20} color={homeColor} />
             <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.clinicCard", "Clinic Card")}</span>
           </div>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowTimeline(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowTimeline(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
             <Stack size={20} color={homeColor} />
             <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.episodes", "Episodes")}</span>
           </div>
           {onOpenCalendar && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
               <Calendar size={20} color={homeColor} />
               <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.calendar", "Calendar")}</span>
             </div>
@@ -1390,18 +1397,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       ) : (
         <>
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
               <CreditCard size={20} color={homeColor} />
               <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.clinicCard", "Clinic Card")}</span>
             </div>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
               <Stack size={20} color={homeColor} />
               <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.episodes", "Episodes")}</span>
             </div>
           </div>
           {onOpenCalendar && (
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
                 <Calendar size={20} color={homeColor} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.calendar", "Calendar")}</span>
               </div>
@@ -1416,13 +1423,6 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           with no second heading, so only the groups that need
           distinguishing from it carry a label ("Healthcare"). */}
       <QuickAddGroup>
-        <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
-        {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
-            the earlier Flame decision above: back to the same Pulse/
-            Activity glyph the bottom nav and Global Search already use
-            for Encounters everywhere else, for consistency. */}
-        <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} />
-        <QuickAddButton icon={Stack} label="New session" color={encountersColor} onClick={async () => { const session = await SessionRepository.create({ title: "New session", status: "active" }); onQuickAddWithPrefill?.("activity", null, { sessionId: session.id }); }} />
         {/* CHANGED 20 Aug 2026 — real bug found in the design-
             unification pass: this was #3B82F6, a different, lighter
             blue than Medication Dashboard's own accent (medsBlue,
@@ -1441,7 +1441,17 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             (unlike every other quick-add, which only opens a blank
             draft), so it keeps the same explicit, visible tap every
             other write in this app requires. */}
+        {/* MOVED 5 Nov 2026 — owner-set order: "log medication, new
+            contact, new encounter, new session". Medication is the
+            most frequent daily write, so it leads. */}
         <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
+        <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
+        {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
+            the earlier Flame decision above: back to the same Pulse/
+            Activity glyph the bottom nav and Global Search already use
+            for Encounters everywhere else, for consistency. */}
+        <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} />
+        <QuickAddButton icon={Stack} label="New session" color={encountersColor} onClick={async () => { const session = await SessionRepository.create({ title: "New session", status: "active" }); onQuickAddWithPrefill?.("activity", null, { sessionId: session.id }); }} />
       </QuickAddGroup>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "0 0 6px" }}>{tr("home.healthcare", "Healthcare")}</div>
       <QuickAddGroup>
@@ -1455,9 +1465,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             reading healthcareColor like every sibling button on
             this same screen — a real gap, not deliberate, caught while
             doing the Healthcare recolor. */}
-        <QuickAddButton icon={Stethoscope} label="New clinic visit" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
+        {/* MOVED 5 Nov 2026 — owner-set order: "log test, symptom,
+            clinic visit, routine retest, vaccination". Reads as the
+            usual sequence of events (get tested, notice something,
+            get seen, schedule the follow-up, get protected). */}
         <QuickAddButton icon={Thermometer} label="Log symptom" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "symptomLog")} />
-        <QuickAddButton icon={Syringe} label="Log vaccination" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
+        <QuickAddButton icon={Stethoscope} label="New clinic visit" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
         {/* ADDED 6 Oct 2026 (t082) - "Schedule routine retest", by the owner's
             choice of the two examples they gave (the vaccine one was declined as
             a label, since "first vaccine dose" is wrong for a booster).
@@ -1488,6 +1501,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             ...(retestSuggestionDay ? { date: `${retestSuggestionDay}T12:00:00.000Z` } : {}),
           })}
         />
+        <QuickAddButton icon={Syringe} label="Log vaccination" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
         {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
             only when the feature is enabled — same gating as the
             SummaryRows above and the Healthcare sub-tab itself. */}

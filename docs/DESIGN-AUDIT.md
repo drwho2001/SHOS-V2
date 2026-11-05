@@ -387,7 +387,7 @@ On device these read as three peers, not as a parent and two children. The colou
 
 **Fix.** Make the hierarchy structural: either indent the children, drop them to `TYPE.caption`, or nest them under the parent with a leading rule. Pick one card treatment for the whole screen and apply it to the Calendar card too.
 
-**Status.** ✅ Fixed (option D, chosen 5 Nov 2026 from `docs/design-manual/c16-quickadd-options.html`). Each group is now one card: a single surface card with neutral border, containing its rows separated by hairlines, instead of one card per action. The group label moved from `textDisabled` to `textSecondary` per the C8 rule (it names an action group, not a disabled value). A follow-up ask the same day removed the `Personal` heading entirely, so the first group sits directly under "Quick add" and only groups that need distinguishing from it carry a label (`Healthcare`). The Calendar shortcut was the screen's third card treatment (tinted fill + accent border) and now uses the same surface + neutral border, leaving the accent on its icon and label.
+**Status.** ✅ Fixed (option D, chosen 5 Nov 2026 from `docs/design-manual/c16-quickadd-options.html`). The quick-add block is now grouped by heading instead of one card per action. A follow-up ask the same day removed the `Personal` heading entirely, so the first group sits directly under "Quick add" and only groups that need distinguishing from it carry a label (`Healthcare`). The same day the rows moved back to a per-row accent outline on a surface fill (see the C6 row): on white, the outline is what identifies each module at a glance, and with headings doing the grouping it no longer competes with the module banners. The Calendar shortcut was the screen's third card treatment (tinted fill + accent border) and now uses the same surface fill + accent outline.
 
 ---
 
@@ -449,7 +449,7 @@ Recorded so these do not get "fixed" later.
 | FormTabs' selected "About" pill is a faint tint | It also has a 1 px accent border and accent text — adequate, and consistent with the other two tabs' structure. |
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
 | Home centre tab has no active/inactive state | Intentional (user's explicit ask, `App.jsx:3268–3270`). Documented via M9, not a defect. (C13 reclassified.) |
-| Home quick-add saturated borders | **Resolved (decision 5 Nov 2026):** accent moved off the card border to the icon + label; border is now the neutral `border` token, so the eight cards no longer compete with the module banners. §10.2 unchanged — its rule was right. (C6.) |
+| Home quick-add saturated borders | **Revisited 5 Nov 2026 (owner):** the accent outline is back, but on grouped rows (C16), not on eight standalone cards — "consider accent borders around these instead of infill to make easier at a glance on white as little module colour present per button otherwise". Surface fill, accent outline, accent icon. (C6.) |
 | No root max-width on desktop | Intentional (owner decision 15 Sep 2026, 14 sites). (W1 reclassified.) |
 
 ---

@@ -267,7 +267,15 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           </div>
         </div>
         <div style={{ background: T.bg, padding: "8px 16px 8px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+          {/* CHANGED 5 Nov 2026 — real ask: "healthcare tabs (testing
+              symptoms etc) are a bit too big/wide". They were a
+              three-column grid, so every pill stretched to a third of
+              the screen whether its label needed it or not ("Testing"
+              was as wide as "Clinic Visits"). Now they wrap at their
+              own content width, which keeps the 44dp tap height but
+              makes the row read as a set of chips rather than a block
+              of buttons. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {[
             { key: "testing", label: tr("healthcare.testing", "Testing") },
             { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
@@ -287,7 +295,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // is the only way to switch Healthcare's own sub-tab.
             <div key={tab.key} onClick={() => setSubTab(tab.key)} role="tab" tabIndex={0} aria-selected={subTab === tab.key} aria-label={tab.label}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(tab.key); } }}
-              style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, background: subTab === tab.key ? T.healthcareBlue : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, flex: "0 0 auto", background: subTab === tab.key ? T.healthcareBlue : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {tab.label}
             </div>
           ))}
