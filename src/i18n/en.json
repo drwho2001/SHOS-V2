@@ -701,7 +701,9 @@
   },
   "measurements": {
     "addMeasurement": "Add measurement",
-    "editMeasurement": "Edit measurement"
+    "editMeasurement": "Edit measurement",
+    "linkedTo": "Linked to",
+    "notes": "Notes"
   },
   "menstrual": {
     "cycle": "Cycle",

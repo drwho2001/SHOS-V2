@@ -561,7 +561,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
           )}
           {(linkedVisit || linkedTest) && (
             <div style={{ padding: "8px 0" }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Linked to</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("measurements.linkedTo", "Linked to")}</div>
               <div style={{ fontSize: 13, color: T.textPrimary }}>
                 {linkedVisit && `Clinic visit · ${formatDate(linkedVisit.date)}`}
                 {linkedTest && `Test · ${formatDate(linkedTest.date)}`}
@@ -569,8 +569,8 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
             </div>
           )}
           <div style={{ padding: "8px 0 20px" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-            <textarea value={form.note} onChange={(e) => set("note")(e.target.value)} rows={3} aria-label="Notes"
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("measurements.notes", "Notes")}</div>
+            <textarea value={form.note} onChange={(e) => set("note")(e.target.value)} rows={3} aria-label={tr("measurements.notes", "Notes")}
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>
