@@ -753,7 +753,16 @@
   "menstrual": {
     "cycle": "Cycle",
     "contraception": "Contraception",
-    "pregnancy": "Pregnancy"
+    "pregnancy": "Pregnancy",
+    "notes": "Notes",
+    "cycleSymptoms": "Symptoms during this period",
+    "cycleSymptomsPlaceholder": "Search symptoms",
+    "contraceptionNextDue": "Next due",
+    "contraceptionCurrentlyActive": "Currently active",
+    "contraceptionHistory": "History",
+    "contraceptionEmpty": "No contraception logged yet. Tap + to add one.",
+    "pregnancySensitive": "This entry is marked sensitive. Tap to reveal.",
+    "pregnancyHideAgain": "Hide again"
   },
   "medication": {
     "logged": "Logged",

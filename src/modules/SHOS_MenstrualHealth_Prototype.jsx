@@ -392,7 +392,7 @@ function useDeleteUndo(repo, moduleKey) {
 // ═══════════════════════════════════════════════════════════════════
 // CYCLE
 // ═══════════════════════════════════════════════════════════════════
-function CycleSheet({ cycle, onSave, onClose, T }) {
+function CycleSheet({ cycle, onSave, onClose, T, tr }) {
   const isNew = !cycle;
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
@@ -425,17 +425,17 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
       <TextField label="Start date" value={form.startDate} onChange={set("startDate")} T={T} type="date" />
       <TextField label="End date (optional — leave blank if ongoing)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
       <SelectField label="Flow" value={form.flow} onChange={set("flow")} options={flowOptions} listName="menstrualFlow" T={T} />
-      <RelationPicker label="Symptoms during this period" value={form.symptomIds} onChange={set("symptomIds")} T={T} items={symptoms} placeholder="No symptoms in registry" searchPlaceholder="Search symptoms" />
+      <RelationPicker label={tr("menstrual.cycleSymptoms", "Symptoms during this period")} value={form.symptomIds} onChange={set("symptomIds")} T={T} items={symptoms} placeholder={tr("menstrual.cycleSymptomsPlaceholder", "Search symptoms")} />
       <div style={{ padding: "8px 0 20px" }}>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-        <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
+        <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
           style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
 }
 
-function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
+function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — same fix as Contacts/Testing/etc., see this file's own
   // list-wrapper comments below.
@@ -593,8 +593,8 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         ))}
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="period" />
-      {screen.name === "add" && <CycleSheet cycle={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <CycleSheet cycle={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "add" && <CycleSheet cycle={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} tr={tr} />}
+      {screen.name === "edit" && <CycleSheet cycle={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} tr={tr} />}
     </div>
   );
 }
@@ -617,7 +617,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
 // component is not a module other code should import arithmetic from. The
 // frame bug it used to carry - 1 month from 31 Jan computing 29 days west of
 // UTC, stored and used to schedule a reminder - is documented at its new home.
-function ContraceptionSheet({ entry, onSave, onClose, T }) {
+function ContraceptionSheet({ entry, onSave, onClose, T, tr }) {
   const isNew = !entry;
   const [methodOptions, setMethodOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   // CHECKED 26 Sep 2026, deliberately left as-is, for the same reason as
@@ -707,7 +707,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
       </div>
       <div style={{ padding: "8px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <div style={{ fontSize: 12, color: T.textSecondary }}>Next due</div>
+          <div style={{ fontSize: 12, color: T.textSecondary }}> {tr("menstrual.contraceptionNextDue", "Next due")}</div>
           {/* Real ask: "or infer if next date entered first" — Interval
               above isn't required before this; setting Next due
               directly back-calculates the interval instead. */}
@@ -721,15 +721,15 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
           options={visits.map((v) => v.id)} T={T} />
       )}
       <div style={{ padding: "8px 0 20px" }}>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-        <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
+        <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
           style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
 }
 
-function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
+function ContraceptionTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see this file's own list-wrapper comments below.
   const isDesktopWidth = useIsDesktopWidth();
@@ -826,10 +826,10 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         </div>
       </div>
       <div style={{ padding: "12px 16px 100px" }}>
-        {all.length === 0 && <EmptyState T={T} message="No contraception logged yet. Tap + to add one." />}
+        {all.length === 0 && <EmptyState T={T} message={tr("menstrual.contraceptionEmpty", "No contraception logged yet. Tap + to add one.")} />}
         {active.length > 0 && (
           <div style={{ marginBottom: 18 }}>
-            <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 6 }}>Currently active</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 6 }}>{tr("menstrual.contraceptionCurrentlyActive", "Currently active")}</div>
             <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { flexDirection: "column", gap: 8 }}>
               {active.map((e) => {
                 const overdue = e.nextDueDate && e.nextDueDate < today;
@@ -850,7 +850,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         )}
         {past.length > 0 && (
           <div>
-            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>History</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>{tr("menstrual.contraceptionHistory", "History")}</div>
             <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { flexDirection: "column", gap: 8 }}>
               {past.map((e) => (
                 <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })} label={e.method}>
@@ -866,8 +866,8 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         )}
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
-      {screen.name === "add" && <ContraceptionSheet entry={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <ContraceptionSheet entry={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "add" && <ContraceptionSheet entry={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} tr={tr} />}
+      {screen.name === "edit" && <ContraceptionSheet entry={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} tr={tr} />}
     </div>
   );
 }
@@ -875,7 +875,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
 // ═══════════════════════════════════════════════════════════════════
 // PREGNANCY
 // ═══════════════════════════════════════════════════════════════════
-function PregnancySheet({ pregnancy, onSave, onClose, T }) {
+function PregnancySheet({ pregnancy, onSave, onClose, T, tr }) {
   const isNew = !pregnancy;
   const [form, setForm] = useState(() => pregnancy ? { ...pregnancy } : { ...DEFAULT_PREGNANCY, testDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
@@ -900,15 +900,15 @@ function PregnancySheet({ pregnancy, onSave, onClose, T }) {
         </>
       )}
       <div style={{ padding: "8px 0 20px" }}>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-        <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
+        <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
           style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
 }
 
-function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
+function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see this file's own list-wrapper comments above.
   const isDesktopWidth = useIsDesktopWidth();
@@ -984,7 +984,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
           {masked ? (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
               <EyeSlash size={22} color={T.textSecondary} style={{ marginBottom: 8 }} />
-              <div style={{ fontSize: 13, color: T.textSecondary }}>This entry is marked sensitive. Tap to reveal.</div>
+              <div style={{ fontSize: 13, color: T.textSecondary }}>{tr("menstrual.pregnancySensitive", "This entry is marked sensitive. Tap to reveal.")}</div>
             </div>
           ) : (
             <>
@@ -998,7 +998,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
               {p.sensitive && (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => ids.filter((id) => id !== p.id))} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, cursor: "pointer", minHeight: 44 }}>
                   <EyeSlash size={13} color={T.textSecondary} />
-                  <span style={{ fontSize: 11, color: T.textSecondary }}>Hide again</span>
+                  <span style={{ fontSize: 11, color: T.textSecondary }}>{tr("menstrual.pregnancyHideAgain", "Hide again")}</span>
                 </div>
               )}
             </>
@@ -1041,8 +1041,8 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
         })}
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
-      {screen.name === "add" && <PregnancySheet pregnancy={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <PregnancySheet pregnancy={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "add" && <PregnancySheet pregnancy={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} tr={tr} />}
+      {screen.name === "edit" && <PregnancySheet pregnancy={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} tr={tr} />}
     </div>
   );
 }
@@ -1152,9 +1152,9 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 12, color: T.textDisabled, cursor: "pointer", textDecoration: "underline"}}>Show pregnancy tracking anyway</span>
         </div>
       )}
-      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
-      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
-      {subTab === "pregnancy" && <PregnancyTab T={T} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
+      {subTab === "cycle" && <CycleTab T={T} tr={tr} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
+      {subTab === "contraception" && <ContraceptionTab T={T} tr={tr} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
+      {subTab === "pregnancy" && <PregnancyTab T={T} tr={tr} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
     </div>
   );
 }
