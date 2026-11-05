@@ -213,7 +213,8 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 
 - **Section-label colour has three roles, not one.** Module accent when the label names a group *of the module's own records*; `textSecondary` when it names a field group inside a form or card; `textDisabled` only for a label sitting directly above an already-disabled value. Same size and weight in all three — the colour carries the role, so do not add a fourth variant for emphasis.
 - **Chip colour has three roles too.** Metadata chips (relationship type, role, position) are `textSecondary` on `surfaceVariant`; warning chips (`Incomplete`) use the amber pair; search-hit tags are accent-filled. Keep amber for one meaning per screen — a Contacts accent that is itself amber must not colour a second chip family on the same card.
-- **Contacts cards carry a pronouns byline.** One line under the name row, 11/600 `textSecondary`, from the profile's pronouns field; hidden under Anonymise.
+- **Contacts cards carry a pronouns byline.** One line tight under the name (2 px), 10/500 `textSecondary`, indented to the name's own left edge — never inside the name row, where `marginLeft:auto` on the icon group pushed it to the far right. Hidden under Anonymise.
+- **A Contacts card has one rhythm.** Identity row (checkbox, photo, name + byline) at the top, then one wrapping chip cloud, then the last-interaction line; the text column owns a single 8 px gap. Do not add per-row `marginTop` — that is what made the gaps visibly unequal.
 
 - Module banners use the module accent background with white text.
 - **Home header** is a non-banner title (22/700) with up to 5 icons (Lock, Search, My Profile, Settings, Quick exit) and a 4 px accent bar underneath. Keep the icon count to 4 on narrow screens to avoid title wrap.

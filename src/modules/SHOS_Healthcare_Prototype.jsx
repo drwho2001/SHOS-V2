@@ -277,10 +277,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               of buttons. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {[
+            { key: "symptomLog", label: tr("healthcare.symptoms", "Symptoms") },
             { key: "testing", label: tr("healthcare.testing", "Testing") },
             { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
             { key: "vaccinations", label: tr("healthcare.vaccinations", "Vaccinations") },
-            { key: "symptomLog", label: tr("healthcare.symptoms", "Symptoms") },
             { key: "measurements", label: tr("healthcare.measurements", "Measurements") },
             // ADDED �?" real ask: gated behind Settings' own toggle, not
             // shown at all otherwise �?" same "opt-in, off by default"

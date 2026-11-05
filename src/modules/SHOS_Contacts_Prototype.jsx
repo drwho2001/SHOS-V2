@@ -1703,8 +1703,15 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           <Star size={17} weight={contact.favourited ? "fill" : "regular"} color={contact.favourited ? "#E8A33D" : T.textDisabled} />
         </button>
       )}
+      {/* CHANGED 5 Nov 2026 — real report: "spacing still erroneous and
+          inconsistent". The card was a column, so the select checkbox and the
+          photo each took a full row ABOVE the name, and every sub-line below
+          carried its own ad-hoc marginTop (2, 0, 4, 4, 4, 4). One identity row
+          — checkbox, photo and the text block side by side — plus a single
+          gap on the text column is what makes the rhythm uniform. */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, width: "100%", minWidth: 0 }}>
       {selectMode && (
-        <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.contactsTeal : T.border}`, background: selected ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
+        <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.contactsTeal : T.border}`, background: selected ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
           {selected && <Check size={13} color="#FFFFFF" />}
         </div>
       )}
@@ -1717,7 +1724,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       {contact.profilePicture && !anonymise && (
         <img src={contact.profilePicture} alt="" style={{ width: 44, height: 44, borderRadius: radius.full, objectFit: "cover", flexShrink: 0 }} />
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
       {/* FIXED 6 Oct 2026 (t076) - two real layout defects on this row, both
           caused by the same thing: it is a flex row of inline items with no
           reserved space and no wrapping.
@@ -1731,7 +1738,12 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           flexWrap lets a long name drop to a second line instead of being
           squeezed to nothing, which is what "two-line long-name layout" means
           here: the NAME wraps, the small icons after it stay on one line. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 0, flexWrap: "wrap", paddingRight: (!selectMode && onToggleFavourite) ? 24 : 0 }}>
+      {/* The name, its facts and the byline are one unit: the line and the
+          byline share a column, so the 44 px method-icon row can centre the
+          whole unit without opening a gap between the name and the byline. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", paddingRight: (!selectMode && onToggleFavourite) ? 24 : 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
           title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
@@ -1757,6 +1769,22 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             <MapPin size={12} /> {contact.city}
           </span>
         )}
+      </div>
+        {/* ADDED 5 Nov 2026 — real ask: "pronouns missing on contacts -
+            small byline undername extracted from profile details". The
+            profile sheet has always shown pronouns (gender + pronouns,
+            now in its own section); the list card did not, so the two
+            views disagreed. Anonymise mode hides it with the other
+            identity fields. CHANGED 5 Nov 2026 — it sat inside the name
+            ROW, after the marginLeft:auto icon group, so it wrapped to
+            the far right of the card instead of reading as part of the
+            name. It is now the second line of the name block: 2 px under
+            the name, indented to the name's own left edge, so it stays
+            tight even though the 44 px method-icon row makes the row tall. */}
+        {!anonymise && contact.pronouns && (
+          <div style={{ marginLeft: 16, fontSize: 10, fontWeight: 500, color: T.textSecondary, lineHeight: 1.3 }}>{contact.pronouns}</div>
+        )}
+      </div>
         {/* ADDED 10 Sep 2026 — real ask: ONE icon for "how we'd meet
             up", the highest tier only (Car > Cycle > Public transport >
             Walk) — see getTransportIcon()'s own comment for the ranked
@@ -1823,15 +1851,6 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             the leading icons from being pushed onto a second line first. */}
         <MethodIcons methods={methods} T={T} />
         </div>
-        {/* ADDED 5 Nov 2026 — real ask: "pronouns missing on contacts -
-            small byline undername extracted from profile details". The
-            profile sheet has always shown pronouns (gender + pronouns,
-            now in its own section); the list card did not, so the two
-            views disagreed. Anonymise mode hides it with the other
-            identity fields. */}
-        {!anonymise && contact.pronouns && (
-          <div style={{ fontSize: 11, fontWeight: 600, color: T.textSecondary, marginTop: 2, lineHeight: 1.3 }}>{contact.pronouns}</div>
-        )}
       </div>
       {showStatusInfo && (() => {
         const transportLabel = getTransportLabel(contact);
@@ -1842,7 +1861,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         if (contact.linkedContactIds.length > 0) lines.push("Linked to another contact");
         if (flaggedDontMeetAgain) lines.push("Flagged: do not meet again");
         return (
-          <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.actionGreen, fontWeight: 600, marginLeft: 16, marginTop: -2, marginBottom: 4 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.actionGreen, fontWeight: 600, marginLeft: 16 }}>
             {lines.map((l, i) => (
               <div key={i} style={{ color: (l === "Flagged: do not meet again") ? T.actionRed : T.textSecondary, fontWeight: i === 0 ? 600 : 500 }}>{l}</div>
             ))}
@@ -1856,60 +1875,62 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           Relationship, role and position are *facts about the person*, not
           status, so they are now neutral metadata chips; amber is left to mean
           one thing only on this card — "Incomplete". Search-hit tags stay
-          accent-filled because they mark a match, not a fact. */}
-      {contact.relationshipType.length > 0 && (
-        <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 0, flexWrap: "wrap" }}>
+          accent-filled because they mark a match, not a fact.
+
+          ALSO 5 Nov 2026 — same report, "spacing still erroneous and
+          inconsistent": these were four separate rows, each with its own
+          marginTop (0, 4, 4, 4), which is why the gaps between them never
+          matched the gap between the name and the first chip. They are one
+          wrapping chip cloud now, so any combination of relationship, role,
+          position, search tag and Incomplete flows into the same 4 px rhythm
+          and the card gains exactly one block instead of four. */}
+      {(contact.relationshipType.length > 0
+        || (showRoleOnCards && !anonymise && ((contact.bdsmRole || []).length > 0 || (contact.sexualPosition || []).length > 0))
+        || matchedTags.length > 0
+        || isContactIncomplete(contact)) && (
+        <div style={{ display: "flex", gap: 4, marginLeft: 16, flexWrap: "wrap", alignItems: "center" }}>
           {contact.relationshipType.map((rt) => (
-            <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
+            <span key={`rel-${rt}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
           ))}
-        </div>
-      )}
-      {/* ADDED 10 Sep 2026 — real ask: "option to show Dom/sub, top/
-          bottom info" on the card — both fields already existed and
-          were already shown on the profile detail; this is the
-          opt-in list-card copy, gated behind showRoleOnCards (off by
-          default — see AppPreferencesRepository's own comment). Same
-          chip look as the relationship-type row above, kept on its own
-          line so the two concepts (relationship vs. role) don't blur
-          together. */}
-      {showRoleOnCards && !anonymise && ((contact.bdsmRole || []).length > 0 || (contact.sexualPosition || []).length > 0) && (
-        <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
-          {(contact.bdsmRole || []).map((r) => (
+          {/* ADDED 10 Sep 2026 — real ask: "option to show Dom/sub, top/
+              bottom info" on the card — both fields already existed and
+              were already shown on the profile detail; this is the
+              opt-in list-card copy, gated behind showRoleOnCards (off by
+              default — see AppPreferencesRepository's own comment).
+              CHANGED 5 Nov 2026 — no longer forced onto its own row; the
+              neutral chip colour already keeps "relationship" and "role"
+              from blurring together. */}
+          {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((r) => (
             <span key={`role-${r}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{r}</span>
           ))}
-          {(contact.sexualPosition || []).map((p) => (
+          {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((p) => (
             <span key={`pos-${p}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{p}</span>
           ))}
-        </div>
-      )}
-      {matchedTags.length > 0 && (
-        <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {matchedTags.map((tag) => (
-            <span key={tag} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>
+            <span key={`tag-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>
           ))}
-        </div>
-      )}
-      {/* ADDED 26 Aug 2026 — real ask, decided jointly: required-field
-          "Incomplete" tag. isContactIncomplete() already respects
-          markedComplete (the per-contact override), so this only ever
-          shows for contacts that are genuinely missing something and
-          haven't been explicitly marked done. */}
-      {isContactIncomplete(contact) && (
-        <div style={{ marginLeft: 16, marginTop: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: T.actionAmberText, background: T.actionAmberSurface, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
+          {/* ADDED 26 Aug 2026 — real ask, decided jointly: required-field
+              "Incomplete" tag. isContactIncomplete() already respects
+              markedComplete (the per-contact override), so this only ever
+              shows for contacts that are genuinely missing something and
+              haven't been explicitly marked done. */}
+          {isContactIncomplete(contact) && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: T.actionAmberText, background: T.actionAmberSurface, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
+          )}
         </div>
       )}
       {flaggedDontMeetAgain ? (
-        <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600, marginLeft: 16, marginTop: 4 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
+        <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600, marginLeft: 16 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
       ) : (
         // CHANGED 18 Aug 2026 — was a permanent stub ("not tracked
         // yet") regardless of real data. Now shows the real last
         // encounter date via the same calculation/formatting Contact
         // Profile's Timeline already uses.
-        <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic", marginLeft: 16, marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic", marginLeft: 16 }}>
           {summary.lastInteraction ? `Last interaction ${formatRelativeDate(summary.lastInteraction)}` : "No encounters logged yet"}
         </div>
       )}
+      </div>
       </div>
     </div>
   );
