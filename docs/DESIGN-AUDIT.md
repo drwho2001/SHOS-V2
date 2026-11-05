@@ -164,7 +164,7 @@ Two separate problems:
 
 ### B5 · The "Incomplete" chip is a light-mode island
 
-**✅ Fixed 5 Nov 2026.** `ACTION.amberText` / `ACTION.amberSurface` were promoted into `designTokens.js` with a dark companion (`#D08A2E` on `#2A2520`), and the Contacts theme exposes them as `T.actionAmberText` / `T.actionAmberSurface`. All 8 cited sites now read the tokens: the Incomplete chip, the duplicate-confidence warning strip, the duplicate-count pill, and the medium-confidence row. The high-confidence family (`#B42318`/`#FEE4E2`) already used `T.actionRed`/`T.actionRedText` in that same pass, so no hardcoded literal remains.
+**✅ Fixed 5 Nov 2026.** The chip no longer bakes in light colours: it now reads `T.actionRed` for text and a `1px solid T.actionRed` outline (no fill) per the owner's direction that "incomplete can have a red outline." The amber tokens still exist in `designTokens.js` for the duplicate-confidence medium rows, which keep `T.actionAmberText`/`T.actionAmberSurface`.
 
 `src/modules/SHOS_Contacts_Prototype.jsx:1868` hardcodes `color: "#926100"` and `background: "#FFF3C4"`.
 
@@ -277,11 +277,10 @@ Healthcare is the real break: its Select sits *inside* the content, in the Clini
 
 **Status.** The budget is now written in manual §7. The code does not yet comply: Contacts still carries 5 controls and Select in the banner, Medication carries Select + Search, Encounters carries Select. Moving those to a list toolbar is per-module work with real layout risk on the banner, so it is scoped as its own change rather than smuggled into a docs pass.
 
-### C7 · "New encounter" and "New session" use the same icon
+### C7 · "New encounter" and "New session" use the same icon — ✅ done in code
 
-`src/modules/SHOS_Home_Prototype.jsx:1271` and `:1272` both use `Activity`. They are different actions with different outcomes (a record vs a container).
+`SHOS_Home_Prototype.jsx:1459` uses `Activity` for "New encounter" and `:1460` uses `Stack` for "New session". They are now distinct Phosphor glyphs matching the fix note.
 
-**Fix.** Give sessions their own Phosphor glyph (`Stack` is already imported and used for containers).
 
 ### C8 · Section labels have three colour roles but the manual documents one — ✅ documented
 

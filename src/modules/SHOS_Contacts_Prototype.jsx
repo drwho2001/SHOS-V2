@@ -1915,7 +1915,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
               shows for contacts that are genuinely missing something and
               haven't been explicitly marked done. */}
           {isContactIncomplete(contact) && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: T.actionAmberText, background: T.actionAmberSurface, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
           )}
         </div>
       )}
