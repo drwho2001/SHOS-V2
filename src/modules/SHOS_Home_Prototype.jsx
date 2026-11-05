@@ -1209,28 +1209,33 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           return `M${start.x} ${start.y} A${ringRadius} ${ringRadius} 0 ${sweepDegrees > 180 ? 1 : 0} 1 ${end.x} ${end.y}`;
         };
         const encounterRiskRing = (encounterPostCount > 0 || encounterPreCount > 0) ? (
-          <div key="encounterRisk" style={{ ...statusTileStyle(encountersColor), display: "flex", alignItems: "flex-start", gap: 8, flex: isDesktopWidth ? "1 1 220px" : "1 1 0", maxWidth: isDesktopWidth ? 340 : "none", minWidth: 0 }}>
-            <div style={{ position: "relative", width: ringSize, height: ringSize, flexShrink: 0 }}>
-              <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} role="img" aria-label={`At-risk encounters: ${totalAtRisk}, ${encounterPreCount} pre-test and ${encounterPostCount} post-test`}>
-                <circle cx={ringCenter} cy={ringCenter} r={ringRadius} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={ringStroke} />
-                {preFrac > 0 && <path d={ringArc(-90, preFrac * 360)} fill="none" stroke="#10b981" strokeWidth={ringStroke} strokeLinecap="round" />}
-                {postFrac > 0 && <path d={ringArc(-90 + preFrac * 360, postFrac * 360)} fill="none" stroke="#ec4899" strokeWidth={ringStroke} strokeLinecap="round" />}
-                <text x={ringCenter} y={ringCenter - 3} textAnchor="middle" fontSize={isDesktopWidth ? 20 : 16} fontWeight="700" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{totalAtRisk}</text>
-                <text x={ringCenter} y={ringCenter + 13} textAnchor="middle" fontSize={isDesktopWidth ? 11 : 9} fontWeight="600">
-                  <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
-                </text>
-              </svg>
+          <div key="encounterRisk" style={{ ...statusTileStyle(encountersColor), display: "flex", flexDirection: "column", gap: 6, flex: isDesktopWidth ? "1 1 220px" : "1 1 0", maxWidth: isDesktopWidth ? 340 : "none", minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
+              <div style={{ position: "relative", width: ringSize, height: ringSize, flexShrink: 0 }}>
+                <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} role="img" aria-label={`At-risk encounters: ${totalAtRisk}, ${encounterPreCount} pre-test and ${encounterPostCount} post-test`}>
+                  <circle cx={ringCenter} cy={ringCenter} r={ringRadius} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={ringStroke} />
+                  {preFrac > 0 && <path d={ringArc(-90, preFrac * 360)} fill="none" stroke="#10b981" strokeWidth={ringStroke} strokeLinecap="round" />}
+                  {postFrac > 0 && <path d={ringArc(-90 + preFrac * 360, postFrac * 360)} fill="none" stroke="#ec4899" strokeWidth={ringStroke} strokeLinecap="round" />}
+                  <text x={ringCenter} y={ringCenter - 3} textAnchor="middle" fontSize={isDesktopWidth ? 20 : 16} fontWeight="700" fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>{totalAtRisk}</text>
+                  <text x={ringCenter} y={ringCenter + 13} textAnchor="middle" fontSize={isDesktopWidth ? 11 : 9} fontWeight="600">
+                    <tspan fill="#10b981">{encounterPreCount}</tspan><tspan fill={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary}>+</tspan><tspan fill="#ec4899">{encounterPostCount}</tspan>
+                  </text>
+                </svg>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1, paddingTop: 1 }}>
+                <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor, lineHeight: 1.2, letterSpacing: "-0.005em" }}>At-Risk Encounters</span>
+                <RingSummary text="Exposures too recent for your last test to clear, plus encounters since it." fontSize={isDesktopWidth ? 12 : 8.5}>
+                  <button type="button" aria-label="At-risk encounter colors and counting" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "-2px", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={isDesktopWidth ? 13 : 10} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
+                </RingSummary>
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1, paddingTop: 1 }}>
-              <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor, lineHeight: 1.2, letterSpacing: "-0.005em" }}>At-Risk Encounters</span>
-              <RingSummary text="Exposures too recent for your last test to clear, plus encounters since it." fontSize={isDesktopWidth ? 12 : 8.5}>
-                <button type="button" aria-label="At-risk encounter colors and counting" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "-2px", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={isDesktopWidth ? 13 : 10} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
-              </RingSummary>
-              {showEncounterRiskInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means encounters still inside the window period for HIV, gonorrhoea or chlamydia — too soon for your last negative to clear them. HIV is skipped when PrEP coverage is adequate, and chlamydia when DoxyPEP was taken. Syphilis has a much longer window and is not part of this count. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means encounters logged since that test.{encounterReference ? ` Counted against: ${encounterReference}.` : ""}</span>}
-            </div>
+            {/* The explanation sits OUTSIDE the ring/text row so it can use the
+                whole tile width and flow under the ring, instead of being
+                squeezed into the narrow column beside it. */}
+            {showEncounterRiskInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}><span style={{ color: "#10b981", fontWeight: 700 }}>Pre-test ({encounterPreCount}, green)</span> means encounters still inside the window period for HIV, gonorrhoea or chlamydia — too soon for your last negative to clear them. HIV is skipped when PrEP coverage is adequate, and chlamydia when DoxyPEP was taken. Syphilis has a much longer window and is not part of this count. <span style={{ color: "#ec4899", fontWeight: 700 }}>Post-test ({encounterPostCount}, pink)</span> means encounters logged since that test.{encounterReference ? ` Counted against: ${encounterReference}.` : ""}</span>}
           </div>
         ) : null;
-        const cardStyle = { display: "flex", flexWrap: "wrap", gap: 16, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "24px 20px" };
+        const cardStyle = { display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 16, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "24px 20px" };
         return (
           <>
             <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.statusAtAGlance", "Status at a glance")}</div>

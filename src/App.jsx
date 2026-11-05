@@ -3311,7 +3311,14 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                     on "regular" (same glyph, same size/position as
                     deselected) even when active, just recoloured white
                     like the others. */}
-                <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} weight={isActive && tab.key !== "activity" ? "fill" : "regular"} />
+                {/* CHANGED — real ask: the unselected icons now carry their
+                    module's own key colour (Encounters pink, Contacts orange,
+                    Healthcare green, Medication blue) instead of a shared
+                    grey/white. Selecting a tab still fills its block with that
+                    same colour and turns the icon white on top, so the colour
+                    is a constant identity cue and the fill is the state cue.
+                    Home is excluded above and keeps its raised circle. */}
+                <Icon size={22} color={isActive ? "#FFFFFF" : resolveTabAccent(tab, darkMode)} weight={isActive && tab.key !== "activity" ? "fill" : "regular"} />
                 {UnackDot}
                 <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
               </div>
