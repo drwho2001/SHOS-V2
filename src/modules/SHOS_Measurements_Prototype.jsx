@@ -646,7 +646,7 @@ function RangeBadge({ status, T }) {
   );
 }
 
-function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, refresh }) {
+function MeasurementDetail({ measurementId, onBack, onEdit, T, tr, triggerDelete, refresh }) {
   const m = useLoadedMemo(() => MeasurementRepository.getById(measurementId), [measurementId], null);
   // CHANGED — real ask: normal-range editing (below) needs to write
   // back and see the update reflected immediately, so this is now
@@ -729,7 +729,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
                   hand-built to fit the badge in alongside it, same
                   visual shape otherwise. */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-                <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>Value</span>
+                <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{tr("measurements.value", "Value")}</span>
                 <span style={{ display: "flex", alignItems: "center" }}>
                   <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{displayReading(m, prefs)}</span>
                   <RangeBadge status={classifyMeasurement(m, prefs, BLOOD_PRESSURE_TYPE)} T={T} />
@@ -790,7 +790,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
   );
 }
 
-function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, measurements, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, groupsVersion }) {
+function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, tr, measurements, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, groupsVersion }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see renderTypeSection's own list-wrapper comment below
   // for the fix.
@@ -858,20 +858,20 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
       <div style={{ position: "sticky", top: "var(--shos-sticky-header-h, 0px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Measurements</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>{tr("measurements.title", "Measurements")}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 26 }}>
           {/* ADDED — real ask: default unit preferences + manage
               groups, same "gear icon within the module itself" pattern
               already used by Medication's own preferences. */}
-          <Gear size={20} color={T.healthcareBlue} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginBottom: -12, marginLeft: -12, marginRight: -12 }} onClick={onOpenPreferences} role="button" tabIndex={0} aria-label="Measurement preferences" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPreferences(); } }} />
+          <Gear size={20} color={T.healthcareBlue} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginBottom: -12, marginLeft: -12, marginRight: -12 }} onClick={onOpenPreferences} role="button" tabIndex={0} aria-label={tr("measurements.preferences", "Measurement preferences")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPreferences(); } }} />
            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit select mode" : "Enter select mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer"}}>
-             {selectMode ? "Done" : "Select"}
+             {selectMode ? tr("common.done", "Done") : tr("common.select", "Select")}
            </span>
         </div>
       </div>
       {!selectMode && (
         <div style={{ padding: "8px 16px 0", display: "flex", gap: 6 }}>
-          {[{ key: "type", label: "By type" }, { key: "custom", label: "By group" }].map((opt) => (
+          {[{ key: "type", label: tr("measurements.byType", "By type") }, { key: "custom", label: tr("measurements.byGroup", "By group") }].map((opt) => (
             <div key={opt.key} onClick={() => setGroupMode(opt.key)} role="button" tabIndex={0} aria-pressed={groupMode === opt.key} aria-label={opt.label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setGroupMode(opt.key); } }}
               style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${groupMode === opt.key ? T.healthcareBlue : T.border}`, color: groupMode === opt.key ? T.healthcareBlue : T.textSecondary, background: groupMode === opt.key ? `${T.healthcareBlue}15` : "transparent"}}>
               {opt.label}
@@ -881,19 +881,19 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
       )}
       {selectMode && (
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
+          <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{tr("common.selectedCount", "{count} selected", { count: selectedIds.length })}</span>
           <div style={{ display: "flex", gap: 16 }}>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === allVisibleIds.length ? [] : allVisibleIds)}
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
-              {selectedIds.length === allVisibleIds.length ? "Deselect all" : "Select all"}
+              {selectedIds.length === allVisibleIds.length ? tr("common.deselectAll", "Deselect all") : tr("common.selectAll", "Select all")}
             </span>
-            <span role="button" tabIndex={0} aria-label="Export measurement" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("measurements", await MeasurementRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span role="button" tabIndex={0} aria-label="Archive measurements" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await MeasurementRepository.bulkArchive(selectedIds); await refresh(); exitSelectMode(); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span role="button" tabIndex={0} aria-label="Delete measurements" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
+            <span role="button" tabIndex={0} aria-label={tr("common.export", "Export")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("measurements", await MeasurementRepository.getById(selectedIds[0])); }}
+              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
+            <span role="button" tabIndex={0} aria-label={tr("common.archive", "Archive")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await MeasurementRepository.bulkArchive(selectedIds); await refresh(); exitSelectMode(); } }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.archive", "Archive")}</span>
+            <span role="button" tabIndex={0} aria-label={tr("common.delete", "Delete")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>{tr("common.cancel", "Cancel")}</span>
           </div>
         </div>
       )}
@@ -1011,7 +1011,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
 // have ability to make own groups"). `allMembers` is the full list of
 // values (measurement types, medication categories, …) that can be
 // assigned into a group.
-function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
+function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T, tr }) {
   // ADDED 21 Oct 2026 (t129) - the hardware back button and Escape now close
   // this screen. It had neither: back fell through to the module's own
   // handler, which knew nothing about it, and so abandoned the whole
@@ -1034,20 +1034,20 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   };
 
   return (
-    <div role="dialog" aria-label="Manage groups" ref={manageRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
+    <div role="dialog" aria-label={tr("measurements.manageGroups", "Manage groups")} ref={manageRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
+        <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("measurements.manageGroups", "Manage groups")}</span>
       </div>
       <div style={{ padding: "16px 20px 100px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New group name, e.g. HRT panel"
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={tr("measurements.newGroupPlaceholder", "New group name, e.g. HRT panel")}
             onKeyDown={(e) => { if (e.key === "Enter") createGroup(); }}
             style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
-          <button onClick={createGroup} style={{ padding: "0 16px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Add</button>
+          <button onClick={createGroup} style={{ padding: "0 16px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>{tr("common.add", "Add")}</button>
         </div>
         {groups.length === 0 && (
-          <div style={{ textAlign: "center", padding: "30px 20px", color: T.textDisabled, fontSize: 13 }}>No groups yet — everything shows as "Ungrouped".</div>
+          <div style={{ textAlign: "center", padding: "30px 20px", color: T.textDisabled, fontSize: 13 }}>{tr("measurements.noGroups", "No groups yet — everything shows as \"Ungrouped\".")}</div>
         )}
         {groups.map((g) => (
           <div key={g.id} style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, marginBottom: 10, overflow: "hidden" }}>
@@ -1059,21 +1059,21 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
               </div>
               <Trash2 size={16} color={T.actionRed} style={{ cursor: "pointer", padding: 14, boxSizing: "content-box", marginTop: -14, marginRight: -14, marginBottom: -14, marginLeft: -14}}
                 onClick={(e) => { e.stopPropagation(); setConfirmDeleteGroupId(g.id); }}
-                aria-label="Delete group" title="Delete group" />
+                aria-label={tr("measurements.deleteGroup", "Delete group")} title={tr("measurements.deleteGroup", "Delete group")} />
             </div>
             {confirmDeleteGroupId === g.id && (
               <ConfirmDeleteCard
                 T={T}
                 moduleColor={T.healthcareBlue}
-                message={`Delete "${g.name}"? Its items stay, just ungrouped.`}
-                confirmLabel="Delete group"
+                message={tr("measurements.deleteGroupConfirm", 'Delete "{name}"? Its items stay, just ungrouped.').replace("{name}", g.name)}
+                confirmLabel={tr("measurements.deleteGroupLabel", "Delete group")}
                 onCancel={() => setConfirmDeleteGroupId(null)}
                 onConfirm={async () => { await CustomGroupsRepository.delete(domain, g.id); setConfirmDeleteGroupId(null); await refresh(); }}
               />
             )}
             {expandedId === g.id && (
               <div style={{ padding: "0 12px 12px", borderTop: `1px solid ${T.border}` }}>
-                <div style={{ fontSize: 11, color: T.textSecondary, margin: "10px 0 6px" }}>Tap to add/remove from this group</div>
+                <div style={{ fontSize: 11, color: T.textSecondary, margin: "10px 0 6px" }}>{tr("measurements.addRemoveFromGroup", "Tap to add/remove from this group")}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {allMembers.map((member) => {
                     const inThisGroup = g.members.includes(member);
@@ -1113,7 +1113,7 @@ function detectUnitSystem(prefs) {
   return isImperial ? "imperial" : "metric";
 }
 
-  function MeasurementPreferencesSheet({ isOpen, onClose, onManageGroups, T }) {
+  function MeasurementPreferencesSheet({ isOpen, onClose, onManageGroups, T, tr }) {
     // FIXED 30 Sep 2026 (t035) - rendered unconditionally with its close action
     // being `setShowPreferences(false)`, so it registered on the Escape stack
     // even when the preferences sheet was not showing.
@@ -1140,14 +1140,14 @@ function detectUnitSystem(prefs) {
   };
 
   return (
-    <div role="dialog" aria-label="Measurement preferences" ref={prefsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
+    <div role="dialog" aria-label={tr("measurements.preferences", "Measurement preferences")} ref={prefsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label="Close measurement preferences" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+          <span style={{ fontFamily: FONT_FAMILY, ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("measurements.preferences", "Measurement preferences")}</span>
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onClose} aria-label={tr("measurements.closePreferences", "Close measurement preferences")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
-          <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>Default units</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>{tr("measurements.defaultUnits", "Default units")}</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["metric", "imperial"].map((opt) => (
               <div key={opt} onClick={() => setSystem(opt)} role="radio" tabIndex={0} aria-checked={system === opt}
@@ -1156,12 +1156,12 @@ function detectUnitSystem(prefs) {
                   border: `1px solid ${system === opt ? T.healthcareBlue : T.border}`,
                   color: system === opt ? "#FFFFFF" : T.textPrimary,
                   background: system === opt ? T.healthcareBlue : "transparent" }}>
-                {opt === "metric" ? "Metric" : "Imperial"}
+                {opt === "metric" ? tr("measurements.metric", "Metric") : tr("measurements.imperial", "Imperial")}
               </div>
             ))}
           </div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
-            Sets Weight/Height/Temperature together — the per-type dropdowns below still let you mix, e.g. metric weight with an imperial temperature. Nothing already saved is rewritten.
+            {tr("measurements.defaultUnitsDesc", "Sets Weight/Height/Temperature together — the per-type dropdowns below still let you mix, e.g. metric weight with an imperial temperature. Nothing already saved is rewritten.")}
           </div>
           {CONVERTIBLE_TYPES.map((type) => {
             const units = getAvailableUnits(type, prefs.typeKinds[type]);
@@ -1282,8 +1282,8 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   const editingMeasurement = useLoadedMemo(() => (screen.name === "edit" ? MeasurementRepository.getById(screen.id) : null), [screen.name, screen.id], null);
 
   let content;
-  if (screen.name === "list") content = <MeasurementsLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onAddType={(type) => setScreen({ name: "add", presetType: type })} onOpenPreferences={() => setShowPreferences(true)} groupsVersion={groupsVersion} measurements={measurements} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
-  else if (screen.name === "detail") content = <MeasurementDetail T={T} measurementId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
+  if (screen.name === "list") content = <MeasurementsLanding T={T} tr={tr} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onAddType={(type) => setScreen({ name: "add", presetType: type })} onOpenPreferences={() => setShowPreferences(true)} groupsVersion={groupsVersion} measurements={measurements} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
+  else if (screen.name === "detail") content = <MeasurementDetail T={T} tr={tr} measurementId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
     <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
@@ -1300,10 +1300,10 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
       {screen.name === "add" && <MeasurementSheet T={T} measurement={null} presetType={screen.presetType} onSave={createMeasurement} onClose={backToList} />}
       {screen.name === "edit" && editingMeasurement && <MeasurementSheet T={T} measurement={editingMeasurement} onSave={saveMeasurement} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
       {showPreferences && (
-        <MeasurementPreferencesSheet T={T} isOpen={showPreferences} onClose={() => setShowPreferences(false)} onManageGroups={() => { setShowPreferences(false); setShowManageGroups(true); }} />
+        <MeasurementPreferencesSheet T={T} tr={tr} isOpen={showPreferences} onClose={() => setShowPreferences(false)} onManageGroups={() => { setShowPreferences(false); setShowManageGroups(true); }} />
       )}
       {showManageGroups && (
-        <ManageGroupsScreen T={T} domain={GROUP_DOMAIN} allMembers={allTypesEverUsed} onBack={() => setShowManageGroups(false)} onChanged={() => setGroupsVersion((v) => v + 1)} />
+        <ManageGroupsScreen T={T} tr={tr} domain={GROUP_DOMAIN} allMembers={allTypesEverUsed} onBack={() => setShowManageGroups(false)} onChanged={() => setGroupsVersion((v) => v + 1)} />
       )}
     </div>
   );
