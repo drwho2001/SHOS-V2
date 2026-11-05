@@ -1,6 +1,6 @@
 # SHOS Visual Audit — 3 November 2026
 
-This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. Application-code changes have been applied for: P1 (A1-A5), C1, C2, C4, C7, C10-C12, C17-C18, D1-D3, B4, B6, B8 (Contacts + Home only), B9, plus pre-existing CI fixes (lint, dataAnomalyScan). Not yet applied: B1, B2, B3 (MyProfile/Menstrual), B5, D4, D5. See §8 for the current fix status.
+This is the report behind the open items in `docs/DESIGN-MANUAL.md`. It records what was checked, what is actually broken, what is only inconsistent, and what looked wrong but is not. Application-code changes have been applied for: P1 (A1-A5), C1, C2, C4, C7, C10-C12, C17-C18, D1-D3, B1-B9, plus pre-existing CI fixes (lint, dataAnomalyScan). Not yet applied: D4, D5. See §8 for the current fix status.
 
 Baseline: commit `20987f1`. `src/modules/SHOS_Encounters_Prototype.jsx` had an uncommitted edit in another session during the audit, so Encounters line numbers below can shift by about 9 lines from `435` onward. Every finding is stated with a searchable identifier as well as a line, so it survives that drift.
 
@@ -118,6 +118,8 @@ Every item here is a raw token read that bypasses the module's own resolved colo
 
 ### B1 · The "Customise" link is unreadable in dark mode
 
+**✅ Fixed 5 Nov 2026.** Both the link (`DesignScreen.jsx`, the `resolveDarkAccent("medication", …)` call) and the segmented control's selected border/label now resolve through Medication's own `#5B85F5` companion in dark mode. The light path is unchanged. `styleColourGuard.test.js` prevents a return to the raw read.
+
 `src/modules/settings/DesignScreen.jsx:211` uses `color: ACCENTS.medication` (`#003B6F`) on the dark card (`#1C1C1F`).
 
 **Contrast: 1.50:1.** It renders as dark navy on near-black — device-confirmed, effectively invisible. The same raw value colours the segmented control's selected border at `:221-222`.
@@ -126,6 +128,8 @@ Every item here is a raw token read that bypasses the module's own resolved colo
 
 ### B2 · Design screen swatches show light-mode colours in dark mode
 
+**✅ Fixed 5 Nov 2026.** `currentValue` stays raw (the stored value is still the light one), while `displayValue` is `darkMode ? resolveDarkAccent(key, currentValue, companion ?? deriveDarkAccent(currentValue)) : currentValue` for both modules and actions. The swatch, the row preview dot and the expanded picker all read `displayValue`. Contacts/Home/Menstrual have no hand-picked companion and use the same `deriveDarkAccent` the modules themselves use, so the preview matches what the module actually draws.
+
 `src/modules/settings/DesignScreen.jsx:388` — `const currentValue = overrides[key] || ACCENTS[key]`.
 
 **Device-confirmed:** the Contacts dot is raw `#B36205` amber, the Medication dot is the unreadable navy. The row preview dot at `:189` uses the same value. Against a dark card these read as *different modules than the ones the app actually draws*, because every module screen brightens its accent in dark mode.
@@ -133,6 +137,8 @@ Every item here is a raw token read that bypasses the module's own resolved colo
 **Fix.** Resolve for display: `darkMode ? resolveDarkAccent(key, value) : value`. Keep the *stored* value raw — only the preview is resolved, and label it so the user knows the stored value is the light one.
 
 ### B3 · Home's Contacts accent is not dark-resolved (subsumed by B8)
+
+**✅ Fixed 5 Nov 2026.** `contactsColor` added beside `encountersColor` in `SHOS_Home_Prototype.jsx`, using the same `resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts))` as the Contacts module. Both raw reads (the Newest contact summary row and the New contact quick-add) now use it.
 
 B3's two sites (`:1171`, `:1266`) are part of B8's inventory. Kept as a separate line only because it was the first place the missing dark companion was noticed; the fix is B8's. B8 also covers `homeColor` (`:191`) and `menstrualColor` (`:199`), which the challenger flagged as the same defect class.
 
@@ -158,6 +164,8 @@ Two separate problems:
 
 ### B5 · The "Incomplete" chip is a light-mode island
 
+**✅ Fixed 5 Nov 2026.** `ACTION.amberText` / `ACTION.amberSurface` were promoted into `designTokens.js` with a dark companion (`#D08A2E` on `#2A2520`), and the Contacts theme exposes them as `T.actionAmberText` / `T.actionAmberSurface`. All 8 cited sites now read the tokens: the Incomplete chip, the duplicate-confidence warning strip, the duplicate-count pill, and the medium-confidence row. The high-confidence family (`#B42318`/`#FEE4E2`) already used `T.actionRed`/`T.actionRedText` in that same pass, so no hardcoded literal remains.
+
 `src/modules/SHOS_Contacts_Prototype.jsx:1868` hardcodes `color: "#926100"` and `background: "#FFF3C4"`.
 
 The chip's own contrast is fine (**4.80:1**), and that is not the problem. The problem is that a cream chip with brown text floats on a `#1C1C1F` card in dark mode — device-confirmed — while every other badge on the same card switched theme. The same two literals appear on 8 lines (`:1868`, `:2064`, `:2065`, `:2071`, `:3103`, `:3104`, `:3141`, `:3142`) across 5 distinct uses. Lines `:3141–3142` use a second colour family (`#B42318`/`#FEE4E2`) for the high-confidence duplicate warning, not the amber pair. Fixing one site leaves the rest.
@@ -174,6 +182,8 @@ In light mode it reads as a deliberate dark action bar. In dark mode it sits on 
 
 ### B7 · Testing stores icons as emoji
 
+**✅ Fixed 5 Nov 2026.** `SETTING_OPTIONS` is now `{ value, label }` pairs, and storage holds `clinicRoutine`, `clinicSymptomatic`, `clinicPositive` or `home` — never the rendered text. `calculations/testingSettings.js` owns the keys, labels and `normaliseSetting()` migration; it is imported by both the module and `seedDivergence.js`, so the frozen snapshot's legacy strings and a migrated stored key compare equal and unedited demo tests stay deletable. Existing records are migrated once in `TestingRepository.ensureLoaded()` and persisted only when a value actually changed. The two `=== "🏠 Home"` branches use `isHomeSetting()`, the detail/list views render `settingLabel()` with a Phosphor `House`/`FirstAid` icon chosen from the key, and search matches the label so "clinic" still finds a record after migration. Legacy display strings are still accepted on write and normalised immediately.
+
 `src/modules/SHOS_Testing_Prototype.jsx:956` and `:1280` branch on `form.setting === "🏠 Home"`, and the picker stores `"🏠 Home"` / `"🏥 Clinic - Routine"` as the *value*.
 
 This breaks two rules at once: icons are Phosphor-only, and a display glyph is being used as a data key. It also means renaming the label requires a data migration.
@@ -181,6 +191,8 @@ This breaks two rules at once: icons are Phosphor-only, and a display glyph is b
 **Fix.** Store a stable key (`home`, `clinicRoutine`, …) and render the Phosphor icon beside the label. The two `=== "🏠 Home"` branches become `=== "home"`. This is the one finding here that needs a small data migration, so it should be its own change.
 
 ### B8 · Contacts, Home, Menstrual and MyProfile have no dark companion, so their accents used as text fail in dark mode
+
+**✅ Fixed 5 Nov 2026.** Contacts and MyProfile resolve `contactsTeal`/`contactsTealText` through `deriveDarkAccent(ACCENTS.contacts)`; Home resolves `homeColor` the same way, and Menstrual's `#EB4799` already sits above the brightness floor so `deriveDarkAccent` returns it unchanged in both modules. Home's `contactsColor` (B3) now uses the same derivation. `paletteContrast.test.js` covers the accent-on-dark-surface pairs, including the derived companions, at 4.5:1 for text and 3:1 for icons/UI.
 
 The same call without a third argument appears in four modules:
 
@@ -492,8 +504,9 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 3. A3 — FormTabs sticky offset becomes a prop.
 4. C10 — Encounters imports the constant. Turns `stickySubheadingGuard` green.
 
-**Batch 2 — dark mode.** ✅ B4, B6, B8 (Contacts + Home only), B9 done. ❌ Not done: B1 (DesignScreen link/segmented), B2 (DesignScreen swatches), B3 (Home Contacts accent — partially covered by B8), B5 (amber tokens — tokens added, chip sites converted), B7 (emoji migration, deferred), B8 (MyProfile + Menstrual companions). Remaining work: B1, B2, B5 verification, B8 completion.
-- Add a guard: module render bodies may not read `ACCENTS.*` / `ACTION.*` in a style value — only the resolved variables. That test would have caught B1–B4 mechanically.
+**Batch 2 — dark mode.** ✅ **Complete 5 Nov 2026.** B1 (DesignScreen link/segmented), B2 (DesignScreen swatches), B3 (Home Contacts accent), B4, B5 (amber tokens at every cited site), B6, B7 (Setting keys + migration + Phosphor icons), B8 (Contacts, Home, Menstrual, MyProfile) and B9 are all applied.
+- ✅ Guard added: `styleColourGuard.test.js` records the existing 390 raw-colour sites as a ratchet baseline and fails when a file's count rises or a new file introduces one, so B1–B4 cannot return mechanically.
+- ✅ `paletteContrast.test.js` extended to the rendered pairs, including the dark companions for every module accent.
 
 **Batch 3 — list and control consistency.** ✅ C1, C2, C4, C7, C11, C12, C18, C19, C20 fixed. Remaining: C5 (banner control sets), C6 (saturated borders), C8 (section label colour roles), C14 (bottom nav persistence), C15 (list rows not consolidated), C16 (quick add hierarchy). Extract `ModuleListRow` and `ListSearchField` for C15. (C3 and C9 are typography/touch and go in Batch 4.)
 
@@ -506,9 +519,8 @@ Five batches, each independently shippable. Nothing here needs a redesign; every
 ### Tests worth adding
 
 - Extend `stickySubheadingGuard` to assert that any `position: sticky` inside a `[data-*-sheet]` subtree uses `top: 0`.
-- New AST guard: no raw accent reads in JSX style values (Batch 2).
-- New guard: no hex literals in JSX colour positions outside `designTokens.js` — would have caught B5 and B6.
-- Extend `paletteContrast.test.js` from the default palette to the pairs actually rendered: accent-as-text-on-dark-surface, and accent-text-on-own-tint (B3, B4, B5).
+- ✅ Added 5 Nov 2026: `styleColourGuard.test.js` — raw accent and hex reads in JSX style values (ratchet baseline).
+- ✅ Added 5 Nov 2026: `paletteContrast.test.js` now covers accent-as-text-on-dark-surface and the derived dark companions (B3, B4, B5, B8).
 - A layout guard is not practical, so A4/A5 stay manual device checks. Add both to the new-feature checklist instead: "does the header still fit at 393 dp with every icon shown?"
 - Add a guard that the root container has a `maxWidth` on viewports above the phone width, so W1 cannot regress silently.
 

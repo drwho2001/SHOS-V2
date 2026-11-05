@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useReducedMotion } from "../calculations/useReducedMotion";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw, SignOutIcon as SignOut, HouseIcon as House, FirstAidIcon as FirstAid } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
@@ -18,8 +18,13 @@ import { PartnerNotificationRepository } from "../repositories/partnerNotificati
 import { nowAsDateString, nowAsStoredDateTime, formatStoredDate, formatInstantDate, localDayKey } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
-  SETTING_OPTIONS, TESTING_FOR_OPTIONS,
+  TESTING_FOR_OPTIONS,
 } from "../repositories/testingRepository";
+// ADDED 5 Nov 2026 — B7: Setting's stable keys, display labels and legacy-value
+// migration. Imported from the pure module rather than re-exported through the
+// repository, so this screen cannot drift from seedDivergence.js's copy of the
+// same rule. The Phosphor icon is chosen from the key here, never stored.
+import { SETTING_OPTIONS, settingLabel, isHomeSetting, isClinicSetting } from "../calculations/testingSettings";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 19 Aug 2026 — SAMPLE_TYPE_OPTIONS now lives here, real in-app
@@ -230,10 +235,10 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
   );
 }
 
-function SelectField({ label, value, onChange, options, T }) {
+function SelectField({ label, value, onChange, options, T, icon }) {
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{icon}{label}</div>
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
@@ -302,12 +307,12 @@ function ToggleSwitch({ value, onChange, T }) {
   );
 }
 
-function ReadRow({ label, value, T }) {
+function ReadRow({ label, value, T, icon }) {
   if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) return null;
   const display = Array.isArray(value) ? value.join(", ") : String(value);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-      <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{label}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{icon}{label}</span>
       <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
     </div>
   );
@@ -853,7 +858,8 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
               separate from the specimen date above — can lag behind
               it depending on sample/lab turnaround. */}
           <TextField label={tr("testing.resultDate", "Result date")} value={form.resultDate ? form.resultDate.slice(0, 10) : ""} onChange={(v) => set("resultDate")(v ? new Date(v).toISOString() : null)} T={T} type="date" />
-          <SelectField label={tr("testing.setting", "Setting")} value={form.setting} onChange={set("setting")} options={SETTING_OPTIONS} T={T} />
+          <SelectField label={tr("testing.setting", "Setting")} value={form.setting} onChange={set("setting")} options={SETTING_OPTIONS} T={T}
+            icon={isHomeSetting(form.setting) ? <House size={13} color={T.healthcareBlue} aria-hidden="true" /> : isClinicSetting(form.setting) ? <FirstAid size={13} color={T.healthcareBlue} aria-hidden="true" /> : null} />
           <MultiSelectChips label={tr("testing.sampleType", "Sample type")} value={form.sampleType} onChange={set("sampleType")} options={sampleTypeOptions} listName="sampleType" T={T} />
           <MultiSelectChips label={tr("testing.testingFor", "Testing for?")} value={form.testingFor} onChange={set("testingFor")} options={TESTING_FOR_OPTIONS} T={T} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
@@ -958,7 +964,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
               is specifically for home test kits, and only shown when
               Setting is actually Home — was previously always visible
               with no context for what it was for. */}
-          {form.setting === "🏠 Home" && (
+          {isHomeSetting(form.setting) && (
             <>
               {/* ADDED 1 Sep 2026 — real ask: a postal/home kit's own
                   code is usually two separate parts (PK/SK) plus a
@@ -1168,7 +1174,8 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
               read view had it at the very bottom instead, the one real
               inconsistency between the two. */}
           <ReadRow label={tr("testing.resultDate", "Result date")} value={test.resultDate ? formatDate(test.resultDate) : ""} T={T} />
-          <ReadRow label={tr("testing.setting", "Setting")} value={test.setting} T={T} />
+          <ReadRow label={tr("testing.setting", "Setting")} value={settingLabel(test.setting)} T={T}
+            icon={isHomeSetting(test.setting) ? <House size={13} color={T.healthcareBlue} aria-hidden="true" /> : isClinicSetting(test.setting) ? <FirstAid size={13} color={T.healthcareBlue} aria-hidden="true" /> : null} />
           <ReadRow label={tr("testing.sampleType", "Sample type")} value={test.sampleType} T={T} />
           <ReadRow label={tr("testing.testingFor", "Testing for?")} value={test.testingFor} T={T} />
           <ReadRow label={tr("testing.mostRecent", "Most recent")} value={test.mostRecent ? tr("common.yes", "Yes") : ""} T={T} />
@@ -1282,7 +1289,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
         </SectionCard>
 
         <SectionCard title={tr("testing.notes", "Notes")} T={T}>
-          {test.setting === "🏠 Home" && (
+          {isHomeSetting(test.setting) && (
             <>
               <ReadRow label={tr("testing.kitCodePk", "Kit code (PK)")} value={test.kitCodePk} T={T} />
               <ReadRow label={tr("testing.kitCodeSk", "Kit code (SK)")} value={test.kitCodeSk} T={T} />
@@ -1384,7 +1391,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
     }
     const q = query.trim().toLowerCase();
     if (!q) return base;
-    return base.filter((t) => [t.title, t.setting, ...(t.testingFor || []), ...(t.resultIds || []).map((id) => resultNameById.get(id))].filter(Boolean).some((v) => v.toLowerCase().includes(q)));
+    return base.filter((t) => [t.title, settingLabel(t.setting), ...(t.testingFor || []), ...(t.resultIds || []).map((id) => resultNameById.get(id))].filter(Boolean).some((v) => v.toLowerCase().includes(q)));
   }, [tests, query, dateFilter, resultNameById]);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
@@ -1604,7 +1611,10 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
       </div>
       <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>{formatDate(t.date)}</div>
       {t.setting && (
-        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>
+          {isHomeSetting(t.setting) ? <House size={11} color={isOlder ? T.textDisabled : T.healthcareBlue} aria-hidden="true" /> : isClinicSetting(t.setting) ? <FirstAid size={11} color={isOlder ? T.textDisabled : T.healthcareBlue} aria-hidden="true" /> : null}
+          {settingLabel(t.setting)}
+        </div>
       )}
       {resultPending ? (
         <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isOlder ? 0.5 : 1 }}>{tr("testing.pendingExpected", "Pending — expected {date}", { date: formatDate(t.resultDate) })}</div>

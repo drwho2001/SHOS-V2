@@ -205,6 +205,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // the brighter neon.
   const menstrualColorText = darkMode ? menstrualColor : ACCENT_TEXT_SAFE.menstrual;
   const encountersColor = darkMode ? resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7") : ACCENTS.encounters;
+  // ADDED 5 Nov 2026 — B3/B8: Contacts' accent was read raw at the two summary
+  // rows below, so `#B36205` stayed byte-identical in dark mode and measured
+  // 3.78:1 at 13 px/600 on `#1C1C1F` while every neighbouring row used a
+  // resolved value. Contacts itself already resolves via deriveDarkAccent(); use
+  // the same derivation here so Home and the Contacts module cannot diverge.
+  const contactsColor = darkMode ? resolveDarkAccent("contacts", ACCENTS.contacts, deriveDarkAccent(ACCENTS.contacts)) : ACCENTS.contacts;
 
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
   // bare "Home". My Profile only has `nickname`, no separate name
@@ -1325,7 +1331,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             one, which is the whole point of that module: the original bug was
             two hand-duplicated placeholders drifting apart, and a third local
             copy here would rebuild exactly that. */}
-        <SummaryRow label={tr("home.newestContact", "Newest contact")} moduleColor={ACCENTS.contacts} value={lastContact ? `${anonymise ? ANONYMISED : lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
+        <SummaryRow label={tr("home.newestContact", "Newest contact")} moduleColor={contactsColor} value={lastContact ? `${anonymise ? ANONYMISED : lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
         <SummaryRow label={tr("home.lastMedicationDose", "Last medication dose")} moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label={tr("home.lastTest", "Last test")} moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
         <SummaryRow label={tr("home.nextClinicVisit", "Next clinic visit")} moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : <>No future visit booked — BASHH advises 3/12 monthly testing <span style={{ display: "inline-flex", verticalAlign: "middle" }}><JargonNote theme={darkMode ? DARK : NEUTRAL} noteKey="bashh" label="BASHH guidance" onOpen={onOpenGlossary} /></span></>} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />
@@ -1445,7 +1451,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             contact, new encounter, new session". Medication is the
             most frequent daily write, so it leads. */}
         <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
-        <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
+        <QuickAddButton icon={Users} label="New contact" color={contactsColor} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
             the earlier Flame decision above: back to the same Pulse/
             Activity glyph the bottom nav and Global Search already use

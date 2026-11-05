@@ -2,6 +2,14 @@
 //
 // WHY THIS FILE EXISTS
 // --------------------
+//
+// ADDED 5 Nov 2026 (B7) — Testing's `setting` field moved from display strings
+// with emoji to stable keys. This snapshot is FROZEN and must keep the values
+// that actually shipped, so the migration is applied to BOTH sides at compare
+// time instead: a stored "home" and the snapshot's "🏠 Home" normalise to the
+// same key. Without that, every unedited demo test would read as diverged (and
+// therefore become undeletable) the moment the migration ran.
+import { normaliseSetting } from "./testingSettings.js";
 // The rule that decides whether a record on a demo-data id is still demo data.
 //
 // It cannot be id membership. That is the 1 Oct data-loss incident: the owner
@@ -3192,6 +3200,13 @@ function normaliseValue(value, field, anchor) {
     return value.map((v) => normaliseValue(v, undefined, anchor));
   }
   if (typeof value === "string") {
+    // ADDED 5 Nov 2026 (B7) — see this file's header. Applied before the date
+    // projection because a setting is text, never a date, and before the seed-id
+    // rewrite because "home" is not an id.
+    if (field === "setting") {
+      const normalisedSetting = normaliseSetting(value);
+      if (normalisedSetting !== value) return normalisedSetting;
+    }
     // Projected BEFORE the seed-id rewrite, and recursively at any depth: a
     // vaccination keeps its dates inside `doses[]`, so a top-level-only
     // projection left those absolute and every vaccination read as diverged.

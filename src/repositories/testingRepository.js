@@ -33,13 +33,24 @@ import { ClinicVisitsRepository } from "./clinicVisitsRepository.js";
 import { SymptomLogRepository } from "./symptomLogRepository.js";
 import { EpisodeRepository } from "./episodeRepository.js";
 import { PartnerNotificationRepository } from "./partnerNotificationRepository.js";
+// ADDED 5 Nov 2026 — B7: Setting now stores a stable key, not the display
+// string. The options and the legacy-value migration live in one pure module
+// so seedDivergence.js can apply the same normalisation (see that file's own
+// note) without importing a repository.
+import { normaliseSetting, SETTING_OPTIONS } from "../calculations/testingSettings.js";
 
 // Exported for its own test, matching contactRepository.js: the mock adapter
 // needs the real key or a typo in it silently loads the seed array instead of
 // the empty fixture, and every assertion then passes against demo data.
 export const STORAGE_KEY = "shos_tests";
 
-export const SETTING_OPTIONS = ["🏥😎 Clinic - Routine", "🏥🤢 Clinic - Symptomatic", "🏥➕ Clinic - Positive test", "🏠 Home"];
+// CHANGED 5 Nov 2026 — B7: these used to be display strings with emoji baked
+// into the stored value. They are now `{ value, label }` pairs: storage holds
+// `clinicRoutine`, the picker renders "Clinic - Routine", and the Phosphor
+// icon is chosen from the value at render time rather than shipped in the data.
+// See calculations/testingSettings.js for the migration of already-stored
+// values and the reasoning.
+export { SETTING_OPTIONS };
 // (SAMPLE_TYPE_OPTIONS moved to customOptionListsRepository.js, real
 // in-app editable list, per the user's ask. TESTING_FOR_OPTIONS/
 // SETTING_OPTIONS deliberately stay fixed here — see
@@ -151,7 +162,7 @@ let seedTests = [
     title: "Symptomatic screen — Gonorrhoea positive",
     date: daysAgo(9),
     resultDate: daysAgo(7),
-    setting: "🏥🤢 Clinic - Symptomatic",
+    setting: "clinicSymptomatic",
     sampleType: ["Urine", "Rectal swab"],
     testingFor: ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"],
     organismIds: ["organism_002"],
@@ -169,7 +180,7 @@ let seedTests = [
     title: "Test of cure — Gonorrhoea",
     date: daysAgo(2),
     resultDate: daysAgo(1),
-    setting: "🏥😎 Clinic - Routine",
+    setting: "clinicRoutine",
     sampleType: ["Urine", "Rectal swab"],
     testingFor: ["Gonorrhoea"],
     organismIds: [],
@@ -192,7 +203,7 @@ let seedTests = [
     title: "Routine PrEP monitoring screen",
     date: daysAgo(100),
     resultDate: daysAgo(97),
-    setting: "🏥😎 Clinic - Routine",
+    setting: "clinicRoutine",
     sampleType: ["Blood", "Urine"],
     testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis"],
     organismIds: [],
@@ -208,7 +219,7 @@ let seedTests = [
     title: "Pre-relationship screen",
     date: daysAgo(113),
     resultDate: daysAgo(110),
-    setting: "🏥😎 Clinic - Routine",
+    setting: "clinicRoutine",
     sampleType: ["Blood", "Urine"],
     testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis"],
     organismIds: [],
@@ -235,7 +246,7 @@ let seedTests = [
     title: "Home kit STI screen",
     date: daysAgo(3),
     resultDate: null,
-    setting: "🏠 Home",
+    setting: "home",
     sampleType: ["Urine", "Blood"],
     testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis"],
     organismIds: [],
@@ -254,7 +265,7 @@ let seedTests = [
     title: "Symptomatic screen — Chlamydia positive",
     date: daysAgo(196),
     resultDate: daysAgo(193),
-    setting: "🏥🤢 Clinic - Symptomatic",
+    setting: "clinicSymptomatic",
     sampleType: ["Urine"],
     testingFor: ["Chlamydia", "Gonorrhoea", "HIV", "Syphilis"],
     organismIds: ["organism_001"],
@@ -272,7 +283,7 @@ let seedTests = [
     title: "Routine annual screen",
     date: daysAgo(160),
     resultDate: daysAgo(155),
-    setting: "🏥😎 Clinic - Routine",
+    setting: "clinicRoutine",
     sampleType: ["Blood", "Urine", "Rectal swab"],
     testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis", "Hepatitis B", "Hepatitis C"],
     organismIds: [],
@@ -306,6 +317,24 @@ async function ensureLoaded() {
   if (tests === null) {
     if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedTests);
     tests = await loadPromise;
+    // ADDED 5 Nov 2026 — B7 data migration. Records saved before this change
+    // hold a display string ("🏠 Home", "🏥😎 Clinic - Routine") in `setting`;
+    // everything from here on reads and writes stable keys. Migrating once at
+    // load, and persisting only when something actually changed, means every
+    // later read path can compare against a key without a legacy check.
+    //
+    // The values are normalised, NOT the records' identity: isSeed/isDemo and
+    // every other field are left exactly as they were, so unedited demo data
+    // stays demo data. seedDivergence.js applies the same normalisation before
+    // comparing against its frozen snapshot for that reason.
+    let migrated = 0;
+    tests = tests.map((t) => {
+      const setting = normaliseSetting(t.setting);
+      if (setting === t.setting) return t;
+      migrated += 1;
+      return { ...t, setting };
+    });
+    if (migrated > 0) await storage.save(STORAGE_KEY, tests);
     nextTestNumber = computeNextTestNumber(tests);
   }
   return tests;
@@ -332,13 +361,13 @@ async function persist() {
 export const TestingRepository = {
   async getAll() {
     await ensureLoaded();
-    return structuredClone(tests.map((t) => ({ ...DEFAULT_TEST, ...t })));
+    return structuredClone(tests.map((t) => ({ ...DEFAULT_TEST, ...t, setting: normaliseSetting(t.setting) })));
   },
 
   async getById(id) {
     await ensureLoaded();
     const found = tests.find((t) => t.id === id);
-    return found ? structuredClone({ ...DEFAULT_TEST, ...found }) : null;
+    return found ? structuredClone({ ...DEFAULT_TEST, ...found, setting: normaliseSetting(found.setting) }) : null;
   },
 
   // ADDED — real ask: "mostRecent" was a plain manual checkbox with no
@@ -374,6 +403,7 @@ export const TestingRepository = {
     const newTest = {
       ...DEFAULT_TEST,
       ...data,
+      setting: normaliseSetting(data.setting),
       isDemo: false,
       mostRecent: isFuture ? false : data.mostRecent,
       id: generateTestId(),
@@ -469,7 +499,7 @@ async updateRoutineRetestPlan(id, { title, date }) {
       // to the user, deliberately NOT wired into any activity/backup-
       // check logic — per the user's own clarification, an edit isn't the
       // same thing as a logged encounter.
-      const merged = { ...t, ...changes, updatedAt: new Date().toISOString(), isSeed: false, isDemo: t.isDemo };
+      const merged = { ...t, ...changes, setting: normaliseSetting("setting" in changes ? changes.setting : t.setting), updatedAt: new Date().toISOString(), isSeed: false, isDemo: t.isDemo };
       // Same future-date guard as create().
       const isFuture = merged.date && new Date(merged.date) > new Date();
       updated = isFuture ? { ...merged, mostRecent: false } : merged;
