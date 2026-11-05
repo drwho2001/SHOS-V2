@@ -88,12 +88,21 @@ function TabOrderCard({ T, onChanged }) {
       {order.map((key, i) => (
         <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none" }}>
           <span style={{ fontSize: 13, color: T.textPrimary }}>{NON_HOME_TAB_LABELS[key]}</span>
+          {/* FIXED 5 Nov 2026 — A3 pointer-only audit: these two chevrons were
+              role="button" with only onClick — no tabIndex and no key handler,
+              so a keyboard or switch user could not reach or operate them at
+              all. The first/last row's disabled chevron is removed from the tab
+              order and marked aria-disabled, matching the dimmed visual state. */}
           <div style={{ display: "flex", gap: 6 }}>
-            <div role="button" aria-label={t("preferences.moveLeft", "Move {tab} left", { tab: NON_HOME_TAB_LABELS[key] })} onClick={() => move(i, -1)}
+            <div role="button" tabIndex={i === 0 ? -1 : 0} aria-disabled={i === 0} aria-label={t("preferences.moveLeft", "Move {tab} left", { tab: NON_HOME_TAB_LABELS[key] })}
+              onClick={() => { if (i !== 0) move(i, -1); }}
+              onKeyDown={(e) => { if (i !== 0 && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); move(i, -1); } }}
               style={{ padding: 6, borderRadius: 8, cursor: i === 0 ? "default" : "pointer", opacity: i === 0 ? 0.3 : 1, border: `1px solid ${T.border}` }}>
               <ChevronLeft size={14} color={T.textPrimary} />
             </div>
-            <div role="button" aria-label={t("preferences.moveRight", "Move {tab} right", { tab: NON_HOME_TAB_LABELS[key] })} onClick={() => move(i, 1)}
+            <div role="button" tabIndex={i === order.length - 1 ? -1 : 0} aria-disabled={i === order.length - 1} aria-label={t("preferences.moveRight", "Move {tab} right", { tab: NON_HOME_TAB_LABELS[key] })}
+              onClick={() => { if (i !== order.length - 1) move(i, 1); }}
+              onKeyDown={(e) => { if (i !== order.length - 1 && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); move(i, 1); } }}
               style={{ padding: 6, borderRadius: 8, cursor: i === order.length - 1 ? "default" : "pointer", opacity: i === order.length - 1 ? 0.3 : 1, border: `1px solid ${T.border}` }}>
               <ChevronRight size={14} color={T.textPrimary} />
             </div>

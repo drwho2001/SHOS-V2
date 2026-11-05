@@ -1,0 +1,157 @@
+{
+  "_readme": "Ratchet baseline for styleColourGuard.test.js. 'hex' counts raw hex/rgba colour literals in JSX style object values; 'accent' counts raw ACCENTS.* / ACTION.* reads used directly as style values. The guard fails when a count rises or a new file appears. When a legitimate new use is added, update this file in the same commit and say why. See docs/DESIGN-AUDIT.md section 8, 'Tests worth adding'.",
+  "totals": {
+    "hex": 301,
+    "accent": 89
+  },
+  "files": {
+    "App.jsx": {
+      "hex": 76,
+      "accent": 23
+    },
+    "components/ConfirmDeleteCard.jsx": {
+      "hex": 1,
+      "accent": 0
+    },
+    "main.jsx": {
+      "hex": 6,
+      "accent": 0
+    },
+    "modules/InteractiveTour.jsx": {
+      "hex": 3,
+      "accent": 0
+    },
+    "modules/settings/AutomaticBackupsScreen.jsx": {
+      "hex": 2,
+      "accent": 2
+    },
+    "modules/settings/CalendarScreen.jsx": {
+      "hex": 5,
+      "accent": 4
+    },
+    "modules/settings/DataNetworkScreen.jsx": {
+      "hex": 1,
+      "accent": 0
+    },
+    "modules/settings/DesignScreen.jsx": {
+      "hex": 5,
+      "accent": 0
+    },
+    "modules/settings/DeveloperToolsScreen.jsx": {
+      "hex": 1,
+      "accent": 6
+    },
+    "modules/settings/ErrorLogScreen.jsx": {
+      "hex": 0,
+      "accent": 1
+    },
+    "modules/settings/GuideScreen.jsx": {
+      "hex": 1,
+      "accent": 0
+    },
+    "modules/settings/NotificationHistoryScreen.jsx": {
+      "hex": 0,
+      "accent": 1
+    },
+    "modules/settings/NotificationsScreen.jsx": {
+      "hex": 6,
+      "accent": 9
+    },
+    "modules/settings/PreferencesScreen.jsx": {
+      "hex": 5,
+      "accent": 0
+    },
+    "modules/settings/PrivacyScreen.jsx": {
+      "hex": 11,
+      "accent": 19
+    },
+    "modules/settings/ResourcesScreen.jsx": {
+      "hex": 2,
+      "accent": 3
+    },
+    "modules/settings/ShareScreen.jsx": {
+      "hex": 2,
+      "accent": 2
+    },
+    "modules/settings/StatsScreen.jsx": {
+      "hex": 0,
+      "accent": 4
+    },
+    "modules/settings/TrashScreen.jsx": {
+      "hex": 3,
+      "accent": 5
+    },
+    "modules/SHOS_ClinicCard_Prototype.jsx": {
+      "hex": 5,
+      "accent": 0
+    },
+    "modules/SHOS_ClinicVisits_Prototype.jsx": {
+      "hex": 14,
+      "accent": 0
+    },
+    "modules/SHOS_Contacts_Prototype.jsx": {
+      "hex": 23,
+      "accent": 2
+    },
+    "modules/SHOS_Encounters_Prototype.jsx": {
+      "hex": 14,
+      "accent": 0
+    },
+    "modules/SHOS_Healthcare_Prototype.jsx": {
+      "hex": 1,
+      "accent": 0
+    },
+    "modules/SHOS_Home_Prototype.jsx": {
+      "hex": 4,
+      "accent": 2
+    },
+    "modules/SHOS_Measurements_Prototype.jsx": {
+      "hex": 15,
+      "accent": 0
+    },
+    "modules/SHOS_Medication_Dashboard_Prototype.jsx": {
+      "hex": 22,
+      "accent": 0
+    },
+    "modules/SHOS_MenstrualHealth_Prototype.jsx": {
+      "hex": 10,
+      "accent": 0
+    },
+    "modules/SHOS_MyProfile_Prototype.jsx": {
+      "hex": 4,
+      "accent": 0
+    },
+    "modules/SHOS_OptionListEditor_Prototype.jsx": {
+      "hex": 1,
+      "accent": 3
+    },
+    "modules/SHOS_PartnerNotification_Prototype.jsx": {
+      "hex": 3,
+      "accent": 2
+    },
+    "modules/SHOS_RegistryManagement_Prototype.jsx": {
+      "hex": 3,
+      "accent": 0
+    },
+    "modules/SHOS_Settings_Prototype.jsx": {
+      "hex": 5,
+      "accent": 1
+    },
+    "modules/SHOS_SymptomLog_Prototype.jsx": {
+      "hex": 12,
+      "accent": 0
+    },
+    "modules/SHOS_Testing_Prototype.jsx": {
+      "hex": 12,
+      "accent": 0
+    },
+    "modules/SHOS_Timeline_Prototype.jsx": {
+      "hex": 8,
+      "accent": 0
+    },
+    "modules/SHOS_Vaccinations_Prototype.jsx": {
+      "hex": 15,
+      "accent": 0
+    }
+  }
+}

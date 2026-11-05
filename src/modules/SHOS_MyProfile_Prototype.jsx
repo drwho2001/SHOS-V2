@@ -307,7 +307,7 @@ function CityAutocomplete({ label, value, onChange, T, placeholder }) {
   };
 
   return (
-    <div style={{ padding: "8px 0", position: "relative" }}>
+    <div style={{ padding: "8px 0", position: "relative" }} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
          <span onClick={locating ? undefined : handleUseCurrentLocation} role="button" tabIndex={locating ? -1 : 0} aria-label={locating ? "Locating current location" : "Use current location"} aria-disabled={locating} onKeyDown={(e) => { if (!locating && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleUseCurrentLocation(); } }}
@@ -318,14 +318,20 @@ function CityAutocomplete({ label, value, onChange, T, placeholder }) {
       {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
       <input value={value ?? ""} onChange={(e) => handleChange(e.target.value)}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+      {/* ADDED 5 Nov 2026 — A2/A3: the place lookup now announces its results,
+          and the result rows below are reachable and activatable by keyboard. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {open && loading ? "Searching for places" : open && results.length > 0 ? `${results.length} place${results.length === 1 ? "" : "s"} found` : open && value && value.trim().length >= 3 ? "No places match" : ""}
+      </div>
       {open && (loading || results.length > 0) && (
         <div tabIndex={0} style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
           {loading && <div style={{ padding: 10, fontSize: 12, color: T.textDisabled }}>Searching…</div>}
           {results.map((r) => (
-            <div key={r.place.place_id} onMouseDown={() => pick(r)}
+            <div key={r.place.place_id} role="button" tabIndex={0}
+              onMouseDown={() => pick(r)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(r); } }}
               style={{ padding: "8px 10px", fontSize: 13, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}`}}>
               {r.city}
             </div>
@@ -352,8 +358,12 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
   const visibleSuggestions = queryLower ? available.filter((i) => i.name.toLowerCase().includes(queryLower)).slice(0, 8) : available.slice(0, 3);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
-    <div style={{ padding: "8px 0" }}>
+    <div style={{ padding: "8px 0", position: "relative" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      {/* ADDED 5 Nov 2026 — A2: announce how many suggestions the typed query produced. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {queryLower ? (visibleSuggestions.length > 0 ? `${visibleSuggestions.length} suggestion${visibleSuggestions.length === 1 ? "" : "s"}` : "No suggestions match") : ""}
+      </div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (

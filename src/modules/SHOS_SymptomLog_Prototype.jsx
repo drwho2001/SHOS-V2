@@ -270,6 +270,10 @@ function SymptomSelect({ value, onChange, T }) {
         onBlur={commit}
         placeholder="Type to add or search — comma-separated for more than one"
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+      {/* ADDED 5 Nov 2026 — A2: the free-text symptom input suggests entries as you type; announce how many matched. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {draft.trim() ? (visibleSuggestions.length > 0 ? `${visibleSuggestions.length} suggestion${visibleSuggestions.length === 1 ? "" : "s"}` : "No suggestions match") : ""}
+      </div>
       {didYouMean && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12 }}>
           <span style={{ color: T.textSecondary, flex: 1 }}>Did you mean "<span style={{ fontWeight: 700, color: T.textPrimary }}>{didYouMean.closest}</span>", already in the registry?</span>
@@ -304,8 +308,12 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
     : available.slice(0, 3);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
-    <div style={{ padding: "8px 0" }}>
+    <div style={{ padding: "8px 0", position: "relative" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      {/* ADDED 5 Nov 2026 — A2: announce how many suggestions the typed query produced. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {queryLower ? (visibleSuggestions.length > 0 ? `${visibleSuggestions.length} suggestion${visibleSuggestions.length === 1 ? "" : "s"}` : "No suggestions match") : ""}
+      </div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (

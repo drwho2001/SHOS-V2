@@ -978,6 +978,10 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
       )}
       <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts to add…"
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+      {/* ADDED 5 Nov 2026 — A2: announce attendee matches as the user types. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {q ? (matches.length > 0 ? `${matches.length} contact${matches.length === 1 ? "" : "s"} found` : "No contacts match") : ""}
+      </div>
       {matches.length > 0 && (
         <div style={{ marginTop: 6, border: `1px solid ${T.border}`, borderRadius: radius.sm, overflow: "hidden" }}>
           {matches.map((c) => (

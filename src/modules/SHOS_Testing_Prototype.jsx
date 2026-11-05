@@ -607,11 +607,15 @@ function LinkPicker({ items, onPick, T, placeholder }) {
     ? items.filter((v) => v.name.toLowerCase().includes(queryLower) || v.searchText.includes(queryLower)).slice(0, 8)
     : items.slice(0, 3);
   return (
-    <div>
+    <div style={{ position: "relative" }}>
       {items.length > 3 && (
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder || tr("testing.searchByName", "Search by name…")} aria-label={placeholder || tr("testing.searchByName", "Search by name…")}
           style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: 6 }} />
       )}
+      {/* ADDED 5 Nov 2026 — A2: announce how many link candidates the query matched. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {queryLower ? (visible.length > 0 ? `${visible.length} match${visible.length === 1 ? "" : "es"}` : "No match") : ""}
+      </div>
       {visible.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visible.map((v) => (

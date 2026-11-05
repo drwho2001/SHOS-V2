@@ -160,6 +160,10 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
           style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
       </div>
 
+      {/* ADDED 5 Nov 2026 — A2: the filtered contact list changes as you type but nothing announced it. */}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {queryTrimmed ? (visible.length > 0 ? `${visible.length} contact${visible.length === 1 ? "" : "s"}` : "No contacts match") : ""}
+      </div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", columnCount: isDesktopWidth && visible.length > 0 ? 2 : undefined, columnGap: 0 }}>
         {visible.length === 0 ? (
           // FIXED 27 Sep 2026 — this said "No contacts match.", which is only

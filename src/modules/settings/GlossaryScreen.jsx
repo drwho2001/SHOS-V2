@@ -83,6 +83,12 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("glossary.search", "Search terms")} aria-label={t("glossary.search", "Search terms")}
             style={{ width: isDesktopWidth ? 300 : "100%", flexShrink: 0, padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: isDesktopWidth ? 0 : 16 }} />
         </div>
+        {/* ADDED 5 Nov 2026 — A2 accessibility finding: the filtered list changes
+            as you type but nothing announced the change. Same visually-hidden
+            announcement pattern as the module search fields. */}
+        <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+          {query.trim() ? (filtered.length > 0 ? `${filtered.length} term${filtered.length === 1 ? "" : "s"} found` : "No terms match") : ""}
+        </div>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>{t("glossary.noMatch", "No terms match your search.")}</div>
         ) : (

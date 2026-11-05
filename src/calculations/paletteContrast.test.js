@@ -21,6 +21,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { deriveDarkAccent } from "./designTokens";
 
 const TOKENS = readFileSync(path.join(process.cwd(), "src", "calculations", "designTokens.js"), "utf8");
 
@@ -120,4 +121,62 @@ describe("module accents used as text on their own self-tint", () => {
     expect(ratio("#FFFFFF", "#FFFFFF")).toBeCloseTo(1, 5);
     expect(ratio("#777777", "#FFFFFF")).toBeCloseTo(4.48, 1);
   });
+});
+
+// ADDED — dark-mode pairs actually rendered. The B8 fix derives a dark accent
+// for modules without a hand-picked companion, so these are the values that end
+// up as icons/graphics on the near-black surface. Icons and UI components need
+// 3:1; text needs 4.5:1. Measured against both dark surfaces in designTokens.js
+// (card surface #1C1C1F and app background #121214).
+describe("module accents on the dark surfaces", () => {
+  const DARK_SURFACE = "#1C1C1F";
+  const DARK_BG = "#121214";
+
+  // The actual dark-mode values used by the nav strip. The three with a
+  // hand-picked companion read that companion; Contacts and Home keep their
+  // raw accent because they already clear 3:1 on the near-black surface.
+  // These mirror DARK_COMPANIONS in DesignScreen.jsx and TAB_DARK_COMPANIONS
+  // in App.jsx; keep them in sync when a companion changes.
+  const ICON_PAIRS = [
+    ["contacts", "#B36205", "Contacts nav icon (raw accent, no companion)"],
+    ["encounters", "#D370C7", "Encounters nav icon (hand-picked companion)"],
+    ["medication", "#5B85F5", "Medication nav icon (hand-picked companion)"],
+    ["healthcare", "#0E8144", "Healthcare nav icon (hand-picked companion)"],
+    ["home", "#008585", "Home raised circle icon (raw accent, no companion)"],
+    ["menstrual", "#EB4799", "Menstrual accent (raw; already light enough)"],
+  ];
+
+  for (const [key, hex, what] of ICON_PAIRS) {
+    it(`${key} clears 3:1 on the dark card surface as an icon (${what})`, () => {
+      expect(hex, `${key} dark icon value missing`).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      const r = ratio(hex, DARK_SURFACE);
+      expect(
+        r,
+        `${key} ${hex} on ${DARK_SURFACE} is ${r.toFixed(2)}:1 — below 3:1 for icons/UI components.`
+      ).toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  // Derived dark accents for the modules that have no hand-picked companion.
+  // These are what deriveDarkAccent() produces from the light defaults and are
+  // used as text in dark mode, so they must clear 4.5:1.
+  for (const [key, what] of [
+    ["contacts", "Contacts"],
+    ["home", "Home"],
+    ["menstrual", "Menstrual"],
+  ]) {
+    for (const [surface, label] of [
+      [DARK_SURFACE, "card surface"],
+      [DARK_BG, "app background"],
+    ]) {
+      it(`${key} derived dark accent clears 4.5:1 on the dark ${label} (${what})`, () => {
+        const derived = deriveDarkAccent(ACCENTS[key]);
+        const r = ratio(derived, surface);
+        expect(
+          r,
+          `${key} derived ${derived} on ${surface} is ${r.toFixed(2)}:1 — below 4.5:1 for text.`
+        ).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
 });
