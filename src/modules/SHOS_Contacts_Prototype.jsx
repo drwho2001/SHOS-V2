@@ -1921,7 +1921,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         <div style={{
           display: "grid",
           gridTemplateColumns: methods.length > 0 ? "minmax(0, 1fr) 112px" : "minmax(0, 1fr)",
-          gridTemplateRows: "auto auto",
+          gridTemplateRows: relationshipTags.length > 0 ? "auto auto" : "auto",
           columnGap: 8,
           rowGap: 4,
           alignItems: "center",
