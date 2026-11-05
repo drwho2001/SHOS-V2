@@ -3178,7 +3178,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsBanner, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-              <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>Possible duplicates</span>
+              <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>{tr("contacts.possibleDuplicates", "Possible duplicates")}</span>
               <X size={20} color="#FFFFFF" style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
@@ -3264,16 +3264,16 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 record, enabled only when exactly one is selected —
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
-            <span role="button" tabIndex={0} aria-label="Export contact" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Export</span>
-            <span role="button" tabIndex={0} aria-label="Archive contacts" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Archive</span>
+            <span role="button" tabIndex={0} aria-label={tr("contacts.exportAria", "Export contact")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
+              style={{ fontSize: 13, color: selectedIds.length === 1 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.export", "Export")}</span>
+            <span role="button" tabIndex={0} aria-label={tr("contacts.archiveAria", "Archive contacts")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.archive", "Archive")}</span>
             {/* CHANGED 10 Sep 2026 — standardised delete confirmation:
                 was a native window.confirm() dialog, now the same shared
                 inline card every module uses. */}
-            <span role="button" tabIndex={0} aria-label="Delete contacts" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Delete</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Cancel</span>
+            <span role="button" tabIndex={0} aria-label={tr("contacts.deleteAria", "Delete contacts")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("common.cancel", "Cancel")}</span>
           </div>
         </div>
       )}
@@ -3333,7 +3333,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               );
             })}
           </div>
-          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Position</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.position", "Position")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {SEXUAL_POSITION_OPTIONS.map((p) => {
               const active = filterPositions.includes(p);
@@ -3347,7 +3347,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           </div>
           {/* ADDED 26 Aug 2026 — real ask: filter by Accommodation and
               Drives, alongside Role/Position. */}
-          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Accommodation</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.accommodation", "Accommodation")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {HOSTS_OPTIONS.map((h) => {
               const active = filterHosts.includes(h);
@@ -3483,7 +3483,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 // settings" link. Contacts had 2 real settings sitting in global
 // Settings > Preferences with no in-module home of their own —
 // exactly the "2+ settings, no existing screen" case worth a new one.
-function InactiveThresholdCard({ T }) {
+function InactiveThresholdCard({ T, tr }) {
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
   useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
@@ -3496,7 +3496,7 @@ function InactiveThresholdCard({ T }) {
 
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>Inactive contact threshold</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>{tr("contacts.inactiveContactThreshold", "Inactive contact threshold")}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
         Days since a Contact's last Encounter before it shows the red "inactive" flag. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
       </div>
@@ -3546,13 +3546,13 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("contacts.settings", "Contacts settings")}</h1>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} /></div>
+        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} tr={tr} /></div>
         <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
         {/* ADDED — real ask: link to Privacy settings for Anonymise mode */}
         {onOpenPrivacySettings && (
           <div onClick={onOpenPrivacySettings} role="button" tabIndex={0} aria-label="Open privacy settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPrivacySettings(); } }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, background: T.surface, border: `1px solid ${T.border}`, marginBottom: 12, cursor: "pointer", minHeight: 44 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 14, color: T.textPrimary }}>Anonymise mode</span>
+              <span style={{ fontSize: 14, color: T.textPrimary }}>{tr("contacts.anonymiseMode", "Anonymise mode")}</span>
             </div>
             <ChevronRight size={16} color={T.textDisabled} />
           </div>

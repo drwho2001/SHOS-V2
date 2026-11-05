@@ -53,7 +53,20 @@
     "encounters": "Encounters",
     "avgEnjoyment": "Avg enjoyment",
     "highest": "Highest",
-    "lastSeen": "Last seen"
+    "lastSeen": "Last seen",
+    "possibleDuplicates": "Possible duplicates",
+    "position": "Position",
+    "accommodation": "Accommodation",
+    "inactiveContactThreshold": "Inactive contact threshold",
+    "anonymiseMode": "Anonymise mode",
+    "export": "Export",
+    "exportAria": "Export contact",
+    "archive": "Archive",
+    "archiveAria": "Archive contacts",
+    "delete": "Delete",
+    "deleteAria": "Delete contacts",
+    "position": "Position",
+    "accommodation": "Accommodation"
   },
   "encounters": {
     "addEncounter": "Add Encounter",
