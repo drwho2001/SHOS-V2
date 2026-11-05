@@ -10,38 +10,51 @@ import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
-  CrosshairIcon as Crosshair, SignOutIcon as SignOut,
+  CrosshairIcon as Crosshair, SignOutIcon as SignOut, EnvelopeSimpleIcon as Envelope, TreeEvergreenIcon as TreeEvergreen,
   // ADDED 10 Sep 2026 — real ask: a single "how we'd meet" icon ranked
   // Car (Drives) > Cycle > Public transport > Walk, plus a distinct
   // icon for "will travel to you" now that MapPin is used for the
   // city pin below — see getTransportIcon()'s own comment.
   BicycleIcon as Bicycle, BusIcon as Bus, PersonSimpleWalkIcon as Walk, NavigationArrowIcon as NavigationArrow,
-  // ADDED 2 Sep 2026 — real ask: real platform logos for what actually
-  // gets typed into "Other platforms" (contactableVia) — Messenger,
-  // Telegram, Instagram, WhatsApp, Twitter/X, Snapchat all have real
-  // Phosphor glyphs. Grindr genuinely doesn't (not a generic-platform
-  // icon set Phosphor — or any icon library — would carry), so it's
-  // left to the same generic fallback glyph as any other typed tag
-  // rather than a fabricated look-alike.
-  MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo,
-  ClockCounterClockwiseIcon as ClockCounterClockwise,
+  TwitterLogoIcon as TwitterLogo, XLogoIcon as XLogo,
+  ClockCounterClockwiseIcon as ClockCounterClockwise, ClockIcon as Clock,
 } from "@phosphor-icons/react";
 
-// Case-insensitive match against common alternate spellings — "wa"/
-// "whatsapp", "ig"/"insta"/"instagram", "twitter"/"x". Falls through to
-// no icon (the plain chip look already in use) for anything else,
-// Grindr included — an honest gap rather than a guessed icon.
+const CONTACT_ICON_BASE = "/contact-platform-icons/";
+// Android/PWA launcher assets are bundled locally. Generic/unknown method
+// names still use the neutral chat fallback rather than a guessed brand mark.
 const PLATFORM_ICONS = [
-  { test: /^(messenger|fb ?messenger|facebook ?messenger)$/i, Icon: MessengerLogo },
-  { test: /^telegram$/i, Icon: TelegramLogo },
-  { test: /^(instagram|insta|ig)$/i, Icon: InstagramLogo },
-  { test: /^(whatsapp|wa)$/i, Icon: WhatsappLogo },
-  { test: /^(twitter|x)$/i, Icon: XLogo },
-  { test: /^snap(chat)?$/i, Icon: SnapchatLogo },
+  { test: /^(messenger|fb ?messenger|facebook ?messenger)$/i, file: "messenger-android-icon.png", edge: true },
+  { test: /^telegram$/i, file: "telegram-android-icon.png", edge: true },
+  { test: /^(instagram|insta|ig)$/i, file: "instagram-android-icon.png" },
+  { test: /^(whatsapp|wa|phone\/whatsapp)$/i, file: "whatsapp-android-icon.png" },
+  { test: /^snap(chat)?$/i, file: "snapchat-android-icon.png" },
+  { test: /^fab ?guys$/i, file: "fabguys-android-icon.png", edge: true },
+  { test: /^fab ?swingers$/i, file: "fabswingers-android-icon.png", edge: true },
+  { test: /^recon$/i, file: "recon-pwa-icon.png" },
+  { test: /^scruff$/i, file: "scruff-android-icon.png" },
+  { test: /^sniffies$/i, file: "sniffies-pwa-icon.png" },
+  { test: /^tinder$/i, file: "tinder-android-icon.png" },
+  { test: /^(the )?blowers$/i, file: "blowers-pwa-icon.png" },
+  { test: /^bluesky$/i, file: "bluesky-android-icon.png" },
+  { test: /^grindr$/i, file: "grindr-android-icon.png" },
+  { test: /^bumble$/i, file: "bumble-android-icon.png" },
+  { test: /^hinge$/i, file: "hinge-android-icon.png" },
+  { test: /^feeld$/i, file: "feeld-android-icon.png" },
+  { test: /^growlr$/i, file: "growlr-android-icon.png" },
+  { test: /^jack['’]?d$/i, file: "jackd-android-icon.png" },
+  { test: /^hornet$/i, file: "hornet-android-icon.png" },
+  { test: /^signal$/i, file: "signal-android-icon.png" },
+  { test: /^discord$/i, file: "discord-android-icon.png" },
+  { test: /^tik ?tok$/i, file: "tiktok-android-icon.png" },
 ];
+const SUPPORTED_TIME_ZONES = (() => {
+  try { return [...new Set(["UTC", ...Intl.supportedValuesOf("timeZone")])]; }
+  catch { return ["UTC"]; }
+})();
 function platformIconFor(tag) {
   const match = PLATFORM_ICONS.find((p) => p.test.test(tag.trim()));
-  return match ? match.Icon : null;
+  return match || null;
 }
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
@@ -50,11 +63,11 @@ import { fuzzyIncludes, findClosestMatch, findContactDuplicateCandidates } from 
 import {
   ContactRepository, DEFAULT_CONTACT,
   HOSTS_OPTIONS, TRAVELS_OPTIONS, TRAVEL_MODE_OPTIONS,
-  AVAILABILITY_OPTIONS, READILY_AVAILABLE_OPTIONS, MEET_AGAIN_OPTIONS, RATING_OPTIONS,
+  MEET_AGAIN_OPTIONS, RATING_OPTIONS,
   LENGTH_OPTIONS, GIRTH_OPTIONS, FORESKIN_OPTIONS, FORESKIN_DETAIL_OPTIONS, CHASTITY_OPTIONS,
   CUMMER_FREQUENCY_OPTIONS, CUMMER_VOLUME_OPTIONS, CUMMER_STYLE_OPTIONS,
-  PREP_DOXY_OPTIONS, DAYS_OF_WEEK, TIME_CONSTRAINT_TYPES, AVAILABILITY_RULE_TYPES,
-  BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
+  PREP_DOXY_OPTIONS, DAYS_OF_WEEK,
+  CONTACT_BDSM_ROLE_OPTIONS, CONTACT_SEXUAL_POSITION_OPTIONS, UNKNOWN_CONTACT_OPTION,
 } from "../repositories/contactRepository";
 import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { isValidHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
@@ -65,7 +78,8 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // contactRepository.js into the real in-app editable option list
 // system already used elsewhere (Vaccine, Reason for visit, etc.).
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
-import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar, displayableAge, dedupeContactMethods } from "../calculations/contactCalculations";
+import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getMissingRequiredContactFields, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar, displayableAge, dedupeContactMethods, extractUkPostcode, toggleMultiSelectValue } from "../calculations/contactCalculations";
+import { formatAvailabilitySummary, getContactTimeZone, getDeviceTimeZone, hasWeeklyAvailability, isContactAvailableAt, isContactAvailableSoon, isValidAvailabilityWindow, isValidTimeZone, localDateTimeInputValue } from "../calculations/contactAvailability";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
@@ -217,40 +231,29 @@ const MASKED = ANONYMISED;
 
 function displayName(contact, anonymise = false) {
   if (anonymise) return MASKED;
-  return contact.nickname || contact.name;
+  return contact.nickname || contact.name || "Anonymous contact";
 }
 
-// CHANGED 1 Sep 2026 — real ask: "fabguys and fabswingers do have
-// different logos" — the actual bug: this used to be a single flat
-// icon-color-per-method map (Fabguys/Fabswingers both fell back to the
-// same generic Globe icon, Recon wasn't in the map at all, Snapchat/
-// WhatsApp used generic stand-ins). Went through several real design
-// review rounds (colour, real vs. original marks, size/legibility at
-// actual inline scale) before landing here — see each case's own
-// comment for what it's carrying and why.
-//
-// Real logos where the platform has a published brand kit that
-// explicitly permits this exact "show a link to this service" use —
-// these two path strings are Phosphor's own real, properly-licensed
-// icon geometry (MIT, same license as every other icon this app
-// already uses; extracted here as static paths rather than the
-// component form so Snapchat's fill/stroke can flip per light/dark
-// mode, which the component itself doesn't expose). Not scraped or
-// traced from anywhere else.
-const WHATSAPP_PATH = "M186.68,146.63l-32-16a6,6,0,0,0-6,.38L133,141.46A42.49,42.49,0,0,1,114.54,123L125,107.33a6,6,0,0,0,.38-6l-16-32A6,6,0,0,0,104,66a38,38,0,0,0-38,38,86.1,86.1,0,0,0,86,86,38,38,0,0,0,38-38A6,6,0,0,0,186.68,146.63ZM152,178a74.09,74.09,0,0,1-74-74,26,26,0,0,1,22.42-25.75l12.66,25.32-10.39,15.58a6,6,0,0,0-.54,5.63,54.43,54.43,0,0,0,29.07,29.07,6,6,0,0,0,5.63-.54l15.58-10.39,25.32,12.66A26,26,0,0,1,152,178ZM128,26A102,102,0,0,0,38.35,176.69L26.73,211.56a14,14,0,0,0,17.71,17.71l34.87-11.62A102,102,0,1,0,128,26Zm0,192a90,90,0,0,1-45.06-12.08,6.09,6.09,0,0,0-3-.81,6.2,6.2,0,0,0-1.9.31L40.65,217.88a2,2,0,0,1-2.53-2.53L50.58,178a6,6,0,0,0-.5-4.91A90,90,0,1,1,128,218Z";
-const SNAPCHAT_PATH = "M247.83,182.28a8,8,0,0,0-5.13-5.9c-.39-.14-28.95-10.88-43-49.23l19.3-7.72A8,8,0,1,0,213,104.57l-17.82,7.13A149,149,0,0,1,192,80,64,64,0,0,0,64,80a151.24,151.24,0,0,1-3.18,31.75L43,104.57A8,8,0,1,0,37,119.43l19.37,7.75a94,94,0,0,1-17.74,30.2c-12.52,14.14-25.27,19-25.36,19a8,8,0,0,0-2.77,13.36c7.1,6.67,17.67,7.71,27.88,8.72,6.31.62,12.83,1.27,16.39,3.23,3.37,1.86,6.85,6.62,10.21,11.22,5.4,7.41,11.53,15.8,21.24,18.28,9.07,2.33,18.35-.83,26.54-3.62,5.55-1.89,10.8-3.68,15.21-3.68s9.66,1.79,15.21,3.68c6.2,2.11,13,4.43,19.9,4.43a26.35,26.35,0,0,0,6.64-.81h0c9.7-2.48,15.83-10.87,21.23-18.28,3.36-4.6,6.84-9.36,10.21-11.22,3.56-2,10.08-2.61,16.39-3.23,10.21-1,20.78-2.05,27.88-8.72A8,8,0,0,0,247.83,182.28Z";
+const REQUIRED_DETAIL_COPY = {
+  identity: ["contacts.requiredIdentity", "Name or nickname"],
+  age: ["contacts.requiredAge", "Age"],
+  city: ["contacts.requiredCity", "City"],
+  role: ["contacts.requiredRole", "Role"],
+  position: ["contacts.requiredPosition", "Position"],
+};
+function requiredLabelsForKeys(keys, tr) {
+  return keys.map((key) => {
+    const [translationKey, fallback] = REQUIRED_DETAIL_COPY[key] || ["contacts.requiredDetails", "Required detail"];
+    return tr(translationKey, fallback);
+  });
+}
+function missingRequiredLabelsFor(contact, tr) {
+  return requiredLabelsForKeys(getMissingRequiredContactFields(contact), tr);
+}
 
-// ADDED 1 Sep 2026 — one real colour badge per method, replacing the
-// old flat monochrome-icon-per-method row. Fabguys/Fabswingers/Recon
-// have no public brand kit (niche platforms, and this is a public
-// repo) so those three are original marks: a thin diamond/hexagon
-// outline for Fabguys/Fabswingers (deliberately unrelated to their
-// real branding — chosen purely for a distinct silhouette), and a
-// plain red/white/black concentric bullseye for Recon (a bullseye
-// SHAPE isn't ownable, only a specific stylised version of one would
-// be, and this is hand-built as three circles, not traced from
-// anywhere). Sized as fractions of `size` so the same component works
-// at any inline scale, not just the 22px this was tuned against.
+
+// Platform icons are the reviewed Android/PWA assets bundled under public/;
+// only services without a reviewed asset use the neutral generic fallback.
 function MethodBadge({ method, T, size }) {
   // CHANGED 15 Sep 2026 — real bug found alongside the LIGHT/DARK
   // module-scope fix above: `T === DARK` relied on DARK being a fixed
@@ -263,65 +266,41 @@ function MethodBadge({ method, T, size }) {
   // prop through MethodIcons/MethodBadge.
   const isDark = T.bg === NEUTRAL_DARK.bg;
   const box = { width: size, height: size, borderRadius: Math.round(size * 0.27), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
-  switch (method) {
-    case "Phone/WhatsApp":
-      return (
-        <div style={{ ...box, background: "#25D366" }} title="WhatsApp">
-          <svg viewBox="0 0 256 256" width={size * 0.77} height={size * 0.77}><path fill="#FFFFFF" d={WHATSAPP_PATH} /></svg>
+  if (/^(twitter(?:\s*\/\s*x)?|x)$/i.test(method.trim())) {
+    return (
+      <div title="Twitter/X" aria-label="Twitter/X" style={{ ...box, position: "relative", overflow: "hidden", background: "#111111" }}>
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "#1DA1F2", clipPath: "polygon(0 0,100% 0,0 100%)" }}>
+          <TwitterLogo size={size * 0.55} color="#FFFFFF" />
         </div>
-      );
-    case "Snapchat":
-      // Inverts for dark mode (yellow ghost on black) rather than
-      // going monochrome, so the colour identity stays recognisable in
-      // both themes — the user's own explicit call after the first
-      // (black ghost on neutral) version read as washed out.
-      return (
-        <div style={{ ...box, background: isDark ? "#1B1B1F" : "#FFFC00" }} title="Snapchat">
-          <svg viewBox="0 0 256 256" width={size * 0.64} height={size * 0.64}>
-            <path fill={isDark ? "#FFFC00" : "#FFFFFF"} stroke={isDark ? "none" : "#1B1B1F"} strokeWidth={isDark ? 0 : 6} d={SNAPCHAT_PATH} />
-          </svg>
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "#111111", clipPath: "polygon(100% 0,100% 100%,0 100%)" }}>
+          <XLogo size={size * 0.42} color="#FFFFFF" />
         </div>
-      );
-    case "Fabguys":
-      return (
-        <div style={{ ...box, background: "#2563EB" }} title="Fabguys">
-          <svg viewBox="0 0 22 22" width={size * 0.77} height={size * 0.77}><path d="M11 0.7L21.3 11L11 21.3L0.7 11z" fill="none" stroke="#FFFFFF" strokeWidth="1.6" /></svg>
-        </div>
-      );
-    case "Fabswingers":
-      return (
-        <div style={{ ...box, background: "#EA580C" }} title="Fabswingers">
-          <svg viewBox="0 0 22 22" width={size * 0.77} height={size * 0.77}><path d="M11 0.4L20 5.5V16.5L11 21.6L2 16.5V5.5z" fill="none" stroke="#FFFFFF" strokeWidth="1.6" /></svg>
-        </div>
-      );
-    case "Recon":
-      return (
-        <div style={{ ...box, background: "#FFFFFF", border: `1px solid ${T.border}` }} title="Recon">
-          <svg viewBox="0 0 48 48" width={size * 0.73} height={size * 0.73}>
-            <circle cx="24" cy="24" r="20" fill="#E5484D" />
-            <circle cx="24" cy="24" r="14" fill="#FFFFFF" />
-            <circle cx="24" cy="24" r="8" fill="#1B1B1F" />
-          </svg>
-        </div>
-      );
-    default:
-      return (
-        <div style={{ ...box, background: T.surfaceVariant }} title={method}>
-          <MessageCircle size={size * 0.6} color={T.textSecondary} />
-        </div>
-      );
+      </div>
+    );
   }
+  if (/^email$/i.test(method.trim())) {
+    return <div title="Email" style={{ ...box, background: T.surfaceVariant, color: T.textSecondary }}><Envelope size={size * 0.6} /></div>;
+  }
+  const platform = platformIconFor(method);
+  if (platform) {
+    const style = {
+      ...box,
+      objectFit: "cover",
+      background: /^fab ?(guys|swingers)$/i.test(method.trim()) ? "#FFFFFF" : "transparent",
+      filter: platform.edge && !isDark ? "drop-shadow(0 1px 2px rgba(0,0,0,.28))" : "none",
+      border: platform.edge && !isDark && /^(fab ?guys|fab ?swingers)$/i.test(method.trim()) ? `1px solid ${T.border}` : "none",
+    };
+    return <img src={`${CONTACT_ICON_BASE}${platform.file}`} alt="" aria-hidden="true" title={method} style={style} />;
+  }
+  return (
+    <div style={{ ...box, background: T.surfaceVariant }} title={method}>
+      <MessageCircle size={size * 0.6} color={T.textSecondary} />
+    </div>
+  );
 }
-// CHANGED — real audit finding (icon-only-UI affordance sweep): three
-// of these badges (Fabguys/Fabswingers/Recon) are original, invented
-// shapes with no public brand meaning at all (see MethodBadge's own
-// comment) — their only explanation was a native `title` attribute,
-// hover-only, exactly the anti-pattern this app's own rule exists to
-// avoid ("not a hover-only tooltip, since this app targets
-// touchscreens"). Added a real tap affordance: tapping the row toggles
-// a plain-text legend listing each method by name, same
-// toggle-a-caption shape as the active-status dot/icon cluster above.
-function MethodIcons({ methods, T, size = 22 }) {
+// The badges can be image-only at card size, so preserve the touch/keyboard
+// caption that names the services instead of relying on hover-only tooltips.
+function MethodIcons({ methods, T, size = 22, style = null }) {
   const [showLegend, setShowLegend] = useState(false);
   // FIXED 6 Oct 2026 (t079) - was `if (!methods || methods.length === 0)`. The
   // array is now deduplicated FIRST, so the emptiness check and the render are
@@ -330,11 +309,11 @@ function MethodIcons({ methods, T, size = 22 }) {
   const unique = dedupeContactMethods(methods);
   if (unique.length === 0) return null;
   return (
-    <div>
+    <div style={style}>
       <div role="button" tabIndex={0} aria-label="Contact methods — tap for details"
         onClick={(e) => { e.stopPropagation(); setShowLegend((v) => !v); }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowLegend((v) => !v); } }}
-        style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer", minHeight: 44 }}>
+        style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", cursor: "pointer", minHeight: 44, maxWidth: "100%" }}>
         {unique.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
       </div>
       {showLegend && (
@@ -430,21 +409,21 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
 
 // ── Shared form primitives ──
 
-function TextField({ label, value, onChange, T, placeholder, type = "text", helper }) {
+function TextField({ label, value, onChange, T, placeholder, type = "text", helper, requiredMissing = false }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
+        <div style={{ fontSize: 12, color: requiredMissing ? T.actionRed : T.textSecondary }}>{requiredMissing && <span aria-hidden="true" style={{ color: T.actionRed, fontWeight: 800 }}>* </span>}{label}</div>
         {/* ADDED — real ask: "Now" quick-fill, device's real local date. */}
         {type === "date" && (
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 12, fontWeight: 700, color: T.contactsTeal, cursor: "pointer"}}>Now</span>
         )}
       </div>
-      <input type={type} value={value ?? ""} aria-label={label}
+      <input type={type} value={value ?? ""} aria-label={requiredMissing ? `${label}, required` : label} aria-invalid={requiredMissing || undefined}
         onChange={(e) => onChange(type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
         placeholder={placeholder}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${requiredMissing ? T.actionRed : T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
       {helper && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 3 }}>{helper}</div>}
     </div>
   );
@@ -456,26 +435,53 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", help
 // gender field — typing anything not suggested just works and gets
 // remembered for next time.
 function SuggestField({ label, value, onChange, options, onAddNew, T, placeholder }) {
+  const { t: tr } = useTranslation();
   const visibleSuggestions = options.filter((o) => o !== value);
+  const [feedback, setFeedback] = useState("");
+  const remembered = useRef(new Set());
+  const rememberValue = (raw, announceExisting = false) => {
+    const text = (raw || "").trim();
+    if (!text || !onAddNew) return;
+    const existing = options.find((option) => option.toLowerCase() === text.toLowerCase());
+    if (existing) {
+      if (announceExisting) setFeedback(`“${existing}” ${tr("contacts.alreadyInSuggestions", "is already in the suggestions.")}`);
+      return;
+    }
+    const key = text.toLowerCase();
+    if (remembered.current.has(key)) return;
+    remembered.current.add(key);
+    try {
+      Promise.resolve(onAddNew(text)).then(() => {
+        setFeedback(`“${text}” ${tr("contacts.addedToSuggestions", "was added to the suggestions.")}`);
+      }).catch(() => {
+        remembered.current.delete(key);
+        setFeedback(tr("contacts.suggestionSaveFailed", "Couldn't save that suggestion. The value is still in this contact."));
+      });
+    } catch {
+      remembered.current.delete(key);
+      setFeedback(tr("contacts.suggestionSaveFailed", "Couldn't save that suggestion. The value is still in this contact."));
+    }
+  };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((o) => (
-            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)} role="button" tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(o); } }}
+            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(o); setFeedback(""); }} role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(o); setFeedback(""); } }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer"}}>
               {o}
             </div>
           ))}
         </div>
       )}
-      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
-        onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
-        onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
+      <input value={value ?? ""} onChange={(e) => { onChange(e.target.value); setFeedback(""); }}
+        onBlur={() => rememberValue(value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (value && value.trim()) rememberValue(value, true); focusNextField(e.target); } }}
         placeholder={placeholder} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+      {feedback && <div role="status" aria-live="polite" style={{ color: T.actionGreenText, fontSize: 11, marginTop: 4 }}>{feedback}</div>}
     </div>
   );
 }
@@ -510,11 +516,11 @@ function SelectField({ label, value, onChange, options, T, helper }) {
 // Android WebView. Switched to the same visible-suggestion-chips
 // pattern every other picker in this app already uses instead of a
 // native dropdown.
-function ComboField({ label, value, onChange, T, options, placeholder }) {
+function ComboField({ label, value, onChange, T, options, placeholder, requiredMissing = false }) {
   const visibleSuggestions = options.filter((o) => o !== value).slice(0, 8);
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 12, color: requiredMissing ? T.actionRed : T.textSecondary, marginBottom: 4 }}>{requiredMissing && <span aria-hidden="true" style={{ color: T.actionRed, fontWeight: 800 }}>* </span>}{label}</div>
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((opt) => (
@@ -525,10 +531,10 @@ function ComboField({ label, value, onChange, T, options, placeholder }) {
           ))}
         </div>
       )}
-      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
+      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={requiredMissing ? `${label}, required` : label} aria-invalid={requiredMissing || undefined}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
         placeholder={placeholder || "Choose or type a new one"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${requiredMissing ? T.actionRed : T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -682,11 +688,11 @@ function CummerRow({ T, label, form, set, options }) {
   return <MultiSelectChips T={T} label={label} value={mine} onChange={onChange} options={options} />;
 }
 
-function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listName }) {
+function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listName, requiredMissing = false, exclusiveOption = null }) {
   const [newValue, setNewValue] = useState("");
   const toggle = (opt) => {
     const has = value.includes(opt);
-    onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
+    onChange(toggleMultiSelectValue(value, opt, exclusiveOption));
     // ADDED — real ask: frequency-weighted suggestion ranking (3 Sep
     // 2026) — a real pick counts as a use, same reasoning as
     // Measurements/Medication's own suggestion fields; the "Add new"
@@ -707,8 +713,9 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
   };
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ fontSize: 12, color: requiredMissing ? T.actionRed : T.textSecondary, marginBottom: 6 }}>{requiredMissing && <span aria-hidden="true" style={{ color: T.actionRed, fontWeight: 800 }}>* </span>}{label}</div>
+      <div role="group" aria-label={requiredMissing ? `${label}, required` : label} aria-invalid={requiredMissing || undefined}
+        style={{ display: "flex", flexWrap: "wrap", gap: 6, border: `1px solid ${requiredMissing ? T.actionRed : "transparent"}`, borderRadius: radius.sm, padding: requiredMissing ? 5 : 0 }}>
         {options.map((opt) => {
           const active = value.includes(opt);
           return (
@@ -801,11 +808,14 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((tag) => {
-            const PlatformIcon = platformIconFor(tag);
+            const platform = platformIconFor(tag);
+            const isEmail = /^email$/i.test(tag);
+            const isTwitterX = /^(twitter(?:\s*\/\s*x)?|x)$/i.test(tag.trim());
             return (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
                 style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
-                {PlatformIcon && <PlatformIcon size={12} />} {tag} <X size={11} />
+                {platform && <img src={`${CONTACT_ICON_BASE}${platform.file}`} alt="" aria-hidden="true" style={{ width: 14, height: 14, objectFit: "cover", borderRadius: 3, background: /^fab ?(guys|swingers)$/i.test(tag) ? "#FFFFFF" : "transparent", filter: platform.edge && T.bg !== NEUTRAL_DARK.bg ? "drop-shadow(0 1px 1px rgba(0,0,0,.28))" : "none" }} />}
+                {isEmail && <Envelope size={12} />}{isTwitterX && <TwitterLogo size={12} />} {tag} <X size={11} />
               </div>
             );
           })}
@@ -1204,15 +1214,15 @@ function ToggleSwitch({ value, onChange, T }) {
   );
 }
 
-function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T }) {
+function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T, requiredMissing = false }) {
   const { t: tr } = useTranslation();
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Age</div>
+      <div style={{ fontSize: 12, color: requiredMissing ? T.actionRed : T.textSecondary, marginBottom: 4 }}>{requiredMissing && <span aria-hidden="true" style={{ color: T.actionRed, fontWeight: 800 }}>* </span>}Age</div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <input type="number" value={age ?? ""} onChange={(e) => onChangeAge(e.target.value === "" ? null : Number(e.target.value))} aria-label="Age"
+        <input type="number" value={age ?? ""} onChange={(e) => onChangeAge(e.target.value === "" ? null : Number(e.target.value))} aria-label={requiredMissing ? "Age, required" : "Age"} aria-invalid={requiredMissing || undefined}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
-          style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+          style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${requiredMissing ? T.actionRed : T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChangeApprox(!ageIsApprox)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", minHeight: 44 }}>
           <ToggleSwitch T={T} value={ageIsApprox} onChange={onChangeApprox} />
           <span style={{ fontSize: 12, color: T.textSecondary }}>{tr("contacts.approximate", "Approximate")}</span>
@@ -1269,6 +1279,7 @@ function AutoDetectedMethods({ contact, T }) {
   const { t: tr } = useTranslation();
   const detected = [];
   if (contact.phone) detected.push("Phone/WhatsApp");
+  if (contact.email) detected.push("Email");
   if (contact.snapchat) detected.push("Snapchat");
   if (contact.fabguys) detected.push("Fabguys");
   if (contact.fabswingers) detected.push("Fabswingers");
@@ -1286,81 +1297,115 @@ function AutoDetectedMethods({ contact, T }) {
   );
 }
 
-function AvailabilityRuleBuilder({ rules, onChange, T }) {
+function WeeklyAvailabilityEditor({ weeklyRules, onWeeklyRulesChange, exceptions, onExceptionsChange, timeZone, onTimeZoneChange, legacy, onClearLegacy, T }) {
   const { t: tr } = useTranslation();
-  const [draft, setDraft] = useState({ type: "Unavailable", days: [], timeConstraint: "All day", time: "18:00", note: "" });
-
-  const toggleDay = (day) => {
-    setDraft((d) => ({ ...d, days: d.days.includes(day) ? d.days.filter((x) => x !== day) : [...d.days, day] }));
+  const [exceptionDraft, setExceptionDraft] = useState({ date: nowAsDateString(), type: "Unavailable", allDay: true, start: "18:00", end: "22:00" });
+  const [showExceptionForm, setShowExceptionForm] = useState(false);
+  const localZone = getDeviceTimeZone();
+  const zoneValid = !timeZone || isValidTimeZone(timeZone);
+  const hasLegacy = (legacy.availability?.length || 0) > 0 || (legacy.nonAvailabilityRules?.length || 0) > 0 || !!legacy.readilyAvailable;
+  const inputStyle = { minWidth: 0, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 12 };
+  const updateRule = (id, changes) => onWeeklyRulesChange(weeklyRules.map((rule) => rule.id === id ? { ...rule, ...changes } : rule));
+  const toggleRuleDay = (rule, day) => updateRule(rule.id, {
+    days: rule.days.includes(day) ? rule.days.filter((d) => d !== day) : [...rule.days, day].sort((a, b) => a - b),
+  });
+  const addWeeklyRule = () => onWeeklyRulesChange([...weeklyRules, {
+    id: `weekly_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    days: [], start: "18:00", end: "22:00",
+  }]);
+  const addException = () => {
+    if (!exceptionDraft.date || (!exceptionDraft.allDay && (!exceptionDraft.start || !exceptionDraft.end || exceptionDraft.start === exceptionDraft.end))) return;
+    const next = {
+      id: `exception_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      date: exceptionDraft.date,
+      type: exceptionDraft.type,
+      ...(exceptionDraft.allDay ? {} : { start: exceptionDraft.start, end: exceptionDraft.end }),
+    };
+    onExceptionsChange([...exceptions, next]);
+    setShowExceptionForm(false);
+    setExceptionDraft((d) => ({ ...d, date: nowAsDateString() }));
   };
-
-  const addRule = () => {
-    if (draft.days.length === 0) return;
-    const newRule = { id: `rule_${Date.now()}`, ...draft };
-    onChange([...rules, newRule]);
-    setDraft({ type: "Unavailable", days: [], timeConstraint: "All day", time: "18:00", note: "" });
-  };
-
-  const removeRule = (id) => onChange(rules.filter((r) => r.id !== id));
-
-  const describeRule = (r) => {
-    const timePart = r.timeConstraint === "All day" ? "all day" : `${r.timeConstraint.toLowerCase()} ${r.time}`;
-    return `${r.type} · ${r.days.join(", ")} · ${timePart}${r.note ? ` · ${r.note}` : ""}`;
-  };
+  const exceptionDescription = (exception) => `${exception.date} · ${exception.type}${exception.start && exception.end ? ` · ${exception.start}–${exception.end}` : " · all day"}`;
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("contacts.availabilityExceptions", "Availability exceptions")}</div>
-
-      {rules.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-          {rules.map((r) => (
-            <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
-              <span>{describeRule(r)}</span>
-              <Trash2 size={20} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8, padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12}} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ border: `1px dashed ${T.border}`, borderRadius: radius.sm, padding: 10 }}>
-        <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 8 }}>
-          {AVAILABILITY_RULE_TYPES.map((t) => (
-            <div key={t} onClick={() => setDraft((d) => ({ ...d, type: t }))} role="button" tabIndex={0} aria-pressed={draft.type === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDraft((d) => ({ ...d, type: t })); } }}
-              style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: draft.type === t ? T.contactsTeal : "transparent", color: draft.type === t ? "#FFFFFF" : T.textSecondary}}>
-              {t}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-          {DAYS_OF_WEEK.map((day) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={day} onClick={() => toggleDay(day)}
-              style={{ width: 34, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: radius.sm, fontSize: 11, fontWeight: 600, cursor: "pointer", minHeight: 44, border: `1px solid ${draft.days.includes(day) ? T.contactsTeal : T.border}`, color: draft.days.includes(day) ? T.contactsTealText : T.textSecondary, background: draft.days.includes(day) ? `${T.contactsTeal}15` : T.surface }}>
-              {day}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <select value={draft.timeConstraint} onChange={(e) => setDraft((d) => ({ ...d, timeConstraint: e.target.value }))}
-            style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontSize: 12 }}>
-            {TIME_CONSTRAINT_TYPES.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-          {draft.timeConstraint !== "All day" && (
-            <input type="time" value={draft.time} onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-              style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontSize: 12 }} />
-          )}
-        </div>
-
-        <input value={draft.note} onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))} placeholder="Note (optional, e.g. 'Work')" aria-label="Availability note"
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontSize: 12, boxSizing: "border-box", marginBottom: 8 }} />
-
-        <button onClick={addRule} disabled={draft.days.length === 0}
-          style={{ ...btnStyle(draft.days.length === 0 ? T.textDisabled : T.contactsTeal, "outline"), width: "100%", padding: 8, cursor: draft.days.length === 0 ? "default" : "pointer" }}>
-          Add rule
-        </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 2 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, fontWeight: 600 }}>{tr("contacts.weeklyAvailability", "Weekly availability")}</div>
+        <div style={{ fontSize: 10, color: T.textDisabled, textAlign: "right" }}>{timeZone || localZone}</div>
       </div>
+      <div style={{ fontSize: 10, color: T.textDisabled, marginBottom: 8 }}>{tr("contacts.availabilityTimezoneHelp", "Times are interpreted in this timezone. Leave blank to use this device's local timezone.")}</div>
+      <input type="text" list="contact-availability-timezones" value={timeZone || ""} onChange={(e) => onTimeZoneChange(e.target.value)} placeholder={localZone}
+        aria-label={tr("contacts.availabilityTimezone", "Contact's local timezone")} style={{ ...inputStyle, width: "100%", boxSizing: "border-box", marginBottom: 8 }} />
+      <datalist id="contact-availability-timezones">
+        {SUPPORTED_TIME_ZONES.map((zone) => <option key={zone} value={zone} />)}
+      </datalist>
+      {!zoneValid && <div role="alert" style={{ color: T.actionRed, fontSize: 11, marginBottom: 8 }}>Enter a valid IANA timezone, e.g. Europe/London.</div>}
+
+      {weeklyRules.map((rule) => (
+        <div key={rule.id} style={{ padding: 10, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, marginBottom: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+            {DAYS_OF_WEEK.map((day, dayIndex) => {
+              const selected = (rule.days || []).some((value) => Number(value) === dayIndex || String(value).slice(0, 3).toLowerCase() === day.toLowerCase());
+              return <button key={day} type="button" aria-pressed={selected} onClick={() => toggleRuleDay({ ...rule, days: (rule.days || []).map((value) => Number.isInteger(value) ? value : DAYS_OF_WEEK.findIndex((d) => d.toLowerCase() === String(value).slice(0, 3).toLowerCase())).filter((n) => n >= 0) }, dayIndex)}
+                style={{ minWidth: 34, minHeight: 40, borderRadius: radius.sm, border: `1px solid ${selected ? T.contactsTeal : T.border}`, background: selected ? `${T.contactsTeal}15` : T.surface, color: selected ? T.contactsTealText : T.textSecondary, fontSize: 11, fontWeight: 600 }}>{day}</button>;
+            })}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ flex: 1, fontSize: 11, color: T.textSecondary }}>From<input type="time" aria-label="Availability start time" value={rule.start || ""} onChange={(e) => updateRule(rule.id, { start: e.target.value })} style={{ ...inputStyle, display: "block", width: "100%", marginTop: 3 }} /></label>
+            <label style={{ flex: 1, fontSize: 11, color: T.textSecondary }}>To<input type="time" aria-label="Availability end time" value={rule.end || ""} onChange={(e) => updateRule(rule.id, { end: e.target.value })} style={{ ...inputStyle, display: "block", width: "100%", marginTop: 3 }} /></label>
+            <button type="button" onClick={() => onWeeklyRulesChange(weeklyRules.filter((r) => r.id !== rule.id))} aria-label="Remove weekly availability window" style={{ ...inputStyle, minHeight: 44, padding: 8, color: T.actionRed }}><Trash2 size={17} /></button>
+          </div>
+          {!rule.days?.length && <div style={{ color: T.actionAmberText, fontSize: 10, marginTop: 6 }}>Choose at least one day for this window.</div>}
+          {!!rule.days?.length && !isValidAvailabilityWindow(rule) && <div role="alert" style={{ color: T.actionRed, fontSize: 10, marginTop: 6 }}>Choose a valid start and end time; the times must differ.</div>}
+        </div>
+      ))}
+      <button type="button" onClick={addWeeklyRule} style={{ ...btnStyle(T.contactsTeal, "outline"), width: "100%", padding: 9, marginBottom: 10 }}>
+        {tr("contacts.addAvailabilityWindow", "Add weekly time window")}
+      </button>
+
+      <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, fontWeight: 600, marginBottom: 6 }}>{tr("contacts.availabilityExceptionsOneOff", "Date-specific exceptions")}</div>
+        {exceptions.map((exception) => (
+          <div key={exception.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `1px solid ${T.border}`, fontSize: 11, color: T.textPrimary }}>
+            <span>{exceptionDescription(exception)}</span>
+            <button type="button" onClick={() => onExceptionsChange(exceptions.filter((x) => x.id !== exception.id))} aria-label="Remove date-specific availability exception" style={{ ...inputStyle, minHeight: 40, padding: 6, color: T.actionRed }}><Trash2 size={15} /></button>
+          </div>
+        ))}
+        {showExceptionForm ? (
+          <div style={{ marginTop: 8, padding: 10, border: `1px dashed ${T.border}`, borderRadius: radius.sm }}>
+            <label style={{ display: "block", fontSize: 11, color: T.textSecondary, marginBottom: 8 }}>Date<input type="date" value={exceptionDraft.date} onChange={(e) => setExceptionDraft((d) => ({ ...d, date: e.target.value }))} style={{ ...inputStyle, display: "block", width: "100%", marginTop: 3 }} /></label>
+            <select aria-label="Exception availability" value={exceptionDraft.type} onChange={(e) => setExceptionDraft((d) => ({ ...d, type: e.target.value }))} style={{ ...inputStyle, width: "100%", marginBottom: 8 }}>
+              <option value="Unavailable">{tr("contacts.unavailable", "Unavailable")}</option>
+              <option value="Available">{tr("contacts.available", "Available")}</option>
+            </select>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 40, fontSize: 12, color: T.textSecondary }}>
+              <input type="checkbox" checked={exceptionDraft.allDay} onChange={(e) => setExceptionDraft((d) => ({ ...d, allDay: e.target.checked }))} />
+              {tr("contacts.availabilityAllDay", "All day")}
+            </label>
+            {!exceptionDraft.allDay && <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <input type="time" aria-label="Exception start time" value={exceptionDraft.start} onChange={(e) => setExceptionDraft((d) => ({ ...d, start: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+              <input type="time" aria-label="Exception end time" value={exceptionDraft.end} onChange={(e) => setExceptionDraft((d) => ({ ...d, end: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+            </div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" onClick={addException} disabled={!exceptionDraft.date || (!exceptionDraft.allDay && (!exceptionDraft.start || !exceptionDraft.end || exceptionDraft.start === exceptionDraft.end))} style={{ ...btnStyle(T.contactsTeal, "filled"), flex: 1, padding: 8 }}>Add exception</button>
+              <button type="button" onClick={() => setShowExceptionForm(false)} style={{ ...btnStyle(T.textSecondary, "outline"), padding: 8 }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setShowExceptionForm(true)} style={{ ...btnStyle(T.textSecondary, "outline"), width: "100%", padding: 8, marginTop: 8 }}>{tr("contacts.addAvailabilityException", "Add one-off exception")}</button>
+        )}
+      </div>
+
+      {hasLegacy && (
+        <details style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.border}` }}>
+          <summary style={{ color: T.textSecondary, fontSize: 11, cursor: "pointer", minHeight: 36, display: "flex", alignItems: "center" }}>{tr("contacts.legacyAvailability", "Previous availability details")}</summary>
+          <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 8 }}>{tr("contacts.legacyAvailabilityHelp", "These saved details are preserved for reference but are not used by the new schedule filters.")}</div>
+          {!!legacy.availability?.length && <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Tags: {legacy.availability.join(", ")}</div>}
+          {!!legacy.nonAvailabilityRules?.length && <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Old recurring rules: {legacy.nonAvailabilityRules.map((r) => `${r.type || "Rule"} · ${(r.days || []).join(", ")}`).join("; ")}</div>}
+          {!!legacy.readilyAvailable && <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 8 }}>Readily available: {legacy.readilyAvailable}</div>}
+          <button type="button" onClick={onClearLegacy} style={{ ...btnStyle(T.actionRed, "outline"), width: "100%", padding: 8 }}>Clear previous availability details</button>
+        </details>
+      )}
     </div>
   );
 }
@@ -1527,7 +1572,7 @@ function contactStatusCopy(isInactive, inactiveThresholdDays) {
     : { title: "Active - a recent encounter is logged", detail: "Active - a recent encounter is logged" };
 }
 
-function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, showRoleOnCards = false, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
+function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, showRoleOnCards = false, showAvailabilityOnCards = false, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
   const { t: tr } = useTranslation();
   // ADDED 26 Aug 2026 — real ask: "show on card which field is being
   // filtered/why result is coming up... especially needed for if
@@ -1540,6 +1585,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
     ...(contact.sexualPosition || []).filter((p) => activeFilters.positions.includes(p)),
     ...(activeFilters.hosts.includes(contact.hosts) ? [`Hosts: ${contact.hosts}`] : []),
     ...(activeFilters.drives && travelsByCar(contact) ? ["Drives"] : []),
+    ...(activeFilters.availability ? [activeFilters.availability] : []),
   ] : [];
   const flaggedDontMeetAgain = contact.meetAgain === "No";
   // CHANGED 18 Aug 2026 — real feedback: the card was showing an icon
@@ -1549,12 +1595,21 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   // around at the time by only ever showing Phone/Snapchat on the card
   // — everything else stayed reachable one tap away on the full
   // profile, but wasn't visible at a glance here.
-  // REVERTED 1 Sep 2026 — real ask: "fabguys and fabswingers do have
-  // different logos." Now that METHOD_ICON_MAP actually gives every
-  // method its own distinct icon (see that map's own comment), the
-  // original reason for this filter is gone — showing the full list
-  // again, same as the detail-view header already does.
+  // The card now shows the full deduplicated list using the reviewed
+  // Android/PWA marks below; keep this aligned with the profile header.
   const methods = getContactableVia(contact);
+  const availabilitySummary = showAvailabilityOnCards && !anonymise ? formatAvailabilitySummary(contact) : "";
+  const missingRequiredLabels = anonymise ? [] : missingRequiredLabelsFor(contact, tr);
+  const locationPostcode = anonymise ? "" : extractUkPostcode(contact.address);
+  const statusTags = [
+    ...matchedTags,
+    ...(isContactIncomplete(contact) ? [tr("contacts.incomplete", "Incomplete")] : []),
+  ];
+  const relationshipTags = [
+    ...(contact.relationshipType || []),
+    ...((showRoleOnCards && !anonymise) ? (contact.bdsmRole || []) : []),
+    ...((showRoleOnCards && !anonymise) ? (contact.sexualPosition || []) : []),
+  ];
   // Resolve the optional component in this scope, rather than declaring a
   // JSX component inside an inline IIFE. This also makes the no-icon case
   // explicit in React's render tree.
@@ -1648,7 +1703,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   const GOLD = "#E8A33D";
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch"}}>
+      style={{ position: "relative", width: "100%", maxWidth: 460, boxSizing: "border-box", margin: "0 auto", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch"}}>
       {/* ADDED 17 Sep 2026 — real fix for a genuine axe `nested-interactive`
           violation: this card used to be role="button" itself, with the
           status dot below ALSO role="button" — an interactive widget
@@ -1764,9 +1819,9 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             literal location pin, always shown alongside the city name
             (distinct from the "will travel to you" NavigationArrow
             below, a different fact about a different thing). */}
-        {contact.city && !anonymise && (
+        {(contact.city || locationPostcode) && !anonymise && (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 12, color: T.textSecondary }}>
-            <MapPin size={12} /> {contact.city}
+            <MapPin size={12} /> {[contact.city, locationPostcode].filter(Boolean).join(" · ")}
           </span>
         )}
       </div>
@@ -1829,6 +1884,9 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer"}} />
         ) : null}
+        {contact.outdoorMeetup && (
+          <TreeEvergreen size={20} color={T.actionGreen} role="img" title="Outdoor/public meetup" aria-label="Outdoor/public meetup" />
+        )}
         {contact.linkedContactIds.length > 0 && (
           <Link2 size={20} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
             onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
@@ -1841,15 +1899,6 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer"}} />
         )}
-        {/* CHANGED 6 Oct 2026 (t078) - the social-media summary moved DOWN, to
-            after travel and accommodation. It used to sit immediately after the
-            age, which put a run of contact-method icons ahead of the facts about
-            meeting up: where they are, how they get there, whether they host.
-            Those are the facts that decide whether a meetup is possible, and
-            they were being read last, behind the least consequential thing on the
-            row. The methods row is also the widest, so putting it last also keeps
-            the leading icons from being pushed onto a second line first. */}
-        <MethodIcons methods={methods} T={T} />
         </div>
       </div>
       {showStatusInfo && (() => {
@@ -1868,66 +1917,52 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           </div>
         );
       })()}
-      {/* CHANGED 5 Nov 2026 — real report: the relationship chips ("Hookup",
-          "Friends with benefits") and the amber "Incomplete" chip read as the
-          same colour. Both were warm: relationship used the Contacts accent
-          (itself a burnt amber) at 15%, Incomplete uses ACTION.amberSurface.
-          Relationship, role and position are *facts about the person*, not
-          status, so they are now neutral metadata chips; amber is left to mean
-          one thing only on this card — "Incomplete". Search-hit tags stay
-          accent-filled because they mark a match, not a fact.
-
-          ALSO 5 Nov 2026 — same report, "spacing still erroneous and
-          inconsistent": these were four separate rows, each with its own
-          marginTop (0, 4, 4, 4), which is why the gaps between them never
-          matched the gap between the name and the first chip. They are one
-          wrapping chip cloud now, so any combination of relationship, role,
-          position, search tag and Incomplete flows into the same 4 px rhythm
-          and the card gains exactly one block instead of four. */}
-      {(contact.relationshipType.length > 0
-        || (showRoleOnCards && !anonymise && ((contact.bdsmRole || []).length > 0 || (contact.sexualPosition || []).length > 0))
-        || matchedTags.length > 0
-        || isContactIncomplete(contact)) && (
-        <div style={{ display: "flex", gap: 4, marginLeft: 16, flexWrap: "wrap", alignItems: "center" }}>
-          {contact.relationshipType.map((rt) => (
-            <span key={`rel-${rt}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
-          ))}
-          {/* ADDED 10 Sep 2026 — real ask: "option to show Dom/sub, top/
-              bottom info" on the card — both fields already existed and
-              were already shown on the profile detail; this is the
-              opt-in list-card copy, gated behind showRoleOnCards (off by
-              default — see AppPreferencesRepository's own comment).
-              CHANGED 5 Nov 2026 — no longer forced onto its own row; the
-              neutral chip colour already keeps "relationship" and "role"
-              from blurring together. */}
-          {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((r) => (
-            <span key={`role-${r}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{r}</span>
-          ))}
-          {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((p) => (
-            <span key={`pos-${p}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{p}</span>
-          ))}
-          {matchedTags.map((tag) => (
-            <span key={`tag-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>
-          ))}
-          {/* ADDED 26 Aug 2026 — real ask, decided jointly: required-field
-              "Incomplete" tag. isContactIncomplete() already respects
-              markedComplete (the per-contact override), so this only ever
-              shows for contacts that are genuinely missing something and
-              haven't been explicitly marked done. */}
-          {isContactIncomplete(contact) && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>
+      {(statusTags.length > 0 || relationshipTags.length > 0 || methods.length > 0) && (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: methods.length > 0 ? "minmax(0, 1fr) 112px" : "minmax(0, 1fr)",
+          gridTemplateRows: "auto auto",
+          columnGap: 8,
+          rowGap: 4,
+          alignItems: "center",
+          marginLeft: 16,
+          // End the icon column just left of the favourite star, with a small
+          // visual buffer. Long social rows must never run underneath it.
+          marginRight: !selectMode && onToggleFavourite ? 22 : 0,
+          minWidth: 0,
+        }}>
+          {statusTags.length > 0 && (
+            <div style={{ gridColumn: 1, gridRow: 1, display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+              {matchedTags.map((tag) => <span key={`match-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>)}
+              {isContactIncomplete(contact) && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>}
+              {missingRequiredLabels.length > 0 && <span aria-label={`${tr("contacts.missingRequiredDetails", "Missing mandatory details")}: ${missingRequiredLabels.join(", ")}`} style={{ fontSize: 9, fontWeight: 700, color: T.actionRed, lineHeight: 1.35 }}>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.map((label) => `* ${label}`).join(", ")}</span>}
+            </div>
           )}
+          {relationshipTags.length > 0 && (
+            <div style={{ gridColumn: 1, gridRow: statusTags.length > 0 ? 2 : 1, display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+              {contact.relationshipType.map((value) => <span key={`rel-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+              {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((value) => <span key={`role-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+              {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((value) => <span key={`position-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+            </div>
+          )}
+          {methods.length > 0 && <MethodIcons methods={methods} T={T} style={{ gridColumn: 2, gridRow: statusTags.length > 0 ? "1 / span 2" : "1", width: 112, justifySelf: "end", alignSelf: "start" }} />}
+        </div>
+      )}
+      {availabilitySummary && (
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: 16, color: T.textSecondary, fontSize: 11, lineHeight: 1.35 }}>
+          <Clock size={13} color={T.contactsTeal} aria-hidden="true" />
+          <span>{availabilitySummary}</span>
         </div>
       )}
       {flaggedDontMeetAgain ? (
         <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600, marginLeft: 16 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
       ) : (
-        // CHANGED 18 Aug 2026 — was a permanent stub ("not tracked
-        // yet") regardless of real data. Now shows the real last
-        // encounter date via the same calculation/formatting Contact
-        // Profile's Timeline already uses.
-        <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic", marginLeft: 16 }}>
-          {summary.lastInteraction ? `Last interaction ${formatRelativeDate(summary.lastInteraction)}` : "No encounters logged yet"}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, marginLeft: 16, fontSize: 11, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic" }}>
+          {anonymise ? <span>Activity hidden</span> : summary.count > 0 && <strong style={{ color: T.textSecondary, fontWeight: 600 }}>{summary.count} encounters</strong>}
+          {!anonymise && summary.count > 2 && (summary.ratedCount || 0) >= 2 && summary.averageEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {Math.round(summary.averageEnjoyment)}/100 rated avg</span>}
+          {!anonymise && !(summary.count > 2 && (summary.ratedCount || 0) >= 2) && summary.firstRatedEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {summary.firstRatedEnjoyment}/100 first rating</span>}
+          {!anonymise && summary.lastInteraction && <span>Last interaction {formatRelativeDate(summary.lastInteraction)}</span>}
+          {!anonymise && !summary.lastInteraction && summary.count === 0 && <span>No encounters logged yet</span>}
         </div>
       )}
       </div>
@@ -1945,7 +1980,14 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
 // against it was getting a fresh array identity every render — its
 // memoization was a no-op. Hoisted to module scope (a pure literal, no
 // dependency on props/state).
-const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswingers", "recon"];
+const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "email", "snapchat", "fabguys", "fabswingers", "recon"];
+function contactNotesPlaceholder(form) {
+  const ideas = [];
+  if (!Array.isArray(form.howDidWeMeet) || form.howDidWeMeet.length === 0) ideas.push("Context around how you met (beyond a short tag)");
+  ideas.push("A preference, boundary or conversation detail not captured in the fields above");
+  ideas.push("A follow-up or reminder for next time");
+  return `Optional notes — only add what is useful:\n${ideas.map((idea) => `• ${idea}`).join("\n")}`;
+}
 
 function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOpenGlossary }) {
   const { t: tr } = useTranslation();
@@ -2011,7 +2053,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
     loadDraft(draftKey).then((draft) => {
       if (cancelled) return;
       if (draft) {
-        setForm(draft.data);
+        setForm({ ...DEFAULT_CONTACT, ...draft.data });
         setDraftRestored(true);
       }
     });
@@ -2030,7 +2072,12 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
-  const canSave = form.name.trim().length > 0;
+  const missingRequiredFields = getMissingRequiredContactFields(form);
+  const missingRequiredLabels = missingRequiredLabelsFor(form, tr);
+  const emailValid = !form.email?.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const timeZoneValid = !form.availabilityTimeZone || isValidTimeZone(form.availabilityTimeZone);
+  const weeklyRulesValid = (form.weeklyAvailability || []).every((rule) => !(rule.days || []).length || isValidAvailabilityWindow(rule));
+  const canSave = missingRequiredFields.length === 0 && emailValid && timeZoneValid && weeklyRulesValid;
   // ADDED 26 Aug 2026 — real ask: duplicate detection. Warns, doesn't
   // block — two genuinely different people can share a first name —
   // but flags it so an actual accidental double-entry gets caught
@@ -2039,7 +2086,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
   const possibleDuplicate = useMemo(() => {
     const nameLower = form.name.trim().toLowerCase();
     const nicknameLower = (form.nickname || "").trim().toLowerCase();
-    if (!nameLower) return null;
+    if (!nameLower && !nicknameLower) return null;
     return contacts.find((c) => {
       if (c.id === contact?.id) return false; // editing this same contact isn't a duplicate of itself
       if (c.isArchived) return false;
@@ -2050,7 +2097,10 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
   }, [form.name, form.nickname, contacts, contact?.id]);
   const doSave = () => {
     clearDraft(draftKey);
-    onSave(form);
+    onSave({
+      ...form,
+      availabilityTimeZone: hasWeeklyAvailability(form) ? (form.availabilityTimeZone || getDeviceTimeZone()) : form.availabilityTimeZone,
+    });
   };
 
   const cityOptions = useMemo(() => getKnownCities(contacts), [contacts]);
@@ -2111,7 +2161,13 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         <div>
         <SectionCard T={T} title="Identity">
           <PhotoPicker T={T} value={form.profilePicture} onChange={set("profilePicture")} />
-          <TextField T={T} label="Full name" value={form.name} onChange={set("name")} placeholder="Full name" />
+          {missingRequiredLabels.length > 0 && (
+            <div role="alert" style={{ display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px", margin: "2px 0 8px", borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}12`, color: T.actionRed, fontSize: 11, lineHeight: 1.4 }}>
+              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.join(", ")}. Add these, or acknowledge an intentionally incomplete/anonymous record below.</span>
+            </div>
+          )}
+          <TextField T={T} label="Full name" value={form.name} onChange={set("name")} placeholder="Full name" requiredMissing={missingRequiredFields.includes("identity")} />
           {possibleDuplicate && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: radius.sm, background: T.actionAmberSurface, marginTop: -4, marginBottom: 8 }}>
               <AlertTriangle size={13} color={T.actionAmberText} />
@@ -2125,11 +2181,12 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               </span>
             </div>
           )}
-          <TextField T={T} label="Nickname (shown instead of name, if set)" value={form.nickname} onChange={set("nickname")} placeholder="Optional" />
+          <TextField T={T} label="Nickname (shown instead of name, if set)" value={form.nickname} onChange={set("nickname")} placeholder="Optional" requiredMissing={missingRequiredFields.includes("identity")}
+            helper={missingRequiredFields.includes("identity") ? "Either a full name or a nickname satisfies this requirement." : undefined} />
           {/* ADDED — real ask: trans-inclusive, non-judgemental — free
               text, not a fixed dropdown of "approved" options. */}
           <SuggestField T={T} label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
-            onAddNew={(v) => { CustomOptionListsRepository.add("gender", v).then(setGenderOptions); }} placeholder="e.g. Male, Female, Non-binary" />
+            onAddNew={(v) => CustomOptionListsRepository.add("gender", v).then(setGenderOptions)} placeholder="e.g. Male, Female, Non-binary" />
           {/* CHANGED — real ask, from a competitive-research finding:
               plain free text with no suggestions at all, the one field
               on this form that hadn't gotten the same SuggestField
@@ -2137,23 +2194,23 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               anything, it just works" flexibility — this only adds
               suggestion chips, nothing is locked down. */}
           <SuggestField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
-            onAddNew={(v) => { CustomOptionListsRepository.add("pronouns", v).then(setPronounsOptions); }} placeholder="e.g. he/him, she/her, they/them" />
-          <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} />
+            onAddNew={(v) => CustomOptionListsRepository.add("pronouns", v).then(setPronounsOptions)} placeholder="e.g. he/him, she/her, they/them" />
+          <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} requiredMissing={missingRequiredFields.includes("age")} />
           {/* ADDED 26 Aug 2026 — real ask: moved to the top of the form
               rather than buried in Location & logistics — the override
               for the new required-field "Incomplete" tag deserves to
               be found easily, not stumbled on. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.markAsComplete", "Mark as complete")}</div>
-              <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>{tr("contacts.markCompleteDesc", "Stops the \"Incomplete\" tag showing, even if some fields are genuinely blank — for contacts you consider as filled-in as they'll ever be.")}</div>
+              <div style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.acknowledgeIncomplete", "Acknowledge incomplete / anonymous record")}</div>
+              <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>{tr("contacts.acknowledgeIncompleteDesc", "I understand these mandatory details are missing. Hide the warnings and allow this intentionally incomplete or anonymous record to be saved.")}</div>
             </div>
             <ToggleSwitch T={T} value={form.markedComplete} onChange={set("markedComplete")} />
           </div>
         </SectionCard>
 
         <SectionCard T={T} title="Relationship">
-          <SelectField T={T} label="Rating" value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
+          <SelectField T={T} label={tr("contacts.rating", "How do I feel about this person?")} value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
           <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions} listName="relationshipType"
             onAddNew={(v) => { CustomOptionListsRepository.add("relationshipType", v).then(setRelationshipTypeOptions); }} />
           <TagInput T={T} label="How did we meet?" value={form.howDidWeMeet} onChange={set("howDidWeMeet")} suggestions={howMetOptions} />
@@ -2188,12 +2245,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         <SectionCard T={T} title="Location & logistics">
           <SelectField T={T} label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} />
           <SelectField T={T} label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+            <span style={{ fontSize: 13, color: T.textPrimary }}>Outdoor/public meetups</span>
+            <ToggleSwitch T={T} value={!!form.outdoorMeetup} onChange={set("outdoorMeetup")} />
+          </div>
           {(form.travels === "Yes" || form.travels === "Sometimes") && (
             <MultiSelectChips T={T} label="Travel mode" value={form.travelMode} onChange={(v) => { set("travelMode")(v); if (Array.isArray(v) && v.includes("Car")) set("drives")(true); }} options={TRAVEL_MODE_OPTIONS} />
           )}
           <AddressAutocomplete T={T} label="Address" value={form.address} onChange={set("address")}
             placeholder="Start typing an address..." onCityDetected={set("city")} />
-          <ComboField T={T} label="City" value={form.city} onChange={set("city")} options={cityOptions} />
+          <ComboField T={T} label="City" value={form.city} onChange={set("city")} options={cityOptions} requiredMissing={missingRequiredFields.includes("city")} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
             <span style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.drives", "Drives")}</span>
             <ToggleSwitch T={T} value={form.drives} onChange={set("drives")} />
@@ -2210,9 +2271,17 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               <TextField T={T} label="Car registration" value={form.carRegistration} onChange={set("carRegistration")} placeholder="e.g. AB12 CDE" />
             </>
           )}
-          <MultiSelectChips T={T} label="Availability" value={form.availability} onChange={set("availability")} options={AVAILABILITY_OPTIONS} />
-          <AvailabilityRuleBuilder T={T} rules={form.nonAvailabilityRules} onChange={set("nonAvailabilityRules")} />
-          <SelectField T={T} label="Readily available?" value={form.readilyAvailable} onChange={set("readilyAvailable")} options={READILY_AVAILABLE_OPTIONS} />
+          <WeeklyAvailabilityEditor
+            T={T}
+            weeklyRules={form.weeklyAvailability || []}
+            onWeeklyRulesChange={set("weeklyAvailability")}
+            exceptions={form.availabilityExceptions || []}
+            onExceptionsChange={set("availabilityExceptions")}
+            timeZone={form.availabilityTimeZone || ""}
+            onTimeZoneChange={set("availabilityTimeZone")}
+            legacy={form}
+            onClearLegacy={() => setForm((f) => ({ ...f, availability: [], nonAvailabilityRules: [], readilyAvailable: "" }))}
+          />
         </SectionCard>
 
         {/* REORDERED 17 Sep 2026 — real ask: "physical & health before
@@ -2364,14 +2433,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               </div>
             ) : null;
           })()}
-          <MultiSelectChips T={T} label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={BDSM_ROLE_OPTIONS} />
+          <MultiSelectChips T={T} label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={CONTACT_BDSM_ROLE_OPTIONS} requiredMissing={missingRequiredFields.includes("role")} exclusiveOption={UNKNOWN_CONTACT_OPTION} />
+          <div style={{ color: missingRequiredFields.includes("role") ? T.actionRed : T.textDisabled, fontSize: 10, marginTop: -3 }}>Choose one or more roles, or mark this field “Unknown / not discussed”.</div>
           {/* ADDED 9 Oct 2026 (t052) — these chips read "Dom / Switch / sub"
               with a label of "Role", and the Position chips directly below use a
               different vocabulary for a different question. A reader cannot tell
               that from the labels alone. Same note as Encounters' kink roles,
               and the same shared copy. */}
           <JargonNote theme={T} noteKey="role-axes" label="Role" onOpen={onOpenGlossary} />
-          <MultiSelectChips T={T} label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={SEXUAL_POSITION_OPTIONS} />
+          <MultiSelectChips T={T} label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={CONTACT_SEXUAL_POSITION_OPTIONS} requiredMissing={missingRequiredFields.includes("position")} exclusiveOption={UNKNOWN_CONTACT_OPTION} />
+          <div style={{ color: missingRequiredFields.includes("position") ? T.actionRed : T.textDisabled, fontSize: 10, marginTop: -3 }}>Choose one or more positions, or mark this field “Unknown / not discussed”.</div>
         </SectionCard>
 
         {/* Own section, not folded into Kink — Notion keeps the Chems
@@ -2387,6 +2458,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             to live here) to sit right before Notes instead. */}
         <SectionCard T={T} title="Contact methods">
           <TextField T={T} label="Phone/WhatsApp" value={form.phone} onChange={set("phone")} placeholder="e.g. +44 7700 900123" />
+          <TextField T={T} label={tr("contacts.email", "Email")} value={form.email} onChange={set("email")} placeholder="name@example.com" type="email" helper={emailValid ? "Optional contact method." : tr("contacts.emailInvalid", "Enter a valid email address or leave it blank.")} />
           <TextField T={T} label="Snapchat" value={form.snapchat} onChange={set("snapchat")} placeholder="Username" />
           <TextField T={T} label="Fabguys" value={form.fabguys} onChange={set("fabguys")} placeholder="Username" />
           <TextField T={T} label="Fabswingers" value={form.fabswingers} onChange={set("fabswingers")} placeholder="Username" />
@@ -2401,7 +2473,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         </SectionCard>
 
         <SectionCard T={T} title="Notes">
-          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes" placeholder="e.g. how you met, preferences, things to remember before meeting again"
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes" placeholder={contactNotesPlaceholder(form)}
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
@@ -2417,7 +2489,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         </div>
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-          <button onClick={() => canSave && doSave()} style={{ ...btnStyle(canSave ? T.contactsTeal : T.textDisabled, "filled"), width: "100%", padding: 16, fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
+          <button onClick={() => canSave && doSave()} disabled={!canSave} aria-disabled={!canSave} style={{ ...btnStyle(canSave ? T.contactsTeal : T.textDisabled, "filled"), width: "100%", padding: 16, fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
             {isNew ? tr("contacts.addContact", "Add contact") : tr("contacts.saveChanges", "Save changes")}
           </button>
         </div>
@@ -2432,15 +2504,15 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
 // — same real behavior, far smaller real diff.
 const ShowBlankFieldsContext = React.createContext(false);
 
-function ReadRow({ label, value, T }) {
+function ReadRow({ label, value, T, requiredMissing = false }) {
   const showBlank = React.useContext(ShowBlankFieldsContext);
   const isEmpty = value === "" || value == null || (Array.isArray(value) && value.length === 0) || value === false;
-  if (isEmpty && !showBlank) return null;
-  const display = isEmpty ? "— not set" : (Array.isArray(value) ? value.join(", ") : value === true ? "Yes" : value);
+  if (isEmpty && !showBlank && !requiredMissing) return null;
+  const display = requiredMissing && isEmpty ? "— missing mandatory detail" : isEmpty ? "— not set" : (Array.isArray(value) ? value.join(", ") : value === true ? "Yes" : value);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
-      <span style={{ color: T.textSecondary }}>{label}</span>
-      <span style={{ color: isEmpty ? T.textDisabled : T.textPrimary, fontWeight: isEmpty ? 400 : 500, fontStyle: isEmpty ? "italic" : "normal", textAlign: "right" }}>{display}</span>
+      <span style={{ color: requiredMissing ? T.actionRed : T.textSecondary }}>{requiredMissing && <span aria-hidden="true" style={{ fontWeight: 800 }}>* </span>}{label}</span>
+      <span style={{ color: requiredMissing ? T.actionRed : isEmpty ? T.textDisabled : T.textPrimary, fontWeight: requiredMissing ? 600 : isEmpty ? 400 : 500, fontStyle: isEmpty ? "italic" : "normal", textAlign: "right" }}>{display}</span>
     </div>
   );
 }
@@ -2517,6 +2589,8 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   if (!contact) return null;
+  const missingRequiredFields = (anonymise || hideFurther) ? [] : getMissingRequiredContactFields(contact);
+  const missingRequiredLabels = requiredLabelsForKeys(missingRequiredFields, tr);
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
   const toggleLinkedToMe = async () => {
     if (isLinkedToMe) await MyProfileRepository.unlinkRelationshipContact(contact.id);
@@ -2628,6 +2702,14 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           </div>
         )}
 
+        {missingRequiredFields.length > 0 && (
+          <SectionCard T={T} title={tr("contacts.requiredDetails", "Required details")}>
+            {missingRequiredFields.map((field, index) => (
+              <ReadRow key={field} T={T} label={missingRequiredLabels[index]} value="" requiredMissing />
+            ))}
+          </SectionCard>
+        )}
+
         {/* REORDERED — real ask: Timeline (encounter history/stats with
             this contact) is the most clinically relevant summary, so
             it now leads right under the header instead of trailing at
@@ -2696,7 +2778,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         </SectionCard>
 
         <SectionCard T={T} title="Relationship">
-          <ReadRow T={T} label="Rating" value={contact.rating} />
+          <ReadRow T={T} label={tr("contacts.rating", "How do I feel about this person?")} value={contact.rating} />
           <ReadRow T={T} label="Relationship type" value={contact.relationshipType} />
           <ReadRow T={T} label="How did we meet?" value={contact.howDidWeMeet} />
           <ReadRow T={T} label="Meet again?" value={contact.meetAgain} />
@@ -2728,6 +2810,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Hosts" value={contact.hosts} />
           <ReadRow T={T} label="Travels" value={contact.travels} />
           <ReadRow T={T} label="Travel mode" value={contact.travelMode} />
+          <ReadRow T={T} label="Outdoor/public meetups" value={contact.outdoorMeetup ? "Yes" : "No"} />
           <ReadRow T={T} label="Address" value={anonymise ? MASKED : contact.address} />
           <ReadRow T={T} label="City" value={anonymise ? MASKED : contact.city} />
 <ReadRow T={T} label="Drives" value={travelsByCar(contact) ? "Yes" : "No"} />
@@ -2741,16 +2824,26 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                 same question until they pick one. */}
             <ReadRow T={T} label="Car details" value={contact.carDetails} />
           <ReadRow T={T} label="Car registration" value={anonymise ? MASKED : contact.carRegistration} />
-          <ReadRow T={T} label="Availability" value={contact.availability} />
-          {contact.nonAvailabilityRules?.length > 0 && (
+          {!anonymise && formatAvailabilitySummary(contact) && <ReadRow T={T} label={tr("contacts.weeklyAvailability", "Weekly availability")} value={formatAvailabilitySummary(contact)} />}
+          {!anonymise && contact.weeklyAvailability?.length > 0 && <ReadRow T={T} label={tr("contacts.availabilityTimezone", "Contact's local timezone")} value={getContactTimeZone(contact)} />}
+          {!anonymise && contact.availabilityExceptions?.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
-              <div style={{ color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.availabilityExceptions", "Availability exceptions")}</div>
-              {contact.nonAvailabilityRules.map((r) => (
-                <div key={r.id} style={{ color: T.textPrimary, fontSize: 12, marginBottom: 2 }}>{describeAvailabilityRule(r)}</div>
+              <div style={{ color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.availabilityExceptionsOneOff", "Date-specific exceptions")}</div>
+              {contact.availabilityExceptions.map((exception) => (
+                <div key={exception.id} style={{ color: T.textPrimary, fontSize: 12, marginBottom: 2 }}>
+                  {`${exception.date} · ${exception.type}${exception.start && exception.end ? ` · ${exception.start}–${exception.end}` : " · all day"}`}
+                </div>
               ))}
             </div>
           )}
-          <ReadRow T={T} label="Readily available?" value={contact.readilyAvailable} />
+          {!anonymise && ((contact.availability?.length || 0) > 0 || (contact.nonAvailabilityRules?.length || 0) > 0 || contact.readilyAvailable) && (
+            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 12, color: T.textSecondary }}>
+              <div style={{ marginBottom: 4 }}>{tr("contacts.legacyAvailability", "Previous availability details")} · not used by filters</div>
+              {contact.availability?.length > 0 && <div>Tags: {contact.availability.join(", ")}</div>}
+              {contact.nonAvailabilityRules?.map((rule) => <div key={rule.id}>{describeAvailabilityRule(rule)}</div>)}
+              {contact.readilyAvailable && <div>Readily available: {contact.readilyAvailable}</div>}
+            </div>
+          )}
         </SectionCard>
 
         {/* REORDERED 17 Sep 2026 — real ask: "physical & health before
@@ -2894,6 +2987,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         <SectionCard T={T} title="Contact methods">
           <ReadRow T={T} label="Contactable via" value={methods} />
           <ReadRow T={T} label="Phone/WhatsApp" value={contact.phone} />
+          {contact.email && <ReadRow T={T} label={tr("contacts.email", "Email")} value={anonymise ? MASKED : contact.email} />}
           <ReadRow T={T} label="Snapchat" value={contact.snapchat} />
           <ReadRow T={T} label="Fabguys" value={contact.fabguys} />
           <ReadRow T={T} label="Fabswingers" value={contact.fabswingers} />
@@ -2934,7 +3028,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
 }
 
 // ── Contacts List ──
-function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, setQuery, onOpenMyProfile, onOpenImportProfile, onOpenContactsSettings, onQuickExit, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, setQuery, onOpenMyProfile, onOpenImportProfile, onOpenContactsSettings, onQuickExit, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, preferencesVersion = 0 }) {
   // ADDED 19 Aug 2026 — Anonymise mode. Read once per mount, same
   // pattern as every other cross-module settings read in this app —
   // toggling it in Settings and switching back to Contacts (a fresh
@@ -2949,11 +3043,12 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // back to the 90-day default below regardless of what the owner
   // actually configured in Settings > General > Preferences. Same bug
   // class as Home's/Healthcare's own menstrualTrackingEnabled sites.
-  const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.inactiveThresholdDays), [], 90);
+  const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.inactiveThresholdDays), [preferencesVersion], 90);
   // ADDED 10 Sep 2026 — real ask: Dom/sub + Top/bottom on the list card,
   // gated behind an opt-in preference — see AppPreferencesRepository's
   // own showRoleOnContactCards comment for why this defaults off.
-  const [showRoleOnCards] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.showRoleOnContactCards), [], false);
+  const [showRoleOnCards] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.showRoleOnContactCards), [preferencesVersion], false);
+  const [showAvailabilityOnCards] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.showAvailabilityOnContactCards), [preferencesVersion], false);
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — the list below rendered as one full-width stacked column
   // regardless of viewport, so each card's own left-aligned content
@@ -3029,23 +3124,40 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // ADDED 26 Aug 2026 — real ask: filter by drives/accommodation too.
   const [filterHosts, setFilterHosts] = useState(() => { try { return JSON.parse(localStorage.getItem("shos_contact_filter_hosts") || "[]"); } catch { return []; } });
   const [filterDrives, setFilterDrives] = useState(() => { try { return JSON.parse(localStorage.getItem("shos_contact_filter_drives") || "false"); } catch { return false; } });
+  const [filterAvailability, setFilterAvailability] = useState(() => { try { return localStorage.getItem("shos_contact_filter_availability") || ""; } catch { return ""; } });
+  const [filterAvailabilityAt, setFilterAvailabilityAt] = useState(() => { try { return localStorage.getItem("shos_contact_filter_availability_at") || localDateTimeInputValue(new Date(Date.now() + 60 * 60 * 1000)); } catch { return localDateTimeInputValue(new Date(Date.now() + 60 * 60 * 1000)); } });
+  const [availabilityNow, setAvailabilityNow] = useState(() => new Date());
   // Persist filters so they survive navigation
   useEffect(() => { localStorage.setItem("shos_contact_filter_roles", JSON.stringify(filterRoles)); }, [filterRoles]);
   useEffect(() => { localStorage.setItem("shos_contact_filter_positions", JSON.stringify(filterPositions)); }, [filterPositions]);
   useEffect(() => { localStorage.setItem("shos_contact_filter_hosts", JSON.stringify(filterHosts)); }, [filterHosts]);
   useEffect(() => { localStorage.setItem("shos_contact_filter_drives", JSON.stringify(filterDrives)); }, [filterDrives]);
-  const activeFilterCount = filterRoles.length + filterPositions.length + filterHosts.length + (filterDrives ? 1 : 0);
+  useEffect(() => { try { localStorage.setItem("shos_contact_filter_availability", filterAvailability); } catch { /* Browser storage may be unavailable. */ } }, [filterAvailability]);
+  useEffect(() => { try { localStorage.setItem("shos_contact_filter_availability_at", filterAvailabilityAt); } catch { /* Browser storage may be unavailable. */ } }, [filterAvailabilityAt]);
+  useEffect(() => { if (anonymise) setFilterAvailability(""); }, [anonymise]);
+  useEffect(() => {
+    if (!filterAvailability || anonymise) return undefined;
+    const timer = setInterval(() => setAvailabilityNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, [filterAvailability, anonymise]);
+  const activeFilterCount = filterRoles.length + filterPositions.length + filterHosts.length + (filterDrives ? 1 : 0) + (filterAvailability && !anonymise ? 1 : 0);
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
   // — resolved once here (loaded, not per keystroke), read synchronously
   // via .get() inside the `filtered` useMemo below, same "split slow-
   // loading data from fast pure computation" split used elsewhere this
   // session for a live search box.
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const effectiveAvailabilityFilter = anonymise ? "" : filterAvailability;
+  const availabilityFilterLabel = effectiveAvailabilityFilter === "now"
+    ? tr("contacts.availableNow", "Available now")
+    : effectiveAvailabilityFilter === "soon"
+      ? tr("contacts.availableSoon", "Soon · next 24 hours")
+      : effectiveAvailabilityFilter === "at" ? tr("contacts.availableAtTime", "At a set time") : "";
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const searched = q
       ? activeContacts.filter((c) =>
-          [c.name, c.nickname, c.phone, c.snapchat, c.fabguys, c.fabswingers, c.recon, c.notes]
+          [c.name, c.nickname, c.phone, ...(!anonymise ? [c.email] : []), c.snapchat, c.fabguys, c.fabswingers, c.recon, c.notes]
             .some((field) => (field || "").toLowerCase().includes(q))
           || [...c.statedKinks.map((s) => s.kinkId), ...c.limits.map((l) => l.kinkId)]
               .map((id) => kinkNameById.get(id) || "")
@@ -3072,7 +3184,18 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
     const drivesFiltered = filterDrives
       ? hostsFiltered.filter((c) => travelsByCar(c))
       : hostsFiltered;
-    const sorted = [...drivesFiltered].sort((a, b) => {
+    let availabilityFiltered = drivesFiltered;
+    if (effectiveAvailabilityFilter === "now") {
+      availabilityFiltered = drivesFiltered.filter((c) => isContactAvailableAt(c, availabilityNow));
+    } else if (effectiveAvailabilityFilter === "soon") {
+      availabilityFiltered = drivesFiltered.filter((c) => isContactAvailableSoon(c, availabilityNow));
+    } else if (effectiveAvailabilityFilter === "at") {
+      const selectedInstant = filterAvailabilityAt ? new Date(filterAvailabilityAt) : null;
+      availabilityFiltered = selectedInstant && Number.isFinite(selectedInstant.getTime()) && selectedInstant > availabilityNow
+        ? drivesFiltered.filter((c) => isContactAvailableAt(c, selectedInstant))
+        : [];
+    }
+    const sorted = [...availabilityFiltered].sort((a, b) => {
       // ADDED 26 Aug 2026 — real ask: favourited contacts always sort
       // first, on top of whatever sort mode is active — checked before
       // any of the normal sort logic below, not a replacement for it.
@@ -3097,7 +3220,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       return displayName(a).localeCompare(displayName(b));
     });
     return sorted;
-  }, [activeContacts, query, sortBy, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, kinkNameById]);
+  }, [activeContacts, query, sortBy, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, effectiveAvailabilityFilter, filterAvailabilityAt, availabilityNow, anonymise, kinkNameById]);
 
   return (
     <div>
@@ -3182,7 +3305,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               <X size={20} color="#FFFFFF" style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
-              Flagged by name, phone, and social-handle matches — plus lighter signals (city, address, approximate age, shared notes wording) that only count once something else already put a pair in question. Higher confidence just means more of these line up — nothing is merged automatically; check each pair yourself.
+              Flagged by name, phone, email, and social-handle matches — plus lighter signals (city, address, approximate age, shared notes wording) that only count once something else already put a pair in question. Higher confidence just means more of these line up — nothing is merged automatically; check each pair yourself.
             </div>
             <div tabIndex={0} style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
               {duplicateCandidates.map(({ a, b, confidence, matched }, i) => (
@@ -3323,7 +3446,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         <div style={{ padding: "0 16px 12px" }}>
           <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Role</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            {BDSM_ROLE_OPTIONS.map((r) => {
+            {CONTACT_BDSM_ROLE_OPTIONS.map((r) => {
               const active = filterRoles.includes(r);
               return (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={r} onClick={() => setFilterRoles((f) => active ? f.filter((x) => x !== r) : [...f, r])}
@@ -3335,7 +3458,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           </div>
           <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.position", "Position")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            {SEXUAL_POSITION_OPTIONS.map((p) => {
+            {CONTACT_SEXUAL_POSITION_OPTIONS.map((p) => {
               const active = filterPositions.includes(p);
               return (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => setFilterPositions((f) => active ? f.filter((x) => x !== p) : [...f, p])}
@@ -3363,8 +3486,32 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
             style={{ display: "inline-flex", padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 6, border: `1px solid ${filterDrives ? T.contactsTeal : T.border}`, color: filterDrives ? T.contactsTealText : T.textSecondary, background: filterDrives ? `${T.contactsTeal}15` : "transparent"}}>
             Drives
           </div>
+          {!anonymise && (
+            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 10, marginTop: 8 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Availability</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {[
+                  { key: "now", label: tr("contacts.availableNow", "Available now") },
+                  { key: "soon", label: tr("contacts.availableSoon", "Soon · next 24 hours") },
+                  { key: "at", label: tr("contacts.availableAtTime", "At a set time") },
+                ].map(({ key, label }) => {
+                  const active = filterAvailability === key;
+                  return <button key={key} type="button" aria-pressed={active} onClick={() => setFilterAvailability((current) => current === key ? "" : key)}
+                    style={{ padding: "6px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>{label}</button>;
+                })}
+              </div>
+              {filterAvailability === "at" && (
+                <label style={{ display: "block", marginTop: 8, color: T.textSecondary, fontSize: 11 }}>
+                  Your local date and time
+                  <input type="datetime-local" aria-label="Check availability at your local date and time" value={filterAvailabilityAt} min={localDateTimeInputValue(availabilityNow)} onChange={(e) => setFilterAvailabilityAt(e.target.value)}
+                    style={{ display: "block", width: "100%", minHeight: 44, boxSizing: "border-box", marginTop: 4, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
+                </label>
+              )}
+              <div style={{ fontSize: 10, color: T.textDisabled, marginTop: 5 }}>Weekly windows use each contact's local timezone. Filters only include contacts with a saved weekly schedule.</div>
+            </div>
+          )}
           {activeFilterCount > 0 && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setFilterRoles([]); setFilterPositions([]); setFilterHosts([]); setFilterDrives(false); }} style={{ fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", display: "block", marginTop: 6}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setFilterRoles([]); setFilterPositions([]); setFilterHosts([]); setFilterDrives(false); setFilterAvailability(""); }} style={{ fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", display: "block", marginTop: 6}}>
               Clear filters
             </div>
           )}
@@ -3411,14 +3558,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         /* FIXED 16 Sep 2026 — real report: cards read as mobile-width
            content stretched into a wide row, all the empty width
            wasted. A real CSS grid on desktop (each card keeping its
-           own natural ~360px+ width, 2-4 per row depending on
+           own natural ~340px+ width, 2-4 per row depending on
            viewport) instead of one full-width stacked column —
            ContactCard's own internal JSX is completely untouched,
            only how many sit per row changes. Mobile keeps the exact
            prior single-column flex list. */
-        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
-          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards}
-            activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 10, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
+          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards} showAvailabilityOnCards={showAvailabilityOnCards}
+            activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives, availability: availabilityFilterLabel } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
             onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
         </div>
@@ -3483,7 +3630,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 // settings" link. Contacts had 2 real settings sitting in global
 // Settings > Preferences with no in-module home of their own —
 // exactly the "2+ settings, no existing screen" case worth a new one.
-function InactiveThresholdCard({ T, tr }) {
+function InactiveThresholdCard({ T, tr, onUpdated }) {
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
   useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
@@ -3492,6 +3639,7 @@ function InactiveThresholdCard({ T, tr }) {
     const parsed = parseInt(draftValue, 10);
     if (!Number.isFinite(parsed) || parsed < 1) return;
     setPrefs(await AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
+    onUpdated?.();
   };
 
   return (
@@ -3513,9 +3661,12 @@ function InactiveThresholdCard({ T, tr }) {
   );
 }
 
-function ShowRoleOnCardsToggleCard({ T }) {
+function ShowRoleOnCardsToggleCard({ T, onUpdated }) {
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ showRoleOnContactCards: !prefs.showRoleOnContactCards }));
+  const toggle = async () => {
+    setPrefs(await AppPreferencesRepository.update({ showRoleOnContactCards: !prefs.showRoleOnContactCards }));
+    onUpdated?.();
+  };
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
       <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.showRoleOnContactCards} aria-label="Show Dom/sub and Top/bottom on contact cards"
@@ -3533,7 +3684,32 @@ function ShowRoleOnCardsToggleCard({ T }) {
   );
 }
 
-function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacySettings, T }) {
+function ShowAvailabilityOnCardsToggleCard({ T, onUpdated }) {
+  const { t: tr } = useTranslation();
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const enabled = prefs.showAvailabilityOnContactCards === true;
+  const toggle = async () => {
+    setPrefs(await AppPreferencesRepository.update({ showAvailabilityOnContactCards: !enabled }));
+    onUpdated?.();
+  };
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
+      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={enabled} aria-label={tr("contacts.showAvailabilityOnCards", "Show weekly availability on contact cards")}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44 }}>
+        <div style={{ flex: 1, paddingRight: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{tr("contacts.showAvailabilityOnCards", "Show weekly availability on contact cards")}</div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{tr("contacts.availabilityCardSummary", "Adds a compact schedule summary to list cards. Off by default.")}</div>
+        </div>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? T.contactsTeal : T.border, position: "relative", flexShrink: 0 }}>
+          <div style={{ position: "absolute", top: 2, left: enabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacySettings, onPreferencesUpdated, T }) {
   const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
   const settingsRef = useRef(null);
@@ -3546,8 +3722,9 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("contacts.settings", "Contacts settings")}</h1>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} tr={tr} /></div>
-        <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
+        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} tr={tr} onUpdated={onPreferencesUpdated} /></div>
+        <div style={{ marginBottom: 12 }}><ShowRoleOnCardsToggleCard T={T} onUpdated={onPreferencesUpdated} /></div>
+        <div style={{ marginBottom: 20 }}><ShowAvailabilityOnCardsToggleCard T={T} onUpdated={onPreferencesUpdated} /></div>
         {/* ADDED — real ask: link to Privacy settings for Anonymise mode */}
         {onOpenPrivacySettings && (
           <div onClick={onOpenPrivacySettings} role="button" tabIndex={0} aria-label="Open privacy settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenPrivacySettings(); } }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, background: T.surface, border: `1px solid ${T.border}`, marginBottom: 12, cursor: "pointer", minHeight: 44 }}>
@@ -3599,6 +3776,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showImportProfile, setShowImportProfile] = useState(false);
   const [showContactsSettings, setShowContactsSettings] = useState(false);
+  const [preferencesVersion, setPreferencesVersion] = useState(0);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   // CHANGED 26 Aug 2026 — real gap found and fixed: this used to live
@@ -3738,7 +3916,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
         {screen === "list" ? (
           <ContactsList contacts={contacts} T={T} onOpen={openProfile} onAdd={() => setEditingContact({})} sortBy={sortBy} setSortBy={setSortBy} query={query} setQuery={setQuery}
             onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} onOpenContactsSettings={() => setShowContactsSettings(true)} onQuickExit={onQuickExit} refresh={refresh}
-            deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} />
+            deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} preferencesVersion={preferencesVersion} />
         ) : (
           <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} />
         )}
@@ -3761,7 +3939,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
           <ImportSharedProfileSheet T={T} onClose={() => setShowImportProfile(false)} onImported={refresh} />
         )}
         {showContactsSettings && (
-          <ContactsSettingsScreen T={T} onClose={() => setShowContactsSettings(false)} onOpenGeneralSettings={() => { setShowContactsSettings(false); onOpenSettings?.(); }} onOpenPrivacySettings={onOpenPrivacySettings} />
+          <ContactsSettingsScreen T={T} onClose={() => setShowContactsSettings(false)} onOpenGeneralSettings={() => { setShowContactsSettings(false); onOpenSettings?.(); }} onOpenPrivacySettings={onOpenPrivacySettings} onPreferencesUpdated={() => setPreferencesVersion((v) => v + 1)} />
         )}
       </div>
     </div>

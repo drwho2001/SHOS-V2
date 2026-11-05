@@ -145,10 +145,13 @@ export const AVAILABILITY_RULE_TYPES = ["Unavailable", "Available"];
 // so this is a safe, isolated fix — nothing downstream depends on the
 // old capitalization.
 export const BDSM_ROLE_OPTIONS = ["Dom", "Switch", "sub", "Vanilla"];
+export const UNKNOWN_CONTACT_OPTION = "Unknown / not discussed";
+export const CONTACT_BDSM_ROLE_OPTIONS = [...BDSM_ROLE_OPTIONS, UNKNOWN_CONTACT_OPTION];
 // CHANGED 19 Aug 2026 — same house style fix as KINK_ROLE_OPTIONS —
 // Top capitalized, bottom lowercase, matching Dom/sub. Vers/Oral only/
 // Side/Kink are neither pole, stay as-is.
 export const SEXUAL_POSITION_OPTIONS = ["Top", "Vers", "bottom", "Oral only", "Side", "Kink"];
+export const CONTACT_SEXUAL_POSITION_OPTIONS = [...SEXUAL_POSITION_OPTIONS, UNKNOWN_CONTACT_OPTION];
 // ADDED 18 Aug 2026 — new field, the user's ask: a simple personal rating,
 // shown as its emoji on the card. Single-select (one rating per
 // contact, not a tag list) — ordered best to worst, matching how the
@@ -236,10 +239,16 @@ export const DEFAULT_CONTACT = {
     canTakeDoubles: false,
     notes: "",
   },
-  phone: "", snapchat: "", fabguys: "", fabswingers: "", recon: "", contactableVia: [],
+  phone: "", email: "", snapchat: "", fabguys: "", fabswingers: "", recon: "", contactableVia: [],
   city: "", address: "",
-  hosts: "", travels: "", travelMode: [],
+  hosts: "", travels: "", travelMode: [], outdoorMeetup: false,
+  // New weekly schedule model. Times are wall-clock times in
+  // availabilityTimeZone (IANA timezone); an empty zone is resolved to the
+  // device's local zone when the schedule is first saved. Legacy availability
+  // fields above are retained for backups/older records but are not used by
+  // the new availability filters.
   availability: [], nonAvailabilityRules: [], readilyAvailable: "",
+  weeklyAvailability: [], availabilityExceptions: [], availabilityTimeZone: "",
   // CHANGED 18 Aug 2026 — carRegistration added, split out from
   // carDetails: registration is a distinct, more sensitive piece of
   // information (identifies a specific vehicle/person) than a general
@@ -317,12 +326,30 @@ function daysAgo(n, hour = 9, minute = 0) {
   return d.toISOString();
 }
 
+function makeDemoAvatar({ background, skin, hair, shirt, hairPath }) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="64" fill="${background}"/><path d="M31 58c0-26 13-41 33-41s33 15 33 41v18c-9 10-20 15-33 15S40 86 31 76Z" fill="${hair}"/><path d="M12 128c3-29 22-44 52-44s49 15 52 44" fill="${shirt}"/><ellipse cx="64" cy="58" rx="29" ry="35" fill="${skin}"/><path d="${hairPath}" fill="${hair}"/><circle cx="52" cy="59" r="2.4" fill="#302923"/><circle cx="76" cy="59" r="2.4" fill="#302923"/><path d="M56 74c5 4 11 4 16 0" fill="none" stroke="#8b4f42" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+// Synthetic vector portraits only—these are not photographs or depictions of
+// real people. Compact data URLs keep the demo records self-contained.
+const DEMO_AVATARS = {
+  teal: makeDemoAvatar({ background: "#b8ded8", skin: "#c88864", hair: "#302923", shirt: "#2f7774", hairPath: "M31 56c0-24 14-39 33-39s34 15 34 39c-6-15-15-21-22-25-9 11-25 18-45 20Z" }),
+  coral: makeDemoAvatar({ background: "#f2c9ba", skin: "#91563f", hair: "#241f2a", shirt: "#bd5d57", hairPath: "M28 60c-4-27 12-45 36-45s40 18 36 45c-6-17-17-25-26-28-10 13-27 21-46 22Z" }),
+  violet: makeDemoAvatar({ background: "#d4c8e8", skin: "#e0aa84", hair: "#51384a", shirt: "#6f5b9b", hairPath: "M31 57c0-25 13-40 33-40s33 15 33 40c-8-12-14-19-20-28-12 12-28 20-46 28Z" }),
+  gold: makeDemoAvatar({ background: "#f0ddaa", skin: "#b87350", hair: "#322622", shirt: "#a66c25", hairPath: "M30 57c-2-25 12-41 34-41 21 0 36 16 34 41-9-13-15-21-20-30-11 15-28 24-48 30Z" }),
+};
+
 let seedContacts = [
   {
     ...DEFAULT_CONTACT,
-  isDemo: true,
+    isDemo: true,
     id: "seed_contact_9001",
     name: "Alex",
+    age: 31,
+    city: "London",
+    bdsmRole: [UNKNOWN_CONTACT_OPTION],
+    sexualPosition: [UNKNOWN_CONTACT_OPTION],
     notes: "Met through mutual friends.",
     createdAt: "2026-07-01T09:00:00.000Z",
     isArchived: false,
@@ -334,7 +361,10 @@ let seedContacts = [
     name: "Jordan",
     snapchat: "jordan_snap",
     contactableVia: ["Snapchat"],
+    age: 32,
     city: "Leeds",
+    bdsmRole: ["Switch"],
+    sexualPosition: ["Vers"],
     drives: true,
     carDetails: "Blue Ford Focus",
     createdAt: "2026-07-15T09:00:00.000Z",
@@ -347,7 +377,10 @@ let seedContacts = [
     name: "Sam",
     phone: "07700 900123",
     contactableVia: ["Phone/WhatsApp"],
+    age: 29,
     city: "Manchester",
+    bdsmRole: [UNKNOWN_CONTACT_OPTION],
+    sexualPosition: [UNKNOWN_CONTACT_OPTION],
     notes: "Prefers texting only.",
     createdAt: "2026-08-01T09:00:00.000Z",
     isArchived: false,
@@ -376,8 +409,16 @@ let seedContacts = [
     gender: "Male",
     age: 34,
     city: "London",
+    address: "Soho, London W1D 3QF",
+    bdsmRole: [UNKNOWN_CONTACT_OPTION],
+    sexualPosition: [UNKNOWN_CONTACT_OPTION],
     contactableVia: ["Phone/WhatsApp"],
     phone: "07700 900456",
+    profilePicture: DEMO_AVATARS.teal,
+    email: "fmercury@example.test",
+    outdoorMeetup: true,
+    weeklyAvailability: [{ id: "seed_mercury_friday", days: [5], start: "20:00", end: "02:00" }],
+    availabilityTimeZone: "Europe/London",
     notes: "Met on a night out in Soho.",
     createdAt: daysAgo(40),
     isArchived: false,
@@ -391,8 +432,15 @@ let seedContacts = [
     gender: "Trans-female",
     age: 29, ageIsApprox: true,
     city: "London",
+    bdsmRole: ["sub"],
+    sexualPosition: ["bottom"],
     snapchat: "sylvie_ldn",
-    contactableVia: ["Snapchat"],
+    contactableVia: ["Sniffies", "Grindr", "Feeld", "Bumble"],
+    profilePicture: DEMO_AVATARS.coral,
+    email: "sylvie_j@example.test",
+    weeklyAvailability: [{ id: "seed_sylvie_weekend", days: [5, 6], start: "19:00", end: "23:00" }],
+    availabilityTimeZone: "Europe/London",
+    notes: "Often free after work on Friday or Saturday.",
     createdAt: daysAgo(24),
     isArchived: false,
   },
@@ -405,8 +453,14 @@ let seedContacts = [
     gender: "Female",
     age: 26,
     city: "London",
+    bdsmRole: [UNKNOWN_CONTACT_OPTION],
+    sexualPosition: [UNKNOWN_CONTACT_OPTION],
     contactableVia: ["Phone/WhatsApp"],
     phone: "07700 900789",
+    profilePicture: DEMO_AVATARS.violet,
+    email: "grace@example.test",
+    weeklyAvailability: [{ id: "seed_grace_tuesday", days: [2], start: "18:00", end: "22:00" }],
+    availabilityTimeZone: "Europe/London",
     createdAt: daysAgo(9),
     isArchived: false,
   },
@@ -424,8 +478,20 @@ let seedContacts = [
     age: 31,
     relationshipType: ["Partner"],
     city: "London",
+    address: "Soho, London W1D 3QF",
+    bdsmRole: [UNKNOWN_CONTACT_OPTION],
+    sexualPosition: [UNKNOWN_CONTACT_OPTION],
     contactableVia: ["Phone/WhatsApp"],
     phone: "07700 900321",
+    fabguys: "morgan_g",
+    fabswingers: "morgan_s",
+    profilePicture: DEMO_AVATARS.gold,
+    email: "morgan@example.test",
+    weeklyAvailability: [
+      { id: "seed_morgan_tuesday", days: [2], start: "18:00", end: "22:00" },
+      { id: "seed_morgan_sunday", days: [0], start: "14:00", end: "18:00" },
+    ],
+    availabilityTimeZone: "Europe/London",
     howDidWeMeet: ["Dating app"],
     createdAt: daysAgo(112),
     isArchived: false,
@@ -454,10 +520,17 @@ let seedContacts = [
     gender: "Non-binary",
     age: 24,
     city: "Birmingham",
+    address: "Birmingham city centre, B1 1AA",
     snapchat: "priya_bm",
-    contactableVia: ["Snapchat"],
-    hosts: "Sometimes", travels: "Yes", travelMode: ["Public transport"],
-    availability: ["Weekends", "Nights"],
+    contactableVia: ["Telegram", "Messenger", "Signal", "Discord", "Bluesky"],
+    email: "priya@example.test",
+    profilePicture: DEMO_AVATARS.coral,
+    outdoorMeetup: true,
+    weeklyAvailability: [
+      { id: "seed_priya_weekday", days: [1, 2, 3, 4, 5], start: "18:00", end: "22:00" },
+      { id: "seed_priya_saturday", days: [6], start: "14:00", end: "18:00" },
+    ],
+    availabilityTimeZone: "Europe/London",
     statedKinks: ["kink_037", "kink_058"],
     bdsmRole: ["sub"], sexualPosition: ["Vers"],
     rating: "😊 Happy",
@@ -474,8 +547,15 @@ let seedContacts = [
     id: "seed_contact_9010",
     name: "Sam T.",
     phone: "07700 900123",
-    contactableVia: ["Phone/WhatsApp"],
+    age: 30,
     city: "Manchester",
+    bdsmRole: ["Switch"],
+    sexualPosition: ["Vers"],
+    email: "sam_t@example.test",
+    address: "Manchester city centre, M1 3EZ",
+    contactableVia: ["Signal", "Discord"],
+    weeklyAvailability: [{ id: "seed_sam_t_weekend", days: [5, 6], start: "19:00", end: "23:00" }],
+    availabilityTimeZone: "Europe/London",
     createdAt: daysAgo(3),
     isArchived: false,
   },
@@ -488,12 +568,18 @@ let seedContacts = [
     gender: "Trans-male",
     age: 38,
     city: "Bristol",
+    bdsmRole: ["Dom"],
+    sexualPosition: ["Vers"],
     relationshipType: ["Friend with benefits"],
     howDidWeMeet: ["App"],
     contraception: ["Testosterone"],
     knownPrepDoxy: ["PrEP"],
-    contactableVia: ["Phone/WhatsApp"],
     phone: "07700 900654",
+    email: "devon@example.test",
+    address: "Bristol city centre, BS1 3QF",
+    contactableVia: ["Telegram", "Signal"],
+    weeklyAvailability: [{ id: "seed_devon_weekday", days: [1, 2, 3, 4], start: "18:00", end: "22:00" }],
+    availabilityTimeZone: "Europe/London",
     createdAt: daysAgo(70),
     isArchived: false,
   },
@@ -518,6 +604,11 @@ let seedContacts = [
     chastityStatus: "Caged",
     foreskin: "Uncircumcised", foreskinDetail: "Average",
     cummer: ["Multiple loads", "Big load"],
+    profilePicture: DEMO_AVATARS.teal,
+    email: "kai@example.test",
+    address: "Leeds city centre, LS1 4AP",
+    weeklyAvailability: [{ id: "seed_kai_weekday", days: [1, 2, 3, 4, 5], start: "18:00", end: "22:00" }],
+    availabilityTimeZone: "Europe/London",
     createdAt: daysAgo(200),
     isArchived: false,
   },
@@ -577,6 +668,8 @@ let seedContacts = [
     age: 33,
     city: "Cardiff",
     contraception: ["Implant"],
+    bdsmRole: [UNKNOWN_CONTACT_OPTION],
+    sexualPosition: [UNKNOWN_CONTACT_OPTION],
     rating: "😐 Meh",
     length: "Long", thickness: "Thick",
     createdAt: daysAgo(45),
@@ -689,6 +782,36 @@ function normalizeKinkSelections(arr) {
   }).filter(Boolean);
 }
 
+function normalizeContactRecord(raw) {
+  const merged = { ...DEFAULT_CONTACT, ...(raw && typeof raw === "object" ? raw : {}) };
+  const weeklyAvailability = Array.isArray(merged.weeklyAvailability)
+    ? merged.weeklyAvailability.filter((rule) => rule && typeof rule === "object" && !Array.isArray(rule)).map((rule, index) => ({
+        ...rule,
+        id: typeof rule.id === "string" && rule.id ? rule.id : `weekly_${index}`,
+        days: Array.isArray(rule.days) ? rule.days : [],
+      }))
+    : [];
+  const availabilityExceptions = Array.isArray(merged.availabilityExceptions)
+    ? merged.availabilityExceptions.filter((exception) => exception && typeof exception === "object" && !Array.isArray(exception)).map((exception, index) => ({
+        ...exception,
+        id: typeof exception.id === "string" && exception.id ? exception.id : `exception_${index}`,
+      }))
+    : [];
+  return {
+    ...merged,
+    email: typeof merged.email === "string" ? merged.email : "",
+    contactableVia: Array.isArray(merged.contactableVia) ? merged.contactableVia.filter((method) => typeof method === "string") : [],
+    outdoorMeetup: merged.outdoorMeetup === true,
+    weeklyAvailability,
+    availabilityExceptions,
+    availabilityTimeZone: typeof merged.availabilityTimeZone === "string" ? merged.availabilityTimeZone : "",
+    statedKinks: normalizeKinkSelections(merged.statedKinks),
+    limits: normalizeKinkSelections(merged.limits),
+    bdsmRole: (Array.isArray(merged.bdsmRole) ? merged.bdsmRole : []).map(normalizeRoleCasing),
+    sexualPosition: (Array.isArray(merged.sexualPosition) ? merged.sexualPosition : []).map(normalizeRoleCasing),
+  };
+}
+
 // ADDED 1 Sep 2026 — real ask: "allow for multiple [contraception
 // methods] (ie Testosterone + Implant)." DEFAULT_CONTACT.contraception
 // switched from a single string to an array, so every contact saved
@@ -715,28 +838,14 @@ export const ContactRepository = {
   // contacts both read back in the current shape.
   async getAll() {
     await ensureLoaded();
-    return structuredClone(
-      contacts.map((c) => {
-        const merged = { ...DEFAULT_CONTACT, ...c };
-        return {
-          ...merged,
-          statedKinks: normalizeKinkSelections(merged.statedKinks), limits: normalizeKinkSelections(merged.limits),
-          bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing), sexualPosition: (merged.sexualPosition || []).map(normalizeRoleCasing),
-        };
-      })
-    );
+    return structuredClone(contacts.map(normalizeContactRecord));
   },
 
   async getById(id) {
     await ensureLoaded();
     const found = contacts.find((c) => c.id === id);
     if (!found) return null;
-    const merged = { ...DEFAULT_CONTACT, ...found };
-    return structuredClone({
-      ...merged,
-      statedKinks: normalizeKinkSelections(merged.statedKinks), limits: normalizeKinkSelections(merged.limits),
-      bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing), sexualPosition: (merged.sexualPosition || []).map(normalizeRoleCasing),
-    });
+    return structuredClone(normalizeContactRecord(found));
   },
 
   async create(data) {

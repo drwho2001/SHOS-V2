@@ -210,6 +210,7 @@ export function findContactDuplicateCandidates(contacts) {
 
       const strongFields = [
         ["phone", normalizedPhoneEquals(a.phone, b.phone)],
+        ["email", normalizedEquals(a.email, b.email)],
         ["Snapchat", normalizedEquals(a.snapchat, b.snapchat)],
         ["Recon", normalizedEquals(a.recon, b.recon)],
         ["FabGuys", normalizedEquals(a.fabguys, b.fabguys)],

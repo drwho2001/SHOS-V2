@@ -85,9 +85,14 @@ export function lastInteraction(encounters, contactId) {
 // Convenience bundle — the four numbers together, for the Contact
 // Profile Timeline section in one call rather than four.
 export function contactEncounterSummary(encounters, contactId) {
+  const ratedEncounters = encountersForContact(encounters, contactId)
+    .filter((e) => typeof e.enjoymentRating === "number")
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
   return {
     count: encounterCount(encounters, contactId),
     averageEnjoyment: averageEnjoyment(encounters, contactId),
+    ratedCount: ratedEncounters.length,
+    firstRatedEnjoyment: ratedEncounters[0]?.enjoymentRating ?? null,
     highestEnjoyment: highestEnjoyment(encounters, contactId),
     lastInteraction: lastInteraction(encounters, contactId),
   };
@@ -111,9 +116,12 @@ export function contactEncounterSummaries(encounters) {
     if (e.isArchived) continue;
     for (const contactId of e.attendeeIds || []) {
       let bucket = buckets.get(contactId);
-      if (!bucket) { bucket = { count: 0, ratings: [], dates: [] }; buckets.set(contactId, bucket); }
+      if (!bucket) { bucket = { count: 0, ratings: [], ratedDates: [], dates: [] }; buckets.set(contactId, bucket); }
       bucket.count += 1;
-      if (typeof e.enjoymentRating === "number") bucket.ratings.push(e.enjoymentRating);
+      if (typeof e.enjoymentRating === "number") {
+        bucket.ratings.push(e.enjoymentRating);
+        bucket.ratedDates.push({ date: e.date || "", rating: e.enjoymentRating });
+      }
       if (e.date) bucket.dates.push(e.date);
     }
   }
@@ -122,6 +130,8 @@ export function contactEncounterSummaries(encounters) {
     summaries.set(contactId, {
       count: bucket.count,
       averageEnjoyment: bucket.ratings.length === 0 ? null : bucket.ratings.reduce((sum, r) => sum + r, 0) / bucket.ratings.length,
+      ratedCount: bucket.ratings.length,
+      firstRatedEnjoyment: bucket.ratedDates.sort((a, b) => a.date.localeCompare(b.date))[0]?.rating ?? null,
       highestEnjoyment: bucket.ratings.length === 0 ? null : Math.max(...bucket.ratings),
       lastInteraction: bucket.dates.length === 0 ? null : bucket.dates.slice().sort((a, b) => new Date(b) - new Date(a))[0],
     });
@@ -135,7 +145,7 @@ import { storedDayKey, localDayKey, calendarDaysBetween } from "./dateInputHelpe
 // exactly what contactEncounterSummary(encounters, contactId) returns
 // for such a contact, so callers reading from contactEncounterSummaries()
 // can fall back to this without a special case.
-export const EMPTY_ENCOUNTER_SUMMARY = { count: 0, averageEnjoyment: null, highestEnjoyment: null, lastInteraction: null };
+export const EMPTY_ENCOUNTER_SUMMARY = { count: 0, averageEnjoyment: null, ratedCount: 0, firstRatedEnjoyment: null, highestEnjoyment: null, lastInteraction: null };
 
 // Relative-date formatting for the Contact Card's "Last Encounter"
 // field (B1) and Timeline — "3 weeks ago" style, matching the

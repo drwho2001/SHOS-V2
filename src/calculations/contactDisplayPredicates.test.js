@@ -14,7 +14,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { displayableAge, dedupeContactMethods } from "./contactCalculations.js";
+import { displayableAge, dedupeContactMethods, extractUkPostcode, getContactableVia, getMissingRequiredContactFields, isContactIncomplete, toggleMultiSelectValue } from "./contactCalculations.js";
 
 describe("displayableAge - is there an age worth printing?", () => {
   it("returns a real age as a number", () => {
@@ -70,6 +70,11 @@ describe("dedupeContactMethods - one icon per service", () => {
       .toEqual(["Recon", "WhatsApp", "Snapchat"]);
   });
 
+  it("unifies Twitter and X aliases into the approved combined method", () => {
+    expect(dedupeContactMethods(["Twitter", "X", "Twitter/X", "WhatsApp"]))
+      .toEqual(["Twitter/X", "WhatsApp"]);
+  });
+
   it("does not reorder around a later duplicate", () => {
     expect(dedupeContactMethods(["A", "B", "A", "C"])).toEqual(["A", "B", "C"]);
   });
@@ -86,6 +91,55 @@ describe("dedupeContactMethods - one icon per service", () => {
     expect(dedupeContactMethods(null)).toEqual([]);
     expect(dedupeContactMethods(undefined)).toEqual([]);
     expect(dedupeContactMethods("WhatsApp")).toEqual([]);
+  });
+});
+
+describe("contact email is an automatically detected method", () => {
+  it("adds one Email method when an address exists and deduplicates a manual alias", () => {
+    expect(getContactableVia({ email: "older@example.com", contactableVia: ["Email", "Telegram"] }))
+      .toEqual(["Email", "Telegram"]);
+  });
+
+  it("does not invent the Email method when the field is blank", () => {
+    expect(getContactableVia({ email: "", contactableVia: [] })).toEqual([]);
+  });
+});
+
+describe("UK postcode snippets for compact contact cards", () => {
+  it("extracts and normalizes a postcode without exposing the full address", () => {
+    expect(extractUkPostcode("Flat 2, 10 Example Street, Leeds LS1 2AB, UK")).toBe("LS1 2AB");
+    expect(extractUkPostcode("GIR 0AA")).toBe("GIR 0AA");
+  });
+
+  it("returns no postcode for absent or non-UK-shaped addresses", () => {
+    expect(extractUkPostcode("")).toBe("");
+    expect(extractUkPostcode("Birmingham, United Kingdom")).toBe("");
+    expect(extractUkPostcode(null)).toBe("");
+  });
+});
+
+describe("mandatory contact details and incomplete acknowledgement", () => {
+  it("requires one of name/nickname, plus age, city, role and position", () => {
+    expect(getMissingRequiredContactFields({})).toEqual(["identity", "age", "city", "role", "position"]);
+    expect(getMissingRequiredContactFields({ nickname: "Known only by this", age: 30, city: "Leeds", bdsmRole: ["Unknown / not discussed"], sexualPosition: ["Top"] })).toEqual([]);
+    expect(getMissingRequiredContactFields({ name: "Known name", age: 30, city: "Leeds", bdsmRole: ["Switch"], sexualPosition: ["Unknown / not discussed"] })).toEqual([]);
+    expect(getMissingRequiredContactFields({ name: "Known name", age: 30, city: "Leeds", bdsmRole: ["Switch"] })).toEqual(["position"]);
+    expect(getMissingRequiredContactFields({ name: "Known name", age: 30, city: "Leeds", sexualPosition: ["Top"] })).toEqual(["role"]);
+  });
+
+  it("treats whitespace-only values as missing and stops warnings after acknowledgement", () => {
+    expect(getMissingRequiredContactFields({ name: "  ", nickname: "", age: null, city: " ", bdsmRole: [], sexualPosition: [] }))
+      .toEqual(["identity", "age", "city", "role", "position"]);
+    expect(isContactIncomplete({ name: "Anonymous", markedComplete: true })).toBe(false);
+    expect(getMissingRequiredContactFields({ markedComplete: true })).toEqual([]);
+  });
+
+  it("keeps the explicit Unknown option exclusive while preserving normal multi-selects", () => {
+    const unknown = "Unknown / not discussed";
+    expect(toggleMultiSelectValue(["Dom"], unknown, unknown)).toEqual([unknown]);
+    expect(toggleMultiSelectValue([unknown], "Switch", unknown)).toEqual(["Switch"]);
+    expect(toggleMultiSelectValue([unknown], unknown, unknown)).toEqual([]);
+    expect(toggleMultiSelectValue(["Dom"], "Switch")).toEqual(["Dom", "Switch"]);
   });
 });
 
@@ -157,20 +211,32 @@ describe("the Contacts card and profile actually use the shared predicates", () 
     expect(body).not.toMatch(/\{methods\.map\(/);
   });
 
-  it("the social-media summary comes after the travel and accommodation icons", () => {
-    // t078 is an ORDERING requirement, which no unit test can see, so it has to be
-    // asserted against the source. Scoped to the card's own header row so it
-    // cannot be satisfied by an unrelated MethodIcons elsewhere in the file.
+  it("the social-media summary is in the lower right-hand tag grid, after meetup icons", () => {
+    // The card layout places meetup icons alongside identity, then wraps social
+    // badges into the right column beside status/relationship tag rows.
     const card = source.slice(source.indexOf("function ContactCard("));
-    const row = card.slice(0, card.indexOf("showStatusInfo && (() => {"));
-    const methodsAt = row.indexOf("<MethodIcons");
-    const transportAt = row.indexOf("getTransportIcon(contact)");
-    const hostsAt = row.indexOf('contact.hosts === "Yes"');
+    const methodsAt = card.indexOf("<MethodIcons");
+    const transportAt = card.indexOf("getTransportIcon(contact)");
+    const hostsAt = card.indexOf('contact.hosts === "Yes"');
     expect(transportAt, "transport icon should be present on the row").toBeGreaterThan(-1);
     expect(hostsAt, "hosts/travels icon should be present on the row").toBeGreaterThan(-1);
-    expect(methodsAt, "MethodIcons should be present on the row").toBeGreaterThan(-1);
-    expect(methodsAt, "the social-media summary must come after travel/accommodation")
+    expect(methodsAt, "MethodIcons should be present in the card").toBeGreaterThan(-1);
+    expect(methodsAt, "social methods now belong below the meetup row")
       .toBeGreaterThan(Math.max(transportAt, hostsAt));
+    expect(card.slice(methodsAt, methodsAt + 220)).toContain('gridColumn: 2');
+  });
+
+  it("shows missing mandatory fields on list/profile and permits explicit acknowledgement", () => {
+    const code = stripComments(source);
+    expect(code).toContain("missingRequiredLabels.map((label) => `* ${label}`)");
+    expect(code).toContain("missingRequiredFields.map((field, index)");
+    expect(code).toContain('requiredMissing={missingRequiredFields.includes("identity")}');
+    expect(code).toContain('requiredMissing={missingRequiredFields.includes("age")}');
+    expect(code).toContain('requiredMissing={missingRequiredFields.includes("city")}');
+    expect(code).toContain('requiredMissing={missingRequiredFields.includes("role")}');
+    expect(code).toContain('requiredMissing={missingRequiredFields.includes("position")}');
+    expect(code).toContain('tr("contacts.acknowledgeIncomplete"');
+    expect(code).toContain("missingRequiredFields.length === 0 && emailValid");
   });
 
   it("the name row reserves room for the favourite star and can wrap", () => {

@@ -89,6 +89,7 @@ export function extractKinkRoleFromText(raw, roleOptions = []) {
 export function getContactableVia(contact) {
   const autoDetected = [];
   if (contact.phone) autoDetected.push("Phone/WhatsApp");
+  if (contact.email) autoDetected.push("Email");
   if (contact.snapchat) autoDetected.push("Snapchat");
   if (contact.fabguys) autoDetected.push("Fabguys");
   if (contact.fabswingers) autoDetected.push("Fabswingers");
@@ -103,7 +104,18 @@ export function getContactableVia(contact) {
   (contact.contactableVia || []).forEach((extra) => {
     if (!combined.includes(extra)) combined.push(extra);
   });
-  return combined;
+  return dedupeContactMethods(combined);
+}
+
+/** Toggle a multi-select chip, optionally making one option mutually exclusive. */
+export function toggleMultiSelectValue(values, option, exclusiveOption = null) {
+  const current = Array.isArray(values) ? values : [];
+  const hasOption = current.includes(option);
+  if (!exclusiveOption) return hasOption ? current.filter((value) => value !== option) : [...current, option];
+  if (option === exclusiveOption) return hasOption ? [] : [exclusiveOption];
+  return hasOption
+    ? current.filter((value) => value !== option)
+    : [...current.filter((value) => value !== exclusiveOption), option];
 }
 
 // "Incomplete" sort support — a simple 0–1 completeness score, purely
@@ -114,7 +126,7 @@ export function getContactableVia(contact) {
 // (id, createdAt, isArchived) don't count either way — completeness is
 // about how much is actually known about the person, not bookkeeping.
 const FIELDS_COUNTED_FOR_COMPLETENESS = [
-  "name", "nickname", "age", "phone", "snapchat", "fabguys", "fabswingers",
+  "name", "nickname", "age", "phone", "email", "snapchat", "fabguys", "fabswingers",
   "contactableVia", "city", "address", "hosts", "travels",
   "availability", "readilyAvailable", "relationshipType", "howDidWeMeet",
   "meetAgain", "statedKinks", "limits", "bdsmRole", "sexualPosition", "length", "thickness", "foreskin",
@@ -132,29 +144,36 @@ export function getCompletenessScore(contact) {
   return filled / FIELDS_COUNTED_FOR_COMPLETENESS.length;
 }
 
-// ADDED 26 Aug 2026 — real ask: an "Incomplete" tag shown directly on
-// cards, decided jointly with the user rather than guessed. Deliberately
-// a SMALL, specific required set — not the ~27-field weighted score
-// above (that stays as-is, used only for the "sort by incomplete"
-// option) — framed around "what do I need to decide whether to meet
-// this person again": some identifier, approximate age, location
-// (meeting again is logistical), and role/position (this app's own
-// core compatibility signal). Rating and "meet again" itself were
-// explicitly excluded — those are the OUTPUT of that decision, not
-// information you'd have going in, so requiring them would flag every
-// brand-new contact as incomplete before you've even met. A photo was
-// also explicitly declined.
-// markedComplete is a real per-contact override (same pattern as
-// excludeFromActiveTracking) — for legacy/placeholder contacts that
-// will genuinely never have this info and shouldn't be nagged about
-// forever.
+// The same mandatory groups drive the list warning, detail view and editor
+// highlighting. Name/nickname is one alternative group; Role and Position are
+// separate axes, each of which may be explicitly recorded as unknown.
+export const CONTACT_REQUIRED_FIELD_GROUPS = [
+  { key: "identity", label: "Name or nickname" },
+  { key: "age", label: "Age" },
+  { key: "city", label: "City" },
+  { key: "role", label: "Role" },
+  { key: "position", label: "Position" },
+];
+
+function hasRequiredText(value) {
+  if (Array.isArray(value)) return value.some((item) => typeof item === "string" && item.trim().length > 0);
+  return typeof value === "string" ? value.trim().length > 0 : isFilled(value);
+}
+
+/** Missing required field groups, except when the user acknowledged an intentionally incomplete/anonymous record. */
+export function getMissingRequiredContactFields(contact) {
+  if (!contact || contact.markedComplete) return [];
+  const missing = [];
+  if (!hasRequiredText(contact.name) && !hasRequiredText(contact.nickname)) missing.push("identity");
+  if (displayableAge(contact) == null) missing.push("age");
+  if (!hasRequiredText(contact.city)) missing.push("city");
+  if (!hasRequiredText(contact.bdsmRole)) missing.push("role");
+  if (!hasRequiredText(contact.sexualPosition)) missing.push("position");
+  return missing;
+}
+
 export function isContactIncomplete(contact) {
-  if (contact.markedComplete) return false;
-  const hasIdentifier = isFilled(contact.name) || isFilled(contact.nickname);
-  const hasAge = isFilled(contact.age);
-  const hasCity = isFilled(contact.city);
-  const hasRolePosition = isFilled(contact.bdsmRole) || isFilled(contact.sexualPosition);
-  return !(hasIdentifier && hasAge && hasCity && hasRolePosition);
+  return getMissingRequiredContactFields(contact).length > 0;
 }
 
 
@@ -303,6 +322,18 @@ export function displayableAge(contact) {
   return n;
 }
 
+// Contact list cards show only the UK postcode (not the full address) beside
+// the city when one is present. This keeps the visual hint useful without
+// exposing a full address in the summary card; Anonymise mode gates display at
+// the calling site.
+export function extractUkPostcode(address) {
+  if (typeof address !== "string") return "";
+  const matches = [...address.toUpperCase().matchAll(/\b(GIR\s?0AA|[A-Z]{1,2}\d[A-Z\d]?\s?\d[ABD-HJLNP-UW-Z]{2})\b/g)];
+  if (matches.length === 0) return "";
+  const compact = matches[matches.length - 1][0].replace(/\s+/g, "");
+  return `${compact.slice(0, -3)} ${compact.slice(-3)}`;
+}
+
 /**
  * The contact methods to actually render, deduplicated by service.
  *
@@ -333,10 +364,14 @@ export function dedupeContactMethods(methods) {
     if (typeof raw !== "string") continue;
     const trimmed = raw.trim();
     if (!trimmed) continue;
-    const key = trimmed.toLowerCase();
+    const lower = trimmed.toLowerCase().replace(/\s+/g, " ");
+    // Twitter and X are one contact method in the new combined mark. Keep
+    // the canonical label so both aliases use the same split bird/X badge.
+    const isTwitterX = /^(twitter(?:\s*\/\s*x)?|x)$/.test(lower);
+    const key = isTwitterX ? "twitter/x" : lower;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(trimmed);
+    out.push(isTwitterX ? "Twitter/X" : trimmed);
   }
   return out;
 }

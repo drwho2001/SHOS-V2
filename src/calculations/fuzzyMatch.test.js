@@ -77,6 +77,16 @@ describe('fuzzyMatch', () => {
       expect(candidates[0].matched).toContain('Snapchat'); // capitalized as in source
     });
 
+    it('detects matching email addresses case-insensitively', () => {
+      const contacts = [
+        { id: 'c1', name: 'John', email: 'Older.User@example.com' },
+        { id: 'c2', name: 'Jane', email: 'older.user@EXAMPLE.COM' },
+      ];
+      const candidates = findContactDuplicateCandidates(contacts);
+      expect(candidates).toHaveLength(1);
+      expect(candidates[0].matched).toContain('email');
+    });
+
     it('flags different people with same name but different phone (name matches)', () => {
       const contacts = [
         { id: 'c1', name: 'John Smith', phone: '555-1111' },

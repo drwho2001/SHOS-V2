@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacts card — full optional information mockup</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #121214;
+    --surface: #1c1c1f;
+    --variant: #2a2a2e;
+    --border: #3a3a3f;
+    --primary: #f5f5f6;
+    --secondary: #a6a6ae;
+    --disabled: #77777e;
+    --teal: #4cf0f0;
+    --green: #5fd9a4;
+    --amber-text: #d08a2e;
+    --amber-surface: #2a2520;
+    --red: #ff7a7e;
+    --contacts: #b36205;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 12px 48px;
+    background: var(--page);
+    color: var(--primary);
+    font-family: Inter, Roboto, "Segoe UI", sans-serif;
+  }
+  .page { width: min(100%, 760px); margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  h2 { margin: 22px 0 8px; font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .lead, .caption { color: var(--secondary); font-size: 12px; line-height: 1.5; }
+  .lead { margin-bottom: 22px; }
+  .caption { margin-bottom: 10px; font-size: 11px; }
+
+  /* Android 1080px @ 440dpi is approximately a 393 CSS-dp viewport. */
+  .device {
+    width: 393px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 14px 16px 24px;
+    border: 1px solid #303034;
+    border-radius: 24px;
+    background: var(--page);
+    box-shadow: 0 12px 36px #0008;
+  }
+  .module-title { padding: 5px 0 15px; font-size: 20px; font-weight: 600; }
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .star { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; color: var(--disabled); }
+
+  /* Meetup icons share the pronouns line; social icons may wrap into the
+     right column beside the next left-hand tag row. */
+  .identity-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 78px;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 2px;
+    align-items: center;
+    min-width: 0;
+    padding-right: 22px; /* reserve favourite star, as the APK does */
+  }
+  .name-line { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .active-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .name { color: var(--primary); font-size: 15px; line-height: 1.3; font-weight: 600; }
+  .rating { font-size: 14px; line-height: 1; }
+  .age { color: var(--secondary); font-size: 14px; white-space: nowrap; }
+  .city { display: inline-flex; align-items: center; gap: 2px; color: var(--secondary); font-size: 12px; white-space: nowrap; }
+  .city svg { width: 12px; height: 12px; }
+  .pronouns { grid-column: 1; grid-row: 2; margin-left: 16px; color: var(--secondary); font-size: 10px; line-height: 1.3; font-weight: 500; }
+  .status-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
+
+  .meetup-icons, .social-icons { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+  .meetup-icons { grid-column: 2; grid-row: 2; min-height: 20px; }
+  .icon { display: block; width: 20px; height: 20px; color: var(--secondary); flex: 0 0 20px; }
+  .icon.outdoors { color: var(--green); }
+  .social-icons { width: 106px; min-height: 22px; flex-wrap: wrap; }
+  .social {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    border-radius: 6px;
+  }
+  .social svg { width: 16px; height: 16px; }
+  .social.email { color: var(--secondary); background: var(--variant); }
+  .social.email svg { width: 15px; height: 15px; }
+  .whatsapp { background: url("mockup-assets/whatsapp-android-icon.png") center / cover no-repeat; }
+  .whatsapp svg { display: none; }
+  .snapchat { background: url("mockup-assets/snapchat-android-icon.png") center / cover no-repeat; }
+  .snapchat svg { display: none; }
+  .brand-icon { display: block; width: 22px; height: 22px; flex: 0 0 22px; object-fit: cover; border-radius: 6px; background: #fff; }
+
+  .profile { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+  .avatar { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; overflow: hidden; }
+  .profile .identity-grid { flex: 1; }
+
+  .tag-social-grid { display: grid; grid-template-columns: minmax(0, 1fr) 106px; column-gap: 8px; row-gap: 6px; align-items: center; min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-left: 0; }
+  .status-tags { grid-column: 1; grid-row: 1; }
+  .relation-tags { grid-column: 1; grid-row: 2; }
+  .social-icons.primary { grid-column: 2; grid-row: 1; }
+  .social-icons.secondary { grid-column: 2; grid-row: 2; }
+  .availability-line { display: flex; align-items: center; gap: 6px; margin-left: 0; color: var(--secondary); font-size: 11px; line-height: 1.35; }
+  .availability-line svg { width: 14px; height: 14px; flex: 0 0 14px; color: var(--teal); }
+  .chip {
+    padding: 2px 8px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--variant);
+    color: var(--secondary);
+    font-size: 10px;
+    line-height: 1.35;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* Proposed only: red outline differentiates missing-data status without
+     changing the established amber status fill/text pairing. */
+  .chip.incomplete { border-color: var(--red); background: var(--amber-surface); color: var(--amber-text); font-weight: 700; }
+  .chip.search { background: var(--contacts); color: #fff; font-weight: 700; }
+  .last { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-left: 0; color: var(--disabled); font-size: 11px; line-height: 1.35; }
+  .last strong { color: var(--secondary); font-weight: 600; }
+  .average { display: inline-flex; align-items: center; gap: 3px; color: var(--secondary); }
+  .average svg { width: 12px; height: 12px; color: #d978ad; }
+  .annotation {
+    margin: 14px 2px 0;
+    border-left: 2px solid var(--contacts);
+    padding: 2px 0 2px 12px;
+    color: var(--secondary);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .annotation strong { color: var(--primary); font-weight: 600; }
+  .social .app-icon { display: block; width: 22px; height: 22px; object-fit: cover; border-radius: 6px; }
+  .platform-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .platform-group-title { margin: 12px 0 6px; color: var(--secondary); font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .platform { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .platform img { width: 36px; height: 36px; flex: 0 0 36px; object-fit: cover; border-radius: 9px; background: transparent; }
+  .fab-logo { background: #fff !important; }
+  .theme-checks { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .theme-case { min-width: 0; padding: 12px; border: 1px solid; border-radius: 12px; }
+  .theme-case.dark { background: #1c1c1f; color: #f5f5f6; border-color: #3a3a3f; }
+  .theme-case.light { background: #fff; color: #242429; border-color: #d7d7de; }
+  .theme-label { font-size: 11px; font-weight: 700; }
+  .theme-caption { margin-top: 3px; opacity: .7; font-size: 9px; line-height: 1.3; }
+  .theme-icons { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
+  .theme-icons img { display: block; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 8px; object-fit: cover; background: transparent; }
+  .theme-case.dark .fab-logo { border: 0; box-shadow: none; }
+  .theme-case.light .fab-logo { border: 1px solid #c9cbd1; box-shadow: 0 1px 3px #0002; }
+  /* Telegram and Messenger have transparent margins that read as white on a
+     white card; a subtle alpha-aware shadow keeps their silhouette visible. */
+  .theme-case.light .edge-light { filter: drop-shadow(0 1px 2px #0004); }
+  .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .filter-chip { border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; color: var(--secondary); font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .filter-chip.selected { border-color: var(--teal); background: #4cf0f019; color: var(--teal); }
+  .schedule-panel { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--primary); }
+  .schedule-heading { margin-bottom: 2px; font-size: 12px; font-weight: 700; }
+  .schedule-zone { margin-bottom: 8px; color: var(--secondary); font-size: 9px; }
+  .schedule-rule { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 9px 0; border-top: 1px solid var(--border); }
+  .schedule-days { display: flex; flex-wrap: wrap; gap: 4px; }
+  .day-pill { min-width: 27px; padding: 4px 5px; border: 1px solid var(--border); border-radius: 7px; color: var(--secondary); font-size: 9px; text-align: center; }
+  .day-pill.on { border-color: var(--teal); color: var(--teal); background: #4cf0f019; }
+  .time-window { color: var(--primary); font-size: 10px; white-space: nowrap; }
+  .schedule-foot { display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); color: var(--secondary); font-size: 10px; }
+  .show-toggle { color: var(--teal); font-weight: 600; }
+  .schedule-note { margin-top: 8px; color: var(--disabled); font-size: 10px; line-height: 1.4; }
+  .dual-x { position: relative; width: 36px; height: 36px; flex: 0 0 36px; overflow: hidden; border-radius: 9px; }
+  .dual-x-half { position: absolute; inset: 0; display: block; }
+  .dual-x-half svg { position: absolute; display: block; }
+  .dual-x-twitter { background: #1da1f2; clip-path: polygon(0 0,100% 0,0 100%); }
+  .dual-x-twitter svg { top: 2px; left: 2px; width: 20px; height: 20px; }
+  .dual-x-brand { background: #000; clip-path: polygon(100% 0,100% 100%,0 100%); }
+  .dual-x-brand svg { right: 2px; bottom: 2px; width: 15px; height: 15px; }
+  .platform-name { color: var(--primary); font-size: 11px; font-weight: 600; line-height: 1.2; }
+  .platform-source { margin-top: 3px; color: var(--secondary); font-size: 9px; line-height: 1.2; }
+  .generic-platform-icon { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; border-radius: 9px; background: var(--variant); color: var(--secondary); }
+  .generic-platform-icon svg { width: 20px; height: 20px; }
+  .mode-row { display: flex; align-items: flex-start; gap: 8px; }
+  .check { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 1px; border: 2px solid #626269; border-radius: 50%; }
+  .mode-row .card { flex: 1; }
+  @media (max-width: 430px) {
+    body { padding: 12px 0 32px; }
+    .page { width: 100%; }
+    .page > h1, .page > .lead, .page > h2, .page > .caption, .page > .annotation { margin-left: 14px; margin-right: 14px; }
+    .device { border-left: 0; border-right: 0; border-radius: 0; box-shadow: none; }
+  }
+  @media (max-width: 560px) { .platform-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .theme-checks { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Contacts card — all optional details</h1>
+  <p class="lead">Approval mockup only — no app code changed. Dark mode, 393dp phone viewport, synthetic contact and illustrated placeholder portrait. Shows role/position, bike + hosting + outdoor/public markers, Android/PWA icons and encounter summary.</p>
+
+  <h2>Proposed render</h2>
+  <p class="caption">Transport/accommodation starts at the pronouns line on the right. Social badges sit beside the status tags and wrap onto the next right-hand row alongside relationship tags when crowded.</p>
+
+  <section class="device" aria-label="Android app viewport mockup">
+    <div class="module-title">Contacts</div>
+    <article class="card" aria-label="Synthetic contact card with optional details">
+      <svg class="star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Not favourited"><path d="m12 3 2.75 5.57 6.15.9-4.45 4.34 1.05 6.13L12 17.05l-5.5 2.89 1.05-6.13L3.1 9.47l6.15-.9L12 3Z"/></svg>
+
+      <div class="profile">
+        <svg class="avatar" viewBox="0 0 44 44" role="img" aria-label="Illustrated sample profile photo">
+          <defs><linearGradient id="avatar-bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6C8F91"/><stop offset="1" stop-color="#344B53"/></linearGradient></defs>
+          <circle cx="22" cy="22" r="22" fill="url(#avatar-bg)"/>
+          <path d="M7 44c1.5-8.3 7-12.5 15-12.5S35.5 35.7 37 44" fill="#D99B78"/>
+          <path d="M12 19c0-8.2 4.2-12.5 10.6-12.5 6 0 9.6 4.3 9.6 11.8v4.1c0 6.6-4.3 11.5-10.1 11.5-5.7 0-10.1-4.9-10.1-11.5Z" fill="#D99B78"/>
+          <path d="M11.7 20c-.9-8.7 3.7-15.2 11.2-15.2 7.3 0 11.2 5.5 10.3 14.4l-2.9-4.8c-4.6.8-8.7-.2-11.6-2.5-1.4 3.4-3.4 5.7-7 8.1Z" fill="#302923"/>
+          <path d="M17 23h.1m9.8 0h.1" stroke="#302923" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M19 28c1.8 1.5 4.2 1.5 6 0" fill="none" stroke="#8B4F42" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <div class="identity-grid">
+          <div class="name-line">
+            <span class="active-dot" title="Active"></span>
+            <span class="name">Kai</span>
+            <span class="rating" aria-label="Rating">😍</span>
+            <span class="age">· 34</span>
+            <span class="city"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Leeds</span>
+          </div>
+          <div class="meetup-icons" aria-label="Cycles and hosts meetups">
+            <!-- Cycle is one example of the single selected travel-mode icon. -->
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-label="Cycles"><circle cx="6" cy="17" r="3.2"/><circle cx="18" cy="17" r="3.2"/><path d="m6 17 4-8h4l4 8M9 13h6M10 9H8m6 0 2-3h2"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Hosts meetups"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9M9 20v-7h6v7"/></svg>
+            <!-- Proposed venue/context marker; not currently a Contacts-card field. -->
+            <svg class="icon outdoors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-label="Outdoor or public meetup"><path d="M12 3 5.5 13h4L6.5 18h11l-3-5h4L12 3Z"/><path d="M12 18v3"/></svg>
+          </div>
+
+          <div class="pronouns">They/them</div>
+        </div>
+      </div>
+
+      <div class="tag-social-grid">
+          <div class="status-tags">
+            <span class="chip incomplete">Incomplete</span>
+            <span class="chip search">Search match</span>
+          </div>
+          <div class="social-icons primary" aria-label="Social media methods, first row">
+            <span class="social whatsapp" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a9.8 9.8 0 0 0-8.45 14.76L2.2 22l5.38-1.31A9.9 9.9 0 1 0 12 2Zm0 17.8a7.9 7.9 0 0 1-4.02-1.1l-.29-.17-3.19.78.85-3.1-.19-.31A7.9 7.9 0 1 1 12 19.8Zm4.34-5.92c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.93-1.18-.71-.63-1.19-1.42-1.33-1.66-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.46-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.11.16 1.53.1.47-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg></span>
+            <span class="social email" title="Email contact option"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span>
+            <span class="social snapchat" title="Snapchat"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2c-3.17 0-5.1 2.12-5.1 5.35 0 .57.05 1.32.14 2.07-.37.18-.85.34-1.42.34-.44 0-.77.28-.77.66 0 .42.4.66 1.06.66.48 0 .98-.1 1.42-.25.12.47.26.9.42 1.23-.54.93-1.56 1.77-2.87 2.38-.55.25-.83.48-.83.83 0 .38.36.64.96.7.58.07 1.16.13 1.59.3.43.17.63.57.82.95.17.34.35.69.76.69.36 0 .73-.16 1.13-.34.42-.19.88-.39 1.51-.39s1.09.2 1.51.39c.4.18.77.34 1.13.34.41 0 .59-.35.76-.69.19-.38.39-.78.82-.95.43-.17 1.01-.23 1.59-.3.6-.06.96-.32.96-.7 0-.35-.28-.58-.83-.83-1.31-.61-2.33-1.45-2.87-2.38.16-.33.3-.76.42-1.23.44.15.94.25 1.42.25.66 0 1.06-.24 1.06-.66 0-.38-.33-.66-.77-.66-.57 0-1.05-.16-1.42-.34.09-.75.14-1.5.14-2.07 0-3.23-1.93-5.35-5.1-5.35Z"/></svg></span>
+          </div>
+          <div class="chips relation-tags" aria-label="Relationship, role and position">
+            <span class="chip">Friend</span>
+            <span class="chip">Sub</span>
+            <span class="chip">Top</span>
+          </div>
+          <div class="social-icons secondary" aria-label="Social media methods, wrapped row">
+            <span class="social" title="FabGuys"><img class="brand-icon" src="mockup-assets/fabguys-android-icon.png" alt="FabGuys Google Play icon"></span>
+            <span class="social" title="FabSwingers"><img class="brand-icon" src="mockup-assets/fabswingers-android-icon.png" alt="FabSwingers Google Play icon"></span>
+          </div>
+      </div>
+
+      <div class="availability-line" aria-label="Optional weekly availability summary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Usually Mon–Fri evenings · Sat afternoons</span>
+      </div>
+      <div class="last" aria-label="12 encounters, average rated enjoyment 84 out of 100, last interaction four days ago">
+        <strong>12 encounters</strong>
+        <span>·</span>
+        <span class="average"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>84/100 rated avg</span>
+        <span>·</span>
+        <span>Last 4 days ago</span>
+      </div>
+    </article>
+  </section>
+
+  <div class="annotation">
+    <strong>For approval:</strong> synthetic portrait; bike + host + proposed outdoor/public tree markers on the right, with the applicable travel-mode icon (car, bike, bus or walk); social badges below. The first icon row begins level with pronouns. “Incomplete” and “Search match” are flush-left on their own line, above neutral relationship/role/position chips. The red outline on “Incomplete” is a proposal only. The bottom line adds encounter count and a rated-only enjoyment average. Android/PWA platform icons are preview assets only; none have been added to the app.
+  </div>
+
+  <h2>Availability — optional card summary and future filter</h2>
+  <p class="caption">This is a design concept, not a working filter. The compact line is optional; leaving it off keeps the card uncluttered. Proposed filters apply only to contacts with a saved weekly schedule.</p>
+  <div class="filter-bar" aria-label="Availability filter concept">
+    <span class="filter-chip selected">Available now</span>
+    <span class="filter-chip">Soon · next 24h</span>
+    <span class="filter-chip">At a set time…</span>
+  </div>
+  <div class="schedule-panel" aria-label="Proposed streamlined weekly availability editor">
+    <div class="schedule-heading">Weekly availability</div>
+    <div class="schedule-zone">Times use each contact’s local timezone</div>
+    <div class="schedule-rule">
+      <div class="schedule-days" aria-label="Monday through Friday selected"><span class="day-pill on">M</span><span class="day-pill on">Tu</span><span class="day-pill on">W</span><span class="day-pill on">Th</span><span class="day-pill on">F</span><span class="day-pill">Sa</span><span class="day-pill">Su</span></div>
+      <span class="time-window">18:00–22:00</span>
+    </div>
+    <div class="schedule-rule">
+      <div class="schedule-days" aria-label="Saturday selected"><span class="day-pill">M</span><span class="day-pill">Tu</span><span class="day-pill">W</span><span class="day-pill">Th</span><span class="day-pill">F</span><span class="day-pill on">Sa</span><span class="day-pill">Su</span></div>
+      <span class="time-window">14:00–18:00</span>
+    </div>
+    <div class="schedule-foot"><span>＋ Add weekly time window</span><span class="show-toggle">☑ Show summary on cards</span></div>
+    <div class="schedule-foot"><span>Date-specific exceptions</span><span>＋ Add one-off</span></div>
+    <p class="schedule-note">Suggested cleanup: replace overlapping broad availability tags and recurring “All day / Before / After” rules with day + start/end windows. Keep one-off date exceptions separate. The existing “Readily available?” field overlaps this schedule and needs a clear separate meaning or removal. “Available now” checks the current moment in each contact’s local timezone; “Soon” means the next 24 hours. “At a set time” is entered in your local time and compared as the same moment.</p>
+  </div>
+
+  <h2>Layout intent</h2>
+  <p class="caption">Social icons occupy a fixed right column and split across two rows when needed; the second icon row pairs with relationship/role/position tags instead of creating an icon-only blank line. The optional availability summary is one line below those tags. The meetup row is aligned with pronouns. Encounter count is already available as <code>summary.count</code> (non-archived linked encounters); average enjoyment is already available as <code>summary.averageEnjoyment</code> and should be hidden when no encounter has a rating. The tree icon implies an outdoor/public-meetup preference that is not currently represented on the card; it needs an explicit data source and definition before implementation. The Android Play images and PWA icons shown below are preview assets only; app use would still need owner approval and a current brand/asset-terms check.</p>
+  <h2>Platform icon inventory</h2>
+  <p class="caption">All Google Play icons use their available 512×512 assets; PWA icons use the largest published source found (The Blowers 1200×1200, Recon 512×512, Sniffies 512×512). They are downscaled only for the preview.</p>
+  <p class="caption">Code check: the APK has explicit branches for Phone/WhatsApp, Snapchat, FabGuys, FabSwingers and Recon; other saved platform names fall back to a generic chat bubble. FabGuys/FabSwingers/Recon currently use custom marks, not their official platform icons. Email is a proposed extra contact method—the current contact model has no email field.</p>
+  <div class="platform-group-title">Already has a dedicated icon branch in the APK</div>
+  <div class="platform-grid" aria-label="Existing dedicated platform icon branches">
+    <div class="platform"><img src="mockup-assets/whatsapp-android-icon.png" alt=""><div><div class="platform-name">Phone / WhatsApp</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/snapchat-android-icon.png" alt=""><div><div class="platform-name">Snapchat</div><div class="platform-source">Google Play • standard</div></div></div>
+    <div class="platform"><img class="fab-logo" src="mockup-assets/fabguys-android-icon.png" alt=""><div><div class="platform-name">FabGuys</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img class="fab-logo" src="mockup-assets/fabswingers-android-icon.png" alt=""><div><div class="platform-name">FabSwingers</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/recon-pwa-icon.png" alt=""><div><div class="platform-name">Recon</div><div class="platform-source">PWA manifest • 512px</div></div></div>
+  </div>
+
+  <div class="platform-group-title">Already named / requested, but currently generic in the APK</div>
+  <div class="platform-grid" aria-label="Named platforms using the generic icon today">
+    <div class="platform"><img src="mockup-assets/scruff-android-icon.png" alt=""><div><div class="platform-name">SCRUFF</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/sniffies-pwa-icon.png" alt=""><div><div class="platform-name">Sniffies</div><div class="platform-source">PWA manifest • 512px</div></div></div>
+    <div class="platform"><img src="mockup-assets/instagram-android-icon.png" alt=""><div><div class="platform-name">Instagram</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/tinder-android-icon.png" alt=""><div><div class="platform-name">Tinder</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/blowers-pwa-icon.png" alt=""><div><div class="platform-name">The Blowers</div><div class="platform-source">PWA • 1200px source</div></div></div>
+    <div class="platform"><img src="mockup-assets/bluesky-android-icon.png" alt=""><div><div class="platform-name">Bluesky</div><div class="platform-source">Google Play</div></div></div>
+  </div>
+
+  <div class="platform-group-title">Additional common-platform suggestions</div>
+  <div class="platform-grid" aria-label="Additional suggested platform icons">
+    <div class="platform"><img src="mockup-assets/grindr-android-icon.png" alt=""><div><div class="platform-name">Grindr</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/bumble-android-icon.png" alt=""><div><div class="platform-name">Bumble</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/hinge-android-icon.png" alt=""><div><div class="platform-name">Hinge</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/feeld-android-icon.png" alt=""><div><div class="platform-name">Feeld</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/growlr-android-icon.png" alt=""><div><div class="platform-name">Growlr</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/jackd-android-icon.png" alt=""><div><div class="platform-name">Jack'd</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/hornet-android-icon.png" alt=""><div><div class="platform-name">Hornet</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/telegram-android-icon.png" alt=""><div><div class="platform-name">Telegram</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/signal-android-icon.png" alt=""><div><div class="platform-name">Signal</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/messenger-android-icon.png" alt=""><div><div class="platform-name">Messenger</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/discord-android-icon.png" alt=""><div><div class="platform-name">Discord</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><img src="mockup-assets/tiktok-android-icon.png" alt=""><div><div class="platform-name">TikTok</div><div class="platform-source">Google Play</div></div></div>
+    <div class="platform"><span class="dual-x" role="img" aria-label="Twitter bird and X logos split into halves"><span class="dual-x-half dual-x-twitter"><svg viewBox="0 0 256 256" aria-hidden="true"><path fill="#fff" d="M247.39,68.94A8,8,0,0,0,240,64H209.57A48.66,48.66,0,0,0,168.1,40a46.91,46.91,0,0,0-33.75,13.7A47.9,47.9,0,0,0,120,88v6.09C79.74,83.47,46.81,50.72,46.46,50.37a8,8,0,0,0-13.65,4.92c-4.31,47.79,9.57,79.77,22,98.18a110.93,110.93,0,0,0,21.88,24.2c-15.23,17.53-39.21,26.74-39.47,26.84a8,8,0,0,0-3.85,11.93c.75,1.12,3.75,5.05,11.08,8.72C53.51,229.7,65.48,232,80,232c70.67,0,129.72-54.42,135.75-124.44l29.91-29.9A8,8,0,0,0,247.39,68.94Zm-45,29.41a8,8,0,0,0-2.32,5.14C196,166.58,143.28,216,80,216c-10.56,0-18-1.4-23.22-3.08,11.51-6.25,27.56-17,37.88-32.48A8,8,0,0,0,92,169.08c-.47-.27-43.91-26.34-44-96,16,13,45.25,33.17,78.67,38.79A8,8,0,0,0,136,104V88a32,32,0,0,1,9.6-22.92A30.94,30.94,0,0,1,167.9,56c12.66.16,24.49,7.88,29.44,19.21A8,8,0,0,0,204.67,80h16Z"/></svg></span><span class="dual-x-half dual-x-brand"><svg viewBox="0 0 256 256" aria-hidden="true"><path fill="#fff" d="M214.75,211.71l-62.6-98.38,61.77-67.95a8,8,0,0,0-11.84-10.76L143.24,99.34,102.75,35.71A8,8,0,0,0,96,32H48a8,8,0,0,0-6.75,12.3l62.6,98.37-61.77,68a8,8,0,1,0,11.84,10.76l58.84-64.72,40.49,63.63A8,8,0,0,0,160,224h48a8,8,0,0,0,6.75-12.29ZM164.39,208,62.57,48h29L193.43,208Z"/></svg></span></span><div><div class="platform-name">Twitter/X</div><div class="platform-source">Split concept • alias</div></div></div>
+    <div class="platform"><span class="generic-platform-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span><div><div class="platform-name">Email</div><div class="platform-source">Generic contact method</div></div></div>
+  </div>
+  <div class="platform-group-title">Fab icon edge check — dark vs light mode</div>
+  <p class="caption">No added white stroke: both Fab icons keep their original white artwork tile in dark mode. On light cards only, a subtle neutral outline/shadow separates Fab tiles and the white-edged Telegram/Messenger art from the surface; icons without a light/white edge get no added treatment.</p>
+  <div class="theme-checks" aria-label="App icons checked on dark and light surfaces">
+    <div class="theme-case dark"><div class="theme-label">Dark surface · #1C1C1F</div><div class="theme-caption">Original Fab white tiles retained; no added stroke</div><div class="theme-icons"><img src="mockup-assets/snapchat-android-icon.png" alt="Snapchat"><img src="mockup-assets/whatsapp-android-icon.png" alt="WhatsApp"><img class="fab-logo" src="mockup-assets/fabguys-android-icon.png" alt="FabGuys"><img class="fab-logo" src="mockup-assets/fabswingers-android-icon.png" alt="FabSwingers"><img src="mockup-assets/telegram-android-icon.png" alt="Telegram"><img src="mockup-assets/messenger-android-icon.png" alt="Messenger"><img src="mockup-assets/recon-pwa-icon.png" alt="Recon"><img src="mockup-assets/sniffies-pwa-icon.png" alt="Sniffies"><img src="mockup-assets/scruff-android-icon.png" alt="SCRUFF"></div></div>
+    <div class="theme-case light"><div class="theme-label">Light surface · #FFFFFF</div><div class="theme-caption">Soft edge on Fab tiles + white-edged Telegram/Messenger</div><div class="theme-icons"><img src="mockup-assets/snapchat-android-icon.png" alt="Snapchat"><img src="mockup-assets/whatsapp-android-icon.png" alt="WhatsApp"><img class="fab-logo" src="mockup-assets/fabguys-android-icon.png" alt="FabGuys"><img class="fab-logo" src="mockup-assets/fabswingers-android-icon.png" alt="FabSwingers"><img class="edge-light" src="mockup-assets/telegram-android-icon.png" alt="Telegram"><img class="edge-light" src="mockup-assets/messenger-android-icon.png" alt="Messenger"><img src="mockup-assets/recon-pwa-icon.png" alt="Recon"><img src="mockup-assets/sniffies-pwa-icon.png" alt="Sniffies"><img src="mockup-assets/scruff-android-icon.png" alt="SCRUFF"></div></div>
+  </div>
+  <p class="caption" style="margin-top:12px">Pride alternative check: I found Pride profile stickers/themes and limited-time in-app promotions, but no stable, publicly published Pride launcher/app icons for these services. Snapchat+ supports choosing custom app icons, but its full current catalogue isn't public. The mockup therefore sticks to standard Android/PWA icons; no unofficial Pride recolours are presented as official. The Twitter/X half-and-half uses the already-installed Phosphor TwitterLogo and XLogo glyphs; code/data alias handling would be a separate approved change.</p>
+  <h2>Other useful checks before implementation</h2>
+  <p class="caption">For the average, wait until there are more than two total encounters and at least two rated encounters; average rated encounters only. Before then, show the first rated encounter's score as an individual rating, never label one score an average. Suppress encounter count, enjoyment and any optional email address under Anonymise mode: these can reveal contact-specific activity or identity even when the name/photo are masked. The email row is mockup-only until the contact model stores it safely in validation, backup, sharing and export paths. “Outdoors” and “public” aren't quite the same place type (e.g. private garden vs public venue), so decide whether the tree means outdoors, public meeting, or a combined preference. Finally, red already signals “Don't meet again” on the contact card; the red outline on “Incomplete” keeps an amber, non-red fill to distinguish it. For additional editable platforms, keep the generic icon unless there is a saved method to show; don't fill every card with icons the contact doesn't use.</p>
+</main>
+</body>
+</html>
