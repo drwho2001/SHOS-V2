@@ -29,7 +29,9 @@ active tab still fills the pill with that colour and turns the icon white. Home
 keeps its raised circle. Contrast measured against both surfaces — all four
 accents clear 3:1 (Contacts 4.50/3.78 light/dark, Encounters 7.30/5.60,
 Medication 11.32/4.95, Healthcare 8.58/3.43). Verified rendering in the web
-build. Device APK install still outstanding (device was offline at build time).
+build. Verified on-device too: installed `SHOS.apk`, confirmed all four icons
+render in their module colours and the active tab shows a white icon on the
+module-colour pill.
 
 ## 3. Encounter ring: verify and document the corrected pre/post logic
 Done in `a9cb831` / deployed `01ecc67`: pre = encounters still inside the
