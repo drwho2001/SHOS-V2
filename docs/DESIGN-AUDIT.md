@@ -450,6 +450,8 @@ Recorded so these do not get "fixed" later.
 | Raw font sizes are inconsistent | Sizes alone are not the defect — roles are. Handled by C4 and C9. |
 | Home centre tab has no active/inactive state | Intentional (user's explicit ask, `App.jsx:3268–3270`). Documented via M9, not a defect. (C13 reclassified.) |
 | Home quick-add saturated borders | **Revisited 5 Nov 2026 (owner):** the accent outline is back, but on grouped rows (C16), not on eight standalone cards — "consider accent borders around these instead of infill to make easier at a glance on white as little module colour present per button otherwise". Surface fill, accent outline, accent icon. (C6.) |
+| Contacts banner paler than its own FAB and nav icon | **Fixed 5 Nov 2026.** The banner, the two sheet headers, the save button and the tag chips used `contactsTeal`, which dark mode brightens for thin strokes on a dark background — wrong for a filled surface with white text (white on the brightened amber is about 2.5:1). Filled surfaces now take the raw accent via `contactsBanner`; the brightened value stays for text and borders. (C6 follow-up.) |
+| Relationship chips and the "Incomplete" chip read as one colour | **Fixed 5 Nov 2026.** Relationship, role and position are facts about the person, so they are now neutral `textSecondary`/`surfaceVariant` chips; amber is reserved for "Incomplete". Search-hit tags stay accent-filled. (B5 follow-up.) |
 | No root max-width on desktop | Intentional (owner decision 15 Sep 2026, 14 sites). (W1 reclassified.) |
 
 ---
