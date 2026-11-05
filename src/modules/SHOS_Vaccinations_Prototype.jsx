@@ -209,7 +209,7 @@ function ReadRow({ label, value, T, alert }) {
 // Same free-text-plus-suggestions pattern already proven for Clinician
 // in Clinic Visits — genuinely typing a new value here also saves it
 // to the real shared option list, so it's a real suggestion next time.
-function VaccineField({ value, onChange, options, onAddNew, T }) {
+function VaccineField({ value, onChange, options, onAddNew, T, tr }) {
   // CHANGED — same real ask as the other suggestion-chip fields this
   // session: narrow to real matches once typing begins, instead of
   // always showing the same static option list regardless of input —
@@ -220,7 +220,7 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
     .filter((v) => v !== value).slice(0, 8);
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Vaccine</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.vaccine", "Vaccine")}</div>
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((v) => (
@@ -273,7 +273,7 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
 //    editing a date, and an assertive announcement fires on every keystroke
 //    that crosses the boundary. Polite is correct for a non-urgent observation
 //    the user is already looking at.
-  function EarlyDoseNotice({ doses, index, vaccineName, T }) {
+  function EarlyDoseNotice({ doses, index, vaccineName, T, tr }) {
     const notice = getEarlyDoseNotice(doses, index, vaccineName);
     if (!notice) return null;
 
@@ -302,7 +302,7 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
         role="status"
         style={{ marginTop: 8, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant }}
     >
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary, marginBottom: 2 }}>Dose logged early</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary, marginBottom: 2 }}>{tr("vaccinations.doseLoggedEarly", "Dose logged early")}</div>
       <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>{body}</div>
     </div>
   );
@@ -312,7 +312,7 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
 // vaccineName is the RECORD's vaccine, passed down because a dose object
 // does not carry it - and getEarlyDoseNotice previously read it off the dose,
 // which meant its sourced lookup could never resolve. See t032.
-function DoseByDose({ doses, onChange, vaccineName, T }) {
+function DoseByDose({ doses, onChange, vaccineName, T, tr }) {
   const addDose = () => {
     const nextNumber = (doses?.length || 0) + 1;
     const newDose = {
@@ -344,9 +344,9 @@ function DoseByDose({ doses, onChange, vaccineName, T }) {
   if (!doses?.length) {
     return (
       <div style={{ padding: "8px 0" }}>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>No doses logged yet</div>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>{tr("vaccinations.noDosesLoggedYet", "No doses logged yet")}</div>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
-          <Plus size={16} /> Add first dose
+          <Plus size={16} /> {tr("vaccinations.addFirstDose", "Add first dose")}
         </div>
       </div>
     );
@@ -373,30 +373,30 @@ function DoseByDose({ doses, onChange, vaccineName, T }) {
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Provider</div>
-              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label="Provider" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.provider", "Provider")}</div>
+              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label={tr("vaccinations.provider", "Provider")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Injection site</div>
-              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label="Injection site" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.injectionSite", "Injection site")}</div>
+              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label={tr("vaccinations.injectionSite", "Injection site")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Next due</div>
-              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label="Next due" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.nextDue", "Next due")}</div>
+              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label={tr("vaccinations.nextDue", "Next due")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Dose #</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.doseNumber", "Dose #")}</div>
               <input type="number" min="1" value={dose.doseNumber ?? index + 1} onChange={(e) => updateDose(index, "doseNumber", e.target.value ? Number(e.target.value) : null)} aria-label="Dose number" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, textAlign: "center", boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ padding: "8px 0 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-            <textarea value={dose.notes ?? ""} onChange={(e) => updateDose(index, "notes", e.target.value)} rows={2} aria-label="Dose notes"
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.notes", "Notes")}</div>
+            <textarea value={dose.notes ?? ""} onChange={(e) => updateDose(index, "notes", e.target.value)} rows={2} aria-label={tr("vaccinations.notes", "Dose notes")}
               style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
-          <EarlyDoseNotice doses={doses} index={index} vaccineName={vaccineName} T={T} />
+          <EarlyDoseNotice doses={doses} index={index} vaccineName={vaccineName} T={T} tr={tr} />
         </div>
       ))}
       <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 8}}>
@@ -418,7 +418,7 @@ function DoseByDose({ doses, onChange, vaccineName, T }) {
 // an uninitiated user from silently never having these links at all. This
 // control only exists for the case where the vaccination was logged first
 // and the visit remembered afterwards.
-function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
+function DerivedVisitLinks({ vaccinationId, onLinked, T, tr }) {
   const [visits, setVisits] = useState([]);
   const [showPicker, setShowPicker] = useState(false);
   const [query, setQuery] = useState("");
@@ -455,9 +455,9 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Given at</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.givenAt", "Given at")}</div>
       {visits.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>Not linked to a clinic visit.</div>
+        <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("vaccinations.notLinkedToVisit", "Not linked to a clinic visit.")}</div>
       ) : (
         visits.map((x) => (
           <div key={x.id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{labelOf(x)}</div>
@@ -467,12 +467,12 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
         <div style={{ marginTop: 6 }}>
           <input
             value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Find a clinic visit..."
-            aria-label="Find a clinic visit to link this vaccination to"
+            placeholder={tr("vaccinations.findClinicVisit", "Find a clinic visit...")}
+            aria-label={tr("vaccinations.findClinicVisitAria", "Find a clinic visit to link this vaccination to")}
             style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
           />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
-            {candidates.length === 0 && <span style={{ fontSize: 11, color: T.textDisabled }}>No matching visits.</span>}
+            {candidates.length === 0 && <span style={{ fontSize: 11, color: T.textDisabled }}>{tr("vaccinations.noMatchingVisits", "No matching visits.")}</span>}
             {candidates.map((x) => (
               <div key={x.id} role="button" tabIndex={0}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
@@ -591,10 +591,10 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Hep B booster" />
           <VaccineField value={form.vaccine} onChange={set("vaccine")} options={vaccineOptions}
-            onAddNew={(v) => { CustomOptionListsRepository.add("vaccine", v).then(setVaccineOptions); }} T={T} />
-          <MultiSelectChips label="Reason" value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} listName="vaccinationReason" T={T} />
+            onAddNew={(v) => { CustomOptionListsRepository.add("vaccine", v).then(setVaccineOptions); }} T={T} tr={tr} />
+          <MultiSelectChips label={tr("vaccinations.reason", "Reason")} value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} listName="vaccinationReason" T={T} />
           {/* REPLACED legacy doseNumber/date/nextDue with DoseByDose for series tracking */}
-          <DoseByDose doses={form.doses} onChange={set("doses")} vaccineName={form.vaccine} T={T} />
+          <DoseByDose doses={form.doses} onChange={set("doses")} vaccineName={form.vaccine} T={T} tr={tr} />
           <TextField label="Provider" value={form.provider} onChange={set("provider")} T={T} placeholder="e.g. Sexual Health Clinic" />
           {/* FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not
               correct type." MultiSelectChips is a plain string-toggle
@@ -607,7 +607,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
               via RelationPicker, already used two lines below for
               Clinic visits but never for this field. Switched to the
               same real ID-backed picker. */}
-          <RelationPicker label="Symptom" value={form.symptomIds} onChange={set("symptomIds")}
+          <RelationPicker label={tr("vaccinations.symptom", "Symptom")} value={form.symptomIds} onChange={set("symptomIds")}
             T={T} items={symptoms} placeholder="No symptoms in registry" />
           {/* CHANGED 26 Sep 2026 — this was a second, independently-editable
               copy of the vaccination<->clinic-visit link. ClinicVisits
@@ -619,10 +619,10 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
               the Clinic Visit form, which creates and links together) and
               read back here via the derived list below, so there is only
               ever one place it is stored. */}
-          <DerivedVisitLinks vaccinationId={form?.id} T={T} />
+          <DerivedVisitLinks vaccinationId={form?.id} T={T} tr={tr} />
           <div style={{ padding: "8px 0 20px" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-            <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.notes", "Notes")}</div>
+            <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("vaccinations.notes", "Notes")}
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>
@@ -780,7 +780,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
   );
 }
 
-function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+function VaccinationsLanding({ onOpen, onAdd, T, tr, vaccinations, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
@@ -877,10 +877,10 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
       <div style={{ position: "sticky", top: "var(--shos-sticky-header-h, 0px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Vaccinations</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>{tr("vaccinations.title", "Vaccinations")}</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer"}}>
-          {selectMode ? "Done" : "Select"}
+          {selectMode ? tr("common.done", "Done") : tr("common.select", "Select")}
         </span>
       </div>
       {/* ADDED 29 Sep 2026 (t025) - generalised vaccine guidance. This is
@@ -917,20 +917,20 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
                 currently visible under the active search/filters. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === sorted.length ? [] : sorted.map((v) => v.id))}
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
-              {selectedIds.length === sorted.length ? "Deselect all" : "Select all"}
+              {selectedIds.length === sorted.length ? tr("common.deselectAll", "Deselect all") : tr("common.selectAll", "Select all")}
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span role="button" tabIndex={0} aria-label="Export vaccination" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
+            <span role="button" tabIndex={0} aria-label={tr("vaccinations.exportAria", "Export vaccination")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
+              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
             {/* ADDED 20 Oct 2026 (t130) - an archived vaccination's event has
                 to LEAVE the phone's calendar, or the archive is a lie on the
                 home screen. */}
-            <span role="button" tabIndex={0} aria-label="Archive vaccinations" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); await syncVaccinationsToCalendar(await VaccinationRepository.getAll()); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span role="button" tabIndex={0} aria-label="Delete vaccinations" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
+            <span role="button" tabIndex={0} aria-label={tr("vaccinations.archiveAria", "Archive vaccinations")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); await syncVaccinationsToCalendar(await VaccinationRepository.getAll()); } }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.archive", "Archive")}</span>
+            <span role="button" tabIndex={0} aria-label={tr("vaccinations.deleteAria", "Delete vaccinations")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>{tr("common.cancel", "Cancel")}</span>
           </div>
         </div>
       )}
@@ -989,7 +989,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
               <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
                 {group.items.map((v) => (
-                  <VaccinationRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+                  <VaccinationRow key={v.id} v={v} T={T} tr={tr} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
                 ))}
               </div>
             </div>
@@ -1000,11 +1000,11 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           {sorted.length === 0 && (
             <EmptyState
               T={T}
-              message={query.trim() ? "No vaccinations match your search." : "No vaccinations logged yet. Tap + to add one."}
+              message={query.trim() ? tr("vaccinations.noMatchSearch", "No vaccinations match your search.") : tr("vaccinations.emptyState", "No vaccinations logged yet. Tap + to add one.")}
             />
           )}
           {sorted.map((v) => (
-            <VaccinationRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+            <VaccinationRow key={v.id} v={v} T={T} tr={tr} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
           ))}
         </div>
       )}
@@ -1031,7 +1031,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
 // ADDED — pulled out of VaccinationsLanding's own inline .map() body so
 // the desktop-grid month-grouping pass and the mobile flat list both
 // render the exact same row markup, unchanged.
-function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+function VaccinationRow({ v, T, tr, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
   const rowNextDue = getVaccinationNextDue(v);
   const overdue = isVaccinationOverdue(v);
   const isSelected = selectedIds.includes(v.id);
@@ -1054,7 +1054,7 @@ function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen,
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>{formatDate(v.date)}</div>
       {rowNextDue && (
         <div style={{ fontSize: 12, color: overdue ? T.actionRed : T.textSecondary, marginLeft: 16, marginTop: 2, fontWeight: overdue ? 700 : 400 }}>
-          {overdue ? "Overdue since" : "Next due"} {formatDate(rowNextDue)}
+          {overdue ? tr("vaccinations.overdueSince", "Overdue since") : tr("vaccinations.nextDue", "Next due")} {formatDate(rowNextDue)}
         </div>
       )}
       </div>
@@ -1065,6 +1065,7 @@ function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen,
 export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler, onNavigateToRecord } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
+  const { t: tr } = useTranslation();
   const [screen, setScreen] = useState({ name: "list" });
   // CHANGED — Phase 2 encryption groundwork: VaccinationRepository went
   // async, and VaccinationSheet's own `vaccination` prop is read only
@@ -1190,7 +1191,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   };
 
   let content;
-  if (screen.name === "list") content = <VaccinationsLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} vaccinations={vaccinations} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
+  if (screen.name === "list") content = <VaccinationsLanding T={T} tr={tr} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} vaccinations={vaccinations} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
   else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} onNavigateToRecord={onNavigateToRecord} />;
 
   return (
