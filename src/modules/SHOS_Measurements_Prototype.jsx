@@ -302,14 +302,14 @@ function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T, ty
 // and only meaningful — once "Clinic" is picked, suggested from
 // whatever's already been typed before (getKnownClinicNames), same
 // "free text with real suggestions" pattern used throughout this app.
-function LocationField({ locationType, clinicName, onLocationTypeChange, onClinicNameChange, T }) {
+function LocationField({ locationType, clinicName, onLocationTypeChange, onClinicNameChange, T, tr }) {
   const knownClinics = useLoadedMemo(() => MeasurementRepository.getKnownClinicNames(), [], []);
   const typed = (clinicName || "").trim();
   const suggestions = (typed ? knownClinics.filter((c) => c.toLowerCase().includes(typed.toLowerCase())) : knownClinics)
     .filter((c) => c !== clinicName).slice(0, 6);
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Location</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("measurements.location", "Location")}</div>
       <div style={{ display: "flex", gap: 6, marginBottom: clinicName || locationType === "Clinic" ? 6 : 0 }}>
         {["Home", "Clinic"].map((opt) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={opt} onClick={() => onLocationTypeChange(locationType === opt ? "" : opt)}
@@ -330,7 +330,7 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
               ))}
             </div>
           )}
-          <input value={clinicName ?? ""} onChange={(e) => onClinicNameChange(e.target.value)} placeholder="e.g. 56 Dean Street"
+          <input value={clinicName ?? ""} onChange={(e) => onClinicNameChange(e.target.value)} placeholder={tr("measurements.clinicNamePlaceholder", "e.g. 56 Dean Street")}
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
         </>
       )}
@@ -533,7 +533,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
           )}
           <TextField label="Date" value={form.date} onChange={set("date")} T={T} type="date" />
           <LocationField locationType={form.locationType} clinicName={form.clinicName}
-            onLocationTypeChange={set("locationType")} onClinicNameChange={set("clinicName")} T={T} />
+            onLocationTypeChange={set("locationType")} onClinicNameChange={set("clinicName")} T={T} tr={tr} />
           {isBP ? (
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1 }}><TextField label="Systolic" value={form.systolic ?? ""} onChange={(v) => set("systolic")(v === "" ? null : Number(v))} T={T} type="number" placeholder="e.g. 120" /></div>

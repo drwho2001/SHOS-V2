@@ -703,7 +703,9 @@
     "addMeasurement": "Add measurement",
     "editMeasurement": "Edit measurement",
     "linkedTo": "Linked to",
-    "notes": "Notes"
+    "location": "Location",
+    "notes": "Notes",
+    "clinicNamePlaceholder": "e.g. 56 Dean Street"
   },
   "menstrual": {
     "cycle": "Cycle",
