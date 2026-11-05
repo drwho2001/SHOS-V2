@@ -215,7 +215,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 
 - Module banners use the module accent background with white text.
 - **Home header** is a non-banner title (22/700) with up to 5 icons (Lock, Search, My Profile, Settings, Quick exit) and a 4 px accent bar underneath. Keep the icon count to 4 on narrow screens to avoid title wrap.
-- **Home quick add is grouped, not stacked.** One card per group (`Personal`, `Healthcare`), rows divided by hairlines, group labels in `textSecondary`. Do not go back to one bordered card per action: eight accent outlines competed with the module banners, and three same-weight labels read as peers. Every card on Home uses surface + neutral border; the accent belongs on the icon and label.
+- **Home quick add is grouped, not stacked.** One card per group, rows divided by hairlines. The first group sits directly under the "Quick add" heading with no label of its own; later groups ("Healthcare") carry a `textSecondary` label. Do not go back to one bordered card per action: eight accent outlines competed with the module banners, and three same-weight labels read as peers. Every card on Home uses surface + neutral border; the accent belongs on the icon and label.
 - Settings headers are sticky at `top: 0` inside a root that already carries the safe-area top padding.
 - Sub-module sticky subheadings use `STICKY_SUBHEADING_TOP`.
 - **Banner control budget:** title, then at most 2 module actions, then global actions (Quick exit always last). Select should live in the list toolbar, not the banner.

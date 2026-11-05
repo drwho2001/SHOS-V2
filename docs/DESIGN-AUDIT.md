@@ -387,7 +387,7 @@ On device these read as three peers, not as a parent and two children. The colou
 
 **Fix.** Make the hierarchy structural: either indent the children, drop them to `TYPE.caption`, or nest them under the parent with a leading rule. Pick one card treatment for the whole screen and apply it to the Calendar card too.
 
-**Status.** ✅ Fixed (option D, chosen 5 Nov 2026 from `docs/design-manual/c16-quickadd-options.html`). Each group is now one card: `Personal` and `Healthcare` each render a single surface card with neutral border, containing their rows separated by hairlines, instead of one card per action. The group labels moved from `textDisabled` to `textSecondary` per the C8 rule (they name action groups, not disabled values), so hierarchy is carried by the card structure rather than by a single step of grey. The Calendar shortcut was the screen's third card treatment (tinted fill + accent border) and now uses the same surface + neutral border, leaving the accent on its icon and label.
+**Status.** ✅ Fixed (option D, chosen 5 Nov 2026 from `docs/design-manual/c16-quickadd-options.html`). Each group is now one card: a single surface card with neutral border, containing its rows separated by hairlines, instead of one card per action. The group label moved from `textDisabled` to `textSecondary` per the C8 rule (it names an action group, not a disabled value). A follow-up ask the same day removed the `Personal` heading entirely, so the first group sits directly under "Quick add" and only groups that need distinguishing from it carry a label (`Healthcare`). The Calendar shortcut was the screen's third card treatment (tinted fill + accent border) and now uses the same surface + neutral border, leaving the accent on its icon and label.
 
 ---
 

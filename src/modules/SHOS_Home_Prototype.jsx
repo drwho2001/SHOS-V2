@@ -1411,7 +1411,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.quickAdd", "Quick add")}</div>
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "4px 0 6px" }}>{tr("home.personal", "Personal")}</div>
+      {/* CHANGED 5 Nov 2026 — real ask: "remove 'personal' after quick add
+          subtitle". The first group now sits directly under "Quick add"
+          with no second heading, so only the groups that need
+          distinguishing from it carry a label ("Healthcare"). */}
       <QuickAddGroup>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
