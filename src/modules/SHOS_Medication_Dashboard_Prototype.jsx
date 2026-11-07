@@ -761,11 +761,11 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, position: "relative" }}>
         <button onClick={handleLogTap}
-          style={btnStyle(T.medsBlue, "outline", doseLocked, T)}
+          style={btnStyle(T.medsBlue, "filled", doseLocked, T)}
         >
           <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>+1</span> {doseLocked ? "Already logged" : "Log dose"}
         </button>
-        {stock.tracked && <button onClick={() => onLogRefill(med.id)} style={btnStyle(T.medsBlue, "filled", false)}><RefreshCcw size={14} /> {tr("medication.logRefill", "Log refill")}</button>}
+        {stock.tracked && <button onClick={() => onLogRefill(med.id)} style={btnStyle(T.medsBlue, "outline", false)}><RefreshCcw size={14} /> {tr("medication.logRefill", "Log refill")}</button>}
         {lockFlash && (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={handleLogTap} style={{ position: "absolute", bottom: "100%", left: 0, right: 0, marginBottom: 6, padding: "6px 10px", background: T.textPrimary, color: T.bg, fontSize: 11, fontWeight: 600, borderRadius: radius.sm, textAlign: "center", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
             Locked until {lockoutEndsEstimate(med, lastDose?.date)} — tap again to log anyway
