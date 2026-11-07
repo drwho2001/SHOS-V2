@@ -274,9 +274,9 @@
       <div class="last" aria-label="12 encounters, average rated enjoyment 84 out of 100, last interaction four days ago">
         <strong>12 encounters</strong>
         <span>·</span>
-        <span class="average"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>84/100 rated avg</span>
+        <span class="average"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>84/100 avg.</span>
         <span>·</span>
-        <span>Last 4 days ago</span>
+        <span>Last met 4 days ago</span>
       </div>
     </article>
   </section>
@@ -357,7 +357,7 @@
   </div>
   <p class="caption" style="margin-top:12px">Pride alternative check: I found Pride profile stickers/themes and limited-time in-app promotions, but no stable, publicly published Pride launcher/app icons for these services. Snapchat+ supports choosing custom app icons, but its full current catalogue isn't public. The mockup therefore sticks to standard Android/PWA icons; no unofficial Pride recolours are presented as official. The Twitter/X half-and-half uses the already-installed Phosphor TwitterLogo and XLogo glyphs; code/data alias handling would be a separate approved change.</p>
   <h2>Other useful checks before implementation</h2>
-  <p class="caption">For the average, wait until there are more than two total encounters and at least two rated encounters; average rated encounters only. Before then, show the first rated encounter's score as an individual rating, never label one score an average. Suppress encounter count, enjoyment and any optional email address under Anonymise mode: these can reveal contact-specific activity or identity even when the name/photo are masked. The email row is mockup-only until the contact model stores it safely in validation, backup, sharing and export paths. “Outdoors” and “public” aren't quite the same place type (e.g. private garden vs public venue), so decide whether the tree means outdoors, public meeting, or a combined preference. Finally, red already signals “Don't meet again” on the contact card; the red outline on “Incomplete” keeps an amber, non-red fill to distinguish it. For additional editable platforms, keep the generic icon unless there is a saved method to show; don't fill every card with icons the contact doesn't use.</p>
+  <p class="caption">The card always shows the average of rated encounters, labelled "avg." (♥ N/100 avg.), whenever any rating exists — there is no "first rating" fallback. Suppress encounter count, enjoyment and any optional email address under Anonymise mode: these can reveal contact-specific activity or identity even when the name/photo are masked. The email row is mockup-only until the contact model stores it safely in validation, backup, sharing and export paths. “Outdoors” and “public” aren't quite the same place type (e.g. private garden vs public venue), so decide whether the tree means outdoors, public meeting, or a combined preference. Finally, red already signals “Don't meet again” on the contact card; the red outline on “Incomplete” keeps an amber, non-red fill to distinguish it. For additional editable platforms, keep the generic icon unless there is a saved method to show; don't fill every card with icons the contact doesn't use.</p>
 </main>
 </body>
 </html>

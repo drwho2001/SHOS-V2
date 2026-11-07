@@ -121,9 +121,17 @@ export async function getCurrentLocationPlace() {
 // that calls out to Nominatim's forward-search endpoint, one place to
 // gate, and one place to fix if the API ever changes. Same Nominatim
 // result shape (display_name + address.*) both callers already handle.
+// ADDED — real ask: UK-first address search. The app's own data is
+// overwhelmingly UK (postcodes like HU2 8AU everywhere), but bare
+// Nominatim ranks globally — "Sheffield" can surface Sheffield, US or
+// other same-named places first. A UK viewbox (Great Britain + NI
+// bounding box, lon/lat corners) makes Nominatim rank UK results
+// ahead of foreign ones without hard-restricting: a genuinely foreign
+// address still returns, just after UK matches. No `bounded=1`
+// deliberately — same reason.
 export async function forwardGeocode(query) {
   if (!(await addressLookupAllowed())) return [];
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`);
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&viewbox=-8.6,58.7,1.8,49.9`);
   if (!res.ok) return [];
   return res.json();
 }

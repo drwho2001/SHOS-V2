@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, TrendUpIcon as TrendUp, TrendDownIcon as TrendDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon, SignOutIcon as SignOut } from "@phosphor-icons/react";
 // The dashboard no longer owns its own medication/log data — it reads and
 // writes through these two repositories instead. Nothing about how the UI
 // looks or behaves changes; this just moves WHERE the facts actually live.
@@ -34,7 +34,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
-import { computeStock, computeAdherence, nextDoseEstimate, 
+import { computeStock, computeAdherence, computeAdherenceTrend, nextDoseEstimate, 
 isDoseLockedOut,   lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, doseTimingAdvisory, latestLogOfType, 
 formatDoseComponents } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
@@ -246,7 +246,8 @@ function StatTile({ label, value, tint, subtitle, onClick, T }) {
 
 // Redesigned for more contrast per the user's ask: tinted background/border, fraction shown as the
 // primary value with the percentage as a secondary line, per the user's "give absolute value" request.
-function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
+function AdherencePill({ label, hit, expected, pct, hasData, T, info, accent, trend }) {
+  const valueColor = accent || T.medsBlue;
   // FIXED 30 Sep 2026 - this component recomputed the percentage instead of
   // reading the one that owns it, so the two drifted apart and the card began
   // DISAGREEING WITH ITSELF. medicationCalculations' windowStats() was
@@ -284,7 +285,7 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
   if (!hasData) {
     return (
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, color: T.textDisabled, lineHeight: 1.25, maxWidth: 110, margin: "0 auto" }}>
+        <div style={{ fontFamily: FONT_FAMILY, fontSize: 12, fontWeight: 600, color: T.textDisabled, lineHeight: 1.25, maxWidth: "100%", margin: "0 auto" }}>
           No doses logged yet
         </div>
       </div>
@@ -292,9 +293,21 @@ function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
   }
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>
+      <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: valueColor }}>{hit}/{expected}</div>
       <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
         {label} · {pct}%
+        {trend && trend.hasData && trend.direction !== "flat" && (
+          <span
+            role="img"
+            aria-label={`${trend.direction === "up" ? "Up" : "Down"} from ${trend.previous}% the previous week`}
+            title={`${trend.direction === "up" ? "Up" : "Down"} from ${trend.previous}% the previous week`}
+            style={{ display: "inline-flex", flexShrink: 0 }}
+          >
+            {trend.direction === "up"
+              ? <TrendUp size={12} color={T.actionGreen} />
+              : <TrendDown size={12} color={T.actionRed} />}
+          </span>
+        )}
         {/* FIXED 28 Oct 2026 (Lily, t200) — the touch-target sweep had put
             minHeight: 44 on this 11px icon sitting inside a fontSize: 10
             label row, which forced the streak block to balloon and broke the
@@ -326,6 +339,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   const [dismissedRefill, setDismissedRefill] = useState(false);
   const stock = computeStock(med);
   const adherence = computeAdherence(med);
+  const adherenceTrend = computeAdherenceTrend(med);
   const lastDose = latestLogOfType(med, "dose");
   const requested = !!med.refillRequestedAt;
   const nextDose = lastDose ? nextDoseEstimate(med, lastDose.date, reminderTimingMode) : null;
@@ -419,16 +433,67 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
     onLogDose(med.id);
   };
 
+  // ── Byline facts (DESIGN-MANUAL §10.2.1): what the dose is, then when it
+  // is taken. Schedule used to float as grey text under the stock bar and
+  // the dose form was not shown at all; both now sit in the byline so the
+  // card answers "what is it" and "when do I take it" before the numbers.
+  const doseUnits = Math.max(1, med.unitsPerDose || 1);
+  const doseUnitLabel = `${doseUnits} ${med.unit || "unit"}${doseUnits === 1 ? "" : "s"}`;
+  // The byline states the TOTAL strength per dose, not the strength of one
+  // tablet: 2 × 150mg reads "2 tablets · 300mg total". Ingredient names from
+  // doseComponents are kept alongside the amounts so a brand title (Zapain)
+  // still says what is actually in it — "codeine 60mg/paracetamol 1000mg".
+  const doseComponents = getDoseComponents(med);
+  const ingredientParts = doseComponents.map((c) => {
+    const numeric = Number(c.value);
+    const amount = Number.isFinite(numeric) && c.value !== "" ? +(numeric * doseUnits).toFixed(2) : c.value;
+    return { label: (c.label || "").trim(), amount: `${amount}${c.unit || ""}` };
+  });
+  const ingredientNames = [...new Set(ingredientParts.map((p) => p.label).filter(Boolean))].join("/");
+  const ingredientAmounts = ingredientParts.map((p) => p.amount).join("/");
+  const doseComponentsLabel = ingredientParts.length
+    ? `${ingredientNames ? `${ingredientNames} ` : ""}${ingredientAmounts}${doseUnits > 1 ? " total" : ""}`
+    : null;
+  const doseFormLabel = doseComponentsLabel ? `${doseUnitLabel} · ${doseComponentsLabel}` : doseUnitLabel;
+  const frequencyLabel = med.usagePattern === "prn"
+    ? tr("medication.asNeeded", "As needed")
+    : med.usagePattern === "custom"
+      ? (med.scheduleIntervalDays ? `Every ${med.scheduleIntervalDays} days` : "Custom schedule")
+      : (med.dosesPerDay || 1) === 1
+        ? tr("medication.daily", "Daily")
+        : med.dosesPerDay === 2
+          ? tr("medication.twiceDaily", "Twice daily")
+          : `${med.dosesPerDay}× daily`;
+  const scheduleLabel = scheduledTimesLabel ? `${frequencyLabel} · ${scheduledTimesLabel}` : frequencyLabel;
+  const stockIsLow = stock.tracked && stock.needsAction && !requested;
+  // Landscape squeeze: on a ~405dp-tall landscape viewport (status bar + app bar +
+  // bottom nav eat most of it), cards can overflow the screen. Constrain each card
+  // so it scrolls internally instead of getting cut off. Follows the same pattern
+  // the app already uses for fixed overlay sheets (maxHeight + overflowY: auto).
+  const [isLandscape, setIsLandscape] = useState(() =>
+    typeof window !== "undefined" && window.innerHeight < window.innerWidth
+  );
+  useEffect(() => {
+    const onResize = () => setIsLandscape(window.innerHeight < window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const cardPadding = isLandscape ? 12 : 16;
+  const cardGap = isLandscape ? 3 : 4;
+  const groupTitleStyle = { fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: T.textDisabled, fontSize: isLandscape ? 8 : 9, marginTop: isLandscape ? 6 : 10, marginBottom: isLandscape ? 2 : 3 };
+  const chipStyle = (accent) => ({ padding: "2px 8px", borderRadius: radius.full, border: `1px solid ${accent}`, background: `${accent}15`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", lineHeight: 1.4 });
+  const neutralChipStyle = { padding: "2px 8px", borderRadius: radius.full, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", lineHeight: 1.4 };
+  const chipRowStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: isLandscape ? 3 : 4 };
+
   return (
-    <div ref={cardRef} style={{ position: "relative", background: T.surface, border: `1px solid ${highlighted ? T.actionRed : searchHighlighted ? T.medsBlue : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: highlighted ? `0 0 0 3px ${T.actionRed}33` : searchHighlighted ? `0 0 0 3px ${T.medsBlue}33` : "0 1px 3px rgba(0,0,0,.06)", transition: reducedMotion ? "none" : "box-shadow 300ms ease, border-color 300ms ease" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue, display: "inline-block" }} />
-          <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{med.name}</span>
-          {med.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
-        </div>
-        <MoreVertical size={20} color={T.textSecondary} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => onToggleMenu(med.id)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleMenu(med.id); } }} />
+    <div ref={cardRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, background: T.surface, border: `1px solid ${highlighted ? T.actionRed : searchHighlighted ? T.medsBlue : T.border}`, borderRadius: radius.md, padding: 16, overflowWrap: "break-word", boxShadow: highlighted ? `0 0 0 3px ${T.actionRed}33` : searchHighlighted ? `0 0 0 3px ${T.medsBlue}33` : "0 1px 3px rgba(0,0,0,.06)", transition: reducedMotion ? "none" : "box-shadow 300ms ease, border-color 300ms ease" }}>
+      {/* ── Title row (§10.2.1): status dot → name → DEMO, menu absolute top-right ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0, paddingRight: 30 }}>
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, flex: "0 0 8px", background: stock.tracked && stock.needsAction && !requested ? T.actionRed : T.medsBlue, display: "inline-block" }} />
+        <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: isLandscape ? 13 : 15, lineHeight: isLandscape ? 1.2 : 1.3, color: T.textPrimary, minWidth: 0, overflowWrap: "anywhere" }}>{med.name}</span>
+        {med.isDemo && <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 4px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
       </div>
+      <MoreVertical size={20} color={T.textSecondary} style={{ position: "absolute", top: 4, right: 4, cursor: "pointer", padding: 12, boxSizing: "content-box" }} onClick={() => onToggleMenu(med.id)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleMenu(med.id); } }} />
 
       {menuOpen && (
         <>
@@ -502,124 +567,38 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         />
       )}
 
-      {stock.tracked ? (
-        <>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontFamily: FONT_FAMILY, fontSize: 26, fontWeight: 600, color: stock.needsAction && !requested ? T.actionRed : T.textPrimary }}>{stock.currentStock}</span>
-            <span style={{ fontSize: 12, color: T.textSecondary }}>{med.unit}s left</span>
-          </div>
-          <div style={{ height: 4, background: T.surfaceVariant, borderRadius: radius.full, marginTop: 8, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${stock.barPct}%`, background: stock.needsAction && !requested ? T.actionRed : T.medsBlue, borderRadius: radius.full, transition: reducedMotion ? "none" : "width 200ms ease" }} />
-          </div>
+      {/* ── Byline (§10.2.1): dose form and schedule on one line ── */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, color: T.textSecondary, fontSize: 10, lineHeight: 1.3, fontWeight: 500, marginBottom: 5, minWidth: 0 }}>
+        <Pill size={11} color={T.textSecondary} style={{ flex: "0 0 11px" }} />
+        <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{doseFormLabel}</span>
+        <Clock size={11} color={T.textSecondary} style={{ flex: "0 0 11px" }} />
+        <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{scheduleLabel}</span>
+      </div>
 
-          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-            {justCompleted === "logged" ? (
-              <><Check size={14} color={T.actionGreen} /><span style={{ color: T.actionGreen, fontWeight: 600 }}>{tr("medication.logged", "Logged")}</span></>
-            ) : justCompleted === "requested" ? (
-              <><Check size={14} color={T.medsBlue} /><span style={{ color: T.medsBlue, fontWeight: 600 }}>{tr("medication.markedAsRequested", "Marked as requested")}</span></>
-            ) : requested && !dismissedRefill ? (
-              <><Clock size={14} color={T.textSecondary} /><span style={{ color: T.textSecondary, fontWeight: 600 }}>Requested {daysFromNow(med.refillRequestedAt)} - awaiting refill</span>
-                <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setDismissedRefill(true); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDismissedRefill(true); } }} style={{ marginLeft: 6, cursor: "pointer", color: T.textDisabled, fontSize: 12, fontWeight: 700 }} aria-label="Dismiss">x</span></>
-            ) : stock.needsAction ? (
-              <><AlertTriangle size={14} color={T.actionRed} /><span style={{ color: T.actionRed, fontWeight: 600 }}>{stock.currentStock <= 0 ? "Out of stock" : `Refill needed - ${med.refillThreshold} left`}</span></>
-            ) : (
-              <span style={{ color: T.textSecondary }}>{stock.supplementary}</span>
-            )}
-          </div>
-
-          {stock.needsAction && !requested && (
-            <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 3 }}>
-              {med.usualSupplier && <>Usually filled at: {med.usualSupplier} · </>}
-              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onMarkRequested(med.id)} style={{ color: T.medsBlue, fontWeight: 600, cursor: "pointer"}}>{tr("medication.markAsRequested", "Mark as requested")}</span>
-            </div>
-          )}
-
-           <div onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} role={lastDose ? "button" : undefined} tabIndex={lastDose ? 0 : -1} aria-label={lastDose ? "Correct last dose" : undefined} onKeyDown={lastDose ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCorrection(med.id, lastDose); } } : undefined} style={{ fontSize: 12, color: T.textSecondary, marginTop: 6, cursor: lastDose ? "pointer" : "default", width: "fit-content" }}>
-            <span style={{ textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>Last dose: {formatLastDose(lastDose?.date)}</span>
-            {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
-          </div>
-          {scheduledTimesLabel && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Scheduled: {scheduledTimesLabel}</div>}
-          {snoozedUntil && new Date(snoozedUntil) > new Date() && (
-            <div style={{ fontSize: 11, color: T.medsBlue, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} /> Snoozed until {new Date(snoozedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
-          )}
-          {/* ADDED — real bug fix: notes now genuinely shown on the
-              card, not just editable — see the `notes` field comment in
-              MedicationEditSheet for the full story. Unconditional on
-              stock/refill state, unlike "Usually filled at" above,
-              since a note is relevant regardless of whether a refill's
-              currently needed. */}
-          {med.notes && (
-            <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 4, fontStyle: "italic" }}>{med.notes}</div>
-          )}
-
-          {adherence && (
-            // CHANGED 19 Aug 2026 — real ask: "the streak colour
-            // background in night mode should speak across the entire
-            // three values/whole button" — previously the amber only
-            // wrapped the streak digit itself, while the outer box
-            // stayed the same blue tint every time regardless of mode.
-            // Now the WHOLE box carries the streak amber in dark mode
-            // specifically (light mode was never flagged as an issue,
-            // stays exactly as it was). The inner streak-only pill is
-            // removed since it's now redundant — the Flame icon alone
-            // carries the visual distinction once the whole box is
-            // already amber-toned.
-            // CHANGED — real ask: this box always read as a flat, muddy
-            // amber block regardless of how adherence was actually
-            // going — no real "praise" signal for doing well, and
-            // amber read as a warning color even when nothing was
-            // wrong. Now amber is reserved for when 7-day adherence is
-            // genuinely below 80% (a real "needs attention" cue); at or
-            // above that, it switches to the same green used for
-            // "completed/on track" everywhere else in this module —
-            // actual positive reinforcement, not just decoration.
-            (() => {
-              const sevenDayGood = adherence.sevenDay.expected > 0 && (adherence.sevenDay.hit / adherence.sevenDay.expected) >= 0.8;
-              const glowBg = sevenDayGood ? (darkMode ? "#5FD9A440" : "#1B9E7715") : (darkMode ? T.streakGlow : `${T.medsBlue}15`);
-              const glowBorder = sevenDayGood ? (darkMode ? "#5FD9A466" : "#1B9E7740") : (darkMode ? "#F59E0B66" : `${T.medsBlue}40`);
-              return (
-            <div style={{ display: "flex", justifyContent: "space-around", gap: 12, background: glowBg, border: `1px solid ${glowBorder}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
-                <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 2 }}>{tr("medication.streak", "streak")}</div>
-              </div>
-              <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
-              {/* Labelled "this container", not "this refill", because that is what
-                  the maths measures: the window is anchored on your last logged
-                  refill but CAPPED AND WRAPPED at daysPerContainer - one
-                  container's worth of doses - so a 6-month PrEP supply would
-                  otherwise dilute the rate, and a 2-container refill would
-                  report a span the number never covered. The old label
-                  implied "since I last refilled", which it is not.
-
-                  Hidden entirely when no refill has been logged: there is no
-                  container to measure from, so sinceRefill falls back to the
-                  7-day figures, and the pill was displaying the same number
-                  twice under two different labels - which reads as two
-                  independent pieces of evidence and is neither. */}
-              {adherence.sinceRefillAnchored && (
-                <AdherencePill T={T} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} pct={adherence.sinceRefill.pct} hasData={adherence.sinceRefill.hasData} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
-              )}
-            </div>
-              );
-            })()
-          )}
-        </>
-      ) : (
-        <div style={{ fontSize: 13, color: T.textSecondary }}>
-           <span onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} role={lastDose ? "button" : undefined} tabIndex={lastDose ? 0 : -1} aria-label={lastDose ? "Correct last dose" : undefined} onKeyDown={lastDose ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCorrection(med.id, lastDose); } } : undefined} style={{ cursor: lastDose ? "pointer" : "default", textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>
-            Last dose: {formatLastDose(lastDose?.date)}
-          </span>
-          {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
-          {scheduledTimesLabel && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Scheduled: {scheduledTimesLabel}</div>}
-          <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>{tr("medication.notInventoryTracked", "Not inventory-tracked")}</div>
-        </div>
+      {/* ── Dose footer, moved to the top: last → next, tappable to correct ── */}
+      <div onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} role={lastDose ? "button" : undefined} tabIndex={lastDose ? 0 : -1} aria-label={lastDose ? "Correct last dose" : undefined} onKeyDown={lastDose ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCorrection(med.id, lastDose); } } : undefined} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, marginTop: 2, color: T.textSecondary, fontSize: 11, lineHeight: 1.35, cursor: lastDose ? "pointer" : "default" }}>
+        <Clock size={11} color={T.textSecondary} style={{ flex: "0 0 11px" }} />
+        <span style={{ textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>
+          {tr("medication.lastDose", "Last dose")} <span style={{ color: T.textPrimary, fontWeight: 600 }}>{formatLastDose(lastDose?.date)}</span>
+        </span>
+        {nextDose && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{tr("medication.nextDose", "Next dose")} <span style={{ color: T.textPrimary, fontWeight: 600 }}>{nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span></span>
+          </>
+        )}
+      </div>
+      {snoozedUntil && new Date(snoozedUntil) > new Date() && (
+        <div style={{ fontSize: 11, color: T.medsBlue, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} /> Snoozed until {new Date(snoozedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
       )}
 
+      {/* Advisory and notes sit directly under the dose timings, above stock:
+          they describe this dose, so they belong with the schedule rather than
+          below the numbers the user is checking. */}
       {timingAdvisory && !advisoryDismissed && (
         <div
           style={{
-            display: "flex", gap: 6, alignItems: "flex-start", marginTop: 10,
+            display: "flex", gap: 6, alignItems: "flex-start", marginTop: 6,
             padding: "7px 9px", borderRadius: radius.sm, fontSize: 11, lineHeight: 1.4,
             background: `${T.medsBlue}12`,
             borderLeft: `3px solid ${ACCENT_TEXT_SAFE.medication}`,
@@ -644,11 +623,147 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         </div>
       )}
 
+      {/* Notes use the same italic + accent-rule treatment as encounters. */}
+      {med.notes && (
+        <div style={{ marginTop: 6, borderLeft: `2px solid ${T.medsBlue}`, paddingLeft: 10, fontSize: 12, lineHeight: 1.4, color: T.textSecondary, fontStyle: "italic" }}>{med.notes}</div>
+      )}
+
+      {/* ── Stock group: big number + bar, refill state as chips ── */}
+      <div>
+        <div style={groupTitleStyle}>{tr("medication.stock", "Stock")}</div>
+        {stock.tracked ? (
+          <>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ width: 8, height: 8, borderRadius: radius.full, flex: "0 0 8px", alignSelf: "center", background: stockIsLow ? T.actionRed : T.actionGreen }} />
+              <span style={{ fontFamily: FONT_FAMILY, fontSize: 26, fontWeight: 600, lineHeight: 1.1, color: stockIsLow ? T.actionRed : T.textPrimary }}>{stock.currentStock}</span>
+              <span style={{ fontSize: 12, color: T.textSecondary }}>{stock.currentStock === 1 ? med.unit : `${med.unit}s`} left</span>
+              {/* Restock level belongs with the quantity it qualifies, not as
+                  one chip among the rate / supplier / requested chips — the
+                  chips answer "what do I do next", the number answers "how
+                  low is low". */}
+              {med.refillThreshold > 0 && (
+                <span style={{ marginLeft: "auto", fontSize: 11, color: T.textDisabled, whiteSpace: "nowrap" }}>
+                  restock at {med.refillThreshold} {med.unit || "unit"}{med.refillThreshold === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+            <div style={{ position: "relative", height: 4, marginTop: 8 }}>
+              <div style={{ position: "absolute", inset: 0, background: T.surfaceVariant, borderRadius: radius.full, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${stock.levelPct}%`, background: stockIsLow ? T.actionRed : T.medsBlue, borderRadius: radius.full, transition: reducedMotion ? "none" : "width 200ms ease" }} />
+              </div>
+              {/* Restock marker: where the refill threshold sits on the supply
+                  track. A line rather than a second colour band so the bar
+                  still reads as one quantity, with the threshold called out. */}
+              {med.refillThreshold > 0 && (
+                <div
+                  role="img"
+                  aria-label={`Restock at ${med.refillThreshold} ${med.unit || "unit"}${med.refillThreshold === 1 ? "" : "s"}`}
+                  title={`Restock at ${med.refillThreshold} ${med.unit || "unit"}${med.refillThreshold === 1 ? "" : "s"}`}
+                  style={{ position: "absolute", top: -3, bottom: -3, left: `${stock.thresholdPct}%`, width: 2, marginLeft: -1, borderRadius: 1, background: T.actionRed, opacity: 0.85 }}
+                />
+              )}
+            </div>
+
+            <div style={{ ...chipRowStyle, marginTop: 6 }}>
+              {justCompleted === "logged" && (
+                <span style={chipStyle(T.actionGreen)}><Check size={10} color={T.actionGreen} /> {tr("medication.logged", "Logged")}</span>
+              )}
+              {justCompleted === "requested" && (
+                <span style={chipStyle(T.medsBlue)}><Check size={10} color={T.medsBlue} /> {tr("medication.markedAsRequested", "Marked as requested")}</span>
+              )}
+              {requested && !dismissedRefill && (
+                <span style={chipStyle(T.medsBlue)}>
+                  <Clock size={10} color={T.medsBlue} />
+                  {`Requested ${daysFromNow(med.refillRequestedAt)} — awaiting refill`}
+                  <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setDismissedRefill(true); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setDismissedRefill(true); } }} style={{ marginLeft: 2, cursor: "pointer", color: T.textDisabled, fontSize: 11, fontWeight: 700 }} aria-label="Dismiss">×</span>
+                </span>
+              )}
+              {stockIsLow && (
+                <span style={chipStyle(T.actionRed)}>
+                  <AlertTriangle size={10} color={T.actionRed} />
+                  {stock.currentStock <= 0 ? "Out of stock" : `Refill needed — ${stock.currentStock} left`}
+                </span>
+              )}
+              {stock.supplementary && stock.supplementary !== "—" && (
+                <span style={neutralChipStyle}>{stock.supplementary}</span>
+              )}
+              {stockIsLow && med.usualSupplier && (
+                <span style={neutralChipStyle}>{med.usualSupplier}</span>
+              )}
+              {stockIsLow && (
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onMarkRequested(med.id)} style={{ ...chipStyle(T.medsBlue), cursor: "pointer" }}>{tr("medication.markAsRequested", "Mark as requested")}</span>
+              )}
+            </div>
+          </>
+        ) : (
+          <div style={chipRowStyle}>
+            <span style={neutralChipStyle}>{tr("medication.notInventoryTracked", "Not inventory-tracked")}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Adherence group: three independent tiles, each with its own
+          verdict colour — a green streak can sit next to a red container.
+          Thresholds: ≥80% green, ≥50% amber, below that red. ── */}
+      {stock.tracked && adherence && (() => {
+        const toneFor = (ratio) => ratio === null ? "neutral" : ratio >= 0.8 ? "green" : ratio >= 0.5 ? "amber" : "red";
+        const tone = (name) => {
+          if (name === "green") return { accent: T.actionGreen, bg: darkMode ? "#5FD9A440" : "#1B9E7715", border: darkMode ? "#5FD9A466" : "#1B9E7740" };
+          if (name === "amber") return { accent: "#F59E0B", bg: darkMode ? "#F59E0B12" : "#F59E0B15", border: "#F59E0B66" };
+          if (name === "red") return { accent: T.actionRed, bg: `${T.actionRed}12`, border: `${T.actionRed}66` };
+          return { accent: T.medsBlue, bg: `${T.medsBlue}15`, border: `${T.medsBlue}40` };
+        };
+        const ratio7 = adherence.sevenDay.expected > 0 ? adherence.sevenDay.hit / adherence.sevenDay.expected : null;
+        const ratioContainer = adherence.sinceRefill.expected > 0 ? adherence.sinceRefill.hit / adherence.sinceRefill.expected : null;
+        const streakTone = tone(adherence.streak > 0 ? "green" : "amber");
+        const sevenTone = tone(toneFor(ratio7));
+        const containerTone = tone(toneFor(ratioContainer));
+        const tileStyle = (t) => ({ flex: 1, minWidth: 0, textAlign: "center", background: t.bg, border: `1px solid ${t.border}`, borderRadius: radius.sm, padding: "9px 4px" });
+        return (
+          <div>
+            <div style={groupTitleStyle}>{tr("medication.adherence", "Adherence")}</div>
+            <div style={{ display: "flex", alignItems: "stretch", gap: 6 }}>
+              <div style={tileStyle(streakTone)}>
+                <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: streakTone.accent, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                  {/* A flame should look like a flame: filled and orangey-red
+                      whenever there is a live streak, muted when there is none.
+                      The tile border/value still carry the verdict colour. */}
+                  <Flame size={13} weight="fill" color={adherence.streak > 0 ? "#F97316" : T.textDisabled} />
+                  {adherence.streak}d
+                </div>
+                <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 2 }}>{tr("medication.streak", "streak")}</div>
+              </div>
+              <div style={tileStyle(sevenTone)}>
+                <AdherencePill T={T} accent={sevenTone.accent} trend={adherenceTrend} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
+              </div>
+              {adherence.sinceRefillAnchored ? (
+                /* Labelled "this container", not "this refill", because that is
+                   what the maths measures: the window is anchored on the last
+                   logged refill but CAPPED AND WRAPPED at daysPerContainer -
+                   one container's worth of doses - so a long supply doesn't
+                   dilute the rate and a multi-container refill doesn't report
+                   a span the number never covered. When no refill exists yet
+                   the middle tile still reports the 7-day figure, so the third
+                   tile says "No container yet" rather than repeating it under
+                   a second label and implying two pieces of evidence. */
+                <div style={tileStyle(containerTone)}>
+                  <AdherencePill T={T} accent={containerTone.accent} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} pct={adherence.sinceRefill.pct} hasData={adherence.sinceRefill.hasData} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
+                </div>
+              ) : (
+                <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: `1px dashed ${T.border}`, borderRadius: radius.sm, padding: "9px 4px", fontSize: 10, color: T.textDisabled, textAlign: "center", lineHeight: 1.25 }}>
+                  No container yet
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       <div style={{ display: "flex", gap: 8, marginTop: 12, position: "relative" }}>
         <button onClick={handleLogTap}
           style={btnStyle(T.medsBlue, "outline", doseLocked, T)}
         >
-          <Pill size={14} /> {doseLocked ? "Already logged" : "Log dose"}
+          <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>+1</span> {doseLocked ? "Already logged" : "Log dose"}
         </button>
         {stock.tracked && <button onClick={() => onLogRefill(med.id)} style={btnStyle(T.medsBlue, "filled", false)}><RefreshCcw size={14} /> {tr("medication.logRefill", "Log refill")}</button>}
         {lockFlash && (
@@ -2342,17 +2457,17 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             The safe-area inset moved from `top` into the banner's own
             top padding, so only the title/icons — not the colour — sit
             below the notch. */}
-        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+        <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden", marginTop: "calc(-1 * env(safe-area-inset-top))" }}>
           <div style={{ background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("medication.title", "Medication")}</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <Search size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}} onClick={openMedSearch} role="button" tabIndex={0} aria-label="Search medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMedSearch(); } }} />
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
                 not long-press (see the selectMode state comment above
                 for why). */}
             <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit selection mode" : "Enter selection mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
               {selectMode ? "Done" : "Select"}
             </span>
-            <Search size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}} onClick={openMedSearch} role="button" tabIndex={0} aria-label="Search medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMedSearch(); } }} />
             {/* CHANGED 26 Aug 2026 — real content now exists (dose
                 reminders), so this is wired up for real — was
                 deliberately a visual-only stub until this existed. */}
@@ -2370,9 +2485,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
         </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
-          <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
             <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
-            <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                   rather than manual 1 by 1", scoped to whatever's
                   currently visible under the active search filter. */}

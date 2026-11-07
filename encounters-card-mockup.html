@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encounters card — real fields only</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #121214;
+    --surface: #1c1c1f;
+    --variant: #2a2a2e;
+    --border: #3a3a3f;
+    --primary: #f5f5f6;
+    --secondary: #a6a6ae;
+    --disabled: #77777e;
+    --amber-text: #d08a2e;
+    --amber-surface: #2a2520;
+    --red: #ff7a7e;
+
+    /* Module accent colours from designTokens.js ACCENTS */
+    --encounters-purple: #7F30A6;   /* kinks/activities */
+    --home-teal: #008585;           /* position (me) */
+    --healthcare-blue: #5b9bd5;     /* medication */
+    --protection-green: #5fd9a4;    /* protection/contraception */
+    --cum-pink: #E24E9C;            /* cum/loads */
+    --contacts-amber: #e0a166;      /* attendee badges */
+    /* CHANGED — climax marker follows the encounters accent, not gold:
+       dark-mode resolved accent (designTokens resolveDarkAccent), pinkish. */
+    --climax-pink: #D370C7;
+
+    /* Light mode tints (20% alpha of module colour) */
+    --tint-encounters: #7F30A615;
+    --tint-teal: #00858515;
+    --tint-blue: #5b9bd515;
+    --tint-green: #5fd9a415;
+    --tint-pink: #E24E9C15;
+    --tint-amber: #fef3c7;
+    --tint-amber: #fdf0e8;
+
+    /* Light mode text on tint */
+    --text-encounters: #4a1a6a;
+    --text-teal: #1a7a7a;
+    --text-blue: #2b5a8a;
+    --text-green: #1d6b4b;
+    --text-pink: #6b21a8;
+    --text-amber: #8a5a2e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 12px 48px;
+    background: var(--page);
+    color: var(--primary);
+    font-family: Inter, Roboto, "Segoe UI", sans-serif;
+  }
+  .page { width: min(100%, 760px); margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  h2 { margin: 22px 0 8px; font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .lead, .caption { color: var(--secondary); font-size: 12px; line-height: 1.5; }
+  .lead { margin-bottom: 22px; }
+  .caption { margin-bottom: 10px; font-size: 11px; }
+
+  .device {
+    max-width: 393px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 14px 16px 24px;
+    border: 1px solid #303034;
+    border-radius: 24px;
+    background: var(--page);
+    box-shadow: 0 12px 36px #0008;
+  }
+  .module-title { padding: 5px 0 15px; font-size: 20px; font-weight: 600; }
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card-bg);
+    margin-bottom: 10px;
+    overflow-wrap: break-word;
+  }
+  .star { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; color: var(--disabled); }
+
+  .identity-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    row-gap: 2px;
+    align-items: center;
+    min-width: 0;
+  }
+  .name-line { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .name { color: var(--primary); font-size: 15px; line-height: 1.3; font-weight: 600; }
+  .byline { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 6px; margin-bottom: 5px; color: var(--secondary); font-size: 10px; line-height: 1.3; font-weight: 500; }
+  .byline svg { width: 11px; height: 11px; flex: 0 0 11px; }
+  .byline > span:not(:first-child) { white-space: nowrap; }
+  .byline .attendees-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+
+  .attendee-stack { display: flex; align-items: center; justify-content: flex-start; gap: 4px; flex-wrap: wrap; min-width: 0; }
+  .attendee { display: grid; place-items: center; width: auto; min-width: 22px; height: 22px; padding: 2px 8px; border-radius: 999px; background: var(--amber-surface); border: 1px solid var(--contacts-amber); color: #fff; font-size: 9px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+  .attendee.more { display: grid; place-items: center; width: auto; min-width: 22px; height: 22px; padding: 2px 8px; border-radius: 999px; background: transparent; border: 1px dashed var(--contacts-amber); color: #fff; font-size: 9px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+  .attendee.single { width: auto; min-width: 22px; height: 22px; padding: 2px 8px; border-radius: 999px; font-size: 10px; color: #fff; background: var(--amber-surface); border: 1px solid var(--contacts-amber); font-weight: 700; white-space: nowrap; flex: 0 0 auto; }
+  .attendee.do-not-meet { background: var(--red); color: #fff; border: 1px solid var(--red); }
+  .attendee.light { background: var(--tint-amber); color: #000; border: 1px solid var(--contacts-amber); }
+
+  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+  .chip {
+    padding: 2px 8px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--variant);
+    color: var(--secondary);
+    font-size: 10px;
+    line-height: 1.35;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip.kink      { background: var(--tint-encounters); border-color: var(--encounters-purple); color: #fff; }
+  .chip.position  { background: var(--tint-teal);       border-color: var(--home-teal);       color: #fff; }
+  .chip.protection{ background: var(--tint-green);      border-color: var(--protection-green); color: #fff; }
+  .chip.medication{ background: var(--tint-blue);       border-color: var(--healthcare-blue); color: #fff; }
+  .chip.cum       { background: var(--tint-pink);       border-color: var(--cum-pink);       color: #fff; }
+  .chip.missing   { background: var(--amber-surface);   border-color: var(--red);             color: #fff; font-weight: 700; }
+
+  .chip-group { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; margin-bottom: 4px; }
+  .chip-group:first-of-type { margin-top: 0; }
+  .chip-group:last-of-type { margin-bottom: 6px; }
+  .chip-group-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--disabled); }
+
+  .summary { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--disabled); font-size: 11px; line-height: 1.35; }
+  .summary strong { color: var(--secondary); font-weight: 600; }
+  .summary .enjoyment { display: inline-flex; align-items: center; gap: 3px; color: var(--secondary); }
+  .summary .enjoyment svg { width: 12px; height: 12px; color: var(--encounters-purple); }
+  .summary .none { font-style: italic; }
+
+  .annotation {
+    margin: 10px 2px 6px;
+    border-left: 2px solid var(--home-teal);
+    padding: 2px 0 2px 10px;
+    color: var(--secondary);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .annotation strong { color: var(--primary); font-weight: 600; }
+  .annotation .safety { font-size: 10px; color: #ff8a80; margin-top: 2px; }
+
+  @media (max-width: 430px) {
+    body { padding: 12px 0 32px; }
+    .page { width: 100%; }
+    .page > h1, .page > .lead, .page > h2, .page > .caption, .page > .annotation { margin-left: 14px; margin-right: 14px; }
+    .device { border-left: 0; border-right: 0; border-radius: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Encounters card — real fields only</h1>
+  <p class="lead">All fields map to actual encounter schema (encounterRepository.js). No climax field — derived from whereICame/whereHeCame. Single date + optional dateEnd. Position from user's perspective (myPosition). PrEP coverage inferred from medication logs with safety caveat.</p>
+
+  <h2>Proposed render</h2>
+  <p class="caption">Title line with active dot. Byline: calendar → date/time (+ end time if dateEnd) · pin → location name + encounter type. Attendees in right column (pill for single, initials for multi). Chip rows: Position (me) — teal, Activities/kinks — purple, Protection & medication — green/blue combined, Cum/loads — pink. Notes annotation. Summary: heart + rating · date · relative · climax indicator (derived, optional).</p>
+
+  <section class="device" aria-label="Android app viewport mockup">
+    <div class="module-title">Encounters</div>
+
+    <!-- Card 1: Complete encounter — single attendee -->
+    <article class="card" aria-label="Synthetic encounter card — complete">
+      <span class="star" aria-label="Not favourited">★</span>
+
+      <div class="profile">
+        <div class="identity-grid">
+          <div class="name-line">
+            <div class="name-line-inner">
+              <div style="display:flex;flex-direction:column;gap:4;min-width:0">
+                <div style="display:flex;align-items:center;gap:0;min-width:0">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#5fd9a4;flex:0 0 8px;margin-right:14px;" role="button" tabindex="0" title="Active contact" aria-label="Active contact" style="cursor:pointer;"></span>
+                  <div style="min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6;flex-wrap:wrap;min-width:0">
+                      <span style="font-family: Inter, Roboto, 'Segoe UI', sans-serif;font-weight:600;font-size:15px;color:var(--primary)">Afternoon delight</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="byline">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>15 Jul 2026 · 10:30 AM</span>
+                    <span> – </span>
+                    <span>12:30 PM</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    <span>Alex's flat</span>
+                    <span> · </span>
+                    <span>Hook-up</span>
+                  </div>
+                  <div class="attendees-wrap">
+                    <span class="attendee single" title="Priya">Priya</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Position (me)</div>
+          <div class="chips" aria-label="Position">
+            <span class="chip position">Anal - receiving</span>
+            <span class="chip position">Oral - giving</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Activities</div>
+          <div class="chips" aria-label="Activities">
+            <span class="chip kink">Roleplay</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Protection & medication</div>
+          <div class="chips" aria-label="Protection and medication">
+            <span class="chip protection">Condom</span>
+            <span class="chip medication">PrEP</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Cum / loads</div>
+          <div class="chips" aria-label="Cum and loads">
+            <span class="chip cum">Internal - Ass</span>
+            <span class="chip cum">3 loads</span>
+          </div>
+        </div>
+
+        <div class="annotation" style="margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--home-teal); color: var(--secondary); font-size: 11px; line-height: 1.4; margin-bottom: 6px;">
+          <strong style="color: var(--primary);">Notes:</strong> Great connection, very communicative about boundaries. Would repeat.
+        </div>
+
+        <div class="summary">
+          <span class="enjoyment">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>
+            <strong>84/100</strong>
+          </span>
+          <span> · </span>
+          <span>15 Jul 2026</span>
+          <span> · </span>
+          <span>3 months ago</span>
+          <span style="color: var(--climax-pink);"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2 C12 2 5 9 5 14 C5 17.3 8.7 20 12 20 C15.3 20 18 17.3 18 14 C18 9 12 2 12 2 Z"/></svg></span>
+        </div>
+      </article>
+
+    <!-- Card 2: Sparse encounter — minimal data -->
+    <article class="card" aria-label="Sparse encounter card">
+      <div class="profile">
+        <div class="identity-grid" style="grid-template-columns: minmax(0, 1fr);">
+          <div class="name-line">
+            <div class="name-line-inner">
+              <div style="display:flex;flex-direction:column;gap:4;min-width:0">
+                <div style="display:flex;align-items:center;gap:0;min-width:0">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#5fd9a4;flex:0 0 8px;margin-right:14px;" role="button" tabindex="0" title="Active contact" aria-label="Active contact" style="cursor:pointer;"></span>
+                  <div style="min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6;flex-wrap:wrap;min-width:0">
+                      <span style="font-family: Inter, Roboto, 'Segoe UI', sans-serif;font-weight:600;font-size:15px;color:var(--primary)">Untitled encounter</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="byline">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>Timings not known</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    <span>No location recorded</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Attendees</div>
+          <div class="chips" aria-label="Attendees">
+            <span class="chip missing">* Attendees</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Position (me)</div>
+          <div class="chips" aria-label="Position">
+            <span class="chip missing">* Position</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Activities</div>
+          <div class="chips" aria-label="Activities">
+            <span class="chip missing">* Activities</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Protection & medication</div>
+          <div class="chips" aria-label="Protection and medication">
+            <span class="chip missing">* Protection</span>
+            <span class="chip missing" style="margin-left: 16px;">* Medication</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Cum / loads</div>
+          <div class="chips" aria-label="Cum and loads">
+            <span class="chip missing">* Where I came</span>
+            <span class="chip missing" style="margin-left: 16px;">* Where partner came</span>
+            <span class="chip missing" style="margin-left: 16px;">* Loads count</span>
+          </div>
+        </div>
+
+        <div class="annotation" style="margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--home-teal); color: var(--secondary); font-size: 11px; line-height: 1.4; margin-bottom: 6px;">
+          <strong style="color: var(--primary);">Notes:</strong> No notes recorded
+        </div>
+
+        <div class="summary">
+          <span class="none">No rating</span>
+          <span> · </span>
+          <span style="color: var(--disabled);">✗ Not recorded</span>
+        </div>
+      </article>
+
+    <!-- Card 1.5: Two attendees — multi-attendee initials -->
+    <article class="card" aria-label="Synthetic encounter card — two attendees">
+      <span class="star" aria-label="Not favourited">★</span>
+
+      <div class="profile">
+        <div class="identity-grid">
+          <div class="name-line">
+            <div class="name-line-inner">
+              <div style="display:flex;flex-direction:column;gap:4;min-width:0">
+                <div style="display:flex;align-items:center;gap:0;min-width:0">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#5fd9a4;flex:0 0 8px;margin-right:14px;" role="button" tabindex="0" title="Active contact" aria-label="Active contact" style="cursor:pointer;"></span>
+                  <div style="min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6;flex-wrap:wrap;min-width:0">
+                      <span style="font-family: Inter, Roboto, 'Segoe UI', sans-serif;font-weight:600;font-size:15px;color:var(--primary)">Sauna session</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="byline">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>3 Nov 2026 · 2:00 PM</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    <span>Z park</span>
+                    <span> · </span>
+                    <span>Sauna · Group</span>
+                  </div>
+                  <div class="attendees-wrap">
+                    <span class="attendee" title="Priya">P</span>
+                    <span class="attendee" title="Kai">K</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Position (me)</div>
+          <div class="chips" aria-label="Position">
+            <span class="chip position">Anal - giving</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Activities</div>
+          <div class="chips" aria-label="Activities">
+            <span class="chip kink">Fisting</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Protection & medication</div>
+          <div class="chips" aria-label="Protection and medication">
+            <span class="chip protection">Condom</span>
+            <span class="chip medication">PrEP</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Cum / loads</div>
+          <div class="chips" aria-label="Cum and loads">
+            <span class="chip cum">Internal - Ass</span>
+            <span class="chip cum">2 loads</span>
+          </div>
+        </div>
+
+        <div class="annotation" style="margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--home-teal); color: var(--secondary); font-size: 11px; line-height: 1.4; margin-bottom: 6px;">
+          <strong style="color: var(--primary);">Notes:</strong> Two attendees, both initials shown.
+        </div>
+
+        <div class="summary">
+          <span class="enjoyment">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>
+            <strong>88/100</strong>
+          </span>
+          <span> · </span>
+          <span>3 Nov 2026</span>
+          <span> · </span>
+          <span>1 week ago</span>
+          <span style="color: var(--climax-pink);"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2 C12 2 5 9 5 14 C5 17.3 8.7 20 12 20 C15.3 20 18 17.3 18 14 C18 9 12 2 12 2 Z"/></svg></span>
+        </div>
+      </article>
+
+    <!-- Card 3: Crowded encounter — multiple attendees -->
+    <article class="card" aria-label="Crowded encounter card" style="border-color:var(--encounters-purple);background:var(--tint-encounters);">
+      <span class="star" aria-label="Not favourited">★</span>
+      <div class="profile">
+        <div class="identity-grid">
+          <div class="name-line">
+            <div class="name-line-inner">
+              <div style="display:flex;flex-direction:column;gap:4;min-width:0">
+                <div style="display:flex;align-items:center;gap:0;min-width:0">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#5fd9a4;flex:0 0 8px;margin-right:14px;" role="button" tabindex="0" title="Active contact" aria-label="Active contact" style="cursor:pointer;"></span>
+                  <div style="min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6;flex-wrap:wrap;min-width:0">
+                      <span style="font-family: Inter, Roboto, 'Segoe UI', sans-serif;font-weight:600;font-size:15px;color:var(--primary)">Group session</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="byline">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>15 Aug 2026 · 9:00 PM</span>
+                    <span> – </span>
+                    <span>11:30 PM</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    <span>Z park</span>
+                    <span> · </span>
+                    <span>Sauna · Group</span>
+                  </div>
+                  <div class="attendees-wrap">
+                    <span class="attendee" title="Alex">A</span>
+                    <span class="attendee" title="Jordan">J</span>
+                    <span class="attendee" title="Sam">S</span>
+                    <span class="attendee more" title="1 more">+1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Position (me)</div>
+          <div class="chips" aria-label="Position">
+            <span class="chip position">Anal - giving</span>
+            <span class="chip position">Oral - receiving</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Activities</div>
+          <div class="chips" aria-label="Activities">
+            <span class="chip kink">Fisting</span>
+            <span class="chip kink">Roleplay</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Protection & medication</div>
+          <div class="chips" aria-label="Protection and medication">
+            <span class="chip protection">Condom</span>
+            <span class="chip medication">PrEP</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title">Cum / loads</div>
+          <div class="chips" aria-label="Cum and loads">
+            <span class="chip cum">Internal - Ass</span>
+            <span class="chip cum">External - Body/Face</span>
+            <span class="chip cum">5 loads</span>
+          </div>
+        </div>
+
+        <div class="annotation" style="margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--home-teal); color: var(--secondary); font-size: 11px; line-height: 1.4; margin-bottom: 6px;">
+          <strong style="color: var(--primary);">Notes:</strong> Group scene, high energy.
+        </div>
+
+        <div class="summary">
+          <span class="enjoyment">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>
+            <strong>92/100</strong>
+          </span>
+          <span> · </span>
+          <span>15 Aug 2026</span>
+          <span> · </span>
+          <span>2 days ago</span>
+          <span style="color: var(--disabled);" title="I didn't cum"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3.5c0 0-6.2 6.3-6.2 10.6a6.2 6.2 0 0 0 12.4 0c0-4.3-6.2-10.6-6.2-10.6Z"/><line x1="4.5" y1="3.5" x2="19.5" y2="20.5"/></svg></span>
+        </div>
+      </article>
+
+    <!-- Card 4: Light mode check — with PrEP coverage safety -->
+    <article class="card" style="background:#ffffff;border-color:#d7d7de;color:#242429;--climax-pink:#7F30A6;" aria-label="Light mode encounter card">
+      <span class="star" aria-label="Not favourited">★</span>
+      <div class="profile">
+        <div class="identity-grid">
+          <div class="name-line">
+            <div class="name-line-inner">
+              <div style="display:flex;flex-direction:column;gap:4;min-width:0">
+                <div style="display:flex;align-items:center;gap:0;min-width:0">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#5fd9a4;flex:0 0 8px;margin-right:14px;" role="button" tabindex="0" title="Active contact" aria-label="Active contact" style="cursor:pointer;"></span>
+                  <div style="min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6;flex-wrap:wrap;min-width:0">
+                      <span style="font-family: Inter, Roboto, 'Segoe UI', sans-serif;font-weight:600;font-size:15px;color:#242429;">Drinks, then his place</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="byline" style="color:#5a5a66;">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>28 Oct 2026 · 7:00 PM</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="flex:0 0 11px;"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    <span>Kai's place</span>
+                    <span> · </span>
+                    <span>Hook-up</span>
+                  </div>
+                  <div class="attendees-wrap">
+                    <span class="attendee single" title="Kai" style="background:#fdf0e8;color:#000;border:1px solid #e0a166;">Kai</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title" style="color: #77777e;">Position (me)</div>
+          <div class="chips" aria-label="Position">
+            <span class="chip position" style="background:#e0f8f8;color:#1a1a1a;border-color:#008585;">Oral - giving</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title" style="color: #77777e;">Activities</div>
+          <div class="chips" aria-label="Activities">
+            <span class="chip kink" style="background:#f0e0f4;color:#1a1a1a;border-color:#7F30A6;">Roleplay</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title" style="color: #77777e;">Protection & medication</div>
+          <div class="chips" aria-label="Protection and medication">
+            <span class="chip protection" style="background:#e6f7ef;color:#1a1a1a;border-color:#5fd9a4;">Condom</span>
+            <span class="chip medication" style="background:#e8f0f8;color:#1a1a1a;border-color:#5b9bd5;">PrEP</span>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <div class="chip-group-title" style="color: #77777e;">Cum / loads</div>
+          <div class="chips" aria-label="Cum and loads">
+            <span class="chip cum" style="background:#fce8ff;color:#1a1a1a;border-color:#E24E9C;">Internal - Mouth</span>
+            <span class="chip cum" style="background:#fce8ff;color:#1a1a1a;border-color:#E24E9C;">1 load</span>
+          </div>
+        </div>
+
+        <div class="annotation" style="margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--home-teal); color: #5a5a66; font-size: 11px; line-height: 1.4; margin-bottom: 6px;">
+          <strong style="color: #242429;">Notes:</strong> First time meeting. Good chemistry.
+        </div>
+
+        <div class="annotation" style="margin-top: 6px; padding-left: 10px; border-left: 2px solid #ff8a80; color: #5a5a66; font-size: 10px; line-height: 1.4; margin-bottom: 6px;">
+          <strong style="color: #d32f2f;">⚠ PrEP coverage:</strong> Inferred from 7-day medication log. Retroactively confirmed after 24h post-event using history for theoretical serum levels per PrEP guidance.
+        </div>
+
+        <div class="summary" style="color:#77777e;">
+          <span class="enjoyment" style="color:#5a5a66;">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.9A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11Z"/></svg>
+            <strong style="color:#5a5a66;">66/100</strong>
+          </span>
+          <span style="color:#5a5a66;"> · </span>
+          <span style="color:#5a5a66;">28 Oct 2026</span>
+          <span style="color:#5a5a66;"> · </span>
+          <span style="color:#5a5a66;">1 week ago</span>
+          <span style="color: var(--climax-pink);"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2 C12 2 5 9 5 14 C5 17.3 8.7 20 12 20 C15.3 20 18 17.3 18 14 C18 9 12 2 12 2 Z"/></svg></span>
+        </div>
+      </article>
+    </section>
+
+    <h2>Real data fields used</h2>
+    <div class="annotation">
+      <strong>From encounter schema (encounterRepository.js):</strong><br>
+      • title · date (single datetime) · dateEnd (optional) · isDateTime<br>
+      • attendeeIds · locationId · encounterType · enjoymentRating · notes<br>
+      • myPosition (user's perspective: "Anal - giving", "Oral - receiving") — teal<br>
+      • myRole · protectionUsed (registry: Condom/PrEP/PEP/None) — green<br>
+      • kinksInvolved — purple<br>
+      • whereICame · whereHeCame (registry: Internal/External cum location) — pink<br>
+      • loadsCount · fistCount · chemsAlcoholUsed · myDoxyPepStatus · myPrepCoverage<br>
+      • locationName resolved via LocationsRepository.getById(encounter.locationId)<br><br>
+      <strong>Derived (not stored):</strong><br>
+      • Climax — derived from whereICame/whereHeCame having any value other than "Didn't happen". Shown as subtle droplet only when data exists.<br>
+      • End time — dateEnd field if set, shown after start time<br><br>
+      <strong>NOT stored per encounter (removed):</strong><br>
+      • Body sites as separate chips — covered by myPosition<br>
+      • Separate climax field — derived only<br>
+      • Medication chips as standalone — PrEP coverage shown under medication chip with safety caveat<br><br>
+      <strong>Chip colours use CSS variables from designTokens.js ACCENTS:</strong><br>
+      • Position (me) — teal var(--home-teal) = #008585<br>
+      • Activities/kinks — purple var(--encounters-purple) = #7F30A6<br>
+      • Protection/contraception — green var(--protection-green) = #5fd9a4<br>
+      • Medication — healthcare blue var(--healthcare-blue) = #5b9bd5<br>
+      • Cum/loads — pink var(--cum-pink) = #E24E9C<br><br>
+      <strong>Colour override note:</strong> If user changes module colours via Design screen, CSS variables update and all chips/tints follow automatically. No hardcoded hexes in chip styling.<br><br>
+      <strong>LoadsCount ambiguity:</strong> loadsCount is a single aggregate number per encounter. whereICame/whereHeCame can have multiple values. The card shows loads as an unlinked number — it does NOT map to a specific cum location. At session level, loads tally across encounters is more meaningful.
+    </div>
+  </main>
+</body>
+</html>

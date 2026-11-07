@@ -2790,7 +2790,23 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column" }}>
+    // CHANGED — real device finding: the due-reminder stack above is
+    // `position: fixed`, so every module's own `position: sticky, top: 0`
+    // header pinned at the literal top of the viewport and slid *under*
+    // the banner once the list scrolled — the title, back button and
+    // action icons all disappeared behind it. <main>'s paddingTop below
+    // only reserves space in normal flow; it does nothing for sticky
+    // offsets. Publishing the same measured height as a CSS variable on
+    // the single app root lets those headers pin immediately below the
+    // banner instead, without threading banner state through every
+    // module. Banner-content height only (no safe-area): sticky headers
+    // pin at this offset and carry the safe-area inset in their own top
+    // padding, with a negative top margin pulling their background to
+    // the true screen edge — so they reach the top when no banner is up
+    // and sit flush below the banner card when one is, with no gap and
+    // no double counted inset. <main> below keeps env+content so Home
+    // (which has no header of its own) still clears the status bar.
+    <div style={{ minHeight: "100vh", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column", "--shos-top-banner-h": `${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px` }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
 
       {/* ADDED 3 Sep 2026 — real ask: "clear notification awareness"

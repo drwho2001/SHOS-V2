@@ -6,6 +6,7 @@ import {
   nextDoseEstimate, 
   formatRemaining, 
   effectiveDoseIntervalHours,
+  computeAdherenceTrend,
   computeStock 
 } from './medicationCalculations';
 
@@ -153,6 +154,98 @@ it('getNextNotificationTime uses interval for adaptive mode', () => {
       const result = computeStock(med);
       expect(result.tracked).toBe(true);
       expect(result.currentStock).toBe(28); // 30 - 1 - 1
+    });
+
+    it('places the refill marker inside the track even when stock exceeds the refill quantity', () => {
+      // DoxyPEP on device: 22 capsules on hand, 8-capsule refill, threshold 8.
+      const med = createMed({
+        inventoryTracked: true,
+        usagePattern: 'prn',
+        unitsPerDose: 2,
+        refillThreshold: 8,
+        defaultRefillQuantity: 8,
+        unitsPerContainer: 8,
+      });
+      med.logs = [{ type: 'refill', delta: 22, date: '2026-09-01T00:00:00.000Z', voided: false }];
+      const result = computeStock(med);
+      expect(result.levelPct).toBe(100);
+      expect(result.thresholdPct).toBeCloseTo(36.36, 1);
+      expect(result.thresholdPct).toBeLessThan(100);
+    });
+
+    it('marks the threshold proportionally on a healthy multi-container supply', () => {
+      const med = createMed({
+        inventoryTracked: true,
+        refillThreshold: 7,
+        defaultRefillQuantity: 30,
+        unitsPerContainer: 30,
+      });
+      med.logs = [{ type: 'refill', delta: 187, date: '2026-09-01T00:00:00.000Z', voided: false }];
+      const result = computeStock(med);
+      expect(result.levelPct).toBe(100);
+      expect(result.thresholdPct).toBeCloseTo(3.74, 1);
+    });
+
+    it('puts the marker at the fill line when stock is exactly at the threshold', () => {
+      const med = createMed({
+        inventoryTracked: true,
+        refillThreshold: 5,
+        defaultRefillQuantity: 20,
+        unitsPerContainer: 20,
+      });
+      med.logs = [{ type: 'refill', delta: 5, date: '2026-09-01T00:00:00.000Z', voided: false }];
+      const result = computeStock(med);
+      expect(result.levelPct).toBe(25);
+      expect(result.thresholdPct).toBe(25);
+    });
+  });
+
+  describe('computeAdherenceTrend', () => {
+    const doseOn = (daysAgo) => {
+      const d = new Date();
+      d.setHours(9, 0, 0, 0);
+      d.setDate(d.getDate() - daysAgo);
+      return { type: 'dose', date: d.toISOString(), voided: false };
+    };
+
+    it('reports a downward trend when this week is worse than last week', () => {
+      const med = createMed({ usagePattern: 'daily', dosesPerDay: 1 });
+      med.logs = [
+        doseOn(0), doseOn(1), doseOn(2),
+        ...[7, 8, 9, 10, 11, 12, 13].map(doseOn),
+      ];
+      const trend = computeAdherenceTrend(med);
+      expect(trend.current).toBe(43); // 3/7
+      expect(trend.previous).toBe(100); // 7/7
+      expect(trend.direction).toBe('down');
+      expect(trend.hasData).toBe(true);
+    });
+
+    it('reports an upward trend when this week improves on last week', () => {
+      const med = createMed({ usagePattern: 'daily', dosesPerDay: 1 });
+      med.logs = [
+        doseOn(0), doseOn(1), doseOn(2), doseOn(3), doseOn(4), doseOn(5), doseOn(6),
+        doseOn(7), doseOn(8),
+      ];
+      const trend = computeAdherenceTrend(med);
+      expect(trend.current).toBe(100);
+      expect(trend.previous).toBe(29); // 2/7
+      expect(trend.direction).toBe('up');
+      expect(trend.hasData).toBe(true);
+    });
+
+    it('shows no trend for a medication started this week', () => {
+      const med = createMed({ usagePattern: 'daily', dosesPerDay: 1 });
+      med.logs = [doseOn(0), doseOn(1), doseOn(2)];
+      const trend = computeAdherenceTrend(med);
+      expect(trend.direction).toBe('up');
+      expect(trend.hasData).toBe(false);
+    });
+
+    it('returns null for PRN medications, matching computeAdherence', () => {
+      const med = createMed({ usagePattern: 'prn' });
+      med.logs = [doseOn(1)];
+      expect(computeAdherenceTrend(med)).toBeNull();
     });
   });
 });

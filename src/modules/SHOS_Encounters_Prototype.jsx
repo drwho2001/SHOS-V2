@@ -25,7 +25,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, SignOutIcon as SignOut, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -98,6 +98,7 @@ function buildLight() {
   return {
     ...NEUTRAL,
     encountersPink: ACCENTS.encounters, actionRed: ACTION.red, actionGreen: ACTION.green,
+    medication: ACCENTS.medication,
     // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
     // for actionRed/actionGreen-as-text-on-its-own-tint only (encountersPink
     // already clears 4.5:1 in that pattern and needs no variant).
@@ -126,6 +127,7 @@ function buildDark() {
     ...NEUTRAL_DARK,
     encountersPink: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"),
     actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    medication: resolveDarkAccent("medication", ACCENTS.medication, "#4a90e2"),
     // Dark mode's resolved actionRed/actionGreen already have real
     // headroom against a near-black background — no separate darker text
     // variant needed, so these just reuse the same values as above.
@@ -1035,11 +1037,56 @@ const ENCOUNTER_TYPE_ICONS = {
   Event: Confetti,
 };
 
+function formatTime(dateString) {
+  if (!dateString) return "";
+  const match = dateString.match(/T(\d{2}:\d{2})/);
+  if (match) {
+    const [, timePart] = match;
+    const [hours, minutes] = timePart.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  }
+  return "";
+}
+
+// CHANGED — real ask: the climax drop now tracks MY experience only
+// ("where did I cum?"), not the partner's. Filled pink drop when I came,
+// muted drop-slash when I didn't — so the card always says something
+// instead of showing a blank space on the gold-star version.
+function didICum(encounter) {
+  return (encounter?.whereICame || []).some((l) => l && l !== "Didn't happen");
+}
+
+function ClimaxMarker({ encounter, T }) {
+  return didICum(encounter) ? (
+    <span style={{ color: T.encountersPink, display: "inline-flex" }} title="I came">
+      <SaunaDrop size={12} />
+    </span>
+  ) : (
+    <span style={{ color: T.textDisabled, display: "inline-flex" }} title="I didn't cum">
+      <DropSlash size={12} />
+    </span>
+  );
+}
+
 function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, selected = false, onToggleSelected, onLongPress, anonymise = false }) {
   const { t: tr } = useTranslation();
   const attendeeNames = encounter.attendeeIds.map((id) => contactName(contacts, id));
+  // CHANGED — real ask on the device screenshot: a group encounter with
+  // 10+ attendees blew the byline row out past the card (and the page,
+  // wider than the viewport). Cap rendered pills at 3; everything past
+  // that collapses into one "+N" chip. Single attendee keeps the full
+  // name; multi shows initials, matching the mockup's P/K/A/J pattern.
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
+  const attendeePillStyle = { padding: "2px 8px", borderRadius: "999px", background: "#e0a166", border: "1px solid #e0a166", color: "#fff", fontSize: attendeeNames.length === 1 ? 10 : 9, fontWeight: 700, whiteSpace: "nowrap" };
+  const attendeeChips = shown.map((name, i) => (
+    <span key={i} style={attendeePillStyle}>{attendeeNames.length === 1 ? name : name[0]}</span>
+  ));
+  if (extra > 0) attendeeChips.push(
+    <span key="attendee-more" style={attendeePillStyle}>+{extra}</span>
+  );
   // CHANGED — real groundwork for encryption at rest: LocationsRepository
   // is now async (see its own comment), so this can no longer be a
   // plain render-body call — useLoadedMemo instead, same as everywhere
@@ -1063,6 +1110,10 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
       return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
     }).filter(Boolean);
   }, [encounter.kinksInvolved], []);
+  const protectionNames = useLoadedMemo(async () => {
+    const resolved = await Promise.all((encounter.protectionUsed || []).map((id) => ProtectionRegistry.getById(id)));
+    return (encounter.protectionUsed || []).map((id, i) => resolved[i]?.name).filter(Boolean);
+  }, [encounter.protectionUsed], []);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module — same pattern as Contacts' own ContactCard.
   const pressTimer = useRef(null);
@@ -1092,69 +1143,118 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
-      style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 14, marginBottom: 10, cursor: "pointer", display: "flex", gap: 10 }}>
+      style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 16, marginBottom: 10, cursor: "pointer", display: "flex", gap: 10, position: "relative" }}>
+      <Star size={18} style={{ position: "absolute", top: 10, right: 10, color: T.textDisabled }} />
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.encountersPink : T.border}`, background: selected ? T.encountersPink : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
           {selected && <Check size={13} color="#FFFFFF" />}
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-            <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
-            <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>{encounter.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            {/* Title line */}
+            <div style={{ display: "flex", alignItems: "center", gap: 0, minWidth: 0 }}>
+              <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.actionGreen, flex: "0 0 8px", marginRight: 14, cursor: "pointer" }} role="button" tabIndex={0} title="Active contact" aria-label="Active contact" />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", minWidth: 0 }}>
+                  <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{encounter.title || tr("encounters.untitledEncounter", "Untitled encounter")}</span>
+                </div>
+              </div>
+            </div>
+            {/* Byline: calendar → date/time · pin → location + attendees + type */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 3, color: T.textSecondary, fontSize: 10, fontWeight: 500 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Calendar size={11} style={{ flex: "0 0 11px" }} />
+                <span>{encounter.date ? formatStoredDate(encounter.date) : tr("encounters.noDate", "No date")}</span>
+                {encounter.date && formatTime(encounter.date) && <><span> · </span><span>{formatTime(encounter.date)}</span></>}
+                {encounter.dateEnd && <><span> – </span><span>{formatTime(encounter.dateEnd)}</span></>}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <MapPin size={11} style={{ flex: "0 0 11px" }} />
+                <span>{locationName}</span>
+                {attendeeChips.length > 0 && <span> · </span>}
+                {attendeeChips}
+                <span> · </span>
+                <span>{encounter.encounterType}</span>
+              </div>
+            </div>
+        </div>
+
+        {/* Chip groups */}
+        <div style={{ marginTop: 4 }}>
+          {/* Position (me) — teal */}
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginBottom: 3 }}>Position (me)</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {(encounter.myPosition || []).map((p, i) => (
+              <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#00858515", border: "1px solid #008585", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{p}</span>
+            ))}
           </div>
-          <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4, marginLeft: 16 }}>
-            <span>
-              {encounter.date ? `${formatStoredDate(encounter.date)} · ${formatRelativeDate(encounter.date)}` : tr("encounters.noDate", "No date")}
-              {encounter.encounterType ? " · " : ""}
-            </span>
-            {encounter.encounterType && (() => {
-              const TypeIcon = ENCOUNTER_TYPE_ICONS[encounter.encounterType];
-              return (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                  {TypeIcon && <TypeIcon size={12} color={T.textSecondary} />}
-                  {encounter.encounterType}
-                </span>
-              );
-            })()}
+
+          {/* Activities/kinks — purple */}
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Activities</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {kinkNames.map((name, i) => (
+              <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#7F30A615", border: "1px solid #7F30A6", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+            ))}
+          </div>
+
+          {/* Protection & medication — green + blue */}
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Protection & medication</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {protectionNames.map((name, i) => (
+              <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+            ))}
+            {encounter.myPrepCoverage && (
+              <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
+            )}
+          </div>
+
+          {/* Cum / loads — pink */}
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 6 }}>Cum / loads</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {(encounter.whereICame || []).map((loc, i) => (
+              <span key={`ic-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: "#E24E9C15", border: "1px solid #E24E9C", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
+            ))}
+            {(encounter.whereHeCame || []).map((loc, i) => (
+              <span key={`hc-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: "#E24E9C15", border: "1px solid #E24E9C", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
+            ))}
+            {encounter.loadsCount > 0 && (
+              <span style={{ padding: "2px 8px", borderRadius: "999px", background: "#E24E9C15", border: "1px solid #E24E9C", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{encounter.loadsCount} {encounter.loadsCount === 1 ? "load" : "loads"}</span>
+            )}
           </div>
         </div>
-{encounter.enjoymentRating != null && (
-  <div style={{ fontSize: 12, fontFamily: FONT_FAMILY, color: T.textSecondary, display: "flex", alignItems: "center", gap: 3, marginLeft: 16 }}>
-    <Heart size={12} color={T.encountersPink} /> {encounter.enjoymentRating}
-  </div>
-)}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, marginLeft: 16, flexWrap: "wrap" }}>
-        {shown.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary }}>
-            <Users size={13} />
-            {anonymise ? ANONYMISED : `${shown.join(", ")}${extra > 0 ? ` +${extra}` : ""}`}
+
+        {/* Notes annotation */}
+        {encounter.notes && (
+          <div style={{ marginTop: 10, borderLeft: "2px solid #008585", paddingLeft: 10, fontSize: 11, lineHeight: 1.4, color: T.textSecondary, marginBottom: 6 }}>
+            <strong style={{ color: T.textPrimary }}>Notes:</strong> {encounter.notes}
           </div>
         )}
-        {locationName && (
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary }}>
-            <MapPin size={13} /> {locationName}
-          </div>
-        )}
-        {kinkNames.slice(0, 3).map((name) => (
-          <span key={name} style={{ fontSize: 11, padding: "2px 7px", borderRadius: radius.full, border: `1px solid ${T.encountersPink}`, color: T.encountersPinkText || T.encountersPink }}>{name}</span>
-        ))}
-      </div>
+
+        {/* Summary */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, color: T.textSecondary, fontSize: 11, lineHeight: 1.35 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: T.textSecondary }}>
+            <Heart size={12} color={T.encountersPink} /> <strong>{encounter.enjoymentRating}</strong>
+          </span>
+          <span> · </span>
+          <Clock size={11} style={{ flex: "0 0 11px" }} /> <span>{encounter.date ? formatStoredDate(encounter.date) : ""}</span>
+          <span> · </span> <span>{formatRelativeDate(encounter.date)}</span>
+          <ClimaxMarker encounter={encounter} T={T} />
+        </div>
       </div>
     </div>
+  </div>
   );
 }
 
-// ── 3a. Activity Landing ──
 function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, onQuickExit }) {
   const { t: tr } = useTranslation();
   const contacts = useLoadedMemo(loadContacts, [], []);
   // ADDED — real bug report: Anonymise mode masked Contacts but not
   // Encounters' own attendee display. Same read pattern Contacts uses.
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
+//
   const anonymise = privacy.anonymiseModeActive;
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see the list container's own comment below for the fix.
@@ -1207,6 +1307,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // invisible to this box even though Global Search would find it —
   // now matches the exact same field set for consistency.
   const [query, setQuery] = useState("");
+  const [dismissedPrepWarning, setDismissedPrepWarning] = useState(false);
+  const encountersList = encounters || [];
+  const anyPrepCoverage = encountersList?.some((e) => e.myPrepCoverage) && !dismissedPrepWarning;
 
   // ADDED 4 Sep 2026 — encryption groundwork: pulled the "sinceLastTest"
   // filter's own TestingRepository.getAll() call out of the useMemo
@@ -1229,7 +1332,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
 
   const visible = useMemo(() => {
-    const base = encounters.filter((e) => (showArchived ? true : !e.isArchived) && (!sessionFilter || e.sessionId === sessionFilter));
+    const base = encountersList.filter((e) => (showArchived ? true : !e.isArchived) && (!sessionFilter || e.sessionId === sessionFilter));
     let filtered = base;
     if (dateFilter) {
       const dated = base.filter((e) => e.date);
@@ -1292,11 +1395,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     // defect as the one found in Symptom Log in the same round, in the sibling
     // module — which is why it is worth stating that the 28 Sep audit fixed the
     // expression without fixing the dependency.
-  }, [encounters, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise]);
+  }, [encountersList, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise]);
   const sessionSummaries = useMemo(() => sessions
     .filter((session) => !session.isArchived)
     .map((session) => {
-      const items = encounters
+      const items = encountersList
         .filter((encounter) => encounter.sessionId === session.id && !encounter.isArchived)
         .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
       const fistingKinkIds = [...kinkNameById.entries()].filter(([, name]) => name === "Fisting").map(([id]) => id);
@@ -1328,7 +1431,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       };
     })
     .filter((session) => session.status === "active" || session.items.length > 0)
-    .sort((a, b) => String(b.startAt || b.items.at(-1)?.date || "").localeCompare(String(a.startAt || a.items.at(-1)?.date || ""))), [sessions, encounters, kinkNameById]);
+    .sort((a, b) => String(b.startAt || b.items.at(-1)?.date || "").localeCompare(String(a.startAt || a.items.at(-1)?.date || ""))), [sessions, encountersList, kinkNameById]);
   const activeSession = sessionSummaries.find((session) => session.status === "active") || null;
   // ADDED — real ask: desktop grid grouped consecutively by month, since
   // "visible" is already newest-first this is a plain contiguous grouping,
@@ -1355,7 +1458,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           while the title/icons stay safely below the notch. This
           outer wrapper's T.bg background is now effectively unused
           (zero height above the inner banner) but harmless to leave. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
@@ -1366,9 +1469,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
-          <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
             <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{tr("encounters.selectedCount", "{count} selected", { count: selectedIds.length })}</span>
-            <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                   rather than manual 1 by 1", scoped to whatever's
                   currently visible under the active search/filters. */}
@@ -1417,7 +1520,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                 <div style={{ marginTop: 3, fontSize: 15, color: T.textPrimary, fontWeight: 800 }}>{activeSession.title || "Untitled session"}</div>
                 <div style={{ marginTop: 3, fontSize: 12, color: T.textSecondary }}>
                   {activeSession.items.length} activities · {activeSession.people} people · {activeSession.kinks} kinks
-                  {activeSession.loads ? ` · ${activeSession.loads} loads` : ""}
+                  {activeSession.loads ? ` · ${activeSession.loads} ${activeSession.loads === 1 ? "load" : "loads"}` : ""}
                   {activeSession.fists ? ` · ${activeSession.fists} fists` : ""}
                 </div>
                 {/* ADDED 28 Oct 2026 (t211) — most recent five, oldest first,
@@ -1465,10 +1568,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             </div>
           </div>
         )}
-        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 5, background: T.bg }}>
+        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: `calc(var(--shos-top-banner-h, 0px) + ${STICKY_SUBHEADING_TOP})`, zIndex: 5, background: T.bg }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
+            <div role="switch" aria-checked={showArchived} tabIndex={0} aria-label="Show archived encounters" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowArchived((s) => !s); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${showArchived ? T.encountersPink : T.border}`, background: showArchived ? `${T.encountersPink}15` : "transparent", fontSize: 11, color: showArchived ? T.encountersPink : T.textSecondary, fontWeight: 600 }}>
               {showArchived ? "Hide archived" : "Show archived"}
+              <span style={{ width: 32, height: 18, borderRadius: 999, background: showArchived ? T.encountersPink : T.border, position: "relative", flexShrink: 0 }}>
+                <span style={{ position: "absolute", top: 2, left: showArchived ? 16 : 2, width: 14, height: 14, borderRadius: 999, background: "#FFFFFF" }} />
+              </span>
             </div>
             {sessionSummaries.length > 0 && (
               <button
@@ -1510,7 +1616,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{session.title || "Untitled session"}</div>
                   <div style={{ marginTop: 4, fontSize: 11, color: T.textSecondary }}>
                     {session.items.length} activities · {session.people} people · {session.kinks} kinks
-                    {session.loads ? ` · ${session.loads} loads` : ""}
+                    {session.loads ? ` · ${session.loads} ${session.loads === 1 ? "load" : "loads"}` : ""}
                     {session.fists ? ` · ${session.fists} fists` : ""}
                   </div>
                 </div>
@@ -1533,6 +1639,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                 </div>
               );
             })}
+          </div>
+        )}
+        {anyPrepCoverage && (
+          <div style={{ margin: "0 16px 6px", padding: "6px 10px", borderLeft: "2px solid #FF7A7E", borderRadius: 6, background: T.surfaceVariant, fontSize: 10, lineHeight: 1.4, color: T.textSecondary, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: "#FF7A7E", fontWeight: 600, flex: "0 0 auto" }}>⚠ PrEP coverage:</span>
+            <span style={{ flex: "0 1 auto", minWidth: 0 }}>From your 7-day med log — reassessed 24h post-event.</span>
+            <button onClick={() => setDismissedPrepWarning(true)} aria-label="Dismiss PrEP coverage note" style={{ flex: "0 0 auto", width: 22, height: 22, display: "grid", placeItems: "center", borderRadius: 999, border: "none", background: "transparent", color: T.textSecondary, cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, marginLeft: 4, WebkitAppearance: "none", MozAppearance: "none", appearance: "none" }}>×</button>
           </div>
         )}
       <div style={{ padding: "4px 16px" }}>
@@ -1684,7 +1797,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   };
 
   return (
-    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to ActivityLanding above. */}
       <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 40 }}>
@@ -1699,7 +1812,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           known top-edge clipping/repaint issues on some Android
           WebView versions. Matches the established, already-working
           pattern instead of a remote guess at the exact sticky bug. */}
-      <div style={{ background: T.bg, padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: T.bg, padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, borderBottom: `1px solid ${T.border}` }}>
         {/* FIXED 1 Sep 2026 — real ask: "three dots to edit not obvious"
             in dark mode, "look through app for any other similar
             instances". Neither icon here had a `color` at all, so both
@@ -1735,7 +1848,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
       </div>
       {encounter.title && encounter.date && (
         <div style={{ padding: "0 16px", marginTop: -8, marginBottom: 8, fontSize: 12, color: T.textSecondary, textAlign: "center" }}>
-          {formatStoredDate(encounter.date)}
+          {formatStoredDate(encounter.date)} · {formatRelativeDate(encounter.date)}
         </div>
       )}
 
@@ -1771,15 +1884,19 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
         <SectionCard title={tr("encounters.attendees", "Attendees")} T={T}>
           {encounter.attendeeIds.length === 0
             ? <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "8px 0" }}>{tr("encounters.noneRecorded", "None recorded.")}</div>
-            : encounter.attendeeIds.map((id) => (
-              // CHANGED — real ask: "attendees should link through to
-              // contact card and open if clicked." Real cross-module
-              // navigation now exists (see App.jsx's navigateToRecord).
-              <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked contact" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("contacts", id); } } : undefined}
-                style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default" }}>
-                {anonymise ? ANONYMISED : contactName(contacts, id)}
-              </div>
-            ))}
+            : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, paddingTop: 2 }}>
+              {encounter.attendeeIds.map((id) => (
+                // CHANGED — real ask: "attendees should link through to
+                // contact card and open if clicked." Real cross-module
+                // navigation now exists (see App.jsx's navigateToRecord).
+                // CHANGED — attendee walk is now two-column tiles, not a
+                // single long list.
+                <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked contact" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("contacts", id); } } : undefined}
+                  style={{ padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 13, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {anonymise ? ANONYMISED : contactName(contacts, id)}
+                </div>
+              ))}
+            </div>}
         </SectionCard>
 
         <SectionCard title={tr("encounters.practices", "Practices")} T={T}>

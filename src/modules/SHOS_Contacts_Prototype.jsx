@@ -24,8 +24,9 @@ const CONTACT_ICON_BASE = "/contact-platform-icons/";
 // Android/PWA launcher assets are bundled locally. Generic/unknown method
 // names still use the neutral chat fallback rather than a guessed brand mark.
 const GmailLogo = ({ size = 20 }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size}>
-    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#EA4335" />
+  <svg viewBox="0 0 24 24" fill="#EA4335" width={size} height={size} role="img" aria-label="Gmail">
+    <title>Gmail</title>
+    <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" />
   </svg>
 );
 
@@ -320,7 +321,7 @@ function MethodIcons({ methods, T, size = 22, style = null }) {
       <div role="button" tabIndex={0} aria-label="Contact methods — tap for details"
         onClick={(e) => { e.stopPropagation(); setShowLegend((v) => !v); }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowLegend((v) => !v); } }}
-        style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", cursor: "pointer", minHeight: 44, maxWidth: "100%" }}>
+        style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", cursor: "pointer", minHeight: 22, maxWidth: "100%" }}>
         {unique.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
       </div>
       {showLegend && (
@@ -1605,6 +1606,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   // The card now shows the full deduplicated list using the reviewed
   // Android/PWA marks below; keep this aligned with the profile header.
   const methods = getContactableVia(contact);
+  const methodsWithIcons = methods.filter((m) => platformIconFor(m));
   const availabilitySummary = showAvailabilityOnCards && !anonymise ? formatAvailabilitySummary(contact) : "";
   const missingRequiredLabels = anonymise ? [] : missingRequiredLabelsFor(contact, tr);
   const locationPostcode = anonymise ? "" : extractUkPostcode(contact.address);
@@ -1710,7 +1712,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   const GOLD = "#E8A33D";
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      style={{ position: "relative", width: "100%", maxWidth: 460, boxSizing: "border-box", margin: "0 auto", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, alignItems: "stretch"}}>
+      style={{ position: "relative", width: "100%", boxSizing: "border-box", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, alignItems: "stretch"}}>
       {/* ADDED 17 Sep 2026 — real fix for a genuine axe `nested-interactive`
           violation: this card used to be role="button" itself, with the
           status dot below ALSO role="button" — an interactive widget
@@ -1811,7 +1813,6 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
           style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none", alignItems: "center", justifyContent: "center"}} />
         <span style={{ fontFamily: FONT_FAMILY, fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>{contact.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
-        {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
             too small a jump, 12px vs 15px reading as a much bigger drop
             than intended). Now 14px, one step down, not two.
@@ -1831,6 +1832,9 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             <MapPin size={12} /> {[contact.city, locationPostcode].filter(Boolean).join(" · ")}
           </span>
         )}
+        {/* Rating emoji at the END of the name line, after age + city — the
+            name is followed directly by the age, per the owner's ask. */}
+        {ratingEmoji && <span style={{ fontSize: 14, flex: "0 0 auto" }}>{ratingEmoji}</span>}
       </div>
         {/* ADDED 5 Nov 2026 — real ask: "pronouns missing on contacts -
             small byline undername extracted from profile details". The
@@ -1840,50 +1844,14 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             identity fields. It now sits as the second line of the name
             block, flush-left with the name row — no extra indent. */}
         {!anonymise && contact.pronouns && (
-          <div style={{ fontSize: 10, fontWeight: 500, color: T.textSecondary, lineHeight: 1.3 }}>{contact.pronouns}</div>
+          <div style={{ fontSize: 10, fontWeight: 500, color: T.textSecondary, lineHeight: 1.3, marginTop: -1 }}>{contact.pronouns}</div>
         )}
       </div>
-        {/* Transport & accommodation icons — inline below the name row,
-            flush-left with the name. Single row wraps if crowded. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          {transportIconComponent && React.createElement(transportIconComponent, {
-            size: 20,
-            color: T.textSecondary,
-            role: "button",
-            tabIndex: 0,
-            title: transportLabel,
-            "aria-label": `${transportLabel} — tap for details`,
-            style: { padding: 4, cursor: "pointer" },
-            onClick: (e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); },
-            onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } },
-          })}
-          {contact.hosts === "Yes" ? (
-            <Home size={20} color={T.textSecondary} role="button" tabIndex={0} title="Hosts meetups" aria-label="Hosts meetups — tap for details"
-              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-              style={{ cursor: "pointer"}} />
-          ) : contact.travels === "Yes" ? (
-            <NavigationArrow size={20} color={T.textSecondary} role="button" tabIndex={0} title="Will travel to you" aria-label="Will travel to you — tap for details"
-              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-              style={{ cursor: "pointer"}} />
-          ) : null}
-          {contact.outdoorMeetup && (
-            <TreeEvergreen size={20} color={T.actionGreen} role="img" title="Outdoor/public meetup" aria-label="Outdoor/public meetup" />
-          )}
-          {contact.linkedContactIds.length > 0 && (
-            <Link2 size={20} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
-              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-              style={{ cursor: "pointer"}} />
-          )}
-          {flaggedDontMeetAgain && (
-            <AlertTriangle size={20} color={T.actionRed} role="button" tabIndex={0} title="Flagged: do not meet again" aria-label="Flagged: do not meet again — tap for details"
-              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
-              style={{ cursor: "pointer"}} />
-          )}
-        </div>
+      {/* Transport & accommodation icons intentionally NOT rendered inline on
+          the left-hand side — they'd widen the name block and squeeze the
+          name/pronouns line. Hosts/travels/outdoors/linked/dont-meet-again are
+          still reachable by tapping the active dot (opens showStatusInfo).
+          Social badges stay on the right-hand column via MethodIcons below. */}
       </div>
       {showStatusInfo && (() => {
         const transportLabel = getTransportLabel(contact);
@@ -1906,21 +1874,23 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           when 3+ they wrap into a second line (2x2 grid feel). */}
       {/* Status & social chips — social icons stay on the right-hand column,
           status/relationship tags flush-left. Minimal vertical gaps. */}
-      {(statusTags.length > 0 || relationshipTags.length > 0 || methods.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: methods.length > 0 ? "minmax(0, 1fr) 104px" : "minmax(0, 1fr)", columnGap: 8, rowGap: 4, alignItems: "flex-start", minWidth: 0 }}>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
-            {matchedTags.map((tag) => <span key={`match-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>)}
-            {isContactIncomplete(contact) && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>}
-            {missingRequiredLabels.length > 0 && <span aria-label={`${tr("contacts.missingRequiredDetails", "Missing mandatory details")}: ${missingRequiredLabels.join(", ")}`} style={{ fontSize: 9, fontWeight: 700, color: T.actionRed, lineHeight: 1.35 }}>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.map((label) => `* ${label}`).join(", ")}</span>}
-          </div>
-          {relationshipTags.length > 0 && (
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", marginTop: 4 }}>
-              {contact.relationshipType.map((value) => <span key={`rel-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
-              {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((value) => <span key={`role-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
-              {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((value) => <span key={`position-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+      {(statusTags.length > 0 || relationshipTags.length > 0 || methodsWithIcons.length > 0) && (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 4, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+              {matchedTags.map((tag) => <span key={`match-${tag}`} style={{ fontSize: 10, fontWeight: 700, color: "#FFFFFF", background: T.contactsBanner, borderRadius: radius.full, padding: "2px 8px" }}>{tag}</span>)}
+              {isContactIncomplete(contact) && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, borderRadius: radius.full, padding: "2px 8px" }}>{tr("contacts.incomplete", "Incomplete")}</span>}
+              {missingRequiredLabels.length > 0 && <span aria-label={`${tr("contacts.missingRequiredDetails", "Missing mandatory details")}: ${missingRequiredLabels.join(", ")}`} style={{ fontSize: 9, fontWeight: 700, color: T.actionRed, lineHeight: 1.35 }}>{tr("contacts.missingRequiredDetails", "Missing mandatory details")}: {missingRequiredLabels.map((label) => `* ${label}`).join(", ")}</span>}
             </div>
-          )}
-          {methods.length > 0 && <MethodIcons methods={methods} T={T} style={{ gridColumn: 2, gridRow: statusTags.length > 0 ? "1 / span 2" : "1", height: "100%", justifySelf: "end", alignSelf: "start" }} />}
+            {relationshipTags.length > 0 && (
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center", marginTop: 4 }}>
+                {contact.relationshipType.map((value) => <span key={`rel-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+                {showRoleOnCards && !anonymise && (contact.bdsmRole || []).map((value) => <span key={`role-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+                {showRoleOnCards && !anonymise && (contact.sexualPosition || []).map((value) => <span key={`position-${value}`} style={{ fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceVariant, borderRadius: radius.full, padding: "2px 8px" }}>{value}</span>)}
+              </div>
+            )}
+          </div>
+          {methodsWithIcons.length > 0 && <MethodIcons methods={methods} T={T} style={{ flexShrink: 0, alignSelf: "flex-start" }} />}
         </div>
       )}
       {availabilitySummary && (
@@ -1934,9 +1904,8 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, fontSize: 11, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic" }}>
           {anonymise ? <span>Activity hidden</span> : summary.count > 0 && <strong style={{ color: T.textSecondary, fontWeight: 600 }}>{summary.count} encounters</strong>}
-          {!anonymise && summary.count > 2 && (summary.ratedCount || 0) >= 2 && summary.averageEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {Math.round(summary.averageEnjoyment)}/100 rated avg</span>}
-          {!anonymise && !(summary.count > 2 && (summary.ratedCount || 0) >= 2) && summary.firstRatedEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {summary.firstRatedEnjoyment}/100 first rating</span>}
-          {!anonymise && summary.lastInteraction && <span>Last interaction {formatRelativeDate(summary.lastInteraction)}</span>}
+          {!anonymise && summary.averageEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {Math.round(summary.averageEnjoyment)}/100 avg.</span>}
+          {!anonymise && summary.lastInteraction && <span>Last met {formatRelativeDate(summary.lastInteraction)}</span>}
           {!anonymise && !summary.lastInteraction && summary.count === 0 && <span>No encounters logged yet</span>}
         </div>
       )}
@@ -3227,7 +3196,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           The safe-area inset moved from `top` into the banner's own
           top padding, so only the title/icons — not the colour — sit
           below the notch. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsBanner, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.contactsBanner, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("contacts.title", "Contacts")}</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
@@ -3347,9 +3316,9 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         // CHANGED — real edge-to-edge redesign: Contacts' own banner
         // moved its safe-area inset from `top` into its own top
         // padding, shrinking its net height by 8px, so 70 became 62.
-        <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.surfaceVariant, border: `1px solid ${T.border}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "sticky", top: `calc(var(--shos-top-banner-h, 0px) + ${STICKY_SUBHEADING_TOP})`, zIndex: 6, background: T.surfaceVariant, border: `1px solid ${T.border}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
           <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{selectedIds.length} selected</span>
-          <div style={{ display: "flex", gap: 16 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather
                 than manual 1 by 1", scoped to whatever's currently
                 visible (respects an active search/filter, same as

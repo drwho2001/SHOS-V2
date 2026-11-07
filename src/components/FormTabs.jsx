@@ -9,6 +9,7 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
   const id = `form-tabs-${useId().replace(/:/g, "")}`;
   const tabRefs = useRef([]);
   const panels = Children.toArray(children);
+  const scrollerRef = useRef(null);
 
   const handleKeyDown = (event, currentIndex) => {
     let nextIndex;
@@ -23,8 +24,34 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
     tabRefs.current[nextIndex]?.focus();
   };
 
+  // ADDED — real ask: when switching to a tab that has no entered data,
+  // scroll to the top so the new tab's fields start from the beginning.
+  // The sheet's own scroll container is the nearest scrollable ancestor,
+  // so we walk up to the first ancestor with overflow-y scroll/auto and
+  // reset its scrollTop. A bare window.scrollTo would miss the sheet
+  // container (the sheet is position:fixed with overflowY:auto).
+  const handleChange = (key) => {
+    const prev = activeKey;
+    onChange(key);
+    // Defer so the new panel is rendered before we measure/reset.
+    requestAnimationFrame(() => {
+      const el = scrollerRef.current;
+      if (!el) return;
+      let node = el.parentElement;
+      while (node && node !== document.body) {
+        const style = window.getComputedStyle(node);
+        if (style.overflowY === "auto" || style.overflowY === "scroll") {
+          node.scrollTop = 0;
+          break;
+        }
+        node = node.parentElement;
+      }
+    });
+  };
+
   return (
     <>
+      <div ref={scrollerRef} style={{ display: "contents" }}>
       <div
         role="tablist"
         aria-label={ariaLabel}
@@ -54,7 +81,7 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
               aria-selected={selected}
               aria-controls={`${id}-panel-${tab.key}`}
               tabIndex={selected ? 0 : -1}
-              onClick={() => onChange(tab.key)}
+              onClick={() => handleChange(tab.key)}
               onKeyDown={(event) => handleKeyDown(event, index)}
               style={{
                 flex: "0 0 auto",
@@ -91,6 +118,7 @@ export function FormTabs({ tabs, activeKey, onChange, ariaLabel, accent, accentT
           </div>
         );
       })}
+      </div>
     </>
   );
 }

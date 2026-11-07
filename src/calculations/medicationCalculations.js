@@ -144,7 +144,19 @@ export function computeStock(med) {
   }
   const range = med.defaultRefillQuantity || med.refillThreshold || 1;
   const barPct = Math.max(0, Math.min(100, ((currentStock - med.refillThreshold) / range) * 100));
-  return { tracked: true, currentStock, needsAction, supplementary, barPct };
+  // ADDED 7 Nov 2026 — the bar measures actual stock against a full refill
+  // quantity, with the refill threshold drawn as a real marker on the track.
+  // The scale is `max(currentStock, containerSize)`: if you hold more stock
+  // than a single refill quantity (e.g. 187 PrEP tablets vs 30-refill qty)
+  // the bar reads full; if you hold less (e.g. 2 Sertraline tablets vs
+  // 30-refill qty) the bar scales to the refill quantity so the low-stock
+  // level is still visible. `barPct` is kept unchanged for callers that
+  // already use it.
+  const containerSize = med.defaultRefillQuantity || med.unitsPerContainer || 1;
+  const scaleMax = Math.max(currentStock, containerSize, 1);
+  const levelPct = Math.max(0, Math.min(100, (currentStock / scaleMax) * 100));
+  const thresholdPct = Math.max(0, Math.min(100, ((med.refillThreshold || 0) / scaleMax) * 100));
+  return { tracked: true, currentStock, needsAction, supplementary, barPct, levelPct, thresholdPct };
 }
 
 // ADDED 26 Sep 2026 — two calendar-arithmetic helpers, added together
@@ -416,6 +428,43 @@ export function computeAdherence(med) {
   // showing the same figure twice under two different names, which reads as
   // two independent pieces of evidence and is neither.
   return { streak, sevenDay, sinceRefill, sinceRefillAnchored };
+}
+
+// ADDED 7 Nov 2026 — real ask: "add trend arrows based on last lot of data
+// up/down". Compares the current 7-day adherence window with the preceding
+// 7-day window, using the same expected-days logic as computeAdherence so
+// custom (every-N-days) schedules compare like with like. `hasData` is only
+// true when BOTH windows actually contained due days — a medication started
+// three days ago has no previous week to compare against, and inventing a
+// 0% baseline would show a misleading upward arrow.
+export function computeAdherenceTrend(med) {
+  const adherence = computeAdherence(med);
+  if (!adherence || !med.logs) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const doseDays = new Set(med.logs.filter((l) => l.type === "dose" && !l.voided).map((l) => {
+    const d = new Date(l.date); d.setHours(0, 0, 0, 0); return d.getTime();
+  }));
+  const expected14 = computeExpectedDoseDays(med, doseDays, 14, today);
+  const previousToday = new Date(today); previousToday.setDate(previousToday.getDate() - 7);
+  const previous = windowStats(doseDays, 7, previousToday, expected14);
+  // The expected-day counts alone can't tell a brand-new medication apart from
+  // one that has been running for months: both report 7 expected days for the
+  // previous week, but only one actually had a history to compare against.
+  // Require the first dose to predate the current window (today-6), so a
+  // medication started this week shows no arrow rather than an invented climb
+  // from 0%. A long-running medication that genuinely missed everything last
+  // week still qualifies, because its first dose is older than that.
+  const currentWindowStart = new Date(today); currentWindowStart.setDate(currentWindowStart.getDate() - 6);
+  const firstDoseDay = doseDays.size ? Math.min(...doseDays) : null;
+  const hadPriorHistory = firstDoseDay !== null && firstDoseDay < currentWindowStart.getTime();
+  const delta = adherence.sevenDay.pct - previous.pct;
+  return {
+    current: adherence.sevenDay.pct,
+    previous: previous.pct,
+    delta,
+    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
+    hasData: adherence.sevenDay.expected > 0 && previous.expected > 0 && hadPriorHistory,
+  };
 }
 
 // New 18 Aug 2026, per the user's ask: prevents accidentally logging the

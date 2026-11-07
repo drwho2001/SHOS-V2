@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Medication card — approved anatomy in the new card style</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #121214;
+    --surface: #1c1c1f;
+    --variant: #2a2a2e;
+    --border: #3a3a3f;
+    --primary: #f5f5f6;
+    --secondary: #a6a6ae;
+    --disabled: #77777e;
+    --amber-text: #d08a2e;
+    --amber-surface: #2a2520;
+    --red: #ff7a7e;
+
+    /* Module accents from designTokens.js ACCENTS */
+    --meds-blue: #5b9bd5;             /* medication accent */
+    --meds-blue-dark: #2f6cb5;
+    --green: #5fd9a4;                 /* adherence on-track */
+    --amber: #F59E0B;                 /* adherence needs attention */
+    --teal: #008585;                  /* schedule / dose-form group */
+
+    --tint-blue: #5b9bd515;
+    --tint-green: #5fd9a415;
+    --tint-teal: #00858515;
+    --tint-amber: #F59E0B15;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 12px 48px;
+    background: var(--page);
+    color: var(--primary);
+    font-family: Inter, Roboto, "Segoe UI", sans-serif;
+  }
+  .page { width: min(100%, 760px); margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  h2 { margin: 22px 0 8px; font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .lead, .caption { color: var(--secondary); font-size: 12px; line-height: 1.5; }
+  .lead { margin-bottom: 22px; }
+  .caption { margin-bottom: 10px; font-size: 11px; }
+
+  .device {
+    width: 393px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 14px 16px 24px;
+    border: 1px solid #303034;
+    border-radius: 24px;
+    background: var(--page);
+    box-shadow: 0 12px 36px #0008;
+  }
+  .module-title { padding: 5px 0 15px; font-size: 20px; font-weight: 600; }
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    margin-bottom: 10px;
+    overflow-wrap: break-word;
+  }
+  .menu { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; color: var(--disabled); }
+
+  /* ── Card anatomy (§10.2.1): title row → byline → chip groups → footer ── */
+  .name-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--meds-blue); }
+  .dot.red { background: var(--red); }
+  .name { color: var(--primary); font-size: 15px; line-height: 1.3; font-weight: 600; }
+  .demo { font-size: 9px; font-weight: 700; color: var(--disabled); background: var(--variant); border-radius: 4px; padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+
+  .byline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--secondary); font-size: 10px; line-height: 1.3; font-weight: 500; }
+  .byline svg { width: 11px; height: 11px; flex: 0 0 11px; }
+
+  .chip-group { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; margin-bottom: 4px; }
+  .chip-group:first-of-type { margin-top: 10px; }
+  .chip-group:last-of-type { margin-bottom: 2px; }
+  .chip-group-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--disabled); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .chip.teal { background: var(--tint-teal); border-color: var(--teal); color: #fff; }
+  .chip.blue { background: var(--tint-blue); border-color: var(--meds-blue); color: #fff; }
+  .chip.red { background: #ff7a7e15; border-color: var(--red); color: #fff; }
+  .chip.amber { background: var(--tint-amber); border-color: var(--amber); color: #fff; }
+  .chip.grey { background: var(--variant); color: var(--secondary); border-color: var(--border); }
+
+  .stock-row { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .stock-restock { margin-left: auto; font-size: 11px; color: var(--disabled); white-space: nowrap; }
+  .stock-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: 0 0 8px; align-self: center; }
+  .stock-dot.amber { background: var(--amber); }
+  .stock-dot.red { background: var(--red); }
+  .stock-num { font-size: 26px; font-weight: 600; }
+  .stock-num.red { color: var(--red); }
+  .stock-unit { font-size: 12px; color: var(--secondary); }
+  .stock-bar { height: 4px; border-radius: 999px; background: var(--variant); overflow: visible; margin-top: 8px; position: relative; }
+  .stock-bar > i { display: block; height: 100%; background: var(--meds-blue); border-radius: 999px; }
+  .stock-bar > i.red { background: var(--red); }
+  .stock-bar .marker { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--red); opacity: .85; }
+
+  /* Adherence: three independent tiles, each carrying its own verdict colour
+     (≥80% green, ≥50% amber, below red) so a green streak can sit beside a
+     red container. */
+  .adh-tiles { display: flex; align-items: stretch; gap: 6px; }
+  .adh-tile { flex: 1; min-width: 0; text-align: center; border-radius: 8px; padding: 9px 4px; border: 1px solid; }
+  .adh-tile.green { background: #5fd9a440; border-color: #5fd9a466; }
+  .adh-tile.amber { background: #F59E0B12; border-color: #F59E0B66; }
+  .adh-tile.red { background: #ff7a7e12; border-color: #ff7a7e66; }
+  .adh-tile.neutral { background: #5b9bd515; border-color: #5b9bd540; }
+  .adh-tile.empty { background: transparent; border: 1px dashed var(--border); color: var(--disabled); font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .adh-tile .v { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 4px; justify-content: center; }
+  .adh-tile .v svg { width: 13px; height: 13px; }
+  .adh-tile .trend { width: 12px; height: 12px; margin-left: 1px; }
+  .trend.up { color: var(--green); }
+  .trend.down { color: var(--red); }
+  .adh-tile .l { font-size: 10px; color: var(--secondary); font-weight: 600; margin-top: 2px; }
+  .adh-tile.green .v { color: var(--green); }
+  .adh-tile.amber .v { color: var(--amber); }
+  .adh-tile.red .v { color: var(--red); }
+  .adh-tile.neutral .v { color: var(--meds-blue); }
+
+  .advisory { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 7px 9px; border-radius: 8px; font-size: 11px; line-height: 1.4; background: #5b9bd512; border-left: 3px solid var(--meds-blue); color: var(--secondary); }
+
+  .footer { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--secondary); font-size: 11px; line-height: 1.35; margin-top: 6px; }
+  .footer svg { width: 11px; height: 11px; flex: 0 0 11px; }
+  .footer .hot { color: var(--primary); font-weight: 600; }
+  .footer.top { margin-top: 2px; }
+
+  .note { margin-top: 8px; border-left: 2px solid var(--teal); padding-left: 10px; font-size: 11px; line-height: 1.4; color: var(--secondary); font-style: italic; }
+
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  .actions .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn.outline { background: transparent; color: var(--meds-blue); border: 1px solid var(--meds-blue); }
+  .btn.filled { background: var(--meds-blue); color: #fff; border: 1px solid var(--meds-blue); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn .plus1 { font-size: 14px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+  .ringbox { display: inline-flex; align-items: center; gap: 8px; }
+  .ringbox svg { width: 30px; height: 30px; flex: 0 0 30px; }
+
+  .annotation {
+    margin: 14px 2px 0;
+    border-left: 2px solid var(--meds-blue);
+    padding: 2px 0 2px 12px;
+    color: var(--secondary);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .annotation strong { color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Medication card — shipped anatomy in the new card style</h1>
+  <p class="lead">Shipped reference, dark mode, 393dp phone viewport, synthetic meds. Applies the encounters/contacts card anatomy (DESIGN-MANUAL §10.2.1): title row → single byline (quantity + timing) → last/next dose → grouped chip cloud → three independent adherence tiles → footer actions.</p>
+
+  <h2>Rendered card</h2>
+  <p class="caption">Card 1: healthy state (green streak, amber 7-day, green container). Card 2: low stock + refill action + timing advice (green streak beside red 7-day/container). Card 3: not inventory-tracked.</p>
+
+  <section class="device" aria-label="Android app viewport mockup">
+    <div class="module-title">Medication</div>
+
+    <!-- Card 1 — PrEP-like, tracked, on track -->
+    <article class="card" aria-label="PrEP medication card, on track">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-label="More options"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+
+      <div class="name-line">
+        <span class="dot"></span>
+        <span class="name">PrEP</span>
+      </div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10"/></svg>
+        <span>1 tablet · 200mg/245mg</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Daily · 4:00 PM</span>
+      </div>
+
+      <div class="footer top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last dose <span class="hot">Today 9:58 AM</span></span><span>·</span>
+        <span>Next dose <span class="hot">~8h (3:00 PM)</span></span>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Stock</div>
+        <div class="stock-row">
+          <span class="stock-dot" title="Stock healthy"></span>
+          <span class="stock-num">187</span>
+          <span class="stock-unit">tablets left</span>
+          <span class="stock-restock">restock at 7 tablets</span>
+        </div>
+        <div class="stock-bar"><i style="width: 100%"></i><span class="marker" style="left: 3.7%" title="Restock at 7 tablets" aria-label="Restock at 7 tablets"></span></div>
+        <div class="chips" style="margin-top: 6px"><span class="chip grey">187d remaining</span></div>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Adherence</div>
+        <div class="adh-tiles">
+          <div class="adh-tile green"><div class="v"><svg viewBox="0 0 24 24" fill="#F97316" aria-hidden="true"><path d="M12 2c1 4-2.5 5.6-2.5 9a4.5 4.5 0 0 0 9 0c0-1.6-.7-2.8-1.5-4 2.4 1.3 4.5 4 4.5 7a9.5 9.5 0 0 1-19 0C2.5 8 7 5.5 12 2z"/></svg>3d</div><div class="l">streak</div></div>
+          <div class="adh-tile amber"><div class="v">5/7</div><div class="l">7-day · 71% <svg class="trend up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-label="Up from 57% the previous week"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div></div>
+          <div class="adh-tile green"><div class="v">8/10</div><div class="l">this container · 80%</div></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="btn outline"><span class="plus1">+1</span> Log dose</span>
+        <span class="btn filled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log refill</span>
+      </div>
+    </article>
+
+    <!-- Card 2 — Sertraline-like, low stock, amber -->
+    <article class="card" aria-label="Sertraline medication card, refill needed">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-label="More options"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+
+      <div class="name-line">
+        <span class="dot red"></span>
+        <span class="name">Sertraline</span>
+      </div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10"/></svg>
+        <span>1 tablet · 150mg</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Daily · 9:58 AM</span>
+      </div>
+
+      <div class="footer top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last dose <span class="hot">Today 9:58 AM</span></span><span>·</span>
+        <span>Next dose <span class="hot">~8h (3:00 PM)</span></span>
+      </div>
+
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">You're logging a bit early — fine, but this pulls tomorrow's dose earlier too.</span>
+        <span aria-hidden="true">×</span>
+      </div>
+
+      <div class="note">Take with food in the morning.</div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Stock</div>
+        <div class="stock-row">
+          <span class="stock-dot red" title="Refill needed"></span>
+          <span class="stock-num red">3</span>
+          <span class="stock-unit">tablets left</span>
+          <span class="stock-restock">restock at 5 tablets</span>
+        </div>
+        <div class="stock-bar"><i class="red" style="width: 15%"></i><span class="marker" style="left: 25%" title="Restock at 5 tablets" aria-label="Restock at 5 tablets"></span></div>
+        <div class="chips" style="margin-top: 6px">
+          <span class="chip red">Refill needed — 3 left</span>
+          <span class="chip grey">≈3 days at current rate</span>
+          <span class="chip grey">Boots Pharmacy</span>
+          <span class="chip blue">Mark as requested</span>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Adherence</div>
+        <div class="adh-tiles">
+          <div class="adh-tile green"><div class="v"><svg viewBox="0 0 24 24" fill="#F97316" aria-hidden="true"><path d="M12 2c1 4-2.5 5.6-2.5 9a4.5 4.5 0 0 0 9 0c0-1.6-.7-2.8-1.5-4 2.4 1.3 4.5 4 4.5 7a9.5 9.5 0 0 1-19 0C2.5 8 7 5.5 12 2z"/></svg>2d</div><div class="l">streak</div></div>
+          <div class="adh-tile red"><div class="v">3/7</div><div class="l">7-day · 43% <svg class="trend down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-label="Down from 57% the previous week"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg></div></div>
+          <div class="adh-tile red"><div class="v">2/10</div><div class="l">this container · 20%</div></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="btn outline"><span class="plus1">+1</span> Log dose</span>
+        <span class="btn filled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log refill</span>
+      </div>
+    </article>
+
+    <!-- Card 3 — Vitamin D-like, not tracked -->
+    <article class="card" aria-label="Vitamin D medication card, not inventory-tracked">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-label="More options"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+
+      <div class="name-line">
+        <span class="dot"></span>
+        <span class="name">Vitamin D</span>
+      </div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10"/></svg>
+        <span>1 tablet · 1000 IU</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Daily · 4:00 PM</span>
+      </div>
+
+      <div class="footer top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last dose <span class="hot">Today 9:58 AM</span></span><span>·</span>
+        <span>Next dose <span class="hot">~8h (3:00 PM)</span></span>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Stock</div>
+        <div class="chips"><span class="chip grey">Not inventory-tracked</span></div>
+      </div>
+
+      <div class="actions">
+        <span class="btn outline"><span class="plus1">+1</span> Log dose</span>
+      </div>
+    </article>
+  </section>
+
+  <div class="annotation">
+    <strong>Shipped anatomy:</strong> the same card grammar as encounters/contacts (§10.2.1). Title row: status dot + 15/600 name + ⋮ menu. The byline is now <em>one</em> line carrying quantity and timing together — dose form, total strength per dose and schedule — so the card answers "1 tablet · 200mg/245mg · Daily · 4:00 PM" in one read. When a dose takes more than one unit the strength is stated as a total ("2 tablets · 300mg total"), and ingredient names are kept when the title is a brand ("Zapain · 2 tablets · codeine 60mg/paracetamol 1000mg total"). The last/next dose line moves <em>up</em> to sit directly under that byline, before any numbers. Stock keeps its big number + progress bar under a STOCK group label, with the restock level stated beside the quantity ("restock at 7 tablets") and marked on the track; refill state is chips (red = action needed, grey = days remaining/supplier, blue = mark as requested, or the requested-awaiting chip with its × dismiss). Adherence is <strong>three independent tiles</strong> — streak, 7-day, this container — each with its own verdict colour (≥80% green, ≥50% amber, below red), so a green streak can sit beside a red container. The streak flame is filled orange-red when the streak is live, and the 7-day tile carries an up/down arrow against the previous 7 days. Buttons stay the two-button row, with `+1 Log dose`.
+  </div>
+
+  <h2>Layout intent</h2>
+  <p class="caption">The card answers in order: what is it and when do I take it (one byline) → where am I up to (last/next dose) → anything about this dose (timing advice, notes) → how much is left (stock number + bar + chips) → how am I doing (three adherence tiles) → what can I tap (buttons). The lockout flow, dose-correction tap, and timing advisory are unchanged behavioural furniture — only their surrounding spacing follows the card grid (10px above each group title, tight 3–4px gaps inside).</p>
+
+  <h2>Notes</h2>
+  <p class="caption">PrEP and Sertraline show the inventory-tracked path. A requested refill replaces the red action chip with the blue "Requested … — awaiting refill" chip (the × dismiss stays chip-level), because once ordered there is nothing left to action. "No container yet" keeps the three-tile rhythm when no refill has been logged rather than repeating the 7-day figure under a second label. Trend arrows need two complete windows; a medication started this week shows none rather than inventing a baseline. Notes stay the italic annotated line with an accent rule, matching encounters' notes treatment. Light-mode and dark-mode tint tokens follow encounters' mockup pairs (blue #5b9bd5 on #5b9bd515; green #5fd9a4; amber #F59E0B; red #ff7a7e; flame #F97316).</p>
+</main>
+</body>
+</html>
