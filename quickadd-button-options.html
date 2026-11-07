@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Quick Add Button Size Options — Colored</title>
+<style>
+  :root { color-scheme: dark; }
+  /* NEUTRAL dark tokens */
+  --surface: #1c1c1f;
+  --variant: #2a2a2e;
+  --border: #3a3a3f;
+  --text-primary: #f2f2f4;
+  --text-secondary: #b8b8be;
+  --text-disabled: #89898c;
+  --bg: #121214;
+  /* Module accents */
+  --meds-blue: #5b9bd5;
+  --contacts: #b36205;
+  --encounters-purple: #7f30a6;
+  --healthcare-blue: #5b9bd5;
+  --menstrual-color: #e24e9c;
+
+  body {
+    margin: 0; padding: 24px 12px 48px;
+    background: var(--bg); color: var(--text-primary);
+    font-family: Inter, Roboto, "Segoe UI", sans-serif;
+  }
+  .page { width: min(100%, 760px); margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  .lead { color: var(--text-secondary); font-size: 12px; line-height: 1.5; margin-bottom: 22px; }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--surface);
+  }
+  .section-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-disabled); margin: 0 0 6px 0;
+  }
+  .row-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+  /* Shared button base */
+  .btn-base {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-weight: 700;
+    background: var(--surface);
+  }
+  .btn-base .icon-label { display: flex; align-items: center; gap: 12px; }
+  .btn-base .chevron { width: 18px; height: 18px; color: var(--text-disabled); }
+
+  /* ── Option A: Standard ── */
+  .btn-standard { padding: 14px 16px; min-height: 44px; }
+  .btn-standard .icon-label svg { width: 22px; height: 22px; flex: 0 0 22px; }
+  .btn-standard .icon-label span { font-size: 15px; }
+
+  /* ── Option B: Compact ── */
+  .btn-compact { padding: 8px 8px; min-height: 36px; }
+  .btn-compact .icon-label svg { width: 20px; height: 20px; flex: 0 0 20px; }
+  .btn-compact .icon-label span { font-size: 14px; }
+
+  /* ── Option C: Compact+ ── */
+  .btn-compactp { padding: 6px 6px; min-height: 32px; }
+  .btn-compactp .icon-label svg { width: 18px; height: 18px; flex: 0 0 18px; }
+  .btn-compactp .icon-label span { font-size: 13px; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Home Quick Add Button Size Options — Colored</h1>
+  <p class="lead">Full card context with module-colored outlines on plain surface fill. All sizes share icon + label + chevron structure.</p>
+
+  <!-- Standard -->
+  <div class="card">
+    <div class="section-label">Quick add</div>
+    <div class="row-group">
+      <div class="btn-base btn-standard" style="border-color: var(--meds-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--meds-blue)" stroke-width="1.8"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10" stroke="var(--meds-blue)" stroke-width="1.8"/></svg><span style="color: var(--text-primary)">Log medication</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--contacts)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--contacts)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4" stroke="var(--contacts)" stroke-width="1.8"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span style="color: var(--text-primary)">New contact</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--encounters-purple)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--encounters-purple)" stroke-width="1.8"><path d="M22 12h-4l-3 3L7 18l1.5-3.06L9 12l1.5 3.06L14 9l-3 3H2z"/></svg><span style="color: var(--text-primary)">New encounter</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--encounters-purple)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--encounters-purple)" stroke-width="1.8"><path d="M12 3L1 9l11 6 11-6-11-6z"/></svg><span style="color: var(--text-primary)">New session</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top: 8px">Healthcare</div>
+    <div class="row-group">
+      <div class="btn-base btn-standard" style="border-color: var(--healthcare-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--healthcare-blue)" stroke-width="1.8"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 12c-2.21 0-4-1.79-4-4h2c0 1.1.9 2 2 2s2-.9 2-2h2c0 2.21-1.79 4-4 4z"/></svg><span style="color: var(--text-primary)">Log test</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--healthcare-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--healthcare-blue)" stroke-width="1.8"><path d="M9.03 14.56a1 1 0 011.47-1.1l2.12.67a1 1 0 01.36 1.62l-1.25 2.67a1 1 0 01-1.51.6l-2.45-1.71a1 1 0 01-.43-1.08zM19 8.31V18a1 1 0 01-1 1h-4a1 1 0 01-1-1V6.17a1 1 0 011.31-.95l3.59 2a1 1 0 01.47 1.09z"/></svg><span style="color: var(--text-primary)">Log symptom</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--healthcare-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--healthcare-blue)" stroke-width="1.8"><path d="M9 11.5H4v6h1v-6z"/><path d="M22 11.5v-9L12 1l-10 1.5v9L2 22l10-1.5 10 1.5z"/></svg><span style="color: var(--text-primary)">New clinic visit</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--healthcare-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--healthcare-blue)" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><span style="color: var(--text-primary)">Schedule routine retest</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-standard" style="border-color: var(--healthcare-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--healthcare-blue)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v4c0 6 8 10 8 10z"/></svg><span style="color: var(--text-primary)">Log vaccination</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact -->
+  <div class="card">
+    <div class="section-label">Compact</div>
+    <div class="row-group">
+      <div class="btn-base btn-compact" style="border-color: var(--meds-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--meds-blue)" stroke-width="1.8"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10" stroke="var(--meds-blue)" stroke-width="1.8"/></svg><span style="color: var(--text-primary)">Log medication</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-compact" style="border-color: var(--contacts)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--contacts)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4" stroke="var(--contacts)" stroke-width="1.8"/></svg><span style="color: var(--text-primary)">New contact</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-compact" style="border-color: var(--encounters-purple)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--encounters-purple)" stroke-width="1.8"><path d="M22 12h-4l-3 3L7 18l1.5-3.06L9 12l1.5 3.06L14 9l-3 3H2z"/></svg><span style="color: var(--text-primary)">New encounter</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact+ -->
+  <div class="card">
+    <div class="section-label">Compact+</div>
+    <div class="row-group">
+      <div class="btn-base btn-compactp" style="border-color: var(--meds-blue)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--meds-blue)" stroke-width="1.8"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10" stroke="var(--meds-blue)" stroke-width="1.8"/></svg><span style="color: var(--text-primary)">Log medication</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-compactp" style="border-color: var(--contacts)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--contacts)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4" stroke="var(--contacts)" stroke-width="1.8"/></svg><span style="color: var(--text-primary)">New contact</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="btn-base btn-compactp" style="border-color: var(--encounters-purple)">
+        <div class="icon-label"><svg viewBox="0 0 24 24" fill="none" stroke="var(--encounters-purple)" stroke-width="1.8"><path d="M22 12h-4l-3 3L7 18l1.5-3.06L9 12l1.5 3.06L14 9l-3 3H2z"/></svg><span style="color: var(--text-primary)">New encounter</span></div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -964,16 +964,24 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // tinting the whole button. The group itself is layout only (no card fill
   // or border): a bordered card wrapping bordered rows would double every
   // edge on screen.
-  const QuickAddButton = ({ icon: Icon, label, color, onClick }) => (
-    <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", minHeight: 44, borderRadius: RADIUS.sm, border: `1px solid ${color}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Icon size={22} color={color} />
-        <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
+  const QuickAddButton = ({ icon: Icon, label, color, onClick, size = "compact" }) => {
+    const sizeMap = {
+      standard: { padding: "14px 16px", minHeight: 44, iconSize: 22, fontSize: 15 },
+      compact: { padding: "8px 8px", minHeight: 36, iconSize: 20, fontSize: 14 },
+      compactPlus: { padding: "6px 6px", minHeight: 32, iconSize: 18, fontSize: 13 },
+    }
+    const s = sizeMap[size] || sizeMap.compact
+    return (
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onClick}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: s.padding, minHeight: s.minHeight, borderRadius: RADIUS.sm, border: `1px solid ${color}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon size={s.iconSize} color={color} />
+          <span style={{ fontSize: s.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
+        </div>
+        <ChevronRight size={18} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
       </div>
-      <ChevronRight size={18} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
-    </div>
-  );
+    )
+  }
   // C16 (option D): one heading per group. The group is the shared structure;
   // the rows keep their own accents (see above), so grouping is conveyed by
   // the heading and the spacing rather than by a nested card.
@@ -1450,18 +1458,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         {/* MOVED 5 Nov 2026 — owner-set order: "log medication, new
             contact, new encounter, new session". Medication is the
             most frequent daily write, so it leads. */}
-        <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
-        <QuickAddButton icon={Users} label="New contact" color={contactsColor} onClick={() => onQuickAdd("contacts")} />
+        <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} size="compact" />
+        <QuickAddButton icon={Users} label="New contact" color={contactsColor} onClick={() => onQuickAdd("contacts")} size="compact" />
         {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
             the earlier Flame decision above: back to the same Pulse/
             Activity glyph the bottom nav and Global Search already use
             for Encounters everywhere else, for consistency. */}
-        <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} />
-        <QuickAddButton icon={Stack} label="New session" color={encountersColor} onClick={async () => { const session = await SessionRepository.create({ title: "New session", status: "active" }); onQuickAddWithPrefill?.("activity", null, { sessionId: session.id }); }} />
+        <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} size="compact" />
+        <QuickAddButton icon={Stack} label="New session" color={encountersColor} onClick={async () => { const session = await SessionRepository.create({ title: "New session", status: "active" }); onQuickAddWithPrefill?.("activity", null, { sessionId: session.id }); }} size="compact" />
       </QuickAddGroup>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "0 0 6px" }}>{tr("home.healthcare", "Healthcare")}</div>
       <QuickAddGroup>
-        <QuickAddButton icon={TestTube} label="Log test" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "testing")} />
+        <QuickAddButton icon={TestTube} label="Log test" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "testing")} size="compact" />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom
             gets Thermometer ("Bandage" isn't an icon this lucide-react
             version exports — build-verified before picking a
@@ -1475,8 +1483,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             clinic visit, routine retest, vaccination". Reads as the
             usual sequence of events (get tested, notice something,
             get seen, schedule the follow-up, get protected). */}
-        <QuickAddButton icon={Thermometer} label="Log symptom" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "symptomLog")} />
-        <QuickAddButton icon={Stethoscope} label="New clinic visit" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
+        <QuickAddButton icon={Thermometer} label="Log symptom" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "symptomLog")} size="compact" />
+        <QuickAddButton icon={Stethoscope} label="New clinic visit" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "clinicVisits")} size="compact" />
         {/* ADDED 6 Oct 2026 (t082) - "Schedule routine retest", by the owner's
             choice of the two examples they gave (the vaccine one was declined as
             a label, since "first vaccine dose" is wrong for a booster).
@@ -1506,8 +1514,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             testingFor: [...ROUTINE_RETEST_PANEL],
             ...(retestSuggestionDay ? { date: `${retestSuggestionDay}T12:00:00.000Z` } : {}),
           })}
+          size="compact"
         />
-        <QuickAddButton icon={Syringe} label="Log vaccination" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
+        <QuickAddButton icon={Syringe} label="Log vaccination" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "vaccinations")} size="compact" />
         {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
             only when the feature is enabled — same gating as the
             SummaryRows above and the Healthcare sub-tab itself. */}
@@ -1521,14 +1530,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             SHOS_MenstrualHealth_Prototype.jsx's own quickAddTarget
             handling for how "menstrualContraception" is distinguished
             from plain "menstrualHealth". */}
-        {menstrualTrackingEnabled && <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />}
+        {menstrualTrackingEnabled && <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} size="compact" />}
         {/* CHANGED 17 Sep 2026 — real report: "log contraception match
             period colour" (most visible in dark mode, where the two
             accents diverge more) — both are the same Menstrual &
             Contraception sub-tab, so they now share one accent
             instead of contraception borrowing Healthcare's own
             green. */}
-        {menstrualTrackingEnabled && <QuickAddButton icon={Shield} label="Log contraception" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />}
+        {menstrualTrackingEnabled && <QuickAddButton icon={Shield} label="Log contraception" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} size="compact" />}
       </QuickAddGroup>
 
       {/* ADDED 27 Sep 2026 - the sample-data disclosure. Placed FIRST, above
