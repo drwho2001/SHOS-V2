@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healthcare card — approved anatomy in the new card style</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #121214;
+    --surface: #1c1c1f;
+    --variant: #2a2a2e;
+    --border: #3a3a3f;
+    --primary: #f5f5f6;
+    --secondary: #a6a6ae;
+    --disabled: #77777e;
+    --amber-text: #d08a2e;
+    --amber-surface: #2a2520;
+    --red: #ff7a7e;
+    --healthcare: #09582E;   /* ACCENTS.healthcare */
+    --healthcare-dark: #0E8144;
+
+    /* Tint variants (light-mode, used as CSS opacity layers on dark) */
+    --tint-healthcare: #09582E15;
+    --tint-green: #5fd9a415;
+    --tint-amber: #F59E0B15;
+    --tint-purple: #7f30a615;
+    --teal: #008585;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 12px 48px;
+    background: var(--page);
+    color: var(--primary);
+    font-family: Inter, Roboto, "Segoe UI", sans-serif;
+  }
+  .page { width: min(100%, 760px); margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  h2 { margin: 22px 0 8px; font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .lead, .caption { color: var(--secondary); font-size: 12px; line-height: 1.5; }
+  .lead { margin-bottom: 22px; }
+  .caption { margin-bottom: 10px; font-size: 11px; }
+
+  .device {
+    width: 393px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 14px 16px 24px;
+    border: 1px solid #303034;
+    border-radius: 24px;
+    background: var(--page);
+    box-shadow: 0 12px 36px #0008;
+  }
+  .module-title { padding: 5px 0 15px; font-size: 20px; font-weight: 600; }
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    margin-bottom: 10px;
+    overflow-wrap: break-word;
+  }
+  .menu { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; color: var(--disabled); }
+
+  /* ── Card anatomy (§10.2.1): title row → byline → chip groups → footer ── */
+  .name-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--healthcare); }
+  .dot.red { background: var(--red); }
+  .name { color: var(--primary); font-size: 15px; line-height: 1.3; font-weight: 600; }
+  .demo { font-size: 9px; font-weight: 700; color: var(--disabled); background: var(--variant); border-radius: 4px; padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+
+  .byline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--secondary); font-size: 10px; line-height: 1.3; font-weight: 500; }
+  .byline svg { width: 11px; height: 11px; flex: 0 0 11px; }
+
+  .chip-group { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; margin-bottom: 4px; }
+  .chip-group:first-of-type { margin-top: 10px; }
+  .chip-group:last-of-type { margin-bottom: 2px; }
+  .chip-group-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--disabled); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .chip.healthcare { background: var(--tint-healthcare); border-color: var(--healthcare); color: #fff; }
+  .chip.healthcare-dim { background: var(--healthcare); color: #fff; border-color: var(--healthcare); }
+  .chip.red { background: #ff7a7e15; border-color: var(--red); color: #fff; }
+  .chip.green { background: #5fd9a440; border-color: #5fd9a466; color: #fff; }
+  .chip.grey { background: var(--variant); color: var(--secondary); border-color: var(--border); }
+  .chip.blue { background: #5b9bd515; border-color: #5b9bd5; color: #fff; }
+  .chip.amber { background: var(--tint-amber); border-color: var(--amber); color: #fff; }
+  .chip.amber-active { background: #F59E0B12; border-color: #F59E0B66; color: #fff; }
+
+  .status-row { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .status-icon { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; }
+  .status-num { font-size: 26px; font-weight: 600; }
+  .status-unit { font-size: 12px; color: var(--secondary); }
+  .status-label { font-size: 11px; color: var(--secondary); font-weight: 600; margin-top: 2px; }
+
+  .advisory { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 7px 9px; border-radius: 8px; font-size: 11px; line-height: 1.4; background: #09582E12; border-left: 3px solid var(--healthcare); color: var(--secondary); }
+
+  .footer { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--secondary); font-size: 11px; line-height: 1.35; margin-top: 6px; }
+  .footer svg { width: 11px; height: 11px; flex: 0 0 11px; }
+  .footer .hot { color: var(--primary); font-weight: 600; }
+  .footer.top { margin-top: 2px; }
+
+  .note { margin-top: 8px; border-left: 2px solid var(--healthcare); padding-left: 10px; font-size: 11px; line-height: 1.4; color: var(--secondary); font-style: italic; }
+
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  .actions .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn.outline { background: transparent; color: var(--healthcare); border: 1px solid var(--healthcare); }
+  .btn.filled { background: var(--healthcare); color: #fff; border: 1px solid var(--healthcare); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn .plus1 { font-size: 14px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+
+  .annotation {
+    margin: 14px 2px 0;
+    border-left: 2px solid var(--healthcare);
+    padding: 2px 0 2px 12px;
+    color: var(--secondary);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .annotation strong { color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare card — shipped anatomy</h1>
+  <p class="lead">Shipped reference, dark mode, 393dp phone viewport. Applies the healthcare card anatomy (DESIGN-MANUAL §10.2.1): title row → single byline (quantity + timing) → last/next dose → grouped chip cloud → summary footer. Healthcare accent tint: light-mode `#09582E` → `#09582E15`, no fill in dark mode — outline only.</p>
+
+  <h2>Rendered cards</h2>
+  <p class="caption">Card 1: completed STI test (green result, amber urgency). Card 2: overdue vaccination (red alert). Card 3: ongoing clinic visit.</p>
+
+  <section class="device" aria-label="Android app viewport mockup">
+
+    <!-- Card 1 — Recent STI test, completed -->
+    <article class="card" aria-label="Completed STI test card, healthy">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-label="More options"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+
+      <div class="name-line">
+        <span class="dot"></span>
+        <span class="name">STI test</span>
+      </div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10"/></svg>
+        <span>C&amp;S (symptomatic/treatment)</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>· Oct 28 · 4:00 PM</span>
+      </div>
+
+      <div class="footer top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last result <span class="hot">Oct 28 · Normal</span></span><span>·</span>
+        <span>Next due <span class="hot">~14 weeks</span></span>
+      </div>
+
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Test completed — normal result. Keep up the testing schedule.</span>
+        <span aria-hidden="true">×</span>
+      </div>
+
+      <div class="note">Results reviewed by clinician on Nov 1.</div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Status</div>
+        <div class="status-row">
+          <span class="status-icon" style="background: var(--green)"></span>
+          <span style="font-size:12px; color:var(--secondary)">Result: <strong style="color: var(--green); font-size:12px;">Normal</strong></span>
+          <span style="font-size:12px; color:var(--disabled)">·</span>
+          <span style="font-size:12px; color:var(--secondary)">By clinician Nov 1</span>
+          <span style="font-size:12px; color:var(--disabled)">·</span>
+          <span style="font-size:12px; color:var(--secondary)">14 weeks next</span>
+        </div>
+        <div class="chips" style="margin-top: 6px">
+          <span class="chip grey">In progress — awaiting results</span>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Testing cycle</div>
+        <div class="status-row">
+          <span style="font-size:12px; color:var(--secondary)">Scheduled</span>
+          <span style="font-size:12px; color:var(--disabled)">·</span>
+          <span style="font-size:12px; color:var(--secondary)">Oct 28</span>
+        </div>
+        <div class="chips" style="margin-top: 6px">
+          <span class="chip grey">Next: ~14 weeks</span>
+          <span class="chip healthcare">Do not skip</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log test</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log clinic visit</span>
+      </div>
+    </article>
+
+    <!-- Card 2 — Overdue vaccination -->
+    <article class="card" aria-label="Overdue vaccination card, alert">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-label="More options"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+
+      <div class="name-line">
+        <span class="dot red"></span>
+        <span class="name">Hep B vaccine</span>
+      </div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10"/></svg>
+        <span>2 doses total</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>· Sep 2025 · Sep 2025</span>
+      </div>
+
+      <div class="footer top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last dose <span class="hot">Sep 2025</span></span><span>·</span>
+        <span>Next dose <span class="hot">Overdue 23mo</span></span>
+      </div>
+
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Outside the recommended window — latest UK guidance extends to age 15 months for childhood vaccines, so catch up promptly to stay protected.</span>
+        <span aria-hidden="true">×</span>
+      </div>
+
+      <div class="note">Childhood series incomplete.</div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Status</div>
+        <div class="status-row">
+          <span class="status-icon" style="background: var(--red)"></span>
+          <span style="font-size:12px; color:var(--secondary)">Overdue <strong style="color: var(--red); font-size:12px;">23 months</strong></span>
+          <span style="font-size:12px; color:var(--disabled)">·</span>
+          <span style="font-size:12px; color:var(--secondary)">Catch-up needed</span>
+        </div>
+        <div class="chips" style="margin-top: 6px">
+          <span class="chip red">Overdue since Jun 2025</span>
+          <span class="chip blue">Missing second dose</span>
+          <span class="chip grey">—</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log vaccination</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log clinic visit</span>
+      </div>
+    </article>
+
+    <!-- Card 3 — Ongoing clinic visit -->
+    <article class="card" aria-label="Ongoing clinic visit card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-label="More options"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+
+      <div class="name-line">
+        <span class="dot"></span>
+        <span class="name">Clinic visit</span>
+      </div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M12 7v10"/></svg>
+        <span>Treatment follow-up</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>· Now · 4:00 PM</span>
+      </div>
+
+      <div class="footer top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Appointment <span class="hot">Now</span></span><span>·</span>
+        <span>Next in 2 weeks</span>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Status</div>
+        <div class="status-row">
+          <span class="status-icon" style="background: var(--healthcare-dark)"></span>
+          <span style="font-size:12px; color:var(--secondary)">In progress</span>
+          <span style="font-size:12px; color:var(--disabled)">·</span>
+          <span style="font-size:12px; color:var(--secondary)">Treatment on track</span>
+        </div>
+        <div class="chips" style="margin-top: 6px">
+          <span class="chip healthcare">Active treatment</span>
+          <span class="chip green">On schedule</span>
+          <span class="chip grey">—</span>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <div class="chip-group-title">Diagnosis / Treatment</div>
+        <div class="status-row">
+          <span style="font-size:12px; color:var(--secondary)">STI symptom management</span>
+          <span style="font-size:12px; color:var(--disabled)">·</span>
+          <span style="font-size:12px; color:var(--secondary)">Sero group: C&amp;S</span>
+        </div>
+        <div class="chips" style="margin-top: 6px">
+          <span class="chip healthcare">Treatment prescribed</span>
+          <span class="chip amber-active">Monitoring order</span>
+          <span class="chip grey">—</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log symptom</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log clinic visit</span>
+      </div>
+    </article>
+  </section>
+
+  <div class="annotation">
+    <strong>Shipped anatomy:</strong> the same card grammar as encounters/contacts (§10.2.1), adapted for Healthcare. Title row: status dot + 15/600 name. The byline is <em>one</em> line carrying quantity and timing together — diagnosis, result, or appointment date plus time. Last/next visit moves <em>up</em> into the same byline as a second chunk (Last result · Next due). Status chips use the healthcare accent (`#09582E`); result chips are green when normal, red when overdue; warning-needed chips use the amber-active tint. Buttons stay two-button, healthcare-accented: filled for primary action (Log test / vaccination / symptom), outline for secondary. The advisory block and note follow the medication card pattern: warning styling, accent border-left. Light-mode tint `#09582E15`, no tint in dark mode — outline only.
+  </div>
+
+  <h2>Layout intent</h2>
+  <p class="caption">The card answers in order: what is it and when do I get it (one byline) → where am I up to (last/next dose/visit) → anything about this entry (timing advice, notes) → how I'm doing (status row + diagnostic chips) → what can I tap (buttons). Advisory blocks and notes sit between the byline and the numbers.</p>
+
+  <h2>Notes</h2>
+  <p class="caption">Cards cover three realistic healthcare states: completed &amp; clean (green, on track), overdue (red alert, catch-up needed), and active/ongoing (healthcare-accented, treatment active). Diagnostic/therapeutic info groups under a DIAGNOSIS / TREATMENT chip group rather than pairing status with generic chips. Urgency state ("overdue since…") sits in the status row alongside the colour marker, not as one more chip among rate/supplier/requested chips. Each sub-screen should render one such card per record.</p>
+</main>
+</body>
+</html>
