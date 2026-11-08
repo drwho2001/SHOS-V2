@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encounters form + positive-result red state — four fixes</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1c1c1f; --variant:#2a2a2e; --border:#3a3a3f;
+    --primary:#f5f5f6; --secondary:#a6a6ae; --disabled:#77777e;
+    --enc:#D370C7; --enc-tint:#D370C715;
+    --hc:#0E8144; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --amber:#F59E0B; --teal:#008585;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 12px 64px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,800px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:19px;font-weight:600;line-height:1.25}
+  h2{margin:34px 0 4px;font-size:15px;font-weight:600;padding-top:14px;border-top:1px solid var(--border)}
+  h3{margin:18px 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled)}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.55}
+  .lead{margin-bottom:8px}
+  .caption{margin-bottom:12px;font-size:11px}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--enc-tint);border:1px solid var(--enc);color:var(--enc);font-size:11px;font-weight:800;margin-right:8px;vertical-align:2px}
+
+  .device{width:393px;max-width:100%;margin:0 auto;padding:0 0 14px;border:1px solid #303034;border-radius:22px;background:var(--page);box-shadow:0 12px 36px #0008;overflow:hidden}
+  .device-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled);padding:12px 14px 8px}
+  .pair{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-top:4px}
+
+  /* ── 1. sticky demonstration ── */
+  .status{height:24px;background:var(--page);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:9px;font-weight:600;color:var(--secondary)}
+  .banner{height:58px;background:var(--enc);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-radius:0 0 16px 16px}
+  .banner-title{font-size:18px;font-weight:700;color:#fff}
+  .banner-actions{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#fff}
+  .banner-save{background:#fff;color:#7F30A6;border-radius:999px;padding:5px 13px;font-size:12px;font-weight:800}
+  .gapband{height:24px;background:var(--page);position:relative}
+  .gapband::after{content:"24px gap — tabs pin one safe-area too low";position:absolute;inset:2px 12px;border:1px dashed var(--red);border-radius:4px;color:var(--red);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+  .tabrow{display:flex;gap:6px;padding:10px 16px 8px;background:var(--page);border-bottom:1px solid var(--border);overflow:hidden}
+  .tab{flex:0 0 auto;padding:7px 11px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--secondary);white-space:nowrap}
+  .tab.on{border-color:var(--enc);background:var(--enc-tint);color:var(--enc);font-weight:700}
+  .sheet-body{padding:12px 16px 0;display:flex;flex-direction:column;gap:9px}
+  .fake-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:7px}
+  .fake-label{font-size:9px;color:var(--disabled);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .fake-input{height:26px;border-radius:7px;background:var(--variant);border:1px solid var(--border)}
+  .fake-input.half{width:62%}
+
+  /* ── 2/3/4 shared bits ── */
+  .stack{padding:14px 16px 0;display:flex;flex-direction:column;gap:10px}
+  .card{position:relative;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px}
+  .field-label{font-size:11px;font-weight:700;color:var(--secondary);margin-bottom:7px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{padding:4px 10px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--secondary);background:var(--surface);white-space:nowrap}
+  .chip.on{border-color:var(--enc);background:var(--enc-tint);color:var(--enc);font-weight:700}
+  .chip.on .x{color:var(--enc);margin-left:5px;font-weight:800}
+  .chip.derived{border:1px dashed var(--amber);color:var(--amber);background:#F59E0B12;font-weight:700}
+  .chip.red{border-color:var(--red);background:#ff7a7e15;color:var(--red)}
+  .chip.green{border-color:#5fd9a466;background:#5fd9a440;color:#fff}
+  .chip.hc{border-color:var(--hc);background:var(--hc-tint);color:#fff}
+  .chip .count{color:var(--disabled);font-weight:700;margin-left:5px;font-size:10px}
+  .helper{font-size:10px;line-height:1.45;color:var(--disabled);margin-top:7px}
+  .readrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}
+  .readrow:last-child{border-bottom:none}
+  .readrow .k{color:var(--secondary)}
+  .readrow .v{color:var(--primary);font-weight:600;text-align:right}
+  .readrow .v .sub{display:block;color:var(--amber);font-weight:700;font-size:10px;margin-top:2px}
+
+  /* rows */
+  .row{display:flex;gap:10px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+  .row.red{border-color:var(--red)}
+  .row .body{flex:1;min-width:0}
+  .row .title-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .row .title{font-size:15px;font-weight:600}
+  .row .line{font-size:12px;color:var(--secondary);margin-left:16px;margin-top:2px;display:flex;align-items:center;gap:5px}
+  .row .line svg{width:11px;height:11px}
+  .row .result{font-size:12px;font-weight:700;margin-left:16px;margin-top:3px}
+  .row .result.pos{color:var(--red)}
+  .row .result.neg{color:var(--green)}
+  .row .pill{font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px;border:1px solid var(--border);color:var(--secondary);background:var(--variant)}
+  .row .pill.red{border-color:var(--red);background:#ff7a7e15;color:var(--red)}
+  .muted{opacity:.55}
+
+  /* tables */
+  table{border-collapse:collapse;width:100%;font-size:12px;margin:10px 0 4px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--disabled);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+  td code,code{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--enc);background:var(--enc-tint);padding:1px 4px;border-radius:4px}
+  .ok{color:var(--green);font-weight:700}
+  .bad{color:var(--red);font-weight:700}
+  .warn{color:var(--amber);font-weight:700}
+
+  .rulenote{margin:12px 0 0;padding:10px 12px;border-left:3px solid var(--enc);background:var(--enc-tint);border-radius:0 8px 8px 0;font-size:11.5px;line-height:1.55;color:var(--secondary)}
+  .rulenote strong{color:var(--primary);font-weight:700}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Encounters form + positive-result red state — four fixes</h1>
+  <p class="lead">Dark mode, 393dp. Each section shows what ships today and what the fix looks like. Nothing here is built into the app yet — this is the review pass.</p>
+
+  <!-- ───────────────────────────── 1 ───────────────────────────── -->
+  <h2><span class="num">1</span>Add/Edit Encounter — tabs pin too low</h2>
+  <p class="caption">The tab strip is sticky at <code>STICKY_SUBHEADING_TOP</code> = <code>calc(env(safe-area-inset-top) + 58px)</code>. That token assumes the screen banner <em>includes</em> the safe-area inset (it does on My Profile). The encounter sheet instead spends the inset on the sheet's own <code>paddingTop</code>, and its pink banner is a 58px bar stuck at <code>top: 0</code>. So the tabs pin one inset lower than the banner's real bottom — on a 24dp Android status bar that is a 24px band of page background above the tabs.</p>
+
+  <div class="pair">
+    <div class="device">
+      <div class="device-label">Before — scrolled, 24px gap</div>
+      <div class="status"><span>9:41</span><span>▮▮▮ 84%</span></div>
+      <div class="banner">
+        <span class="banner-title">Add Encounter</span>
+        <span class="banner-actions"><span class="banner-save">Save</span>✕</span>
+      </div>
+      <div class="gapband"></div>
+      <div class="tabrow">
+        <span class="tab on">Overview</span><span class="tab">Activity</span><span class="tab">Kink &amp; chems</span><span class="tab">Health</span>
+      </div>
+      <div class="sheet-body">
+        <div class="fake-card"><span class="fake-label">Title</span><div class="fake-input"></div></div>
+        <div class="fake-card"><span class="fake-label">Date &amp; time</span><div class="fake-input half"></div></div>
+      </div>
+    </div>
+
+    <div class="device">
+      <div class="device-label">After — flush, sticky stack is one block</div>
+      <div class="status"><span>9:41</span><span>▮▮▮ 84%</span></div>
+      <div class="banner">
+        <span class="banner-title">Add Encounter</span>
+        <span class="banner-actions"><span class="banner-save">Save</span>✕</span>
+      </div>
+      <div class="tabrow">
+        <span class="tab on">Overview</span><span class="tab">Activity</span><span class="tab">Kink &amp; chems</span><span class="tab">Health</span>
+      </div>
+      <div class="sheet-body">
+        <div class="fake-card"><span class="fake-label">Title</span><div class="fake-input"></div></div>
+        <div class="fake-card"><span class="fake-label">Date &amp; time</span><div class="fake-input half"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Measure</th><th>Value</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>Pink banner height</td><td>58px (16 + 26 + 16)</td><td>Real bottom edge when pinned at 0</td></tr>
+      <tr><td>Sheet's own top padding</td><td><code>env(safe-area-inset-top)</code> — 24dp typical</td><td>Already spent, not covered by the banner</td></tr>
+      <tr><td>Current tab pin</td><td><code>safe-area + 58</code> = 82px</td><td class="bad">24px gap</td></tr>
+      <tr><td>Correct tab pin</td><td>Banner height, measured (58px)</td><td class="ok">Flush</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rulenote">
+    <strong>Fix.</strong> Measure the sheet banner with a ref and pass that px value to <code>FormTabs</code> as <code>stickyTop</code> — <code>var(--shos-sheet-banner-h, 58px)</code>. Do not reuse <code>STICKY_SUBHEADING_TOP</code> inside an overlay whose banner sits at <code>top: 0</code>; the token is correct only for page-level banners that carry their own safe-area padding. Same treatment for any other fixed-overlay sheet using <code>FormTabs</code>.
+  </div>
+
+  <!-- ───────────────────────────── 2 ───────────────────────────── -->
+  <h2><span class="num">2</span>Protection — default to “No barrier method”</h2>
+  <p class="caption">The registry can hold Condom, Dental dam, PrEP, PEP and None, but the form happily saves a record with nothing barrier-shaped selected and says nothing about it. The fix is a <em>derived</em> state, not a stored one.</p>
+
+  <div class="pair">
+    <div class="device">
+      <div class="device-label">Before — PrEP only, barrier silently absent</div>
+      <div class="stack">
+        <div class="card">
+          <div class="field-label">Protection used</div>
+          <div class="chips"><span class="chip on">PrEP<span class="x">×</span></span></div>
+          <div class="helper">Tap to add condom, dental dam, PEP, None…</div>
+        </div>
+        <div class="card">
+          <div class="readrow"><span class="k">Protection used</span><span class="v">PrEP</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="device">
+      <div class="device-label">After — “No barrier method” derived and visible</div>
+      <div class="stack">
+        <div class="card">
+          <div class="field-label">Protection used</div>
+          <div class="chips">
+            <span class="chip on">PrEP<span class="x">×</span></span>
+            <span class="chip derived">No barrier method</span>
+          </div>
+          <div class="helper">Shown automatically because no condom or dental dam is selected. Adding one removes it.</div>
+        </div>
+        <div class="card">
+          <div class="readrow"><span class="k">Protection used</span><span class="v">PrEP<span class="sub">No barrier method</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>All four states</h3>
+  <div class="device" style="margin-top:0">
+    <div class="stack">
+      <div class="card">
+        <div class="field-label">Nothing selected</div>
+        <div class="chips"><span class="chip derived">No barrier method</span></div>
+      </div>
+      <div class="card">
+        <div class="field-label">Condom selected</div>
+        <div class="chips"><span class="chip on">Condom<span class="x">×</span></span></div>
+        <div class="helper">No derived chip — the barrier is recorded.</div>
+      </div>
+      <div class="card">
+        <div class="field-label">Dental dam selected</div>
+        <div class="chips"><span class="chip on">Dental dam<span class="x">×</span></span></div>
+        <div class="helper">Counts as a barrier. Internal condom / femidom also count.</div>
+      </div>
+      <div class="card">
+        <div class="field-label">Condom + PrEP</div>
+        <div class="chips"><span class="chip on">Condom<span class="x">×</span></span><span class="chip on">PrEP<span class="x">×</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Registry entry</th><th>Counts as barrier?</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Condom</td><td class="ok">Yes</td><td>External barrier</td></tr>
+      <tr><td>Dental dam</td><td class="ok">Yes</td><td>Barrier for oral</td></tr>
+      <tr><td>Internal condom / Femidom</td><td class="ok">Yes</td><td>Same class, alternate wording</td></tr>
+      <tr><td>PrEP</td><td class="bad">No</td><td>Medication, not a barrier — the whole point of showing both</td></tr>
+      <tr><td>PEP</td><td class="bad">No</td><td>Post-exposure medication</td></tr>
+      <tr><td>None</td><td class="bad">No</td><td>Explicit “no protection”, still no barrier</td></tr>
+      <tr><td>Anything else in the registry</td><td class="warn">Unknown</td><td>Not assumed to be a barrier; matches by name only</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rulenote">
+    <strong>Never stored.</strong> The chip is computed at render (<code>protectionUsed</code> contains no barrier entry). Writing a synthetic “No barrier method” record would be a lie the moment the user adds a condom, and would break the registry's id references. It appears in three places: the picker, the read row, and the encounter card's protection chip group. Name matching is case-insensitive and trimmed, because the registry is user-editable.
+  </div>
+
+  <!-- ───────────────────────────── 3 ───────────────────────────── -->
+  <h2><span class="num">3</span>Kinks / chems — order by how often you use them</h2>
+  <p class="caption">The picker's sort looks “recent” up against <code>value</code> — the form's current selection — but selected entries are filtered out of the suggestion list <em>before</em> sorting. The comparison can therefore never be true and the list falls straight through to <code>a.name.localeCompare(b.name)</code>. That is why it reads A–Z no matter how many encounters you have logged.</p>
+
+  <div class="pair">
+    <div class="device">
+      <div class="device-label">Before — effectively A–Z</div>
+      <div class="stack">
+        <div class="card">
+          <div class="field-label">Kinks involved — suggestions</div>
+          <div class="chips">
+            <span class="chip">Ass play</span><span class="chip">Biting</span><span class="chip">Bondage</span><span class="chip">Boots</span><span class="chip">CBT</span><span class="chip">Chastity</span><span class="chip">Cockrings</span><span class="chip">Cuddling</span><span class="chip">Deep throat</span><span class="chip">Fisting</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="device">
+      <div class="device-label">After — most used first, counts shown</div>
+      <div class="stack">
+        <div class="card">
+          <div class="field-label">Kinks involved — suggestions</div>
+          <div class="chips">
+            <span class="chip">Fisting<span class="count">24</span></span>
+            <span class="chip">Sucking<span class="count">21</span></span>
+            <span class="chip">Rimming<span class="count">18</span></span>
+            <span class="chip">Deep throat<span class="count">15</span></span>
+            <span class="chip">Ass play<span class="count">12</span></span>
+            <span class="chip">Watersports<span class="count">9</span></span>
+            <span class="chip">Foot play<span class="count">7</span></span>
+            <span class="chip">Spanking<span class="count">6</span></span>
+            <span class="chip">Bondage<span class="count">4</span></span>
+            <span class="chip">CBT<span class="count">3</span></span>
+          </div>
+          <div class="helper">Counts are encounters using it. Type to narrow — filtered results keep the same order. Tie-break is A–Z.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Chems, same rule</h3>
+  <div class="device" style="margin-top:0">
+    <div class="stack">
+      <div class="card">
+        <div class="field-label">Chems/alcohol used — suggestions</div>
+        <div class="chips">
+          <span class="chip">Poppers<span class="count">22</span></span>
+          <span class="chip">Weed<span class="count">14</span></span>
+          <span class="chip">Alcohol<span class="count">11</span></span>
+          <span class="chip">Tina<span class="count">6</span></span>
+          <span class="chip">GHB<span class="count">4</span></span>
+          <span class="chip">Ketamine<span class="count">2</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Counted from</th><th>Field</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td>Encounters</td><td><code>kinksInvolved[].kinkId</code></td><td>All non-archived encounters, matching the list's own filter</td></tr>
+      <tr><td>Contacts</td><td>stated kinks</td><td>Included for kinks only — a stated kink is real interest even before it is logged</td></tr>
+      <tr><td>Encounters</td><td><code>chemsAlcoholUsed[]</code></td><td>Chems have no second source</td></tr>
+      <tr><td>Never counted</td><td>the form you are editing</td><td>Counting the open draft would let one long session outrank real history</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rulenote">
+    <strong>Implementation.</strong> Build the frequency map once per module mount from the records already loaded for the encounter list, memoize it on <code>encounters</code>, and use it as the suggestion comparator. The map has to be passed into <code>RegistryTagPicker</code> — the component only knows its registry today, so it cannot see usage. Re-rank after a save so the list reflects the encounter just logged.
+  </div>
+
+  <!-- ───────────────────────────── 4 ───────────────────────────── -->
+  <h2><span class="num">4</span>Positive test = the red state, clinic or home</h2>
+  <p class="caption">Testing already colours a row red whenever a recorded result is positive, and the setting never enters that test — a home sample and a clinic sample are the same red. Clinic visits are the gap: their detail screen shows a linked positive result in red text, but the list row has no red state at all, so a visit with a positive result looks identical to a contraceptive review.</p>
+
+  <h3>Testing — already correct, unchanged</h3>
+  <div class="device" style="margin-top:0">
+    <div class="stack">
+      <div class="row red">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">C&amp;S (symptomatic/treatment)</span></div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>Clinic</div>
+          <div class="result pos">Positive</div>
+        </div>
+      </div>
+      <div class="row red">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">HIV test</span></div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/></svg>Home</div>
+          <div class="result pos">Positive</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--green)"></span><span class="title">STI screen — full panel</span></div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>Clinic</div>
+          <div class="result neg">Negative</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Clinic visits — before</h3>
+  <div class="device" style="margin-top:0">
+    <div class="stack">
+      <div class="row">
+        <div class="body">
+          <div class="title-line"><span class="title">Sexual health clinic — symptomatic</span></div>
+          <div class="line">14 Oct 2026</div>
+          <div class="line">Dr A. Patel · St Thomas'</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="body">
+          <div class="title-line"><span class="title">Treatment review</span></div>
+          <div class="line">02 Oct 2026</div>
+          <div class="line">Dr A. Patel · St Thomas'</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="body">
+          <div class="title-line"><span class="title">Contraception review</span></div>
+          <div class="line">20 Sep 2026</div>
+          <div class="line">Nurse J. Reid · Clinic 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="helper" style="margin:6px 0 0">All three look the same, yet the first two have a positive result attached.</p>
+
+  <h3>Clinic visits — after</h3>
+  <div class="device" style="margin-top:0">
+    <div class="stack">
+      <div class="row red">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">Sexual health clinic — symptomatic</span><span class="pill red">Positive result</span></div>
+          <div class="line">14 Oct 2026</div>
+          <div class="line">Dr A. Patel · St Thomas'</div>
+          <div class="result pos">C&amp;S: Positive · tested at clinic</div>
+        </div>
+      </div>
+      <div class="row red">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">Treatment review</span><span class="pill red">Positive result</span></div>
+          <div class="line">02 Oct 2026</div>
+          <div class="line">Dr A. Patel · St Thomas'</div>
+          <div class="result pos">HIV: Positive · home test brought in</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--hc)"></span><span class="title">Contraception review</span></div>
+          <div class="line">20 Sep 2026</div>
+          <div class="line">Nurse J. Reid · Clinic 1</div>
+          <div class="result neg">Syphilis: Negative</div>
+        </div>
+      </div>
+      <div class="row muted" style="border-color:var(--red)">
+        <div class="body">
+          <div class="title-line"><span class="dot" style="background:var(--red);opacity:.6"></span><span class="title">Initial assessment</span><span class="pill">Older visit</span></div>
+          <div class="line">04 Feb 2025 · Dr M. Okafor</div>
+          <div class="result pos" style="color:var(--red)">Gonorrhoea: Positive · tested at clinic</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rulenote">
+    <strong>The rule, stated once.</strong> Red means <em>a positive result is recorded on this record</em> — never “the test was done at the clinic”. A clinic visit inherits the state from its linked tests (<code>linkedTestIds</code>); it does not store a result of its own, so there is exactly one source of truth and no way for the two screens to disagree. The older visit keeps its red border under the fade, because age does not make a positive result untrue; the fade and the “Older visit” pill still carry the age signal.
+  </div>
+
+  <h3>Where this lands</h3>
+  <table>
+    <thead><tr><th>Screen</th><th>Current</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td>Testing list row</td><td>Red border + red dot on positive, any setting</td><td class="ok">No change — already correct</td></tr>
+      <tr><td>Testing detail</td><td>Result text red when positive</td><td class="ok">No change</td></tr>
+      <tr><td>Clinic visit list row</td><td>No red state at all</td><td class="bad">Add red border, red dot, “Positive result” pill, result line</td></tr>
+      <tr><td>Clinic visit detail</td><td>Linked result already red text</td><td class="ok">Keep, match the pill wording</td></tr>
+      <tr><td>Encounter card</td><td>Protection chips only</td><td class="warn">Optional later: “Positive test” chip when a linked test is positive</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Implementation map</h3>
+  <table>
+    <thead><tr><th>Fix</th><th>File</th><th>Anchor</th></tr></thead>
+    <tbody>
+      <tr><td>Sticky tabs</td><td><code>SHOS_Encounters_Prototype.jsx</code></td><td>Sheet banner ~2223, <code>FormTabs</code> ~2253, shared <code>FormTabs.jsx</code></td></tr>
+      <tr><td>Barrier default</td><td><code>SHOS_Encounters_Prototype.jsx</code></td><td>Protection picker ~2367, read row ~1915</td></tr>
+      <tr><td>Frequency ranking</td><td><code>SHOS_Encounters_Prototype.jsx</code></td><td><code>RegistryTagPicker</code> sort ~444</td></tr>
+      <tr><td>Visit red state</td><td><code>SHOS_ClinicVisits_Prototype.jsx</code></td><td><code>VisitRow</code> ~1916; data via <code>ClinicVisitsRepository.getByLinkedTest</code></td></tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>
