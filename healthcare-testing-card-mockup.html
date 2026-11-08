@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healthcare · Testing — consistency audit &amp; proposed card</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1c1c1f; --variant:#2a2a2e; --border:#3a3a3f;
+    --primary:#f5f5f6; --secondary:#a6a6ae; --disabled:#77777e;
+    --hc:#0E8144; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --amber:#F59E0B; --teal:#008585;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:10px;font-size:11px}
+  .device{width:393px;max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── CURRENT (shipped) row ── */
+  .now{display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now .body{flex:1;min-width:0}
+  .now .title-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .now .title{font-size:15px;font-weight:600}
+  .now .line{font-size:12px;color:var(--secondary);margin-left:16px;margin-top:2px}
+  .now .result{font-size:12px;color:var(--green);font-weight:700;margin-left:16px;margin-top:2px}
+
+  /* ── PROPOSED (§10.2.1 card) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+  .name{font-size:15px;line-height:1.3;font-weight:600}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .footer{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:var(--secondary);font-size:11px;line-height:1.35;margin-top:6px}
+  .footer svg{width:11px;height:11px;flex:0 0 11px}
+  .footer .hot{color:var(--primary);font-weight:600}
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap}
+  .chip.green{background:#5fd9a440;border-color:#5fd9a466;color:#fff}
+  .chip.red{background:#ff7a7e15;border-color:var(--red);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:#fff}
+  .chip.amber{background:#F59E0B12;border-color:#F59E0B66;color:#fff}
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:#0E814412;border-left:3px solid var(--hc);color:var(--secondary)}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.filled{background:var(--hc);color:#fff;border:1px solid var(--hc)}
+  .btn.outline{background:transparent;color:var(--hc);border:1px solid var(--hc)}
+  .btn svg{width:14px;height:14px}
+  .btn .plus1{font-size:14px;font-weight:800;line-height:1;letter-spacing:-.02em}
+
+  table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--disabled);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+  .ok{color:var(--green);font-weight:700}
+  .miss{color:var(--red);font-weight:700}
+  .part{color:var(--amber);font-weight:700}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Testing — consistency audit &amp; proposed card</h1>
+  <p class="lead">Testing is one of four Healthcare list sub-modules. Its shipped row is a flat list item, not the §10.2.1 card (title row → byline → grouped chips → footer). Below: what ships now, the proposed card, and the audit table.</p>
+
+  <h2>Audit — Testing vs §10.2.1 card anatomy</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Shipped</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Status dot (8px)</td><td class="ok">Yes — result colour</td><td class="ok">Yes</td></tr>
+      <tr><td>Title 15/600</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+      <tr><td>Single byline (icons + facts)</td><td class="miss">No — stacked lines</td><td class="ok">One line</td></tr>
+      <tr><td>Grouped chip cloud</td><td class="miss">None</td><td class="ok">Required</td></tr>
+      <tr><td>Summary footer / next due</td><td class="miss">None</td><td class="ok">Required</td></tr>
+      <tr><td>Primary + secondary actions</td><td class="miss">None</td><td class="ok">Two buttons</td></tr>
+      <tr><td>Older-record treatment</td><td class="ok">Fade + "Older test" pill</td><td class="ok">Keep</td></tr>
+      <tr><td>Red border = positive result</td><td class="part">Only this module</td><td class="ok">Standardise signal</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Current (shipped)</h2>
+  <section class="device">
+    <div class="group-label">Testing</div>
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--green)"></span><span class="title">STI screen — full panel</span></div>
+        <div class="line">28 Oct 2026</div>
+        <div class="line">Clinic</div>
+        <div class="result">Negative</div>
+      </div>
+    </div>
+    <div class="now" style="border-color:var(--red)">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">C&amp;S (symptomatic/treatment)</span></div>
+        <div class="line">14 Oct 2026</div>
+        <div class="line">Home</div>
+        <div class="result" style="color:var(--red)">Positive</div>
+      </div>
+    </div>
+    <div class="now" style="background:var(--variant)">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--disabled);opacity:.5"></span><span class="title" style="color:var(--secondary)">HIV test</span>
+          <span class="chip grey">Older test</span></div>
+        <div class="line" style="color:var(--disabled)">02 Jan 2025</div>
+        <div class="result" style="color:var(--disabled)">Negative</div>
+      </div>
+    </div>
+  </section>
+
+  <h2>Proposed (aligns with §10.2.1)</h2>
+  <section class="device">
+    <div class="group-label">Testing</div>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--green)"></span><span class="name">STI screen — full panel</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>28 Oct 2026 · 4:00 PM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>Clinic</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Result <span class="hot">Negative</span></span><span>·</span><span>Next due <span class="hot">~14 weeks</span></span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Panel</div>
+        <div class="chips">
+          <span class="chip hc">Full STI screen</span>
+          <span class="chip grey">HIV</span>
+          <span class="chip grey">Syphilis</span>
+          <span class="chip grey">Chlamydia</span>
+          <span class="chip grey">Gonorrhoea</span>
+        </div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Result</div>
+        <div class="chips">
+          <span class="chip green">All negative</span>
+          <span class="chip grey">Results 30 Oct</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log test</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Schedule retest</span>
+      </div>
+    </article>
+
+    <article class="card" style="border-color:var(--red)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--red)"></span><span class="name">C&amp;S (symptomatic/treatment)</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>14 Oct 2026</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Result <span class="hot" style="color:var(--red)">Positive</span></span><span>·</span><span>Treatment started</span>
+      </div>
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">A positive result needs partner notification and a repeat test after treatment.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Result</div>
+        <div class="chips">
+          <span class="chip red">Positive</span>
+          <span class="chip amber">Treatment required</span>
+        </div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Treatment</div>
+        <div class="chips">
+          <span class="chip hc">Doxycycline 100mg</span>
+          <span class="chip grey">7 days</span>
+          <span class="chip grey">Started 14 Oct</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log test</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 11-2.6-6.3M21 4v5h-5"/></svg>Log clinic visit</span>
+      </div>
+    </article>
+
+    <article class="card" style="background:var(--variant)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--disabled);opacity:.5"></span><span class="name" style="color:var(--secondary)">HIV test</span><span class="chip grey">Older test</span></div>
+      <div class="byline" style="color:var(--disabled)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>02 Jan 2025</span>
+      </div>
+      <div class="footer" style="color:var(--disabled)"><span>Result <span class="hot" style="color:var(--disabled)">Negative</span></span></div>
+      <div class="chip-group">
+        <div class="chip-group-title">Result</div>
+        <div class="chips"><span class="chip grey">Negative</span><span class="chip grey">Home test</span></div>
+      </div>
+    </article>
+  </section>
+
+  <h2>Key changes</h2>
+  <p class="caption">1) One byline replaces the three stacked lines (date, setting, result). 2) Panel and Result become labelled chip groups; the blur of repeated test names becomes scannable chips. 3) A footer states result + next due in the same read position every card uses. 4) Two actions on the card (Log test, Schedule retest / Log clinic visit) instead of none. 5) Older-record fade and the "Older test" pill are kept — the only sub-module that already did this correctly. 6) Red border keeps meaning "positive result" — but that meaning is now declared once in the design manual, not re-invented per sub-module.</p>
+</main>
+</body>
+</html>

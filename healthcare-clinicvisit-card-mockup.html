@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healthcare · Clinic visits — consistency audit &amp; proposed card</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1c1c1f; --variant:#2a2a2e; --border:#3a3a3f;
+    --primary:#f5f5f6; --secondary:#a6a6ae; --disabled:#77777e;
+    --hc:#0E8144; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --amber:#F59E0B; --teal:#008585;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:10px;font-size:11px}
+  .device{width:393px;max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── CURRENT (shipped) row — VisitRow, SHOS_ClinicVisits_Prototype.jsx:1916 ── */
+  .now{display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now .body{flex:1;min-width:0}
+  .now .title-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .now .title{font-size:15px;font-weight:600}
+  .now .line{font-size:12px;color:var(--secondary);margin-left:16px;margin-top:2px}
+  .now .older{font-size:11px;font-weight:700;color:var(--secondary);margin-left:16px;margin-top:2px}
+  .cal{width:13px;height:13px;color:var(--hc)}
+
+  /* ── PROPOSED (§10.2.1 card) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .name{font-size:15px;line-height:1.3;font-weight:600}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .footer{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:var(--secondary);font-size:11px;line-height:1.35;margin-top:6px}
+  .footer svg{width:11px;height:11px;flex:0 0 11px}
+  .footer .hot{color:var(--primary);font-weight:600}
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap}
+  .chip.green{background:#5fd9a440;border-color:#5fd9a466;color:#fff}
+  .chip.red{background:#ff7a7e15;border-color:var(--red);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:#fff}
+  .chip.amber{background:#F59E0B12;border-color:#F59E0B66;color:#fff}
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:#0E814412;border-left:3px solid var(--hc);color:var(--secondary)}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.filled{background:var(--hc);color:#fff;border:1px solid var(--hc)}
+  .btn.outline{background:transparent;color:var(--hc);border:1px solid var(--hc)}
+  .btn svg{width:14px;height:14px}
+  .btn .plus1{font-size:14px;font-weight:800;line-height:1;letter-spacing:-.02em}
+
+  table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--disabled);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+  .ok{color:var(--green);font-weight:700}
+  .miss{color:var(--red);font-weight:700}
+  .part{color:var(--amber);font-weight:700}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Clinic visits — consistency audit &amp; proposed card</h1>
+  <p class="lead">Clinic visits is the only Healthcare list sub-module with <strong>no status dot at all</strong> — its title row is bare text. Everything else it renders is a stack of grey lines. Below: what ships now, the proposed §10.2.1 card, and the audit table.</p>
+
+  <h2>Audit — Clinic visits vs §10.2.1 card anatomy</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Shipped</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Status dot (8px)</td><td class="miss">Missing — only sub-module without one</td><td class="ok">Required</td></tr>
+      <tr><td>Title 15/600</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+      <tr><td>Single byline (icons + facts)</td><td class="miss">No — date, clinician, location stacked</td><td class="ok">One line</td></tr>
+      <tr><td>Grouped chip cloud</td><td class="miss">None</td><td class="ok">Required</td></tr>
+      <tr><td>Summary footer</td><td class="part">Next-due only, on Vaccinations</td><td class="ok">Required</td></tr>
+      <tr><td>Card-level actions</td><td class="miss">None</td><td class="ok">Two buttons</td></tr>
+      <tr><td>Older-record treatment</td><td class="part">Fade + 11/700 "Older visit" <em>line</em></td><td class="ok">Pill, not a line</td></tr>
+      <tr><td>Future appointment</td><td class="part">Excluded from fade, calendar icon</td><td class="ok">Keep, show as accent</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Current (shipped)</h2>
+  <section class="device">
+    <div class="group-label">Clinic visits</div>
+
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="title">Sexual health clinic — follow-up</span></div>
+        <div class="line">12 Nov 2026</div>
+        <div class="line">Dr A. Patel</div>
+        <div class="line">Clinic 3, St Thomas'</div>
+      </div>
+    </div>
+
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="title">Treatment review</span>
+          <svg class="cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+        </div>
+        <div class="line">03 Dec 2026</div>
+        <div class="line">Dr A. Patel</div>
+        <div class="line">Clinic 3, St Thomas'</div>
+      </div>
+    </div>
+
+    <div class="now" style="background:var(--variant)">
+      <div class="body">
+        <div class="title-line"><span class="title" style="color:var(--secondary)">Initial assessment</span></div>
+        <div class="line" style="color:var(--disabled)">04 Feb 2025</div>
+        <div class="older" style="color:var(--disabled)">Older visit</div>
+        <div class="line" style="color:var(--disabled)">Dr M. Okafor</div>
+        <div class="line" style="color:var(--disabled)">Clinic 1, Guy's</div>
+      </div>
+    </div>
+  </section>
+
+  <h2>Proposed (aligns with §10.2.1)</h2>
+  <p class="caption">Dot = action state, the same rule the other three sub-modules follow: healthcare accent = booked/upcoming, amber = follow-up due, muted = completed and nothing outstanding.</p>
+  <section class="device">
+    <div class="group-label">Clinic visits</div>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--amber)"></span><span class="name">Sexual health clinic — follow-up</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>12 Nov 2026 · 11:20</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Dr A. Patel</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>St Thomas' · Clinic 3</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 11-2.6-6.3M21 4v5h-5"/></svg>
+        <span>Follow-up <span class="hot">3 weeks</span></span><span>·</span>
+        <span>Tests done <span class="hot">2</span></span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Visit type</div>
+        <div class="chips">
+          <span class="chip hc">Follow-up</span>
+          <span class="chip grey">Sexual health</span>
+        </div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Outcome</div>
+        <div class="chips">
+          <span class="chip amber">Follow-up due</span>
+          <span class="chip green">Treatment on track</span>
+          <span class="chip grey">Notes added</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log visit</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Log test</span>
+      </div>
+    </article>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--hc)"></span><span class="name">Treatment review</span><span class="chip hc">Booked</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>03 Dec 2026 · 09:40</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Dr A. Patel</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>St Thomas' · Clinic 3</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+        <span>In calendar <span class="hot">Yes</span></span><span>·</span>
+        <span>Reminder <span class="hot">1 day before</span></span>
+      </div>
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Future appointment — never faded by the older-record rule; it is by definition the most relevant visit on file.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Visit type</div>
+        <div class="chips">
+          <span class="chip hc">Review</span>
+          <span class="chip grey">Treatment follow-up</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log visit</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>Reschedule</span>
+      </div>
+    </article>
+
+    <article class="card" style="background:var(--variant)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line">
+        <span class="dot" style="background:var(--disabled);opacity:.5"></span>
+        <span class="name" style="color:var(--secondary)">Initial assessment</span>
+        <span class="chip grey">Older visit</span>
+      </div>
+      <div class="byline" style="color:var(--disabled)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>04 Feb 2025</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Dr M. Okafor</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>Guy's · Clinic 1</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Outcome</div>
+        <div class="chips">
+          <span class="chip grey">Assessment only</span>
+          <span class="chip grey">Referred</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <h2>Key changes</h2>
+  <p class="caption">1) A status dot is added — the one sub-module that had none. 2) Date, clinician and location collapse into <em>one</em> byline with icons, replacing up to four stacked 12px lines. 3) "Older visit" becomes a pill in the title row, matching Testing's "Older test" and Symptom Log's "Older entry" — a line of bold text is not the same component. 4) A follow-up/next-appointment footer gives the card the same read position as the medication card. 5) Grouped chips carry visit type and outcome. 6) Two card-level actions; the future appointment also gets Reschedule. 7) The future-appointment exemption from fading is kept and made explicit in an advisory, because it is a real correctness rule, not a style choice.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healthcare · Symptom log — consistency audit &amp; proposed card</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1c1c1f; --variant:#2a2a2e; --border:#3a3a3f;
+    --primary:#f5f5f6; --secondary:#a6a6ae; --disabled:#77777e;
+    --hc:#0E8144; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --amber:#F59E0B; --teal:#008585;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:10px;font-size:11px}
+  .device{width:393px;max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── CURRENT (shipped) row — Row, SHOS_SymptomLog_Prototype.jsx:641 ── */
+  .now{display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now .body{flex:1;min-width:0}
+  .now .title-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .now .title{font-size:15px;font-weight:600}
+  .now .line{font-size:12px;color:var(--secondary);margin-left:16px;margin-top:2px}
+  .now .older{font-size:11px;font-weight:700;color:var(--secondary);margin-left:16px;margin-top:2px}
+
+  /* ── PROPOSED (§10.2.1 card) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+  .name{font-size:15px;line-height:1.3;font-weight:600}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .footer{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:var(--secondary);font-size:11px;line-height:1.35;margin-top:6px}
+  .footer svg{width:11px;height:11px;flex:0 0 11px}
+  .footer .hot{color:var(--primary);font-weight:600}
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap}
+  .chip.green{background:#5fd9a440;border-color:#5fd9a466;color:#fff}
+  .chip.red{background:#ff7a7e15;border-color:var(--red);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:#fff}
+  .chip.amber{background:#F59E0B12;border-color:#F59E0B66;color:#fff}
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:#0E814412;border-left:3px solid var(--hc);color:var(--secondary)}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.filled{background:var(--hc);color:#fff;border:1px solid var(--hc)}
+  .btn.outline{background:transparent;color:var(--hc);border:1px solid var(--hc)}
+  .btn svg{width:14px;height:14px}
+  .btn .plus1{font-size:14px;font-weight:800;line-height:1;letter-spacing:-.02em}
+
+  table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--disabled);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+  .ok{color:var(--green);font-weight:700}
+  .miss{color:var(--red);font-weight:700}
+  .part{color:var(--amber);font-weight:700}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Symptom log — consistency audit &amp; proposed card</h1>
+  <p class="lead">Symptom log is the closest of the four to the shared anatomy — it already has a status dot, a title, and <em>one</em> meta line rather than a stack. What it lacks is everything after that line: no chip cloud, no footer, no actions, and a different red-border rule. Below: shipped, proposed, and the audit.</p>
+
+  <h2>Audit — Symptom log vs §10.2.1 card anatomy</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Shipped</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Status dot (8px)</td><td class="ok">Yes — severity colour, green when resolved</td><td class="ok">Keep, same meaning</td></tr>
+      <tr><td>Title 15/600</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+      <tr><td>Single byline</td><td class="part">One line, but 12px plain text with no icons</td><td class="ok">10px icon byline</td></tr>
+      <tr><td>Grouped chip cloud</td><td class="miss">None — severity exists only as free text</td><td class="ok">Required</td></tr>
+      <tr><td>Summary footer (duration)</td><td class="miss">None</td><td class="ok">Required</td></tr>
+      <tr><td>Card-level actions</td><td class="miss">None</td><td class="ok">Two buttons</td></tr>
+      <tr><td>Older-record treatment</td><td class="part">Fade + 11/700 "Older entry" <em>line</em></td><td class="ok">Pill, not a line</td></tr>
+      <tr><td>Red border rule</td><td class="part">Active <em>and</em> Severe</td><td class="ok">Declare once, in manual</td></tr>
+      <tr><td>Resolved entries</td><td class="part">Green dot, no resolution date shown</td><td class="ok">Show resolved date</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Current (shipped)</h2>
+  <section class="device">
+    <div class="group-label">Symptom log</div>
+
+    <div class="now" style="border-color:var(--red)">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">Discharge</span></div>
+        <div class="line">Discharge, Burning · 05 Nov 2026 · Severe</div>
+      </div>
+    </div>
+
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--amber)"></span><span class="title">Sore throat</span></div>
+        <div class="line">Sore throat · 02 Nov 2026 · Moderate</div>
+      </div>
+    </div>
+
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--green)"></span><span class="title">Fatigue</span></div>
+        <div class="line">Fatigue, Headache · 27 Oct 2026 · Mild</div>
+      </div>
+    </div>
+
+    <div class="now" style="background:var(--variant)">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--green)"></span><span class="title" style="color:var(--secondary)">Rash</span></div>
+        <div class="line" style="color:var(--disabled)">Rash · 12 Feb 2025 · Mild</div>
+        <div class="older" style="color:var(--disabled)">Older entry</div>
+      </div>
+    </div>
+  </section>
+
+  <h2>Proposed (aligns with §10.2.1)</h2>
+  <p class="caption">Dot = severity while active, green once resolved — unchanged in meaning, so existing muscle memory still works. Severe + active keeps the red border.</p>
+  <section class="device">
+    <div class="group-label">Symptom log</div>
+
+    <article class="card" style="border-color:var(--red)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--red)"></span><span class="name">Discharge</span><span class="chip red">Severe</span><span class="chip amber">Ongoing</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>05 Nov 2026 · 08:15</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>Discharge, Burning</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Active <span class="hot">3 days</span></span><span>·</span>
+        <span>Worst <span class="hot">Severe</span></span>
+      </div>
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Severe and still active — this is why the card carries the red border. An active symptom is never faded by the older-record rule.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Symptoms</div>
+        <div class="chips">
+          <span class="chip hc">Discharge</span>
+          <span class="chip hc">Burning</span>
+        </div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Severity</div>
+        <div class="chips">
+          <span class="chip red">Severe</span>
+          <span class="chip grey">Worsening</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log symptom</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 11-2.6-6.3M21 4v5h-5"/></svg>Resolve</span>
+      </div>
+    </article>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--amber)"></span><span class="name">Sore throat</span><span class="chip amber">Moderate</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>02 Nov 2026</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>Sore throat</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>Resolved <span class="hot">07 Nov 2026</span></span><span>·</span>
+        <span>Lasted <span class="hot">5 days</span></span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Symptoms</div>
+        <div class="chips"><span class="chip hc">Sore throat</span><span class="chip grey">Suspected tonsillitis</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Care</div>
+        <div class="chips"><span class="chip green">Resolved without treatment</span><span class="chip grey">2 log entries</span></div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log symptom</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Reopen</span>
+      </div>
+    </article>
+
+    <article class="card" style="background:var(--variant)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line">
+        <span class="dot" style="background:var(--disabled);opacity:.5"></span>
+        <span class="name" style="color:var(--secondary)">Rash</span>
+        <span class="chip grey">Older entry</span>
+      </div>
+      <div class="byline" style="color:var(--disabled)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>12 Feb 2025</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>Rash</span>
+      </div>
+      <div class="footer" style="color:var(--disabled)"><span>Resolved <span class="hot" style="color:var(--disabled)">19 Feb 2025</span></span></div>
+      <div class="chip-group">
+        <div class="chip-group-title">Symptoms</div>
+        <div class="chips"><span class="chip grey">Rash</span><span class="chip grey">Mild</span></div>
+      </div>
+    </article>
+  </section>
+
+  <h2>Key changes</h2>
+  <p class="caption">1) The one-line meta stays as the model for the other three: it becomes the 10px icon byline. 2) Severity moves out of free text into a chip so it is scannable — red/amber/green chips reuse the dot's own colours. 3) Duration or resolution date is added as the footer; today a resolved entry shows no end date at all, so the card cannot answer "how long did that last?". 4) Symptom names become chips, which is what makes a multi-symptom entry readable. 5) Two actions per card. 6) "Older entry" becomes a pill. 7) The fade exemption for active symptoms is preserved and stated in an advisory so nobody "fixes" it later.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healthcare · Vaccinations — consistency audit &amp; proposed card</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1c1c1f; --variant:#2a2a2e; --border:#3a3a3f;
+    --primary:#f5f5f6; --secondary:#a6a6ae; --disabled:#77777e;
+    --hc:#0E8144; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --amber:#F59E0B; --teal:#008585;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:10px;font-size:11px}
+  .device{width:393px;max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── CURRENT (shipped) row — VaccinationRow, SHOS_Vaccinations_Prototype.jsx:1034 ── */
+  .now{display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now .body{flex:1;min-width:0}
+  .now .title-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .now .title{font-size:15px;font-weight:600}
+  .now .line{font-size:12px;color:var(--secondary);margin-left:16px;margin-top:2px}
+  .now .due{font-size:12px;color:var(--secondary);margin-left:16px;margin-top:2px}
+  .now .due.late{color:var(--red);font-weight:700}
+
+  /* ── PROPOSED (§10.2.1 card) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+  .name{font-size:15px;line-height:1.3;font-weight:600}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .footer{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:var(--secondary);font-size:11px;line-height:1.35;margin-top:6px}
+  .footer svg{width:11px;height:11px;flex:0 0 11px}
+  .footer .hot{color:var(--primary);font-weight:600}
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap}
+  .chip.green{background:#5fd9a440;border-color:#5fd9a466;color:#fff}
+  .chip.red{background:#ff7a7e15;border-color:var(--red);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:#fff}
+  .chip.amber{background:#F59E0B12;border-color:#F59E0B66;color:#fff}
+  .doses{display:flex;align-items:center;gap:4px;margin-top:8px}
+  .dose{width:18px;height:6px;border-radius:999px;background:var(--hc)}
+  .dose.empty{background:var(--variant);border:1px solid var(--border)}
+  .dose-label{font-size:10px;color:var(--secondary);margin-left:5px;font-weight:600}
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:#0E814412;border-left:3px solid var(--hc);color:var(--secondary)}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.filled{background:var(--hc);color:#fff;border:1px solid var(--hc)}
+  .btn.outline{background:transparent;color:var(--hc);border:1px solid var(--hc)}
+  .btn svg{width:14px;height:14px}
+  .btn .plus1{font-size:14px;font-weight:800;line-height:1;letter-spacing:-.02em}
+
+  table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--disabled);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+  .ok{color:var(--green);font-weight:700}
+  .miss{color:var(--red);font-weight:700}
+  .part{color:var(--amber);font-weight:700}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Vaccinations — consistency audit &amp; proposed card</h1>
+  <p class="lead">Vaccinations is the <strong>outlier</strong> of the four healthcare lists: it is the only one with no older-record treatment at all. A dose from 2019 renders with exactly the same weight as the six-month booster that is due now. It also carries no dose progress and no chip cloud. Below: shipped, proposed, and the audit.</p>
+
+  <h2>Audit — Vaccinations vs §10.2.1 card anatomy</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Shipped</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Status dot (8px)</td><td class="ok">Yes — red overdue, accent otherwise</td><td class="ok">Keep</td></tr>
+      <tr><td>Title 15/600</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+      <tr><td>Single byline</td><td class="miss">No — date and due date are two 12px lines</td><td class="ok">One line</td></tr>
+      <tr><td>Grouped chip cloud</td><td class="miss">None</td><td class="ok">Required</td></tr>
+      <tr><td>Dose progress</td><td class="miss">None in the list — only inside the detail sheet</td><td class="ok">Visible on card</td></tr>
+      <tr><td>Card-level actions</td><td class="miss">None</td><td class="ok">Two buttons</td></tr>
+      <tr><td>Older-record treatment</td><td class="miss">None — no fade, no pill</td><td class="ok">Fade + "Older dose" pill</td></tr>
+      <tr><td>Red border rule</td><td class="part">Overdue</td><td class="ok">Declare once, in manual</td></tr>
+      <tr><td>Tap target height</td><td class="part">Shorter than the other three lists</td><td class="ok">Match §10.2 cards</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Current (shipped)</h2>
+  <section class="device">
+    <div class="group-label">Vaccinations</div>
+
+    <div class="now" style="border-color:var(--red)">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">Hepatitis B</span></div>
+        <div class="line">Sep 2025</div>
+        <div class="due late">Overdue since Jun 2026</div>
+      </div>
+    </div>
+
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--hc)"></span><span class="title">Mpox</span></div>
+        <div class="line">14 Mar 2026</div>
+        <div class="due">Next due Mar 2028</div>
+      </div>
+    </div>
+
+    <div class="now">
+      <div class="body">
+        <div class="title-line"><span class="dot" style="background:var(--hc)"></span><span class="title">HPV</span></div>
+        <div class="line">11 Aug 2019</div>
+        <div class="due">Next due —</div>
+      </div>
+    </div>
+  </section>
+
+  <h2>Proposed (aligns with §10.2.1)</h2>
+  <p class="caption">Notice the third card: 2019 is finally faded and labelled, which is the whole point of this audit.</p>
+  <section class="device">
+    <div class="group-label">Vaccinations</div>
+
+    <article class="card" style="border-color:var(--red)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--red)"></span><span class="name">Hepatitis B</span><span class="chip red">Overdue</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>1 of 2 doses · Sep 2025</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>Clinic 3, St Thomas'</span>
+      </div>
+      <div class="doses">
+        <span class="dose"></span><span class="dose empty"></span>
+        <span class="dose-label">1 / 2 complete</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last dose <span class="hot">Sep 2025</span></span><span>·</span>
+        <span>Next due <span class="hot" style="color:var(--red)">Jun 2026 — 5 months late</span></span>
+      </div>
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Series incomplete and past the recommended window. Book a catch-up dose — the second dose completes the course.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Status</div>
+        <div class="chips">
+          <span class="chip red">Overdue 5 mo</span>
+          <span class="chip amber">Second dose missing</span>
+        </div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Series</div>
+        <div class="chips">
+          <span class="chip hc">2-dose course</span>
+          <span class="chip grey">Started Sep 2025</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log vaccination</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>Book dose</span>
+      </div>
+    </article>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot" style="background:var(--hc)"></span><span class="name">Mpox</span><span class="chip green">Up to date</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>2 of 2 doses · 14 Mar 2026</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>Clinic 3, St Thomas'</span>
+      </div>
+      <div class="doses">
+        <span class="dose"></span><span class="dose"></span>
+        <span class="dose-label">2 / 2 complete</span>
+      </div>
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>Course complete <span class="hot">14 Mar 2026</span></span><span>·</span>
+        <span>Booster <span class="hot">Mar 2028</span></span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Status</div>
+        <div class="chips">
+          <span class="chip green">Up to date</span>
+          <span class="chip grey">Booster in 16 months</span>
+        </div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Series</div>
+        <div class="chips">
+          <span class="chip hc">2-dose course</span>
+          <span class="chip grey">Completed</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled"><span class="plus1">+1</span> Log vaccination</span>
+        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add note</span>
+      </div>
+    </article>
+
+    <article class="card" style="background:var(--variant)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line">
+        <span class="dot" style="background:var(--disabled);opacity:.5"></span>
+        <span class="name" style="color:var(--secondary)">HPV</span>
+        <span class="chip grey">Older dose</span>
+      </div>
+      <div class="byline" style="color:var(--disabled)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>2 of 2 doses · 11 Aug 2019</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>School programme</span>
+      </div>
+      <div class="doses">
+        <span class="dose" style="background:var(--disabled)"></span><span class="dose" style="background:var(--disabled)"></span>
+        <span class="dose-label">2 / 2 complete</span>
+      </div>
+      <div class="footer" style="color:var(--disabled)">
+        <span>Course complete <span class="hot" style="color:var(--disabled)">11 Aug 2019</span></span><span>·</span>
+        <span>No booster recorded</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title">Series</div>
+        <div class="chips"><span class="chip grey">2-dose course</span><span class="chip grey">Completed 2019</span></div>
+      </div>
+    </article>
+  </section>
+
+  <h2>Key changes</h2>
+  <p class="caption">1) Date and due date merge into one byline plus a footer — the same two positions the medication card uses for last dose / next dose. 2) A dose-progress bar makes "1 of 2" visible without opening the record; it is currently hidden in the detail sheet only. 3) Chip groups carry status and series. 4) Two card-level actions. 5) <strong>The recency treatment is added</strong> — Vaccinations was the only list with no fade and no pill, so a 2019 dose competed visually with a dose that is due now. 6) Red border keeps meaning "overdue", now declared once in the design manual instead of being re-decided per sub-module.</p>
+
+  <h2>Cross-module note</h2>
+  <p class="caption">After this change all four healthcare lists read identically at a glance: dot in the title row, one icon byline, an optional progress strip, one footer, grouped chips, two actions. The only per-module differences left are the <em>words</em> in the chips and which colour the dot takes when something needs action.</p>
+</main>
+</body>
+</html>
