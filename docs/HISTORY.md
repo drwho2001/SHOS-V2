@@ -16,6 +16,60 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 9 Nov 2026 - registry usage ordering, derived "No barrier method", measured sheet offsets (REPAIR)
+
+**WHAT CHANGED.** Three related pieces of encounter/registry UX, plus the
+repair of the uncommitted batch that carried them.
+
+1. **Registry suggestions are ordered by real use.** `calculations/registryUsage.js`
+   now builds one usage map across every record type that can reference a
+   vocabulary entry: kinks (encounters, contacts, profile), chems (encounters,
+   contacts, profile), protection (encounters), symptoms (encounters, symptom
+   log, clinic visits), organisms and results (completed tests only, plus clinic
+   visit results), and locations (encounters, clinic visits). Encounters'
+   picker, Manage lists' registry screen and the suggestion chips all read it.
+   The old "most used" branch compared each entry against the form's own current
+   selection, which had already been filtered out of the candidate list, so it
+   could never fire.
+
+2. **"No barrier method" is derived, never stored.** `calculations/protectionBarrier.js`
+   answers whether any selected Protection entry names a condom/dental dam
+   (PrEP/PEP/None do not). The encounter card, read view and edit sheet show the
+   label when the answer is no, so a PrEP-only record no longer reads as
+   protection-handled. Name matching is deliberate: the registry is user-editable,
+   so ids cannot be assumed. Negated entries ("No condom") are checked before the
+   positive pattern, otherwise the absence of a barrier would be read as one.
+
+3. **Sheet tabs are pinned to the measured banner height.** The Encounters and
+   My Profile edit sheets pinned `FormTabs` at `STICKY_SUBHEADING_TOP`
+   (safe-area + 58px), which is only correct for page-level banners that carry
+   their own inset. Both sheets spend the inset in their scroll root, so the tabs
+   sat one status bar too low with a strip of page background between banner and
+   tabs. Both now measure the banner with a `ResizeObserver` and use its real
+   height.
+
+**WHY THE BATCH NEEDED REPAIR.** The uncommitted version called
+`useRegistryUsage()` at module scope to build seven `compute*Usage` aliases. That
+is an Invalid hook call on import, and it also left `ManageLists` and
+`RegistryManagement` calling a Map as if it were a function. It read
+`MyProfileRepository.get()`, which does not exist, so the whole usage scan
+rejected and every count silently fell back to zero. Results and Locations were
+never counted at all. The fix replaces the aliases with one pure
+`buildRegistryUsage()` plus a `useRegistryUsage()` hook, uses `getProfile()`,
+adds the two missing collections, and has the registry screen resolve counts
+from `registry.storageKey` (now exposed by `LocationsRepository` too).
+
+**GUARDS.** `registryUsage.test.js` pins the count from each real repository
+shape, including planned/archived test exclusion and both the object and legacy
+string kink shapes. `protectionBarrier.test.js` pins negated and combined
+entries. `orphanReferenceCoverage.test.js` now asserts every Manage lists
+registry exposes a `storageKey` and that the per-registry `compute*Usage`
+wrappers do not come back.
+
+Session: REPAIR.
+
+---
+
 ## 28 Oct 2026 - touch-target sweep, corrected (Lily)
 
 **WHAT CHANGED.** Reverted the shape damage from the sweep above. `minHeight: 44`

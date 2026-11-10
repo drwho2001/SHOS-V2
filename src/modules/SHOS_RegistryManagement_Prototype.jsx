@@ -25,6 +25,7 @@ const TEXT_SAFE_BY_HEX = {
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useRegistryUsage } from "../calculations/registryUsage";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
@@ -97,7 +98,7 @@ function RegistryRow({ entry, usage, isEditing, editingName, setEditingName, sta
   );
 }
 
-export default function RegistryManagementScreen({ registry, label, color, computeUsage, renderExtra: RenderExtra, onClose }) {
+export default function RegistryManagementScreen({ registry, label, color, renderExtra: RenderExtra, onClose }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -137,23 +138,11 @@ export default function RegistryManagementScreen({ registry, label, color, compu
 
   const allEntries = useLoadedMemo(() => registry.getAll(), [refreshKey], []);
   const duplicatePairs = useMemo(() => findDuplicatePairs(allEntries), [allEntries]);
-  // ADDED — real perf/redundancy fix: computeUsage (each of these scans
-  // 1-3 full repositories — see registryUsage.js) was being called once
-  // per row directly inside Row/.map(), unmemoized, right next to
-  // duplicatePairs above which WAS already correctly memoized — an
-  // oversight, not a choice. With N entries that's N full-table scans
-  // recomputed on every render, including every keystroke while typing
-  // a new entry name or renaming one (both drive re-renders here). Now
-  // computed once per allEntries change into a lookup map.
-  // CHANGED — Phase 2 encryption groundwork: computeKinkUsage/
-  // computeChemsUsage now go through the now-async ContactRepository,
-  // so computeUsage(id) can return either a number or a Promise
-  // depending on which registry this screen is for — useLoadedMemo
-  // handles both uniformly (awaiting a plain number is a no-op).
-  const usageMap = useLoadedMemo(
-    async () => new Map(await Promise.all(allEntries.map(async (e) => [e.id, await computeUsage(e.id)]))),
-    [allEntries, computeUsage], new Map()
-  );
+  // ADDED 8 Nov 2026 — one shared usage scan for the whole screen instead of
+  // calling a per-entry helper once per row. registryUsage.js computes every
+  // registry's counts in a single pass and keys them by storage key, so this
+  // is the same lookup map the pickers now use, with no N×repository scans.
+  const usageMap = useRegistryUsage(registry.storageKey);
   // ADDED — real ask: sort by name (A-Z, the prior fixed behaviour) or
   // by real usage count (most/least records referencing this entry) —
   // moved above active/archived since both now read usageMap to sort.

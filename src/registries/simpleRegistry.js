@@ -84,6 +84,10 @@ export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
   }
 
   return {
+    // ADDED 8 Nov 2026 — the storage key is exposed so shared helpers can
+    // identify a registry without guessing from its contents. registryUsage.js
+    // uses it to key the usage counts that now order every suggestion list.
+    storageKey,
     // CHANGED 18 Aug 2026 — same defensive-merge fix as every other
     // repository this session. Fixes this once, here, and every
     // registry built on this factory (Kink/Chems/Protection/Symptoms)

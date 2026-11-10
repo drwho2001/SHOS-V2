@@ -13,7 +13,7 @@
 // never writes to a Contact record; the link is one-directional storage,
 // as documented in encounterRepository.js).
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
 import { FormTabs } from "../components/FormTabs";
@@ -82,6 +82,8 @@ import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { sessionTally, chronologicalSessionEncounters } from "../calculations/sessionTally";
+import { useRegistryUsage, sortByUsage } from "../calculations/registryUsage";
+import { hasBarrierMethod, NO_BARRIER_LABEL } from "../calculations/protectionBarrier";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -397,8 +399,13 @@ function GivingReceivingChips({ label, value, onChange, options, T }) {
 // instead of a synchronous getById() call; finalizeEntry/commit now
 // await registry.findOrCreate(), and commit awaits analyzeEntry
 // (analyzeKinkEntry, also now async).
-function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
+function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null, derivedChips = [] }) {
   const [draft, setDraft] = useState("");
+  // ADDED 8 Nov 2026 — suggestions are now ordered by real use across every
+  // form (see calculations/registryUsage.js), not registry order/A–Z. The old
+  // "recent" comparison here compared against `value`, which is filtered out
+  // of the candidate list two lines above, so it could never fire.
+  const usage = useRegistryUsage(registry.storageKey);
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term, same mechanism now built and proven in Contacts.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
@@ -435,20 +442,20 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // flow on commit is untouched, this only fixes the live suggestion
   // list shown while still typing.
   const draftTrimmedForFilter = draft.trim();
-  // Sort visible suggestions: selected/recent items first (most used), then alphabetical
-  const sortedSuggestions = (draftTrimmedForFilter
-    ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
-    : allEntries
-  ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id));
-  
-  const visibleSuggestions = sortedSuggestions.sort((a, b) => {
-    // Put recently selected / most-used items at front (simple heuristic)
-    const aRecent = value.some((v) => (trackRole ? v.kinkId === a.id : v === a.id));
-    const bRecent = value.some((v) => (trackRole ? v.kinkId === b.id : v === b.id));
-    if (bRecent && !aRecent) return 1;
-    if (aRecent && !bRecent) return -1;
-    return a.name.localeCompare(b.name);
-  }).slice(0, 10);
+  // Sort visible suggestions by real use across every form, then A–Z.
+  // CHANGED 8 Nov 2026 — this used to claim "recently selected / most-used
+  // items at front" while comparing against `value`, whose entries are
+  // filtered out of `sortedSuggestions` on the line above — so the branch
+  // was unreachable and the list always fell through to localeCompare.
+  const sortedSuggestions = sortByUsage(
+    (draftTrimmedForFilter
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+      : allEntries
+    ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)),
+    usage
+  );
+
+  const visibleSuggestions = sortedSuggestions.slice(0, 10);
 
   const addEntries = (ids) => {
     if (ids.length === 0) return;
@@ -604,6 +611,14 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             </div>
           );
         })}
+        {/* ADDED 8 Nov 2026 — derived, non-removable chips (currently only
+            Protection's "No barrier method"). Rendered as a dashed outline so
+            it never reads as a stored selection the user could un-tap. */}
+        {derivedChips.map((chip) => (
+          <div key={chip.label} style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, border: "1px dashed #F59E0B", color: "#F59E0B", background: "#F59E0B12" }}>
+            {chip.label}
+          </div>
+        ))}
       </div>
       {/* ADDED 18 Aug 2026 — rendered above the input on purpose, same
           reasoning as Contacts/My Profile: the on-screen keyboard covers
@@ -614,6 +629,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", flexShrink: 0 }}>
               + {e.name}
+              {(usage.get(e.id) || 0) > 0 && <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.7 }}>{usage.get(e.id)}</span>}
             </div>
           ))}
         </div>
@@ -1205,6 +1221,11 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
             {protectionNames.map((name, i) => (
               <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
             ))}
+            {/* ADDED 8 Nov 2026 — derived, never stored: a PrEP-only record
+                used to read as protection-handled with no barrier recorded. */}
+            {!hasBarrierMethod(protectionNames) && (
+              <span style={{ padding: "2px 8px", borderRadius: "999px", border: "1px dashed #F59E0B", color: "#F59E0B", background: "#F59E0B12", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{NO_BARRIER_LABEL}</span>
+            )}
             {encounter.myPrepCoverage && (
               <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
             )}
@@ -1912,7 +1933,16 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
         </SectionCard>
 
         <SectionCard title={tr("encounters.protectionMedication", "Protection & medication context")} T={T}>
-          <ReadRow label="Protection used" value={resolveNames(protectionNameById, encounter.protectionUsed)} T={T} />
+          {(() => {
+            // ADDED 8 Nov 2026 — derived, never stored (see
+            // calculations/protectionBarrier.js).
+            const names = resolveNames(protectionNameById, encounter.protectionUsed);
+            // Same loading gate as the edit sheet: do not add the derived
+            // label while the registry map is still empty and an id is
+            // waiting to resolve.
+            const loaded = (encounter.protectionUsed || []).length === 0 || protectionNameById.size > 0;
+            return <ReadRow label="Protection used" value={loaded && !hasBarrierMethod(names) ? [...names, NO_BARRIER_LABEL] : names} T={T} />;
+          })()}
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
           <ReadRow label="My DoxyPEP status" value={doxyPepDisplay.value} T={T} />
           {/* CHANGED 21 Oct 2026 (t138) - where the answer came from, and
@@ -1965,6 +1995,10 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   const [contacts, setContacts] = useLoadedState(loadContacts, [], []);
   const [sessions] = useLoadedState(loadSessions, [], []);
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((kink) => [kink.id, kink.name])), [], new Map());
+  // ADDED 8 Nov 2026 — needed to decide whether the selected protection
+  // entries include an actual barrier (condom/dental dam). See
+  // calculations/protectionBarrier.js for why this is a name match.
+  const protectionNameById = useLoadedMemo(async () => new Map((await ProtectionRegistry.getAll()).map((entry) => [entry.id, entry.name])), [], new Map());
   const anonymise = useAnonymiseMode();
   const [showNewSession, setShowNewSession] = useState(false);
   const [newSessionTitle, setNewSessionTitle] = useState("");
@@ -1997,6 +2031,38 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   // DEFAULT_ENCOUNTER for the one render before it resolves rather than
   // undefined (nothing here null-guards form before rendering fields).
   const [form, setForm] = useState(() => ({ ...DEFAULT_ENCOUNTER, sessionId: initialSessionId }));
+  // ADDED 8 Nov 2026 — derived, never stored: "No barrier method" when the
+  // selected protection entries name no condom/dental dam. PrEP-only records
+  // previously showed protection as if it were handled.
+  const selectedProtectionNames = (form.protectionUsed || []).map((id) => protectionNameById.get(id)).filter(Boolean);
+  // Do not flash the derived warning while the registry is still resolving:
+  // an existing record with a condom selected would briefly read "No barrier
+  // method" because its id has no name yet. An empty selection is genuinely
+  // no barrier and can be stated immediately.
+  const protectionNamesLoaded = (form.protectionUsed || []).length === 0 || protectionNameById.size > 0;
+  const selectedBarrier = hasBarrierMethod(selectedProtectionNames);
+  const showNoBarrier = protectionNamesLoaded && !selectedBarrier;
+  // ADDED 8 Nov 2026 — this sheet's banner is a ~58px bar pinned at top:0, but
+  // the tabs were pinned at STICKY_SUBHEADING_TOP (safe-area + 58), a token that
+  // is only correct for page-level banners that carry their own inset. Here the
+  // inset is spent by the scroll root instead, so the tabs sat exactly one
+  // status bar too low with a strip of page background between banner and tabs.
+  // Measure the banner and pin the tabs to its real height.
+  const sheetBannerRef = useRef(null);
+  const [sheetBannerH, setSheetBannerH] = useState(58);
+  useLayoutEffect(() => {
+    const el = sheetBannerRef.current;
+    if (!el) return undefined;
+    const measure = () => {
+      const height = Math.round(el.getBoundingClientRect().height);
+      if (height > 0) setSheetBannerH(height);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -2220,7 +2286,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
           the 4 real screen-title banners already got, and the shared
           TYPE.sheetTitle token instead of a hand-typed duplicate of it
           (matching Testing/Clinic Visits' own sheet-title banners). */}
-      <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div ref={sheetBannerRef} style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("encounters.addEncounter", "Add Encounter") : tr("encounters.editEncounter", "Edit Encounter")}</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2250,7 +2316,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
       )}
 
       <div style={{ padding: "0 16px 60px" }}>
-        <FormTabs tabs={ENCOUNTER_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab} stickyTop={STICKY_SUBHEADING_TOP}
+        <FormTabs tabs={ENCOUNTER_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab} stickyTop={`${sheetBannerH}px`}
           ariaLabel="Encounter form sections" accent={T.encountersPink} accentText={T.encountersPink}
           textColor={T.textSecondary} border={T.border} surface={T.bg}>
         <div>
@@ -2364,7 +2430,13 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
         </SectionCard>
 
         <SectionCard title={tr("encounters.protectionMedication", "Protection & medication context")} T={T}>
-          <RegistryTagPicker label="Protection used" value={form.protectionUsed} onChange={set("protectionUsed")} T={T} registry={ProtectionRegistry} />
+          <RegistryTagPicker label="Protection used" value={form.protectionUsed} onChange={set("protectionUsed")} T={T} registry={ProtectionRegistry}
+            derivedChips={showNoBarrier ? [{ label: NO_BARRIER_LABEL }] : []} />
+          {showNoBarrier && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -2, marginBottom: 8, lineHeight: 1.4 }}>
+              Add a condom or dental dam if one was used — otherwise this record shows “{NO_BARRIER_LABEL}”. The label is worked out from your selections; nothing extra is stored.
+            </div>
+          )}
           <SelectField label="My PrEP coverage" value={form.myPrepCoverage} onChange={set("myPrepCoverage")} options={PREP_COVERAGE_OPTIONS} T={T} />
           {/* ADDED 21 Oct 2026 (t137) - where the value came from. */}
           {protectionHints.prep && (

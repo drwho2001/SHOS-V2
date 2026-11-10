@@ -7,7 +7,6 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens"
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
-import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage, computeLocationsUsage } from "../../calculations/registryUsage";
 import { LOCATION_TYPE_OPTIONS } from "../../repositories/locationsRepository";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { LocationsRepository } from "../../repositories/locationsRepository";
@@ -62,14 +61,16 @@ function LocationExtraFields({ entry, refresh, T, color }) {
   );
 }
 
+// Usage counts are resolved inside RegistryManagementScreen from each
+// registry's own storageKey, so this list only has to name the registry.
 const REGISTRIES = [
-  { key: "kink", label: "Kink Registry", registry: KinkRegistry, color: "#E5484D", icon: Flame, computeUsage: computeKinkUsage },
-  { key: "protection", label: "Protection Registry", registry: ProtectionRegistry, color: "#E24E9C", icon: Shield, computeUsage: computeProtectionUsage },
-  { key: "chems", label: "Chems Registry", registry: ChemsRegistry, color: "#5B5B62", icon: Pill, computeUsage: computeChemsUsage },
-  { key: "symptoms", label: "Symptoms Registry", registry: SymptomsRegistry, color: ACCENTS.healthcare, icon: Stethoscope, computeUsage: computeSymptomsUsage },
-  { key: "organism", label: "Organism Registry", registry: OrganismRegistry, color: ACCENTS.healthcare, icon: Microscope, computeUsage: computeOrganismUsage },
-  { key: "results", label: "Results Registry", registry: ResultsRegistry, color: ACCENTS.healthcare, icon: ClipboardCheck, computeUsage: computeResultsUsage },
-  { key: "locations", label: "Locations", registry: LocationsRepository, color: "#E24E9C", icon: MapPin, computeUsage: computeLocationsUsage, renderExtra: LocationExtraFields },
+  { key: "kink", label: "Kink Registry", registry: KinkRegistry, color: "#E5484D", icon: Flame },
+  { key: "protection", label: "Protection Registry", registry: ProtectionRegistry, color: "#E24E9C", icon: Shield },
+  { key: "chems", label: "Chems Registry", registry: ChemsRegistry, color: "#5B5B62", icon: Pill },
+  { key: "symptoms", label: "Symptoms Registry", registry: SymptomsRegistry, color: ACCENTS.healthcare, icon: Stethoscope },
+  { key: "organism", label: "Organism Registry", registry: OrganismRegistry, color: ACCENTS.healthcare, icon: Microscope },
+  { key: "results", label: "Results Registry", registry: ResultsRegistry, color: ACCENTS.healthcare, icon: ClipboardCheck },
+  { key: "locations", label: "Locations", registry: LocationsRepository, color: "#E24E9C", icon: MapPin, renderExtra: LocationExtraFields },
 ];
 
 // CHANGED 1 Sep 2026 — real ask: "check settings not unnecessarily over
@@ -163,7 +164,7 @@ export function ManageListsScreen({ onClose }) {
         </>
       )}
       {openRegistry && (
-        <RegistryManagementScreen registry={openRegistry.registry} label={openRegistry.label} color={openRegistry.color} computeUsage={openRegistry.computeUsage} renderExtra={openRegistry.renderExtra} onClose={() => setOpenRegistry(null)} />
+        <RegistryManagementScreen registry={openRegistry.registry} label={openRegistry.label} color={openRegistry.color} renderExtra={openRegistry.renderExtra} onClose={() => setOpenRegistry(null)} />
       )}
       {openOptionList && <OptionListDetail listName={openOptionList} onClose={() => setOpenOptionList(null)} />}
     </div>

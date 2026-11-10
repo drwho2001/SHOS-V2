@@ -289,8 +289,8 @@ const REPAIR_EXEMPT = {
 const OPTION_LISTS_REPO = path.join(SRC, "repositories", "customOptionListsRepository.js");
 const CHECKER_FILE = CHECKER;
 
-// The `computeUsage:` bindings in Manage lists' own registry table, as
-// [rowKey, functionSuffixName] pairs.
+// The `registry:` bindings in Manage lists' own registry table, as
+// [rowKey, registryIdentifier] pairs.
 //
 // Read from the BINDING and not from any mention, which is a correction: a
 // first version matched `compute\w+Usage` anywhere in the file and so counted
@@ -299,16 +299,33 @@ const CHECKER_FILE = CHECKER;
 // matching one end of a wire proves nothing about the other end. A function
 // that is imported but never bound is exactly the state this guard exists to
 // catch, so it has to look at the binding.
-function manageListBindings() {
+//
+// CHANGED 8 Nov 2026: usage is no longer bound per row. RegistryManagementScreen
+// resolves it from `registry.storageKey`, so the binding this guard must check
+// is the registry object itself, not a `computeUsage` function.
+function manageListRegistries() {
   const src = fs.readFileSync(path.join(SRC, "modules", "settings", "ManageListsScreen.jsx"), "utf8");
   const out = [];
   for (const line of src.split(/\r?\n/)) {
     const key = /key:\s*"([^"]+)"/.exec(line);
-    const usage = /computeUsage:\s*compute([A-Za-z]+)Usage/.exec(line);
-    if (key && usage) out.push([key[1], usage[1]]);
+    const registry = /registry:\s*([A-Za-z0-9_]+)/.exec(line);
+    if (key && registry) out.push([key[1], registry[1]]);
   }
   return out;
 }
+
+// Where each Manage lists row's registry is defined. Hand-maintained on
+// purpose: a new row that points at a registry this map does not know fails
+// rather than silently skipping the storageKey check below.
+const REGISTRY_FILES = new Map([
+  ["KinkRegistry", "registries/kinkRegistry.js"],
+  ["ProtectionRegistry", "registries/protectionRegistry.js"],
+  ["ChemsRegistry", "registries/chemsRegistry.js"],
+  ["SymptomsRegistry", "registries/symptomsRegistry.js"],
+  ["OrganismRegistry", "registries/organismRegistry.js"],
+  ["ResultsRegistry", "registries/resultsRegistry.js"],
+  ["LocationsRepository", "repositories/locationsRepository.js"],
+]);
 
 // Keys of a top-level object literal, read out of real ObjectProperty nodes.
 function objectKeys(file, varName) {
@@ -508,25 +525,26 @@ describe("hand-maintained inventories stay in sync with what they claim to cover
     expect(dead, `these are dead entries: ${dead.join(", ")}`).toEqual([]);
   });
 
-  it("registryUsage has a compute function per registry Manage lists offers", () => {
-    // ManageListsScreen binds one computeUsage per registry. Reading that
-    // screen's own list keeps the assertion about what the user can actually
-    // reach, rather than re-deriving the registry list a third time.
-    const wired = manageListBindings();
-    expect(wired.length, "no computeUsage bindings found - the sweep found nothing").toBeGreaterThanOrEqual(6);
-    const exported = exportedFunctions(REGISTRY_USAGE);
-    for (const [key, name] of wired) {
-      const fn = `compute${name}Usage`;
-      expect(exported, `the "${key}" row binds ${fn}, which registryUsage.js does not export`).toContain(fn);
+  it("every registry Manage lists offers exposes a storageKey for usage lookup", () => {
+    // RegistryManagementScreen resolves counts from registry.storageKey, so a
+    // registry without one silently shows every entry as unused.
+    const wired = manageListRegistries();
+    expect(wired.length, "no registry bindings found - the sweep found nothing").toBeGreaterThanOrEqual(6);
+    for (const [key, registryName] of wired) {
+      const file = REGISTRY_FILES.get(registryName);
+      expect(file, `the "${key}" row points at ${registryName}, which this guard does not know`).toBeTruthy();
+      const src = fs.readFileSync(path.join(SRC, file), "utf8");
+      expect(src, `${registryName} has no storageKey, so registryUsage cannot key its counts`).toMatch(/storageKey\s*:/);
     }
   });
 
-  it("registryUsage exports nothing Manage lists cannot reach", () => {
-    const wired = new Set(manageListBindings().map(([, name]) => name));
-    for (const fn of exportedFunctions(REGISTRY_USAGE)) {
-      const name = fn.replace(/^compute/, "").replace(/Usage$/, "");
-      expect(wired.has(name), `${fn} exists but no registry row uses it - dead or a missing binding`).toBe(true);
-    }
+  it("registryUsage exports the shared API and no per-registry wrappers", () => {
+    const exported = exportedFunctions(REGISTRY_USAGE);
+    expect(exported).toEqual(expect.arrayContaining(["buildRegistryUsage", "useRegistryUsage", "sortByUsage"]));
+    // Usage is resolved from a registry's storageKey now. A revived
+    // compute*Usage export would be dead code, and the old module-scope hook
+    // aliases crashed on import - this keeps both from coming back.
+    expect(exported.filter((name) => /^compute.*Usage$/.test(name))).toEqual([]);
   });
 });
 

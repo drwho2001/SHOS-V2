@@ -137,6 +137,10 @@ function generateLocationId() {
 }
 
 export const LocationsRepository = {
+  // ADDED 8 Nov 2026 — exposed for the same reason createSimpleRegistry
+  // exposes it: shared helpers (registryUsage.js) need to identify the
+  // registry's usage bucket without guessing from its contents.
+  storageKey: STORAGE_KEY,
   // CHANGED 18 Aug 2026 — same defensive-merge fix as every other
   // repository this session.
   async getAll() {

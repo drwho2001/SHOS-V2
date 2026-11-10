@@ -24,7 +24,7 @@
 // entry would look like for you", so sharing Contacts' color makes
 // that relationship visible rather than picking an arbitrary new hue.
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { FormTabs } from "../components/FormTabs";
 import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 
@@ -1078,19 +1078,41 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
   // persisted field, matching that gate.
   const [revealPhysicalAnyway, setRevealPhysicalAnyway] = useState(false);
 
+  // ADDED 8 Nov 2026 — same measured-offset fix as the Encounters sheet.
+  // The tabs were pinned at STICKY_SUBHEADING_TOP (safe-area + 58px), which
+  // assumes the banner is exactly 58px once its own inset is added. The real
+  // banner height depends on the title's line box, so on some font settings
+  // 2–3px of page background showed between banner and tabs. Measure the
+  // banner instead of assuming.
+  const sheetBannerRef = useRef(null);
+  const [sheetBannerH, setSheetBannerH] = useState(58);
+  useLayoutEffect(() => {
+    const el = sheetBannerRef.current;
+    if (!el) return undefined;
+    const measure = () => {
+      const height = Math.round(el.getBoundingClientRect().height);
+      if (height > 0) setSheetBannerH(height);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div role="dialog" aria-label={tr("myProfile.editTitle", "Edit My Profile")} ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       {/* Keep the safe-area fill inside the sticky row. Putting it on this
           scroll root lets the inset scroll away and exposes content above the
           pinned title. */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(16px + env(safe-area-inset-top)) 16px 16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
+      <div ref={sheetBannerRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(16px + env(safe-area-inset-top)) 16px 16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onCancel} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("myProfile.editTitle", "Edit My Profile")}</h1>
         <div onClick={handleSave} role="button" tabIndex={0} aria-label="Save" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer"}}>Save</div>
       </div>
 
       <div style={{ padding: "0 16px 100px" }}>
-        <FormTabs tabs={PROFILE_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab} stickyTop={STICKY_SUBHEADING_TOP}
+        <FormTabs tabs={PROFILE_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab} stickyTop={`${sheetBannerH}px`}
           ariaLabel="My Profile form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
           textColor={T.textSecondary} border={T.border} surface={T.bg} tabListPadding="0 0 8px">
         <div>
