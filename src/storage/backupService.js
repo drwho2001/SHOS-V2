@@ -381,7 +381,8 @@ export function parseBackupFile(jsonText) {
   } catch {
     throw new Error("That file isn't valid — it doesn't look like a SHOS backup.");
   }
-  if (!parsed || typeof parsed !== "object" || !parsed.data) {
+  if (!parsed || typeof parsed !== "object" || !parsed.data
+      || typeof parsed.data !== "object" || Array.isArray(parsed.data)) {
     throw new Error("That file doesn't look like a SHOS backup file.");
   }
   if (typeof parsed.schemaVersion === "number" && parsed.schemaVersion > SCHEMA_VERSION) {
