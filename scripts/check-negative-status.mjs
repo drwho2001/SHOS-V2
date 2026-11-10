@@ -37,33 +37,18 @@ const BANNED = [
   /\bblocked\b/i,               // usually ends with "blocked until" — that's a status claim
 ];
 
-// Allow-listed phrases that legitimately contain negative-looking tokens as part
-// of an explicit rule definition or a noted exception. They come from the repo's
-// own standing rule (CLAUDE.md line ~45), which is itself an argument for the ban,
-// not evidence against it.
-const ALLOWLIST = [
-  'never write a negative status claim',
-  '"not implemented"',
-  '"not wired"',
-  '"still open"',
-  '"not attempted"',
-  '"no test covers this"',
-  'no "not implemented"',
-  '"not attempted"',
-  'NO NOT IMPLEMENTED',
-  'NO NOT ATTEMPTED',
-  'no test of any kind',
-  'skips the `finally`',
-  'deliberately NOT attempted',
-  'Real bug found',
-  // Existing BACKLOG artifact: descriptive prose about result-chase iteration,
-  // not a status claim a session should trust as instruction. Keeps the repo doc
-  // intact when adding the annotation.
-  'result still pending after repeated chases',
-  // docs/RELEASE-DECISIONS.md — legitimate use of "blocked" as a feature
-  // description, not a status claim. The doc is a decision record.
-  'Custom error-report endpoints (user-configured in Settings) will be blocked',
-];
+// Read the allowlist from a file so non-developers can add entries without
+// touching code. Falls back to an empty list if the file is missing.
+function loadAllowlist() {
+  const allowPath = join(ROOT, 'scripts', 'negative-status-allowlist.txt');
+  if (!existsSync(allowPath)) return [];
+  return readFileSync(allowPath, 'utf8')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'));
+}
+
+const ALLOWLIST = loadAllowlist();
 
 function isAllowed(match, fullLine) {
   const lower = fullLine.toLowerCase();

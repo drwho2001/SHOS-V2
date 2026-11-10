@@ -1,0 +1,16 @@
+# One phrase per line. Case-insensitive substring match against the full line.
+# Lines starting with # are comments. Blank lines are ignored.
+never write a negative status claim
+"not implemented"
+"not wired"
+"still open"
+"not attempted"
+"no test covers this"
+no "not implemented"
+no "not attempted"
+deliberately not attempted
+no test of any kind
+skips the `finally`
+Real bug found
+result still pending after repeated chases
+Custom error-report endpoints (user-configured in Settings) will be blocked
