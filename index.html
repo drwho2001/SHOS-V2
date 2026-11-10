@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- ADDED 10 Nov 2026 — Content-Security-Policy. See docs/RELEASE-DECISIONS.md §2.
+         Conservative policy matching the app's self-hosted reality: no CDN,
+         @fontsource fonts, inline styles by design (style-src 'unsafe-inline'
+         is required — the codebase writes style={{}} everywhere and has no
+         CSS files). External connections limited to the update check
+         (api.github.com) and geocoding (nominatim.openstreetmap.org).
+         Custom error-report endpoints (user-configured) would need their
+         origin added here to work under CSP. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://nominatim.openstreetmap.org; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" />
     <title>SHOS</title>
     <!-- CHANGED 1 Sep 2026 — real fix: was a render-blocking Google
          Fonts <link>, meaning the whole app sat unpainted on any slow/
