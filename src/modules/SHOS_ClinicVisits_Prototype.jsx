@@ -1752,6 +1752,25 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
+  // ADDED — mockup fix #4 (encounters-form-fixes-mockup.html): the list row
+  // had no red state at all, so a visit with a linked positive result looked
+  // identical to a routine visit. The row inherits the state from its linked
+  // tests (linkedTestIds); the visit stores no result of its own, so Testing
+  // and the visit list cannot disagree.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const testsById = useLoadedMemo(async () => new Map((await TestingRepository.getAll()).map((t) => [t.id, t])), [], new Map());
+  const positiveLinkedTestByVisitId = useMemo(() => {
+    const map = new Map();
+    for (const v of visits) {
+      for (const id of v.linkedTestIds || []) {
+        const t = testsById.get(id);
+        if (!t) continue;
+        if ((t.resultIds || []).some((rid) => (resultNameById.get(rid) || "").toLowerCase() === "positive")) { map.set(v.id, t); break; }
+      }
+    }
+    return map;
+  }, [visits, testsById, resultNameById]);
+
   const pressTimer = useRef(null);
   // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
@@ -1881,7 +1900,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
               <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
                 {group.items.map((v) => (
-                  <VisitRow key={v.id} v={v} allVisits={visits} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+                  <VisitRow key={v.id} v={v} allVisits={visits} positiveLinkedTest={positiveLinkedTestByVisitId.get(v.id) || null} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
                 ))}
               </div>
             </div>
@@ -1897,7 +1916,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
             />
           )}
           {sorted.map((v) => (
-            <VisitRow key={v.id} v={v} allVisits={visits} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+            <VisitRow key={v.id} v={v} allVisits={visits} positiveLinkedTest={positiveLinkedTestByVisitId.get(v.id) || null} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
           ))}
         </div>
       )}
@@ -1924,7 +1943,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
 // ADDED — pulled out of VisitsLanding's own inline .map() body so the
 // desktop-grid month-grouping pass and the mobile flat list both render
 // the exact same row markup, unchanged.
-function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+function VisitRow({ v, allVisits, positiveLinkedTest, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
   const { t: tr } = useTranslation();
   // ADDED 6 Oct 2026 (t081) - mirrors Testing's own recency treatment: age is
   // shown by fading the record AROUND the content, never by muting the content
@@ -1943,7 +1962,7 @@ function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, on
       onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(v.id) : undefined} aria-label={v.title || "Untitled visit"} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
-      style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : rowT.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", gap: 10, alignItems: "center", justifyContent: "center"}}>
+      style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : rowT.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : positiveLinkedTest ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", gap: 10, alignItems: "center", justifyContent: "center"}}>
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(v.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
           {selectedIds.includes(v.id) && <Check size={13} color="#FFFFFF" />}
@@ -1951,13 +1970,16 @@ function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, on
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {positiveLinkedTest && <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.actionRed, display: "inline-block", flexShrink: 0 }} />}
         <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || tr("clinicVisits.untitledVisit", "Untitled visit")}</span>{v.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
+        {positiveLinkedTest && <span style={{ fontSize: 10, fontWeight: 700, color: T.actionRed, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}15`, borderRadius: 999, padding: "2px 7px", whiteSpace: "nowrap" }}>{tr("clinicVisits.positiveResult", "Positive result")}</span>}
         {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>{formatDate(v.date)}</div>
       {!isRecent && <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{tr("clinicVisits.olderVisit", "Older visit")}</div>}
       {v.clinician.length > 0 && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
       {v.location && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}
+      {positiveLinkedTest && <div style={{ fontSize: 12, fontWeight: 700, color: T.actionRed, marginLeft: 16, marginTop: 3 }}>{positiveLinkedTest.title || "Linked test"}: Positive</div>}
       </div>
     </div>
   );
