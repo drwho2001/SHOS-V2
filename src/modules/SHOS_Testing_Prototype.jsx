@@ -779,6 +779,10 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
     saveDraft(draftKey, form);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
+  // ADD — double-tap guard and a pending state for the save button. A test
+  // save writes to the repository, syncs the calendar and calls onSaved, all
+  // async; tapping twice mid-flight used to queue a second identical save.
+  const [isSaving, setIsSaving] = useState(false);
   const set = (key) => (v) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: v })); };
   // A test dated in the future is a PLANNED test - that is how a retest is
   // scheduled in this app (t127), and the app now treats it as one
@@ -795,24 +799,30 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
   const canSave = !futureDatedWithResult && (form.title.trim().length > 0 || form.testingFor.length > 0);
 
   const save = async () => {
-    clearDraft(draftKey);
-    if (isNew) {
-      const created = await TestingRepository.create(form);
-      onSaved(created.id);
-    } else {
-      // ADDED — real undo/redo extension.
-      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
-      // and now TestingRepository itself (Phase 2 encryption
-      // groundwork), are all async — every step here awaited.
-      await onBeforeEdit?.(testId);
-      await TestingRepository.update(testId, form);
-      await onAfterEdit?.(testId);
-      onSaved(testId);
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      clearDraft(draftKey);
+      if (isNew) {
+        const created = await TestingRepository.create(form);
+        onSaved(created.id);
+      } else {
+        // ADDED — real undo/redo extension.
+        // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
+        // and now TestingRepository itself (Phase 2 encryption
+        // groundwork), are all async — every step here awaited.
+        await onBeforeEdit?.(testId);
+        await TestingRepository.update(testId, form);
+        await onAfterEdit?.(testId);
+        onSaved(testId);
+      }
+      // ADDED 21 Oct 2026 (t139) - a test's date decides whether it is a
+      // PLAN, so saving one can create a plan, move one, or turn one into
+      // something that happened. The calendar has to hear about all three.
+      await syncPlannedEventsToCalendar();
+    } finally {
+      setIsSaving(false);
     }
-    // ADDED 21 Oct 2026 (t139) - a test's date decides whether it is a
-    // PLAN, so saving one can create a plan, move one, or turn one into
-    // something that happened. The calendar has to hear about all three.
-    await syncPlannedEventsToCalendar();
   };
 
   return (
@@ -826,9 +836,9 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", zIndex: 1 }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label={tr("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("testing.newTest", "New test") : tr("testing.editTest", "Edit test")}</h1>
-        <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label={tr("common.save", "Save")} onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
+        <div onClick={() => canSave && !isSaving && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label={tr("common.save", "Save")} onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isSaving) save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcareBlue : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-          {tr("common.save", "Save")}
+          {isSaving ? tr("common.saving", "Saving…") : tr("common.save", "Save")}
         </div>
       </div>
 
