@@ -18,7 +18,7 @@ describe("older Testing results remain explicit", () => {
   });
 
   it("keeps the result's positive/negative colour at full opacity", () => {
-    const resultBlock = testRow.match(/resultNames\.length > 0 && \([\s\S]*?\{resultNames\.join\(", "\)\}<\/div>/)?.[0];
+    const resultBlock = testRow.match(/resultNames\.length > 0\s*\?\s*\([\s\S]*?\{resultNames\.join\(", "\)\}<\/div>/)?.[0];
     expect(resultBlock, "could not find the visible TestRow result block").toBeTruthy();
     expect(resultBlock).toMatch(/color:\s*isPositive\s*\?\s*T\.actionRed/);
     expect(resultBlock).not.toMatch(/opacity\s*:/);
