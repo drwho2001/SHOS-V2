@@ -2211,6 +2211,11 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
   const set = (key) => (val) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: val })); };
+  // ADD — double-tap guard and a pending state for the save button. save() is
+  // fully async (repository write, syncDoxyPepAlert + all widget syncs, then a
+  // placeholder-contact handoff); tapping Save twice mid-flight used to queue a
+  // second identical write.
+  const [isSaving, setIsSaving] = useState(false);
 
   // ADDED — real audit finding: this form had zero required-field
   // validation, unlike every sibling record form (ClinicVisits/
@@ -2218,48 +2223,54 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   const canSave = form.title.trim().length > 0;
 
   const save = async () => {
-    clearDraft(draftKey);
-    let record = form;
-    if (isNew && record.sessionId) {
-      const linkedSession = await SessionRepository.getById(record.sessionId);
-      if (!linkedSession || linkedSession.isArchived || linkedSession.status !== "active") {
-        record = { ...record, sessionId: "" };
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      clearDraft(draftKey);
+      let record = form;
+      if (isNew && record.sessionId) {
+        const linkedSession = await SessionRepository.getById(record.sessionId);
+        if (!linkedSession || linkedSession.isArchived || linkedSession.status !== "active") {
+          record = { ...record, sessionId: "" };
+        }
       }
+      if (newSessionTitle.trim()) {
+        const session = await SessionRepository.create({
+          title: newSessionTitle.trim(),
+          startAt: form.date || nowAsStoredDateTime(),
+          attendeeIds: [...(form.attendeeIds || [])],
+        });
+        record = { ...form, sessionId: session.id };
+      }
+      if (isNew) {
+        await EncounterRepository.create(record);
+      } else {
+        // ADDED 19 Aug 2026 — real undo/redo: snapshot taken right
+        // before the update actually happens, so undo has the genuine
+        // pre-edit state to restore, not a guess.
+        // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
+        // and now EncounterRepository itself (Phase 2 encryption
+        // groundwork), are all async — every step here awaited.
+        await onBeforeEdit?.(encounterId);
+        await EncounterRepository.update(encounterId, record);
+        await onAfterEdit?.(encounterId);
+      }
+      // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h notification. A new or
+      // edited Activity is exactly what can start (or, if myPosition was
+      // edited to no longer qualify, clear) a countdown — re-sync
+      // immediately rather than waiting for the next app open.
+      syncDoxyPepAlert();
+      syncAllWidgets();
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed"));
+      // ADDED 26 Aug 2026 — real ask: push straight to finishing the
+      // placeholder contact's profile right after the Activity saves,
+      // if one was created this session. Only the most recent one if
+      // several — finishing one at a time is enough, the rest are still
+      // easy to find in Contacts afterward.
+      onSaved(placeholderContactIds[placeholderContactIds.length - 1] || null);
+    } finally {
+      setIsSaving(false);
     }
-    if (newSessionTitle.trim()) {
-      const session = await SessionRepository.create({
-        title: newSessionTitle.trim(),
-        startAt: form.date || nowAsStoredDateTime(),
-        attendeeIds: [...(form.attendeeIds || [])],
-      });
-      record = { ...form, sessionId: session.id };
-    }
-    if (isNew) {
-      await EncounterRepository.create(record);
-    } else {
-      // ADDED 19 Aug 2026 — real undo/redo: snapshot taken right
-      // before the update actually happens, so undo has the genuine
-      // pre-edit state to restore, not a guess.
-      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
-      // and now EncounterRepository itself (Phase 2 encryption
-      // groundwork), are all async — every step here awaited.
-      await onBeforeEdit?.(encounterId);
-      await EncounterRepository.update(encounterId, record);
-      await onAfterEdit?.(encounterId);
-    }
-    // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h notification. A new or
-    // edited Activity is exactly what can start (or, if myPosition was
-    // edited to no longer qualify, clear) a countdown — re-sync
-    // immediately rather than waiting for the next app open.
-    syncDoxyPepAlert();
-    syncAllWidgets();
-    if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed"));
-    // ADDED 26 Aug 2026 — real ask: push straight to finishing the
-    // placeholder contact's profile right after the Activity saves,
-    // if one was created this session. Only the most recent one if
-    // several — finishing one at a time is enough, the rest are still
-    // easy to find in Contacts afterward.
-    onSaved(placeholderContactIds[placeholderContactIds.length - 1] || null);
   };
 
   return (
@@ -2290,9 +2301,9 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.encountersPink, pointerEvents: "none" }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("encounters.addEncounter", "Add Encounter") : tr("encounters.editEncounter", "Edit Encounter")}</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
+          <div onClick={() => canSave && !isSaving && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isSaving) save(); } } : undefined}
             style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
-            {tr("common.save", "Save")}
+            {isSaving ? tr("common.saving", "Saving…") : tr("common.save", "Save")}
           </div>
           <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
