@@ -98,7 +98,9 @@
     "archive": "Archive",
     "archiveAria": "Archive contacts",
     "delete": "Delete",
-    "deleteAria": "Delete contacts"
+    "deleteAria": "Delete contacts",
+    "title": "Contacts",
+    "settings": "Contacts settings"
   },
   "encounters": {
     "addEncounter": "Add Encounter",
@@ -143,7 +145,8 @@
     "deleteAria": "Delete encounters",
     "liveSession": "Live session",
     "noneRecorded": "None recorded.",
-    "session": "Session"
+    "session": "Session",
+    "titlePlaceholder": "e.g. Alex — coffee then back to theirs"
   },
   "testing": {
     "newTest": "New test",
@@ -306,7 +309,10 @@
     "overdueSince": "Overdue since",
     "exportAria": "Export vaccination",
     "archiveAria": "Archive vaccinations",
-    "deleteAria": "Delete vaccinations"
+    "deleteAria": "Delete vaccinations",
+    "doseNumber": "Dose #",
+    "noMatchSearch": "No vaccinations match your search.",
+    "emptyState": "No vaccinations logged yet. Tap + to add one."
   },
   "clinicVisits": {
     "newVisit": "New visit",
@@ -379,7 +385,10 @@
     "tapToUndo": "Tap to undo",
     "tapToRedo": "Tap to redo",
     "hide": "Hide",
-    "show": "Show"
+    "show": "Show",
+    "confirm": "Confirm",
+    "remove": "Remove",
+    "close": "Close"
   },
   "settings": {
     "title": "Settings",
@@ -466,7 +475,11 @@
     "open": "Open",
     "install": "Install / open on this device",
     "installCta": "Get the app",
-    "footer": "Local-first — nothing here leaves this device unless you choose to export or share it."
+    "footer": "Local-first — nothing here leaves this device unless you choose to export or share it.",
+    "checkUpdates": "Check for updates",
+    "latest": "Latest",
+    "reportCrash": "Report a crash",
+    "report": "Report"
   },
   "dataNetwork": {
     "title": "Data & network",
@@ -505,7 +518,9 @@
     "tierOff": "Off — disabled",
     "shortcutOnly": "Shortcut only — no data to hide",
     "privacyNote": "Privacy note:",
-    "privacyNoteBody": "Widgets are visible on the lock screen without authentication."
+    "privacyNoteBody": "Widgets are visible on the lock screen without authentication.",
+    "liveSession": "Live Session",
+    "liveSessionDesc": "Shows the active session tally you choose"
   },
   "notifHistory": {
     "title": "Notification history",
@@ -557,7 +572,9 @@
     "placeholder": "What happened, and what did you expect instead?",
     "send": "Send",
     "saveNote": "Save note",
-    "empty": "No errors logged. A real uncaught error or crash will show up here automatically."
+    "empty": "No errors logged. A real uncaught error or crash will show up here automatically.",
+    "copyAria": "Copy error report",
+    "copy": "Copy report"
   },
   "manageLists": {
     "title": "Manage lists",
@@ -866,7 +883,16 @@
     "logRefill": "Log refill",
     "exportAria": "Export medication",
     "archiveAria": "Archive medications",
-    "deleteAria": "Delete medications"
+    "deleteAria": "Delete medications",
+    "asNeeded": "As needed",
+    "daily": "Daily",
+    "twiceDaily": "Twice daily",
+    "lastDose": "Last dose",
+    "nextDose": "Next dose",
+    "stock": "Stock",
+    "adherence": "Adherence",
+    "settings": "Medication settings",
+    "title": "Medication"
   },
   "design": {
     "module": {
@@ -900,6 +926,20 @@
     "daysSinceLastVisit": "Days since last visit",
     "explDaysSinceVisit": "Days since your most recent real (already happened, not a future booking) clinic visit.",
     "explAdherence": "Average of each daily/scheduled medication own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications are not included.",
-    "doxyPepCompliance": "DoxyPEP compliance"
+    "doxyPepCompliance": "DoxyPEP compliance",
+    "overallAdherence7d": "Overall adherence (7-day)"
+  },
+  "share": {
+    "copied": "Link copied to clipboard.",
+    "copyPrompt": "Copy this link:",
+    "title": "Share SHOS",
+    "intro": "Share SHOS with someone: scan a code or send the link. Everything stays on the device — no accounts, no cloud.",
+    "android": "Android APK",
+    "androidSub": "Scan, then tap to download the latest debug APK. Updates install in place.",
+    "web": "Web app (PWA)",
+    "webSub": "Scan to open SHOS in the browser. Install from there — it auto-updates to the latest deploy.",
+    "shareLink": "Share link",
+    "savePdf": "Open share page (Save as PDF)",
+    "footer": "Local-first — nothing here leaves the device unless you choose to export or share it."
   }
 }
