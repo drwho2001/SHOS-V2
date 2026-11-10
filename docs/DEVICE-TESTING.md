@@ -26,6 +26,28 @@ Item 1 was reported as "a few spots". One specific stuck-header case was found
 and fixed. If you see another, it is a **new report** — please note what screen
 and what it looked like, because the original wording is too vague to search for.
 
+## Verified via ADB (10 Nov 2026)
+
+Tested on Xiaomi Redmi 13 (sapphiren_eea, 1080x2400, punch-hole notch) via WiFi ADB.
+Debug build installed, app launched, UI hierarchy dumped with uiautomator.
+
+| # | Item | Result |
+|---|---|---|
+| 1 | Status bar spacing — coloured headers (Contacts, Healthcare, Medication, Encounters) | **PASS.** All main headers start at y=137-148, clearing the punch-hole status bar. Headers are sticky during scroll (verified on Contacts). No white gap visible. |
+| 2 | Same on sub-headings (Testing, Clinic Visits, Vaccinations, Symptoms, Measurements) | **PASS.** All sub-headings sit at y=275+, below the main header. No status bar overlap. |
+| 4 | Month headings | **PASS.** "NOVEMBER 2026", "OCTOBER 2026", "SEPTEMBER 2026", etc. appear correctly in Encounters list. |
+| 5 | Favourites star on contact card | **PASS.** "Add to favourites" button present on contact cards. |
+
+### Cannot verify via ADB (needs manual testing)
+
+| Item | Reason |
+|---|---|
+| Screen reader (TalkBack) announcement behaviour | Needs real screen reader session |
+| Vaccination -> calendar sync | Needs manual add + calendar app check |
+| 3-month retest reminder display | Needs manual test log + visual check |
+| Escape key on medication edit form | Needs physical keyboard |
+| App Lock cold boot | App lock currently disabled in user data; needs enabling + manual test |
+
 ## Worth a look next time you have the phone
 
 These are changes we made in code and can prove in tests, but have never been
