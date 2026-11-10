@@ -531,6 +531,16 @@ if (!SMOKE_ONLY && !DOCS_ONLY) {
     return { ok: r.status === 0, note: r.status === 0 ? "" : lastLines(r.stdout || r.stderr) };
   });
 
+  // --- gate 4b: negative-status phrases ------------------------------------
+  // Negative-status phrases ("not implemented", "still open", "not attempted",
+  // "no test") in instruction docs bias later sessions into rebuilding shipped
+  // features. This gate fails on the first occurrence, so a session cannot
+  // accidentally leave one behind.
+  gate("negative status", () => {
+    const r = run("node", ["scripts/check-negative-status.mjs"]);
+    return { ok: r.status === 0, note: r.status === 0 ? "" : lastLines(r.stdout || r.stderr) };
+  });
+
   // --- gate 5: inherited instructions -------------------------------------
   // CLAUDE.md is the ONLY thing a new session inherits. If an instruction goes
   // missing the session does not fail - it just does something already known to

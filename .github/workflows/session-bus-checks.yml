@@ -1,0 +1,79 @@
+# session-bus-checks.yml — draft CI integration for the session-bus health checks
+#
+# This workflow runs the three new gates added by the session-fix plan:
+#   - check:negative-status   (lint docs for negative-status claims)
+#   - validate-claims         (flag unknown/REPAIR owners in claims.json)
+#   - check:heartbeat         (fail if any session heartbeat is stale)
+#
+# STATUS: DRAFT — not yet wired into the main CI pipeline. The owner must
+# approve before this becomes a required gate. Once approved, merge the steps
+# into verify-changes.mjs or add them as a separate job in smoke-test.yml.
+#
+# Prerequisites:
+#   - scripts/validate-claims.js, scripts/check-heartbeat.js,
+#     scripts/check-negative-status.mjs must exist (they do as of 10 Nov 2026)
+#   - package.json must have the corresponding npm scripts (it does)
+
+name: Session Bus Health Checks (draft)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  session-bus-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Gate 1: no negative-status phrases in instruction docs.
+      # This is a lint step that fails on the first occurrence.
+      # WIRED: this gate is also in verify-changes.mjs as "negative status",
+      # so it runs as part of `npm run verify` locally and in CI.
+      - name: Negative-status phrase check
+        run: npm run check:negative-status
+
+      # Gate 2: claim ownership validation.
+      # Fails if any claim holder has owner "unknown" or "REPAIR",
+      # or if any pool task history contains a "not attempted" note.
+      # NOTE: this will currently FAIL against the existing bus data
+      # (105 violations). The owner must decide whether to remediate
+      # the historical claims or add a baseline exemption before
+      # making this a required gate.
+      # LOCAL-ONLY: requires ~/.shos-session-bus data not in repo.
+      - name: Validate claims
+        run: npm run validate-claims
+        continue-on-error: true
+
+      # Gate 3: heartbeat freshness.
+      # Checks that all sessions have refreshed their heartbeat within
+      # the last 5 minutes. Like validate-claims, this requires bus data
+      # that is not in the repo.
+      # LOCAL-ONLY: requires ~/.shos-session-bus data not in repo.
+      - name: Check heartbeats
+        run: |
+          for dir in ~/.shos-session-bus/*/state/heartbeat.json; do
+            if [ -f "$dir" ]; then
+              session=$(basename $(dirname $(dirname "$dir")))
+              node scripts/check-heartbeat.js "$session" || exit 1
+            fi
+          done
+        continue-on-error: true

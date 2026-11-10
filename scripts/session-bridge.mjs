@@ -427,6 +427,30 @@ commands.inbox = async () => {
   writeJson(INBOX_CURSOR_PATH, store);
 };
 
+// ── session heartbeat ───────────────────────────────────────────────────────
+//
+// One small file per session at <bus-home>/<id>/state/heartbeat.json. Local-only
+// by design: CI only needs to know the file was touched recently, so the check
+// does not depend on network. The id must be a plain safe path segment.
+const HEARTBEAT_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+
+function heartbeatPathFor(sessionId) {
+  return join(HOME_DIR, sessionId, "state", "heartbeat.json");
+}
+
+commands.heartbeat = async (args) => {
+  const sessionId = args[0];
+  if (!sessionId || !HEARTBEAT_ID_RE.test(sessionId)) {
+    console.error("Usage: heartbeat <session-id>");
+    process.exit(2);
+  }
+  mkdirSync(join(HOME_DIR, sessionId, "state"), { recursive: true });
+  const payload = { sessionId, timestamp: new Date().toISOString() };
+  writeFileSync(heartbeatPathFor(sessionId), JSON.stringify(payload), "utf8");
+  console.log(`heartbeat updated for ${sessionId} at ${stamp(payload.timestamp)} ${TZ_NOTE}`);
+};
+// ── end session heartbeat ───────────────────────────────────────────────────
+
 commands.notice = async (args) => {
   const text = args.join(" ");
   if (!text) { console.error("Usage: notice <text>"); process.exit(2); }
@@ -1654,6 +1678,7 @@ commands["help"] = async () => {
   poll <sessionID> [N]          new messages since last poll
   read <sessionID> [N]          recent transcript
   notice <text>                leave a message the other session picks up
+  heartbeat <session-id>      record a local heartbeat for the session (see check-heartbeat.js)
   inbox                        show notices + task folders since last check
   task new <slug> [brief]      create a task folder
   task write <slug> <file>     write a numbered doc (refuses to overwrite)
