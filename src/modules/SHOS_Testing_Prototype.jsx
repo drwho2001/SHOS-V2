@@ -1617,7 +1617,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
         </div>
       )}
       {resultPending ? (
-        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isOlder ? 0.5 : 1 }}>{tr("testing.pendingExpected", "Pending — expected {date}", { date: formatDate(t.resultDate) })}</div>
+        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isOlder ? 0.5 : 1 }}>{tr("testing.pendingExpected", "Pending — expected {date}", { date: formatDate(t.resultDate) })}</div>
       ) : resultNames.length > 0 && (
         <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : T.goldText, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
       )}
