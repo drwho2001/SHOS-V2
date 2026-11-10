@@ -86,25 +86,43 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "",
       "gender": "",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
-      "age": null,
+      "age": 31,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
       "recon": "",
       "contactableVia": [],
-      "city": "",
+      "city": "London",
       "address": "",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -115,8 +133,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Unknown / not discussed"
+      ],
+      "sexualPosition": [
+        "Unknown / not discussed"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -143,12 +165,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "",
       "gender": "",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
-      "age": null,
+      "age": 32,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "jordan_snap",
       "fabguys": "",
       "fabswingers": "",
@@ -161,9 +197,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": true,
       "carDetails": "Blue Ford Focus",
       "carRegistration": "",
@@ -174,8 +214,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Switch"
+      ],
+      "sexualPosition": [
+        "Vers"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -202,12 +246,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "",
       "gender": "",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
-      "age": null,
+      "age": 29,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "07700 900123",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -220,9 +278,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -233,8 +295,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Unknown / not discussed"
+      ],
+      "sexualPosition": [
+        "Unknown / not discussed"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -261,12 +327,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "",
       "gender": "",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": null,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -277,9 +357,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -318,12 +402,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "He/him",
       "gender": "Male",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 34,
       "ageIsApprox": false,
-      "profilePicture": "",
+      "profilePicture": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23b8ded8%22%2F%3E%3Cpath%20d%3D%22M31%2058c0-26%2013-41%2033-41s33%2015%2033%2041v18c-9%2010-20%2015-33%2015S40%2086%2031%2076Z%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M12%20128c3-29%2022-44%2052-44s49%2015%2052%2044%22%20fill%3D%22%232f7774%22%2F%3E%3Cellipse%20cx%3D%2264%22%20cy%3D%2258%22%20rx%3D%2229%22%20ry%3D%2235%22%20fill%3D%22%23c88864%22%2F%3E%3Cpath%20d%3D%22M31%2056c0-24%2014-39%2033-39s34%2015%2034%2039c-6-15-15-21-22-25-9%2011-25%2018-45%2020Z%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M56%2074c5%204%2011%204%2016%200%22%20fill%3D%22none%22%20stroke%3D%22%238b4f42%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "07700 900456",
+      "email": "fmercury@example.test",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -332,13 +430,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Phone/WhatsApp"
       ],
       "city": "London",
-      "address": "",
+      "address": "Soho, London W1D 3QF",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": true,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_mercury_friday",
+          "days": [
+            5
+          ],
+          "start": "20:00",
+          "end": "02:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -349,8 +460,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Unknown / not discussed"
+      ],
+      "sexualPosition": [
+        "Unknown / not discussed"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -368,7 +483,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_005",
-      "createdAt": "2026-09-16T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -377,27 +492,58 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "She/her",
       "gender": "Trans-female",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 29,
       "ageIsApprox": true,
-      "profilePicture": "",
+      "profilePicture": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23f2c9ba%22%2F%3E%3Cpath%20d%3D%22M31%2058c0-26%2013-41%2033-41s33%2015%2033%2041v18c-9%2010-20%2015-33%2015S40%2086%2031%2076Z%22%20fill%3D%22%23241f2a%22%2F%3E%3Cpath%20d%3D%22M12%20128c3-29%2022-44%2052-44s49%2015%2052%2044%22%20fill%3D%22%23bd5d57%22%2F%3E%3Cellipse%20cx%3D%2264%22%20cy%3D%2258%22%20rx%3D%2229%22%20ry%3D%2235%22%20fill%3D%22%2391563f%22%2F%3E%3Cpath%20d%3D%22M28%2060c-4-27%2012-45%2036-45s40%2018%2036%2045c-6-17-17-25-26-28-10%2013-27%2021-46%2022Z%22%20fill%3D%22%23241f2a%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M56%2074c5%204%2011%204%2016%200%22%20fill%3D%22none%22%20stroke%3D%22%238b4f42%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "sylvie_j@example.test",
       "snapchat": "sylvie_ldn",
       "fabguys": "",
       "fabswingers": "",
       "recon": "",
       "contactableVia": [
-        "Snapchat"
+        "Sniffies",
+        "Grindr",
+        "Feeld",
+        "Bumble"
       ],
       "city": "London",
       "address": "",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_sylvie_weekend",
+          "days": [
+            5,
+            6
+          ],
+          "start": "19:00",
+          "end": "23:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -408,8 +554,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "sub"
+      ],
+      "sexualPosition": [
+        "bottom"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -419,7 +569,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "contraception": [],
       "knownPrepDoxy": [],
       "lastTestedDate": "",
-      "notes": "",
+      "notes": "Often free after work on Friday or Saturday.",
       "linkedContactIds": [],
       "linkedContactLabels": {},
       "rating": "",
@@ -427,7 +577,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_006",
-      "createdAt": "2026-10-02T08:00:00.000Z",
+      "createdAt": "2026-10-17T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -436,12 +586,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "She/her",
       "gender": "Female",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 26,
       "ageIsApprox": false,
-      "profilePicture": "",
+      "profilePicture": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23d4c8e8%22%2F%3E%3Cpath%20d%3D%22M31%2058c0-26%2013-41%2033-41s33%2015%2033%2041v18c-9%2010-20%2015-33%2015S40%2086%2031%2076Z%22%20fill%3D%22%2351384a%22%2F%3E%3Cpath%20d%3D%22M12%20128c3-29%2022-44%2052-44s49%2015%2052%2044%22%20fill%3D%22%236f5b9b%22%2F%3E%3Cellipse%20cx%3D%2264%22%20cy%3D%2258%22%20rx%3D%2229%22%20ry%3D%2235%22%20fill%3D%22%23e0aa84%22%2F%3E%3Cpath%20d%3D%22M31%2057c0-25%2013-40%2033-40s33%2015%2033%2040c-8-12-14-19-20-28-12%2012-28%2020-46%2028Z%22%20fill%3D%22%2351384a%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M56%2074c5%204%2011%204%2016%200%22%20fill%3D%22none%22%20stroke%3D%22%238b4f42%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "07700 900789",
+      "email": "grace@example.test",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -454,9 +618,22 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_grace_tuesday",
+          "days": [
+            2
+          ],
+          "start": "18:00",
+          "end": "22:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -467,8 +644,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Unknown / not discussed"
+      ],
+      "sexualPosition": [
+        "Unknown / not discussed"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -486,7 +667,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_007",
-      "createdAt": "2026-10-17T08:00:00.000Z",
+      "createdAt": "2026-11-01T09:00:00.000Z",
       "isArchived": false
     },
     {
@@ -495,27 +676,62 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "She/her",
       "gender": "Female",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 31,
       "ageIsApprox": false,
-      "profilePicture": "",
+      "profilePicture": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23f0ddaa%22%2F%3E%3Cpath%20d%3D%22M31%2058c0-26%2013-41%2033-41s33%2015%2033%2041v18c-9%2010-20%2015-33%2015S40%2086%2031%2076Z%22%20fill%3D%22%23322622%22%2F%3E%3Cpath%20d%3D%22M12%20128c3-29%2022-44%2052-44s49%2015%2052%2044%22%20fill%3D%22%23a66c25%22%2F%3E%3Cellipse%20cx%3D%2264%22%20cy%3D%2258%22%20rx%3D%2229%22%20ry%3D%2235%22%20fill%3D%22%23b87350%22%2F%3E%3Cpath%20d%3D%22M30%2057c-2-25%2012-41%2034-41%2021%200%2036%2016%2034%2041-9-13-15-21-20-30-11%2015-28%2024-48%2030Z%22%20fill%3D%22%23322622%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M56%2074c5%204%2011%204%2016%200%22%20fill%3D%22none%22%20stroke%3D%22%238b4f42%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "07700 900321",
+      "email": "morgan@example.test",
       "snapchat": "",
-      "fabguys": "",
-      "fabswingers": "",
+      "fabguys": "morgan_g",
+      "fabswingers": "morgan_s",
       "recon": "",
       "contactableVia": [
         "Phone/WhatsApp"
       ],
       "city": "London",
-      "address": "",
+      "address": "Soho, London W1D 3QF",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_morgan_tuesday",
+          "days": [
+            2
+          ],
+          "start": "18:00",
+          "end": "22:00"
+        },
+        {
+          "id": "seed_morgan_sunday",
+          "days": [
+            0
+          ],
+          "start": "14:00",
+          "end": "18:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -530,8 +746,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Unknown / not discussed"
+      ],
+      "sexualPosition": [
+        "Unknown / not discussed"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -549,7 +769,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_008",
-      "createdAt": "2026-07-06T08:00:00.000Z",
+      "createdAt": "2026-07-21T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -558,32 +778,70 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "They/them",
       "gender": "Non-binary",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 24,
       "ageIsApprox": false,
-      "profilePicture": "",
+      "profilePicture": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23f2c9ba%22%2F%3E%3Cpath%20d%3D%22M31%2058c0-26%2013-41%2033-41s33%2015%2033%2041v18c-9%2010-20%2015-33%2015S40%2086%2031%2076Z%22%20fill%3D%22%23241f2a%22%2F%3E%3Cpath%20d%3D%22M12%20128c3-29%2022-44%2052-44s49%2015%2052%2044%22%20fill%3D%22%23bd5d57%22%2F%3E%3Cellipse%20cx%3D%2264%22%20cy%3D%2258%22%20rx%3D%2229%22%20ry%3D%2235%22%20fill%3D%22%2391563f%22%2F%3E%3Cpath%20d%3D%22M28%2060c-4-27%2012-45%2036-45s40%2018%2036%2045c-6-17-17-25-26-28-10%2013-27%2021-46%2022Z%22%20fill%3D%22%23241f2a%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M56%2074c5%204%2011%204%2016%200%22%20fill%3D%22none%22%20stroke%3D%22%238b4f42%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "priya@example.test",
       "snapchat": "priya_bm",
       "fabguys": "",
       "fabswingers": "",
       "recon": "",
       "contactableVia": [
-        "Snapchat"
+        "Telegram",
+        "Messenger",
+        "Signal",
+        "Discord",
+        "Bluesky"
       ],
       "city": "Birmingham",
-      "address": "",
-      "hosts": "Sometimes",
-      "travels": "Yes",
-      "travelMode": [
-        "Public transport"
-      ],
-      "availability": [
-        "Weekends",
-        "Nights"
-      ],
+      "address": "Birmingham city centre, B1 1AA",
+      "hosts": "",
+      "travels": "",
+      "travelMode": [],
+      "outdoorMeetup": true,
+      "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_priya_weekday",
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "start": "18:00",
+          "end": "22:00"
+        },
+        {
+          "id": "seed_priya_saturday",
+          "days": [
+            6
+          ],
+          "start": "14:00",
+          "end": "18:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -626,7 +884,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_009",
-      "createdAt": "2026-10-20T08:00:00.000Z",
+      "createdAt": "2026-11-04T09:00:00.000Z",
       "isArchived": false
     },
     {
@@ -635,27 +893,56 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "",
       "gender": "",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
-      "age": null,
+      "age": 30,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "07700 900123",
+      "email": "sam_t@example.test",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
       "recon": "",
       "contactableVia": [
-        "Phone/WhatsApp"
+        "Signal",
+        "Discord"
       ],
       "city": "Manchester",
-      "address": "",
+      "address": "Manchester city centre, M1 3EZ",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_sam_t_weekend",
+          "days": [
+            5,
+            6
+          ],
+          "start": "19:00",
+          "end": "23:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -666,8 +953,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Switch"
+      ],
+      "sexualPosition": [
+        "Vers"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -685,7 +976,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_010",
-      "createdAt": "2026-10-23T08:00:00.000Z",
+      "createdAt": "2026-11-07T09:00:00.000Z",
       "isArchived": false
     },
     {
@@ -694,27 +985,58 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "He/him",
       "gender": "Trans-male",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 38,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "07700 900654",
+      "email": "devon@example.test",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
       "recon": "",
       "contactableVia": [
-        "Phone/WhatsApp"
+        "Telegram",
+        "Signal"
       ],
       "city": "Bristol",
-      "address": "",
+      "address": "Bristol city centre, BS1 3QF",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_devon_weekday",
+          "days": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "start": "18:00",
+          "end": "22:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -729,8 +1051,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Dom"
+      ],
+      "sexualPosition": [
+        "Vers"
+      ],
       "length": "",
       "thickness": "",
       "foreskin": "",
@@ -752,7 +1078,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_011",
-      "createdAt": "2026-08-17T08:00:00.000Z",
+      "createdAt": "2026-09-01T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -761,25 +1087,56 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "He/they",
       "gender": "Male",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 45,
       "ageIsApprox": true,
-      "profilePicture": "",
+      "profilePicture": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2264%22%20fill%3D%22%23b8ded8%22%2F%3E%3Cpath%20d%3D%22M31%2058c0-26%2013-41%2033-41s33%2015%2033%2041v18c-9%2010-20%2015-33%2015S40%2086%2031%2076Z%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M12%20128c3-29%2022-44%2052-44s49%2015%2052%2044%22%20fill%3D%22%232f7774%22%2F%3E%3Cellipse%20cx%3D%2264%22%20cy%3D%2258%22%20rx%3D%2229%22%20ry%3D%2235%22%20fill%3D%22%23c88864%22%2F%3E%3Cpath%20d%3D%22M31%2056c0-24%2014-39%2033-39s34%2015%2034%2039c-6-15-15-21-22-25-9%2011-25%2018-45%2020Z%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2259%22%20r%3D%222.4%22%20fill%3D%22%23302923%22%2F%3E%3Cpath%20d%3D%22M56%2074c5%204%2011%204%2016%200%22%20fill%3D%22none%22%20stroke%3D%22%238b4f42%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "kai@example.test",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
       "recon": "",
       "contactableVia": [],
       "city": "Leeds",
-      "address": "",
+      "address": "Leeds city centre, LS1 4AP",
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [
+        {
+          "id": "seed_kai_weekday",
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "start": "18:00",
+          "end": "22:00"
+        }
+      ],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "Europe/London",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -830,7 +1187,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_012",
-      "createdAt": "2026-04-09T08:00:00.000Z",
+      "createdAt": "2026-04-24T08:00:00.000Z",
       "isArchived": false
     },
     {
@@ -839,12 +1196,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "She/they",
       "gender": "Non-binary",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 27,
       "ageIsApprox": true,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -855,9 +1226,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": true,
       "carDetails": "Red Mini Cooper",
       "carRegistration": "AB12 CDE",
@@ -889,7 +1264,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": true,
       "id": "contact_013",
-      "createdAt": "2026-10-11T08:00:00.000Z",
+      "createdAt": "2026-10-26T09:00:00.000Z",
       "isArchived": false
     },
     {
@@ -898,12 +1273,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "",
       "gender": "",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": null,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -914,9 +1303,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -946,7 +1339,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": true,
       "favourited": false,
       "id": "contact_014",
-      "createdAt": "2026-10-24T08:00:00.000Z",
+      "createdAt": "2026-11-08T09:00:00.000Z",
       "isArchived": false
     },
     {
@@ -955,12 +1348,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "He/him",
       "gender": "Male",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": null,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -971,9 +1378,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "Unavailable foreseeably",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -1003,7 +1414,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_015",
-      "createdAt": "2025-12-30T09:00:00.000Z",
+      "createdAt": "2026-01-14T09:00:00.000Z",
       "isArchived": true
     },
     {
@@ -1012,12 +1423,26 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "nickname": "",
       "pronouns": "She/her",
       "gender": "Female",
+      "piercings": "",
+      "tattoos": "",
       "hivStatus": null,
       "hivStatusInformedDate": "",
       "age": 33,
       "ageIsApprox": false,
       "profilePicture": "",
+      "fistingProfile": {
+        "role": "",
+        "handSize": "",
+        "maxDepth": null,
+        "maxDepthUnit": "cm",
+        "maxWidth": null,
+        "maxWidthUnit": "cm",
+        "maxFingers": null,
+        "canTakeDoubles": false,
+        "notes": ""
+      },
       "phone": "",
+      "email": "",
       "snapchat": "",
       "fabguys": "",
       "fabswingers": "",
@@ -1028,9 +1453,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "hosts": "",
       "travels": "",
       "travelMode": [],
+      "outdoorMeetup": false,
       "availability": [],
       "nonAvailabilityRules": [],
       "readilyAvailable": "",
+      "weeklyAvailability": [],
+      "availabilityExceptions": [],
+      "availabilityTimeZone": "",
       "drives": false,
       "carDetails": "",
       "carRegistration": "",
@@ -1041,8 +1470,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "statedKinks": [],
       "limits": [],
       "knownChems": [],
-      "bdsmRole": [],
-      "sexualPosition": [],
+      "bdsmRole": [
+        "Unknown / not discussed"
+      ],
+      "sexualPosition": [
+        "Unknown / not discussed"
+      ],
       "length": "Long",
       "thickness": "Thick",
       "foreskin": "",
@@ -1062,7 +1495,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "markedComplete": false,
       "favourited": false,
       "id": "contact_016",
-      "createdAt": "2026-09-11T08:00:00.000Z",
+      "createdAt": "2026-09-26T08:00:00.000Z",
       "isArchived": false
     }
   ],
@@ -1092,6 +1525,10 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Second time meeting up.",
       "enjoymentRating": 85,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_001",
       "createdAt": "2026-07-20T21:00:00.000Z",
       "isArchived": false
@@ -1122,6 +1559,10 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 70,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_002",
       "createdAt": "2026-08-02T18:00:00.000Z",
       "isArchived": false
@@ -1129,7 +1570,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "F. Mercury — his place",
-      "date": "2026-10-12T21:30:00.000Z",
+      "date": "2026-10-27T22:30:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1154,14 +1595,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 90,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_003",
-      "createdAt": "2026-10-12T22:00:00.000Z",
+      "createdAt": "2026-10-27T23:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Sylvie — drinks then hers",
-      "date": "2026-10-20T20:00:00.000Z",
+      "date": "2026-11-04T21:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1185,14 +1630,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 80,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_004",
-      "createdAt": "2026-10-20T21:00:00.000Z",
+      "createdAt": "2026-11-04T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Grace — first date",
-      "date": "2026-10-24T18:00:00.000Z",
+      "date": "2026-11-08T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1214,14 +1663,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Good first date, meeting again next week.",
       "enjoymentRating": 75,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_005",
-      "createdAt": "2026-10-24T20:00:00.000Z",
+      "createdAt": "2026-11-08T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — first date",
-      "date": "2026-07-07T18:30:00.000Z",
+      "date": "2026-07-22T18:30:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1245,14 +1698,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Really clicked — seeing her again.",
       "enjoymentRating": 88,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_006",
-      "createdAt": "2026-07-07T21:00:00.000Z",
+      "createdAt": "2026-07-22T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — hers, exclusive now",
-      "date": "2026-07-22T19:00:00.000Z",
+      "date": "2026-08-06T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1274,14 +1731,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Decided to be exclusive — stopping the pill, not using condoms going forward.",
       "enjoymentRating": 92,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_007",
-      "createdAt": "2026-07-22T21:30:00.000Z",
+      "createdAt": "2026-08-06T21:30:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — weekend away",
-      "date": "2026-08-05T17:00:00.000Z",
+      "date": "2026-08-20T17:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1303,14 +1764,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 95,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_008",
-      "createdAt": "2026-08-05T22:00:00.000Z",
+      "createdAt": "2026-08-20T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — hers",
-      "date": "2026-09-23T19:00:00.000Z",
+      "date": "2026-10-08T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1332,14 +1797,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "First time together again since the miscarriage — took it slow.",
       "enjoymentRating": 80,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_009",
-      "createdAt": "2026-09-23T21:00:00.000Z",
+      "createdAt": "2026-10-08T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Morgan — mine",
-      "date": "2026-10-15T19:30:00.000Z",
+      "date": "2026-10-30T20:30:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1361,14 +1830,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 90,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_010",
-      "createdAt": "2026-10-15T21:00:00.000Z",
+      "createdAt": "2026-10-30T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Jordan — his place",
-      "date": "2026-08-17T20:00:00.000Z",
+      "date": "2026-09-01T20:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1394,14 +1867,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 85,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_011",
-      "createdAt": "2026-08-17T22:00:00.000Z",
+      "createdAt": "2026-09-01T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Sauna trip",
-      "date": "2026-09-11T15:00:00.000Z",
+      "date": "2026-09-26T15:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Sauna",
@@ -1425,14 +1902,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 72,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_012",
-      "createdAt": "2026-09-11T17:00:00.000Z",
+      "createdAt": "2026-09-26T17:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Priya — birthday drinks then mine",
-      "date": "2026-10-21T21:00:00.000Z",
+      "date": "2026-11-05T22:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1465,14 +1946,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 88,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_013",
-      "createdAt": "2026-10-21T22:30:00.000Z",
+      "createdAt": "2026-11-05T23:30:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Devon — app hookup, his place",
-      "date": "2026-08-22T19:00:00.000Z",
+      "date": "2026-09-06T19:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1494,14 +1979,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 78,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_014",
-      "createdAt": "2026-08-22T21:00:00.000Z",
+      "createdAt": "2026-09-06T21:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Kai — his flat",
-      "date": "2026-04-14T20:00:00.000Z",
+      "date": "2026-04-29T20:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Hookup",
@@ -1532,14 +2021,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Not really my thing, won't repeat.",
       "enjoymentRating": 60,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_015",
-      "createdAt": "2026-04-14T22:00:00.000Z",
+      "createdAt": "2026-04-29T22:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Ash — mine, regular thing",
-      "date": "2026-10-16T19:00:00.000Z",
+      "date": "2026-10-31T20:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1563,14 +2056,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 93,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_016",
-      "createdAt": "2026-10-16T21:30:00.000Z",
+      "createdAt": "2026-10-31T22:30:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Nat — coffee date",
-      "date": "2026-09-16T14:00:00.000Z",
+      "date": "2026-10-01T14:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Date/Chill",
@@ -1592,14 +2089,18 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "",
       "enjoymentRating": 65,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_017",
-      "createdAt": "2026-09-16T16:00:00.000Z",
+      "createdAt": "2026-10-01T16:00:00.000Z",
       "isArchived": false
     },
     {
       "isDemo": true,
       "title": "Birthday party afters",
-      "date": "2026-10-06T22:00:00.000Z",
+      "date": "2026-10-21T22:00:00.000Z",
       "dateEnd": "",
       "isDateTime": true,
       "encounterType": "Group",
@@ -1628,8 +2129,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Ended up back at Ash's after the party.",
       "enjoymentRating": 82,
       "symptomsNoted": [],
+      "sessionId": "",
+      "loadsCount": 0,
+      "fistCount": 0,
+      "activityDetails": [],
       "id": "encounter_018",
-      "createdAt": "2026-10-06T22:45:00.000Z",
+      "createdAt": "2026-10-21T22:45:00.000Z",
       "isArchived": false
     }
   ],
@@ -1637,9 +2142,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Symptomatic screen — Gonorrhoea positive",
-      "date": "2026-10-17T09:00:00.000Z",
-      "resultDate": "2026-10-19T09:00:00.000Z",
-      "setting": "🏥🤢 Clinic - Symptomatic",
+      "date": "2026-11-01T10:00:00.000Z",
+      "resultDate": "2026-11-03T10:00:00.000Z",
+      "setting": "clinicSymptomatic",
       "sampleType": [
         "Urine",
         "Rectal swab"
@@ -1657,7 +2162,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "result_001"
       ],
       "mostRecent": false,
-      "followUpActionedDate": "2026-10-18T09:00:00.000Z",
+      "followUpActionedDate": "2026-11-02T10:00:00.000Z",
       "writtenPlan": "",
       "notes": "Discharge + discomfort a few days after an encounter. Positive for Gonorrhoea, negative for everything else screened.",
       "trackingInfo": "",
@@ -1678,9 +2183,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Test of cure — Gonorrhoea",
-      "date": "2026-10-24T09:00:00.000Z",
-      "resultDate": "2026-10-25T10:00:00.000Z",
-      "setting": "🏥😎 Clinic - Routine",
+      "date": "2026-11-08T10:00:00.000Z",
+      "resultDate": "2026-11-09T10:00:00.000Z",
+      "setting": "clinicRoutine",
       "sampleType": [
         "Urine",
         "Rectal swab"
@@ -1714,9 +2219,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Routine PrEP monitoring screen",
-      "date": "2026-07-18T09:00:00.000Z",
-      "resultDate": "2026-07-21T09:00:00.000Z",
-      "setting": "🏥😎 Clinic - Routine",
+      "date": "2026-08-02T09:00:00.000Z",
+      "resultDate": "2026-08-05T09:00:00.000Z",
+      "setting": "clinicRoutine",
       "sampleType": [
         "Blood",
         "Urine"
@@ -1751,9 +2256,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Pre-relationship screen",
-      "date": "2026-07-05T09:00:00.000Z",
-      "resultDate": "2026-07-08T09:00:00.000Z",
-      "setting": "🏥😎 Clinic - Routine",
+      "date": "2026-07-20T09:00:00.000Z",
+      "resultDate": "2026-07-23T09:00:00.000Z",
+      "setting": "clinicRoutine",
       "sampleType": [
         "Blood",
         "Urine"
@@ -1788,9 +2293,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Home kit STI screen",
-      "date": "2026-10-23T09:00:00.000Z",
+      "date": "2026-11-07T10:00:00.000Z",
       "resultDate": null,
-      "setting": "🏠 Home",
+      "setting": "home",
       "sampleType": [
         "Urine",
         "Blood"
@@ -1825,9 +2330,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Symptomatic screen — Chlamydia positive",
-      "date": "2026-04-13T09:00:00.000Z",
-      "resultDate": "2026-04-16T09:00:00.000Z",
-      "setting": "🏥🤢 Clinic - Symptomatic",
+      "date": "2026-04-28T09:00:00.000Z",
+      "resultDate": "2026-05-01T09:00:00.000Z",
+      "setting": "clinicSymptomatic",
       "sampleType": [
         "Urine"
       ],
@@ -1865,9 +2370,9 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Routine annual screen",
-      "date": "2026-05-19T09:00:00.000Z",
-      "resultDate": "2026-05-24T09:00:00.000Z",
-      "setting": "🏥😎 Clinic - Routine",
+      "date": "2026-06-03T09:00:00.000Z",
+      "resultDate": "2026-06-08T09:00:00.000Z",
+      "setting": "clinicRoutine",
       "sampleType": [
         "Blood",
         "Urine",
@@ -2067,7 +2572,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Treatment — Gonorrhoea",
-      "date": "2026-10-19T13:00:00.000Z",
+      "date": "2026-11-03T14:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2110,7 +2615,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Early pregnancy scan",
-      "date": "2026-08-17T13:00:00.000Z",
+      "date": "2026-09-01T13:00:00.000Z",
       "location": "Local hospital — antenatal unit",
       "locationId": "",
       "clinician": [
@@ -2140,7 +2645,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Miscarriage aftercare",
-      "date": "2026-09-06T13:00:00.000Z",
+      "date": "2026-09-21T13:00:00.000Z",
       "location": "Local hospital — antenatal unit",
       "locationId": "",
       "clinician": [
@@ -2170,7 +2675,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Treatment — Chlamydia",
-      "date": "2026-04-13T13:00:00.000Z",
+      "date": "2026-04-28T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2180,7 +2685,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Treatment"
       ],
       "isFutureAppointment": true,
-      "nextReviewDate": "2026-05-04T13:00:00.000Z",
+      "nextReviewDate": "2026-05-19T13:00:00.000Z",
       "followUpType": "Test of cure",
       "clinicalImpression": "",
       "clinicalNotes": "Confirmed Chlamydia on symptomatic screen. Doxycycline course given. TOC advised in 3 weeks.",
@@ -2202,7 +2707,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "Routine annual screen",
-      "date": "2026-05-19T13:00:00.000Z",
+      "date": "2026-06-03T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2247,7 +2752,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "title": "IUD insertion",
-      "date": "2026-08-12T13:00:00.000Z",
+      "date": "2026-08-27T13:00:00.000Z",
       "location": "56 Dean Street",
       "locationId": "",
       "clinician": [
@@ -2284,13 +2789,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "High-risk status"
       ],
       "time": null,
-      "date": "2026-10-25T11:00:00.000Z",
+      "date": "2026-11-09T11:00:00.000Z",
       "notes": "Offered given recent Gonorrhoea diagnosis and ongoing risk.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 1,
-          "date": "2026-10-25T11:00:00.000Z",
+          "date": "2026-11-09T11:00:00.000Z",
           "provider": "56 Dean Street",
           "injectionSite": "Deltoid",
           "notes": "Offered given recent Gonorrhoea diagnosis and ongoing risk."
@@ -2307,13 +2812,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Routine"
       ],
       "time": null,
-      "date": "2026-07-18T10:00:00.000Z",
+      "date": "2026-08-02T10:00:00.000Z",
       "notes": "Routine MenB vaccination, offered opportunistically at a clinic visit.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 1,
-          "date": "2026-07-18T10:00:00.000Z",
+          "date": "2026-08-02T10:00:00.000Z",
           "provider": "56 Dean Street",
           "injectionSite": "Deltoid",
           "notes": "Routine MenB vaccination, offered opportunistically at a clinic visit."
@@ -2330,13 +2835,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Routine"
       ],
       "time": null,
-      "date": "2026-05-19T10:00:00.000Z",
+      "date": "2026-06-03T10:00:00.000Z",
       "notes": "First of a 3-dose Twinrix course, offered at the routine annual screen.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 1,
-          "date": "2026-05-19T10:00:00.000Z",
+          "date": "2026-06-03T10:00:00.000Z",
           "provider": "56 Dean Street",
           "injectionSite": "Deltoid",
           "notes": "First of a 3-dose Twinrix course, offered at the routine annual screen."
@@ -2353,14 +2858,14 @@ export const RAW_LEGACY_SEED_ARRAYS = {
         "Routine"
       ],
       "time": null,
-      "date": "2026-06-18T10:00:00.000Z",
+      "date": "2026-07-03T10:00:00.000Z",
       "notes": "Second dose, on schedule. Third and final dose due at the 6-month mark.",
       "symptomIds": [],
       "doses": [
         {
           "doseNumber": 2,
-          "date": "2026-06-18T10:00:00.000Z",
-          "nextDue": "2026-11-15",
+          "date": "2026-07-03T10:00:00.000Z",
+          "nextDue": "2026-11-30",
           "provider": "56 Dean Street",
           "injectionSite": "Gluteal",
           "notes": "Second dose, on schedule. Third and final dose due at the 6-month mark."
@@ -2377,8 +2882,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomIds": [
         "symptom_cat_001"
       ],
-      "dateStarted": "2026-10-15T07:00:00.000Z",
-      "dateResolved": "2026-10-23T07:00:00.000Z",
+      "dateStarted": "2026-10-30T08:00:00.000Z",
+      "dateResolved": "2026-11-07T08:00:00.000Z",
       "severity": "Moderate",
       "relatedEncounterIds": [
         "seed_encounter_9003"
@@ -2396,8 +2901,8 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomIds": [
         "symptom_cat_001"
       ],
-      "dateStarted": "2026-04-11T07:00:00.000Z",
-      "dateResolved": "2026-04-19T07:00:00.000Z",
+      "dateStarted": "2026-04-26T07:00:00.000Z",
+      "dateResolved": "2026-05-04T07:00:00.000Z",
       "severity": "Mild",
       "relatedEncounterIds": [
         "seed_encounter_9015"
@@ -2415,7 +2920,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomIds": [
         "symptom_cat_001"
       ],
-      "dateStarted": "2026-10-24T07:00:00.000Z",
+      "dateStarted": "2026-11-08T08:00:00.000Z",
       "dateResolved": null,
       "severity": "Mild",
       "relatedEncounterIds": [],
@@ -2429,7 +2934,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "CD4 count",
-      "date": "2026-09-26T08:00:00.000Z",
+      "date": "2026-10-11T08:00:00.000Z",
       "value": 620,
       "unit": "cells/µL",
       "enteredValue": 620,
@@ -2447,7 +2952,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Weight",
-      "date": "2026-10-12T08:00:00.000Z",
+      "date": "2026-10-27T09:00:00.000Z",
       "value": 68.04,
       "unit": "kg",
       "enteredValue": 150,
@@ -2465,7 +2970,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Blood pressure",
-      "date": "2026-10-12T08:00:00.000Z",
+      "date": "2026-10-27T09:00:00.000Z",
       "value": null,
       "unit": "mmHg",
       "enteredValue": null,
@@ -2483,7 +2988,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Weight",
-      "date": "2026-10-24T08:00:00.000Z",
+      "date": "2026-11-08T09:00:00.000Z",
       "value": 67.5,
       "unit": "kg",
       "enteredValue": 67.5,
@@ -2501,7 +3006,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "CD4 count",
-      "date": "2026-06-28T08:00:00.000Z",
+      "date": "2026-07-13T08:00:00.000Z",
       "value": 590,
       "unit": "cells/µL",
       "enteredValue": 590,
@@ -2519,7 +3024,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
     {
       "isDemo": true,
       "type": "Blood glucose",
-      "date": "2026-10-21T08:00:00.000Z",
+      "date": "2026-11-05T09:00:00.000Z",
       "value": 5.4,
       "unit": "mmol/L",
       "enteredValue": 5.4,
@@ -2642,12 +3147,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomLogIds": [
         "seed_symlog_9001"
       ],
-      "resolvedDate": "2026-10-25T00:39:07.830Z",
+      "resolvedDate": "2026-11-09T03:48:27.117Z",
       "resolution": "Treated — course complete",
       "notes": "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
       "isArchived": false,
       "id": "episode_001",
-      "createdAt": "2026-10-17T00:39:07.830Z"
+      "createdAt": "2026-11-01T03:48:27.117Z"
     }
   ],
   "Logs": [
@@ -2660,7 +3165,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "refill",
       "delta": 30,
-      "date": "2026-10-18T08:30:00.000Z",
+      "date": "2026-11-02T09:30:00.000Z",
       "voided": false
     },
     {
@@ -2672,7 +3177,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-25T08:30:00.000Z",
+      "date": "2026-11-09T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2684,7 +3189,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-24T07:30:00.000Z",
+      "date": "2026-11-08T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2696,7 +3201,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-23T07:30:00.000Z",
+      "date": "2026-11-07T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2708,7 +3213,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-22T07:30:00.000Z",
+      "date": "2026-11-06T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2720,7 +3225,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-21T07:30:00.000Z",
+      "date": "2026-11-05T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2732,7 +3237,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9001",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-20T07:30:00.000Z",
+      "date": "2026-11-04T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2744,7 +3249,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9002",
       "type": "refill",
       "delta": 16,
-      "date": "2026-10-06T08:30:00.000Z",
+      "date": "2026-10-21T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2756,7 +3261,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9002",
       "type": "dose",
       "delta": -6,
-      "date": "2026-10-21T21:30:00.000Z",
+      "date": "2026-11-05T22:30:00.000Z",
       "voided": false
     },
     {
@@ -2768,7 +3273,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9003",
       "type": "refill",
       "delta": 90,
-      "date": "2026-08-27T08:30:00.000Z",
+      "date": "2026-09-11T08:30:00.000Z",
       "voided": false
     },
     {
@@ -2780,7 +3285,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9003",
       "type": "dose",
       "delta": -30,
-      "date": "2026-09-26T07:30:00.000Z",
+      "date": "2026-10-11T07:30:00.000Z",
       "voided": false
     },
     {
@@ -2792,7 +3297,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9003",
       "type": "dose",
       "delta": -14,
-      "date": "2026-10-25T20:30:00.000Z",
+      "date": "2026-11-09T20:30:00.000Z",
       "voided": false
     },
     {
@@ -2804,7 +3309,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9004",
       "type": "dose",
       "delta": -1,
-      "date": "2026-10-24T13:30:00.000Z",
+      "date": "2026-11-08T14:30:00.000Z",
       "voided": false
     },
     {
@@ -2816,43 +3321,43 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "medicationId": "seed_med_9005",
       "type": "dose",
       "delta": -21,
-      "date": "2026-09-11T08:30:00.000Z",
+      "date": "2026-09-26T08:30:00.000Z",
       "voided": false
     }
   ],
   "Cycles": [
     {
       "isDemo": true,
-      "startDate": "2026-08-29",
-      "endDate": "2026-09-03",
+      "startDate": "2026-09-13",
+      "endDate": "2026-09-18",
       "flow": "Medium",
       "symptomIds": [],
       "notes": "",
       "isArchived": false,
       "id": "cycle_001",
-      "createdAt": "2026-10-26T01:39:08.047Z"
+      "createdAt": "2026-11-10T03:48:27.432Z"
     },
     {
       "isDemo": true,
-      "startDate": "2026-09-26",
-      "endDate": "2026-09-30",
+      "startDate": "2026-10-11",
+      "endDate": "2026-10-15",
       "flow": "Heavy",
       "symptomIds": [],
       "notes": "",
       "isArchived": false,
       "id": "cycle_002",
-      "createdAt": "2026-10-26T01:39:08.047Z"
+      "createdAt": "2026-11-10T03:48:27.432Z"
     },
     {
       "isDemo": true,
-      "startDate": "2026-10-25",
+      "startDate": "2026-11-09",
       "endDate": null,
       "flow": "Light",
       "symptomIds": [],
       "notes": "Ongoing.",
       "isArchived": false,
       "id": "cycle_003",
-      "createdAt": "2026-10-26T01:39:08.047Z"
+      "createdAt": "2026-11-10T03:48:27.432Z"
     }
   ],
   "Contraception": [
@@ -2860,35 +3365,35 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "isDemo": true,
       "method": "Combined pill",
       "formulation": "Pill/Tablet",
-      "startDate": "2025-09-21",
-      "endDate": "2026-07-23",
+      "startDate": "2025-10-06",
+      "endDate": "2026-08-07",
       "intervalDays": null,
       "nextDueDate": null,
       "linkedClinicVisitId": null,
       "notes": "Stopped when the relationship with Morgan became exclusive.",
       "isArchived": false,
       "id": "contra_001",
-      "createdAt": "2026-10-26T01:39:07.735Z"
+      "createdAt": "2026-11-10T03:48:26.957Z"
     },
     {
       "isDemo": true,
       "method": "Depot",
       "formulation": "Injection",
-      "startDate": "2026-09-11",
+      "startDate": "2026-09-26",
       "endDate": null,
       "intervalDays": 84,
-      "nextDueDate": "2026-12-04",
+      "nextDueDate": "2026-12-19",
       "linkedClinicVisitId": null,
       "notes": "Started after the miscarriage — wanted something more reliable than the pill.",
       "isArchived": false,
       "id": "contra_002",
-      "createdAt": "2026-10-26T01:39:07.735Z"
+      "createdAt": "2026-11-10T03:48:26.957Z"
     },
     {
       "isDemo": true,
       "method": "IUD (hormonal)",
       "formulation": "IUD/Implant",
-      "startDate": "2026-08-12",
+      "startDate": "2026-08-27",
       "endDate": null,
       "intervalDays": null,
       "nextDueDate": null,
@@ -2896,13 +3401,13 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well.",
       "isArchived": false,
       "id": "contra_003",
-      "createdAt": "2026-10-26T01:39:07.735Z"
+      "createdAt": "2026-11-10T03:48:26.957Z"
     }
   ],
   "Pregnancy": [
     {
       "isDemo": true,
-      "testDate": "2026-09-16",
+      "testDate": "2026-10-01",
       "testResult": "Negative",
       "estimatedDueDate": null,
       "status": "",
@@ -2911,15 +3416,15 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "notes": "Precautionary test.",
       "isArchived": false,
       "id": "pregnancy_001",
-      "createdAt": "2026-10-26T01:39:08.072Z"
+      "createdAt": "2026-11-10T03:48:27.458Z"
     },
     {
       "isDemo": true,
-      "testDate": "2026-08-12",
+      "testDate": "2026-08-27",
       "testResult": "Positive",
-      "estimatedDueDate": "2027-04-14",
+      "estimatedDueDate": "2027-04-29",
       "status": "Miscarriage",
-      "outcomeDate": "2026-09-03",
+      "outcomeDate": "2026-09-18",
       "sensitive": true,
       "notes": "Found out at 5 weeks. Miscarried naturally at home, confirmed at follow-up.",
       "isArchived": false,
@@ -3075,7 +3580,7 @@ function projectDate(value, anchor) {
  * the live seed arrays against these rows on every run, and a wrong epoch turns
  * every date-bearing record diverged, so the suite goes red immediately.
  */
-export const SNAPSHOT_TAKEN_AT = "2026-10-26";
+export const SNAPSHOT_TAKEN_AT = "2026-11-10";
 
 /** Today, as the fake-UTC date string the rest of this module compares. */
 function todayAsStoredDate() {

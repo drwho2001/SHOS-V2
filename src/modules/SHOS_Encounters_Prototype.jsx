@@ -615,7 +615,8 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             Protection's "No barrier method"). Rendered as a dashed outline so
             it never reads as a stored selection the user could un-tap. */}
         {derivedChips.map((chip) => (
-          <div key={chip.label} style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, border: "1px dashed #F59E0B", color: "#F59E0B", background: "#F59E0B12" }}>
+          <div key={chip.label} style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12` }}>
+              {chip.label}
             {chip.label}
           </div>
         ))}

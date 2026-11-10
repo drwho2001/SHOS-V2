@@ -44,8 +44,14 @@ describe("the container pill is labelled for what it measures", () => {
   });
 
   it("is hidden when there is no refill to measure a container from", () => {
-    expect(DASH, "the pill must be gated on sinceRefillAnchored")
-      .toMatch(/adherence\.sinceRefillAnchored\s*&&\s*\(/);
+    // Gating on the flag is the requirement; the SHAPE of that gating varies
+    // with what the fallback tile looks like (a ternary renders the fallback
+    // label, && renders nothing). The cap-tile shows "No container yet" when
+    // the flag is false - the duplicate-span fix would otherwise regress to
+    // showing the same number twice. Both spellings count; neither is the
+    // intent.
+    const m = /adherence\.sinceRefillAnchored\s*(\?\s*\(|&&\s*\()/.exec(DASH);
+    expect(m, "the pill must be gated on sinceRefillAnchored").not.toBeNull();
   });
 });
 

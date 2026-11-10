@@ -92,7 +92,12 @@ describe("adherence: one owner, no second arithmetic", () => {
 
   it("the component does not recompute the percentage", () => {
     const code = stripComments(src());
-    const body = code.slice(code.indexOf("function AdherencePill"));
+    const start = code.indexOf("function AdherencePill");
+    const next = code.indexOf("\nfunction ", start + 1);
+    // Slicing to the next top-level function keeps this test aimed at the
+    // component it guards — "the percent must come from the owner" — and not
+    // at code after it, which legitimately derives for display tones.
+    const body = code.slice(start, next === -1 ? undefined : next);
     expect(body).not.toMatch(/expected\s*>\s*0\s*\?/);
     expect(body).not.toMatch(/hit\s*\/\s*expected/);
     expect(body).toMatch(/\bpct\b/);
