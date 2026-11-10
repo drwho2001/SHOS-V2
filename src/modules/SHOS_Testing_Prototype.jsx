@@ -1628,9 +1628,11 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
       )}
       {resultPending ? (
         <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isOlder ? 0.5 : 1 }}>{tr("testing.pendingExpected", "Pending — expected {date}", { date: formatDate(t.resultDate) })}</div>
-      ) : resultNames.length > 0 && (
+      ) : resultNames.length > 0 ? (
         <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : T.goldText, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
-      )}
+      ) : t.resultDate && new Date(t.resultDate) <= new Date() ? (
+        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isOlder ? 0.5 : 1 }}>{tr("testing.noResultRecorded", "No result recorded yet")}</div>
+      ) : null}
       </div>
     </div>
   );

@@ -266,6 +266,7 @@
     "olderTest": "Older test",
     "scheduled": "Scheduled",
     "pendingExpected": "Pending — expected {date}",
+    "noResultRecorded": "No result recorded yet",
     "testUpdatedUndo": "Test updated — tap to undo",
     "testUndoneRedo": "Undone — tap to redo",
     "scheduledRetestAlreadyDone": "Scheduled retest already done",
