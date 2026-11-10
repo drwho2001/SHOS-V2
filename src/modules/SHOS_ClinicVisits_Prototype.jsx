@@ -1118,7 +1118,15 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
     []
   );
 
+  // ADD — double-tap guard and pending state for the Save pill. save() is
+  // fully async (create/update plus the calendar + reminder syncs inside),
+  // and the pill used to fire it on every tap; a double tap queued a
+  // second create/update.
+  const [isSaving, setIsSaving] = useState(false);
   const save = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
     clearDraft(draftKey);
     if (isNew) {
       const created = await ClinicVisitsRepository.create(form);
@@ -1144,6 +1152,9 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
       syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
       onSaved(visitId);
     }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -1158,9 +1169,9 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
         <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("clinicVisits.newVisit", "New visit") : tr("clinicVisits.editVisit", "Edit visit")}</h1>
-        <div onClick={() => canSave && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); save(); } } : undefined}
+        <div onClick={() => canSave && !isSaving && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isSaving) save(); } } : undefined}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcareBlue : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-          Save
+          {isSaving ? tr("common.saving", "Saving…") : tr("common.save", "Save")}
         </div>
       </div>
 
