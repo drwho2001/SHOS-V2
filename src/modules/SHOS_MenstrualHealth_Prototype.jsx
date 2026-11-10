@@ -309,9 +309,23 @@ function BottomSheet({ title, onClose, T, children, footer }) {
   );
 }
 function SaveButton({ label, onClick, canSave, T }) {
+  // ADD — double-tap guard. onClick callers here always return the async
+  // onSave(form) promise; without a pending flag the button stayed live
+  // (no disable, no blur) until the sheet closed, so a double tap created
+  // two records. Sync onClick callers are unaffected (no promise → no
+  // pending window).
+  const [pending, setPending] = useState(false);
+  const handleClick = () => {
+    if (pending) return;
+    const result = onClick();
+    if (result && typeof result.then === "function") {
+      setPending(true);
+      result.finally(() => setPending(false));
+    }
+  };
   return (
-    <button onClick={() => canSave && onClick()} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-      {label}
+    <button onClick={() => canSave && handleClick()} disabled={pending} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
+      {pending ? "Saving…" : label}
     </button>
   );
 }
