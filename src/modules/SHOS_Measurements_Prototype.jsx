@@ -499,9 +499,17 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   // async — was a plain render-body const.
   const linkedTest = useLoadedMemo(() => (form.linkedTestId ? TestingRepository.getById(form.linkedTestId) : null), [form.linkedTestId], null);
 
+  // ADD — double-tap guard: the create call inside onSave is async, and the
+  // button stayed live until the parent closes this sheet — a double tap
+  // wrote two identical measurements. Promise.resolve(...).finally releases
+  // the guard when the parent's onSave promise settles (sync onSave counts
+  // too).
+  const [isSaving, setIsSaving] = useState(false);
   const doSave = () => {
+    if (isSaving) return;
+    setIsSaving(true);
     clearDraft(draftKey);
-    onSave(form);
+    Promise.resolve(onSave(form)).finally(() => setIsSaving(false));
   };
 
   return (
@@ -575,8 +583,8 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-          <button onClick={() => canSave && doSave()} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
-            {isNew ? "Add measurement" : "Save changes"}
+          <button onClick={() => canSave && !isSaving && doSave()} disabled={isSaving} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
+            {isSaving ? "Saving…" : (isNew ? "Add measurement" : "Save changes")}
           </button>
         </div>
       </div>
