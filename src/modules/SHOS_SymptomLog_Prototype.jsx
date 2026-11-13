@@ -527,6 +527,12 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
           <ReadRow label="Symptoms" value={symptomNames} T={T} />
           <ReadRow label="Severity" value={entry.severity} T={T} alert={entry.severity === "Severe"} />
           <ReadRow label="Started" value={formatDate(entry.dateStarted)} T={T} />
+          {entry.cyclePhase ? <ReadRow label="Cycle phase" value={entry.cyclePhase} T={T} /> : null}
+          {entry.cycleDay ? <ReadRow label="Cycle day" value={entry.cycleDay} T={T} /> : null}
+          {entry.headacheDetail ? <ReadRow label="Headache type" value={entry.headacheDetail.type || ""} T={T} /> : null}
+          {entry.headacheDetail?.severity ? <ReadRow label="Headache severity" value={`${entry.headacheDetail.severity}/10`} T={T} /> : null}
+          {entry.headacheDetail?.duration ? <ReadRow label="Duration" value={entry.headacheDetail.duration} T={T} /> : null}
+          {entry.headacheDetail?.aura ? <ReadRow label="Aura" value={entry.headacheDetail.aura ? "Yes" : "No"} T={T} /> : null}
           <ReadRow label="Resolved" value={entry.dateResolved ? formatDate(entry.dateResolved) : ""} T={T} />
         </SectionCard>
 
