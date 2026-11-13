@@ -41,6 +41,10 @@ export const DEFAULT_CONTRACEPTION_ENTRY = {
   intervalDays: null,     // e.g. 84 for a 12-week depot shot; null for a daily method with no "next due" concept
   nextDueDate: null,
   linkedClinicVisitId: null,
+  // ADDED 13 Nov 2026 - reason stopped (switched, side_effects, planned_pregnancy, no_longer_needed, other). Empty = still active.
+  reasonStopped: "",
+  // ADDED 13 Nov 2026 - side effects experienced while on this method, linked to Symptoms Registry.
+  sideEffectIds: [],
   notes: "",
   isArchived: false,
 };

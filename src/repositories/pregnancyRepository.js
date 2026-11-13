@@ -61,6 +61,11 @@ export const DEFAULT_PREGNANCY = {
   testDate: null,
   testResult: "",
   estimatedDueDate: null,
+  // ADDED 13 Nov 2026 - gestational tracking (calculated from estimatedDueDate)
+  gestationalWeeks: null,  // calculated, not stored manually
+  trimester: null,         // derived from gestationalWeeks (1, 2, or 3)
+  // ADDED 13 Nov 2026 - link to contraception method at time of conception
+  contraceptionId: null,    // → ContraceptionRepository
   status: "",          // "Ongoing", or one of OUTCOME_OPTIONS once resolved; "" if testResult isn't Positive
   outcomeDate: null,   // set when status moves off "Ongoing"
   sensitive: false,

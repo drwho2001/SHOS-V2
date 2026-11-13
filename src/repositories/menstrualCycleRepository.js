@@ -29,6 +29,13 @@ export const DEFAULT_CYCLE = {
   startDate: null,
   endDate: null,
   flow: "",
+  // ADDED 13 Nov 2026 - period details for clinical relevance
+  clotSize: "",           // None/Small/Medium/Large
+  painLevel: null,        // 0-10 scale
+  spotting: false,        // inter-period bleeding
+  spottingDate: null,      // date of spotting
+  missedPeriod: false,    // flag for missed period
+  missedReason: "",       // stress, illness, medication, etc.
   symptomIds: [],
   notes: "",
   isArchived: false,

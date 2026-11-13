@@ -52,6 +52,11 @@ export const DEFAULT_SYMPTOM_ENTRY = {
   severity: "",
   relatedEncounterIds: [], // → EncounterRepository, real and wired
   relatedTestIds: [],      // → TestingRepository, real and wired
+  // ADDED 13 Nov 2026 - cycle linkage for PMS/cycle-correlated symptoms.
+  cycleDay: null,
+  cyclePhase: "",
+  // ADDED 13 Nov 2026 - optional headache/migraine detail sub-record.
+  headacheDetail: null,
   notes: "",
   isArchived: false,
 };

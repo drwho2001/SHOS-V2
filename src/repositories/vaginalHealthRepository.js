@@ -27,6 +27,9 @@ const STORAGE_KEY = "shos_vaginal_health";
 export const DEFAULT_VAGINAL_HEALTH_ENTRY = {
   condition: "",
   date: null,
+  // ADDED 13 Nov 2026 - treatment and outcome tracking
+  treatment: "",          // what was prescribed/done
+  outcome: "",            // resolved, recurring, chronic
   notes: "",
 };
 
