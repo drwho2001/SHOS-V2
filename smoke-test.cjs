@@ -59,7 +59,7 @@ const zeroPad = [...t.matchAll(/\b0\d\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct
 ck('no zero-padded dates', zeroPad.length === 0, zeroPad.join(' | '));
 
 // ---- 4. Vocabulary / encoding ----
-ck('no mojibake', !/â€|Ã©|Ã¨|Â·/.test(t));
+ck('no mojibake', !/\u00E2\u20AC|\u00C3\u00A9|\u00C3\u00A8|\u00C2\u00B7/.test(t));
 ck('summary separator standard (·)', !/(POSITIVE|NEGATIVE|ATTENDED|BOOKED|PENDING|OVERDUE|VOID)\s+-\s/.test(t));
 ck('dose uses × not x', !/\b\d+\s+x\s*\d+\s*(mg|g|day)/.test(t));
 

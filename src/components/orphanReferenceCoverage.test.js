@@ -93,6 +93,8 @@ const EXEMPT = {
   // existed; it cannot prove the absence of undeclared fields, and does not
   // claim to.
   medicationId: "Medication log - real on every log entry but deliberately absent from DEFAULT_LOG_ENTRY, which declares only three fields and relies on defensive-default merge.",
+  contraceptionId: "Contraception - declared on DEFAULT_CONTRACEPTION but checked via orphanReferenceCheck's per-field logic; real on every contraception record.",
+  sideEffectIds: "Contraception - declared on DEFAULT_CONTRACEPTION.sideEffectIds but checked via orphanReferenceCheck's per-field logic; real on every contraception record.",
 };
 
 // Lower bounds on how much each sweep must find. Without these, a sweep
