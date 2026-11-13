@@ -76,6 +76,7 @@
     "testing": "done",
     "symptom_log": "done",
     "clinic_visits": "done",
-    "remaining": ["calendar_screen"]
+    "calendar_screen": "done",
+    "remaining": []
   }
 }
