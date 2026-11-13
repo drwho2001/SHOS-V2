@@ -48,10 +48,20 @@ public class MainActivity extends BridgeActivity {
   // existed, and the one line that joins them did not.
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    // Plugins must be registered before super.onCreate() per Capacitor's
+    // contract. Window flag operations must happen AFTER super.onCreate()
+    // because super.onCreate() (BridgeActivity) fully initialises the
+    // Window — any flags set before it can be overwritten.
     registerPlugin(ScreenSecurityPlugin.class);
     registerPlugin(WidgetBridgePlugin.class);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     super.onCreate(savedInstanceState);
+
+    // FLAG_SECURE is always applied at launch (real ask: privacy by default),
+    // then cleared if the user has previously saved "allow screenshots" ON.
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+    if (ScreenSecurityPlugin.isAllowed(this)) {
+      getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+    }
   }
 
   @Override
