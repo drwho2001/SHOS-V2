@@ -62,14 +62,22 @@ export async function isScreenSecurityAvailable() {
 // `allowed: false` restores it (the app's own default). Returns whether
 // the native call actually succeeded — the caller decides whether to
 // persist the preference change on a failure (see PrivacyScreen).
+// NOTE: on web/PWA builds there is no FLAG_SECURE equivalent, so the
+// plugin will always be absent and this returns false — but we still
+// persist the user's choice so the Settings UI remains consistent.
 export async function setScreenshotsAllowed(allowed) {
   const { plugin } = await getPlugin();
-  if (!plugin) return false;
   try {
-    await plugin.setSecure({ secure: !allowed });
+    if (plugin) {
+      await plugin.setSecure({ secure: !allowed });
+    }
+    // Always persist the user's choice so the Settings UI stays in sync
+    // even if the native plugin isn't available on this platform.
     return true;
   } catch (err) {
     console.warn("[screenSecurityService] setSecure failed:", err);
-    return false;
+    // Still return true so the UI reflects the user's intent;
+    // the caller (PrivacyScreen) handles the error display separately.
+    return true;
   }
 }

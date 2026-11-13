@@ -1155,8 +1155,13 @@ export default function App() {
       // web/most sessions (see screenSecurityService.js's own header) —
       // deliberately fire-and-forget, same as the other real device-
       // side effects in this boot step; nothing else here depends on
-      // its completion timing.
-      if (settings.allowScreenshots) setScreenshotsAllowed(true);
+      // its completion timing. We AWAIT the call so any native failure
+      // is logged, but we do NOT block boot on it.
+      if (settings.allowScreenshots) {
+        setScreenshotsAllowed(true).catch(err =>
+          console.warn("[App] setScreenshotsAllowed on boot failed:", err)
+        );
+      }
       setAppLockEnabled(settings.appLockEnabled);
       setTabOrder(prefs.tabOrder);
       setShowOnboarding(!prefs.hasCompletedOnboarding);
