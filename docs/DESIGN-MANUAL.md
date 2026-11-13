@@ -137,6 +137,8 @@ Fonts are self-hosted through `@fontsource/*` and imported in `src/main.jsx`. Do
 | `TYPE.bodyEmphasis` | 14 / 600 | Labels, values, short actions |
 | `TYPE.caption` | 12 / 400 | Secondary information and helper text |
 | `TYPE.captionEmphasis` | 12 / 600 | Status labels and compact metadata |
+| `TYPE.control` | 13 / 400 | Standard control/button/field size. Named 13 Nov 2026 — was previously untokenised (516 sites hand-typed). Now tokenised as TYPE.control across 24 files. |
+| `TYPE.controlEmphasis` | 13 / 600 | Emphasised control text (bold labels, values). |
 | `TYPE.microLabel` | 11 / 600 | Micro-text floor: badges, chips, status lines. Do not go below 11px except the 9px DEMO badge (explicit exception) and uppercase 9px chip-group subtitles (encounter cards; explicit exception, letter-spacing 0.05em). |
 | `TYPE.monoLabel` | 12, JetBrains Mono | Identifiers, codes, technical values |
 
@@ -262,6 +264,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - Standard card: white/surface background, 1px border, `RADIUS.md`, 12-14px padding.
 - Do not add a shadow to an ordinary card.
 - Use module accent only for the card's label or primary action, not the whole card.
+- **Colour-indent pattern (§49b, 13 Nov 2026):** Section cards now use a tinted background (`${accent}08`) with a 4px coloured left border (`border-left: 4px solid ${accent}`) and `RADIUS.md` (8px). Applied to `SectionCard` via the `accent` prop. All modules use their module accent: healthcare (green), contacts (amber), encounters (purple), medication (blue), etc. This replaces the previous plain bordered section. See `SectionCard.jsx` for implementation.
 - **Dates** follow one standard: day-first unpadded (`12 Nov`), with a weekday
   prefix on planned/future dates only (`Sat 14 Nov`). Never month-first
   (`Nov 12`), never zero-padded (`02 Nov`).
@@ -281,7 +284,7 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 
 Record cards in this app share one anatomy: **title row → byline → grouped chip cloud → summary line**. The settled references are the encounter card (`encounters-card-mockup.html`), the contact card (`contacts-card-mockup.html`), the medication card (`medication-card-mockup.html`), and the healthcare card (`healthcare-card-mockup.html`); all are 393dp dark-mode renderings and must agree with this section. The STI test card (`healthcare-sti-test-card.html`) is the reference grammar for the summary state line, in-card context groups, and card action tiers.
 
-- **Healthcare cards** carry the module accent (`healthcareBlue`) on interactive elements only (quick-add buttons, pill outlines, action bar CTA). The card background is plain surface with a 1px `border` in `T.border`. Do not tint the whole card background with the module accent — dark mode drops the tint and keeps only the outline (same pattern as Home quick add buttons, 5 Nov 2026).
+- **Healthcare cards** carry the module accent (`healthcare`, formerly `healthcareBlue`) on interactive elements only (quick-add buttons, pill outlines, action bar CTA). The card background is plain surface with a 1px `border` in `T.border`. Do not tint the whole card background with the module accent — dark mode drops the tint and keeps only the outline (same pattern as Home quick add buttons, 5 Nov 2026).
 
 - **Healthcare list cards (audited 8 Nov 2026).** The four healthcare lists — Testing, Clinic visits, Symptom log, Vaccinations — are audited against this section, one mockup each: `healthcare-testing-card-mockup.html`, `healthcare-clinicvisit-card-mockup.html`, `healthcare-symptom-card-mockup.html`, `healthcare-vaccination-card-mockup.html`. Rules settled by that audit:
   - **The status dot means "does this need action"** in every healthcare list, not a per-module colour idea. Testing: result (red positive / green negative). Vaccinations: red overdue, accent up to date. Symptom log: severity while active, green once resolved. Clinic visits: accent booked/future, amber follow-up due, muted completed. A new healthcare list picks from those meanings rather than inventing one.
@@ -316,6 +319,7 @@ Record cards in this app share one anatomy: **title row → byline → grouped c
 
 - Rows should have consistent height and spacing.
 - Empty states should use an icon, one sentence, and an optional action. Implement with the shared `EmptyState` component (`src/components/EmptyState.jsx`) rather than a new inline div; it is for list-level states only — field placeholders such as "No notes yet" stay plain text.
+- **Undo toast (§49b):** Use the shared `UndoToast` component (`src/components/UndoToast.jsx`) for delete confirmations. Previously 9 hand-written copies existed (Contacts, Encounters, Clinic Visits, Measurements, Medication, Symptom Log, Testing, Vaccinations, Menstrual Health). All now use the shared component. The shared version restores `minHeight: 44` and removes bare `aria-label="Undo delete"` (visible text is the name).
 - Archived or historical items should use `ACTION.gold` or muted styling, not red.
 
 ### 10.4 Dialogs and overlays
