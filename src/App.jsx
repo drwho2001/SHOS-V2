@@ -259,7 +259,7 @@ function getOrderedTabs(tabOrder) {
 // this resolves per-tab at actual render time instead, using the
 // EXACT SAME override key + companion each module's own screen
 // already uses, not a second set of colours to keep in sync by hand.
-const TAB_DARK_COMPANIONS = { activity: ["encounters", "#D370C7"], medication: ["medication", "#5B85F5"], healthcare: ["healthcare", "#0E8144"] };
+const TAB_DARK_COMPANIONS = { activity: ["encounters", "#D370C7"], medication: ["medication", "#5B85F5"], healthcare: ["healthcare", ACCENTS.healthcare] };
 function resolveTabAccent(tab, darkMode) {
   if (!darkMode) return tab.accent;
   const [overrideKey, companion] = TAB_DARK_COMPANIONS[tab.key] || [tab.key, undefined];
@@ -519,7 +519,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
           onKeyDown={(e) => { if (e.key === "Enter") attemptRecovery(); }}
           style={{ width: 260, padding: "12px 16px", borderRadius: 8, border: "none", fontSize: 15, textAlign: "center", marginBottom: 12, boxSizing: "border-box" }} />
         {recoveryError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 12, textAlign: "center" }}>{recoveryError}</div>}
-        <button onClick={attemptRecovery} disabled={recoveryBusy} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: recoveryBusy ? "default" : "pointer", opacity: recoveryBusy ? 0.6 : 1, marginBottom: 14 }}>
+        <button onClick={attemptRecovery} disabled={recoveryBusy} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: recoveryBusy ? "default" : "pointer", opacity: recoveryBusy ? 0.6 : 1, marginBottom: 14 }}>
           {recoveryBusy ? "Unlocking…" : "Unlock and set new PIN"}
         </button>
         <div onClick={() => { setRecoveryMode(false); setRecoveryString(""); setRecoveryNewPin(""); setRecoveryNewPinConfirm(""); setRecoveryError(""); }} role="button" tabIndex={0} aria-label="Back to PIN entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRecoveryMode(false); setRecoveryString(""); setRecoveryNewPin(""); setRecoveryNewPinConfirm(""); setRecoveryError(""); } }} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
@@ -552,7 +552,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
           is deliberately chosen to stay dark enough for white text
           (not just bright enough to show against near-black) — same
           reasoning as every other Healthcare-tab button. */}
-      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: hasRecoveryString() ? 14 : 0 }}>
+      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: hasRecoveryString() ? 14 : 0 }}>
         Unlock
       </button>
       {/* ADDED 9 Sep 2026 — real ask: PIN-recovery. hasRecoveryString()
