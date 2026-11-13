@@ -1302,6 +1302,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
   const [showArchived, setShowArchived] = useState(false);
+  const [encounterSort, setEncounterSort] = useState("newest"); // newest | oldest | (cycle)
   const [sessionVersion, setSessionVersion] = useState(0);
   const sessions = useLoadedMemo(loadSessions, [sessionVersion], []);
   const [sessionFilter, setSessionFilter] = useState("");
@@ -1416,9 +1417,12 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
     }
-    return sessionFilter
-      ? [...filtered].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")))
-      : sortByDateDesc(filtered);
+    const sorted = [...filtered].sort((a, b) => {
+      const cmp = String(a.date || "").localeCompare(String(b.date || ""));
+      if (encounterSort === "oldest") return cmp;
+      return -cmp; // newest default
+    });
+    return sessionFilter ? sorted : sorted;
     // FIXED 10 Sep 2026 — real ESLint finding: kinkNameById (used above
     // for kink-name search matches) starts as an empty fallback Map()
     // and resolves asynchronously (useLoadedMemo) — without it in this
@@ -1437,7 +1441,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     // defect as the one found in Symptom Log in the same round, in the sibling
     // module — which is why it is worth stating that the 28 Sep audit fixed the
     // expression without fixing the dependency.
-  }, [encountersList, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise]);
+  }, [encountersList, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise, encounterSort]);
   const sessionSummaries = useMemo(() => sessions
     .filter((session) => !session.isArchived)
     .map((session) => {
@@ -1617,6 +1621,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               <span style={{ width: 32, height: 18, borderRadius: 999, background: showArchived ? T.encountersPink : T.border, position: "relative", flexShrink: 0 }}>
                 <span style={{ position: "absolute", top: 2, left: showArchived ? 16 : 2, width: 14, height: 14, borderRadius: 999, background: "#FFFFFF" }} />
               </span>
+            </div>
+            <div onClick={() => {
+              if (encounterSort === "newest") setEncounterSort("oldest");
+              else if (encounterSort === "oldest") setEncounterSort("newest");
+              else setEncounterSort("newest");
+            }} role="button" tabIndex={0} aria-label={encounterSort === "newest" ? "Sort newest first" : "Sort oldest first"}
+              style={{ padding: "4px 8px", borderRadius: radius.full, border: `1px solid ${T.encountersPink}`, background: `${T.encountersPink}15`, color: T.encountersPink, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+              {encounterSort === "newest" ? "↓ Newest" : "↑ Oldest"}
             </div>
             {sessionSummaries.length > 0 && (
               <button
