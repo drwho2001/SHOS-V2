@@ -466,7 +466,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
         <span style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 16, color: T.textPrimary }}>{tr("contacts.importSharedProfile", "Import shared profile")}</span>
       </div>
       <div style={{ padding: 16 }}>
-        <SectionCard title="Import a shared profile" T={T}>
+        <SectionCard title="Import a shared profile" T={T} accent={T.contactsTeal}>
           <div style={{ fontSize: 12, color: T.textSecondary, padding: "8px 0" }}>
             Creates a brand-new Contact from someone else's shared profile. Doesn't touch or merge with any existing contact.
           </div>
@@ -2183,7 +2183,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           ariaLabel="Contact form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
           textColor={T.textSecondary} border={T.border} surface={T.bg}>
         <div>
-        <SectionCard T={T} title="Identity">
+        <SectionCard T={T} title="Identity" accent={T.contactsTeal}>
           <PhotoPicker T={T} value={form.profilePicture} onChange={set("profilePicture")} />
           {missingRequiredLabels.length > 0 && (
             <div role="alert" style={{ display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px", margin: "2px 0 8px", borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}12`, color: T.actionRed, fontSize: 11, lineHeight: 1.4 }}>
@@ -2233,7 +2233,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           </div>
         </SectionCard>
 
-        <SectionCard T={T} title="Relationship">
+        <SectionCard T={T} title="Relationship" accent={T.contactsTeal}>
           <SelectField T={T} label={tr("contacts.rating", "How do I feel about this person?")} value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
           <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions} listName="relationshipType"
             onAddNew={(v) => { CustomOptionListsRepository.add("relationshipType", v).then(setRelationshipTypeOptions); }} />
@@ -2266,7 +2266,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         </div>
 
         <div>
-        <SectionCard T={T} title="Location & logistics">
+        <SectionCard T={T} title="Location & logistics" accent={T.contactsTeal}>
           <SelectField T={T} label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} />
           <SelectField T={T} label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
@@ -2310,7 +2310,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
 
         {/* REORDERED 17 Sep 2026 — real ask: "physical & health before
             kinks" — moved up ahead of Kink/Chems. */}
-        <SectionCard T={T} title="Physical & health">
+        <SectionCard T={T} title="Physical & health" accent={T.contactsTeal}>
           {/* ADDED — real ask: these specific fields (not the whole
               section — Known to be on/Last tested below stay relevant
               regardless) are penis-specific, genuinely unnecessary
@@ -2432,7 +2432,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         </div>
 
         <div>
-        <SectionCard T={T} title="Kink">
+        <SectionCard T={T} title="Kink" accent={T.contactsTeal}>
           {/* REVERTED — the user clarified the cross-exclusion (a kink
               already in Limits hidden from Stated Kinks' suggestions,
               and vice versa) was actually wanted, kept as-is. The
@@ -2472,7 +2472,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         {/* Own section, not folded into Kink — Notion keeps the Chems
             Registry architecturally separate (neutral grey domain, not
             kink-red, per Doc 2), so the app mirrors that distinction. */}
-        <SectionCard T={T} title="Chems">
+        <SectionCard T={T} title="Chems" accent={T.contactsTeal}>
           <RegistryTagPicker T={T} label="Known chems" value={form.knownChems} onChange={set("knownChems")} registry={ChemsRegistry} placeholder="e.g. Alcohol, Weed, Poppers, Coke, LSD" resolveSynonym={resolveChemSynonym} />
         </SectionCard>
 
@@ -2480,7 +2480,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             last, before notes" — moved down from its earlier position
             right after Basics (see the 19 Aug 2026 reasoning that used
             to live here) to sit right before Notes instead. */}
-        <SectionCard T={T} title="Contact methods">
+        <SectionCard T={T} title="Contact methods" accent={T.contactsTeal}>
           <TextField T={T} label="Phone/WhatsApp" value={form.phone} onChange={set("phone")} placeholder="e.g. +44 7700 900123" />
           <TextField T={T} label={tr("contacts.email", "Email")} value={form.email} onChange={set("email")} placeholder="name@example.com" type="email" helper={emailValid ? "Optional contact method." : tr("contacts.emailInvalid", "Enter a valid email address or leave it blank.")} />
           <TextField T={T} label="Snapchat" value={form.snapchat} onChange={set("snapchat")} placeholder="Username" />
@@ -2496,12 +2496,12 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           <TagInput T={T} label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} suggestions={contactableViaOptions} placeholder="e.g. Tinder, Bumble, Grindr" />
         </SectionCard>
 
-        <SectionCard T={T} title="Notes">
+        <SectionCard T={T} title="Notes" accent={T.contactsTeal}>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes" placeholder={contactNotesPlaceholder(form)}
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
-        <SectionCard T={T} title="Linked contacts">
+        <SectionCard T={T} title="Linked contacts" accent={T.contactsTeal}>
           {form.id ? (
             <LinkedContactsField T={T} contactId={form.id} allContacts={contacts} refresh={refresh} />
           ) : (
@@ -2773,7 +2773,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             it now leads right under the header instead of trailing at
             the very bottom. Contact methods moved down to just before
             Notes — see that section's own comment. */}
-        <SectionCard T={T} title="Timeline">
+        <SectionCard T={T} title="Timeline" accent={T.contactsTeal}>
           {(() => {
             // All four numbers below are CALCULATED here, every render,
             // from EncounterRepository — never stored on the Contact
@@ -2835,7 +2835,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           })()}
         </SectionCard>
 
-        <SectionCard T={T} title="Relationship">
+        <SectionCard T={T} title="Relationship" accent={T.contactsTeal}>
           <ReadRow T={T} label={tr("contacts.rating", "How do I feel about this person?")} value={contact.rating} />
           <ReadRow T={T} label="Relationship type" value={contact.relationshipType} />
           <ReadRow T={T} label="How did we meet?" value={contact.howDidWeMeet} />
@@ -2864,7 +2864,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
         </SectionCard>
 
-        <SectionCard T={T} title="Location & logistics">
+        <SectionCard T={T} title="Location & logistics" accent={T.contactsTeal}>
           <ReadRow T={T} label="Hosts" value={contact.hosts} />
           <ReadRow T={T} label="Travels" value={contact.travels} />
           <ReadRow T={T} label="Travel mode" value={contact.travelMode} />
@@ -2907,7 +2907,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         {/* REORDERED 17 Sep 2026 — real ask: "physical & health before
             kinks" — moved up ahead of Kink/Chems, matching the same
             reorder made in the Add/Edit sheet above. */}
-        <SectionCard T={T} title="Physical & health">
+        <SectionCard T={T} title="Physical & health" accent={T.contactsTeal}>
           {/* CHANGED 19 Aug 2026 — Anonymise mode's "hide further" tier:
               physical attributes (length/girth/cummer), per the user's
               exact wording ("kinks, physical attributes (cum, dick
@@ -3015,7 +3015,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
         </SectionCard>
 
-        <SectionCard T={T} title="Kink">
+        <SectionCard T={T} title="Kink" accent={T.contactsTeal}>
           {hideFurther ? (
             <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", padding: "6px 0" }}>{MASKED}</div>
           ) : (
@@ -3048,7 +3048,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
         </SectionCard>
 
-        <SectionCard T={T} title="Chems">
+        <SectionCard T={T} title="Chems" accent={T.contactsTeal}>
           {/* CHANGED — real ask: empty Chems should explicitly say
               "None known" rather than the row just disappearing —
               ReadRow's default behavior everywhere else (hide empty
@@ -3061,7 +3061,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
         </SectionCard>
 
-        <SectionCard T={T} title="Contact methods">
+        <SectionCard T={T} title="Contact methods" accent={T.contactsTeal}>
           {/* FIXED — live audit Finding 8c: Contact methods rendered as a bare
               title whenever every field was empty (ReadRow hides empty values
               by default). Same "say so explicitly" treatment as Chems and
@@ -3083,7 +3083,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
         </SectionCard>
 
-        <SectionCard T={T} title="Notes">
+        <SectionCard T={T} title="Notes" accent={T.contactsTeal}>
           {/* §49b — colour-indent/backfill empty state. */}
           <div style={{ fontSize: 14, color: contact.notes ? T.textPrimary : T.textDisabled, fontStyle: contact.notes ? "normal" : "italic", padding: contact.notes ? 0 : "7px 9px", borderLeft: contact.notes ? "none" : `3px solid ${ACCENTS.home}`, borderRadius: contact.notes ? 0 : radius.sm, background: contact.notes ? "transparent" : `${ACCENTS.home}15` }}>
             {contact.notes || "No notes yet."}
@@ -3091,7 +3091,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         </SectionCard>
 
         {contact.linkedContactIds.length > 0 && (
-          <SectionCard T={T} title="Linked contacts">
+          <SectionCard T={T} title="Linked contacts" accent={T.contactsTeal}>
             {linkedContactProfiles
               .map((c) => (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onOpenContact(c.id)}

@@ -85,7 +85,7 @@ function buildLight() {
   // Doc 2's Platforms gold (#E8A400) is tuned as a chip *fill* with dark text — used directly as
   // *text* on a light background it fails contrast (~2.1:1, needs 4.5:1). This is a separate,
   // darker gold specifically for foreground/text use — see Doc 5 §5 note on the Inventory status line.
-  goldText: "#8A6100",
+  goldText: ACTION.gold,
   // CHANGED — real find during the design-unification audit: this was
   // still the OLD pre-Tier-1 Medication blue (#3D63C9), stale since
   // the real color decision (ACCENTS.medication, #003B6F). Not
@@ -117,7 +117,7 @@ function buildDark() {
   // Dark mode's resolved actionRed/actionGreen already have real
   // headroom against a near-black background — reuse as-is.
   actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  goldText: "#FFD666", // dark mode's existing Platforms-gold dark accent already contrasts fine as text here
+  goldText: resolveDarkAccent("gold", ACTION.gold, "#FFD666"), // dark mode's existing Platforms-gold dark accent already contrasts fine as text here
   // CHANGED — real gap found by the user: fabBg/fabIcon were a
   // deliberate light-on-dark inversion (a near-white circle, dark
   // icon), the one module out of step with the "same module, same

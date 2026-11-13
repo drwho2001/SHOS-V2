@@ -1503,6 +1503,47 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
     })();
     return () => { cancelled = true; };
   }, []);
+  // ADDED - 0c: GitHub releases check. Only show the "new version" banner
+  // when the latest GitHub release tag is newer than this build's
+  // __APP_VERSION__. Cooldown: at most one check per hour.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (Capacitor.isNativePlatform()) return;
+      } catch { /* web: fall through */ }
+      if (import.meta.env.DEV) return;
+      try {
+        const lastCheck = parseInt(localStorage.getItem("shos-gh-release-check") || "0", 10);
+        if (Date.now() - lastCheck < 3600000) return;
+        localStorage.setItem("shos-gh-release-check", String(Date.now()));
+        const res = await fetch("https://api.github.com/repos/drwho2001/SHOS-V2/releases/latest", { headers: { Accept: "application/vnd.github+json" } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const tag = String(data?.tag_name || "").replace(/^v/, "");
+        const current = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0";
+        if (!tag || !current) return;
+        // Simple semver-ish compare: split on dots, compare numerically.
+        const a = tag.split(".").map((n) => parseInt(n, 10) || 0);
+        const b = current.split(".").map((n) => parseInt(n, 10) || 0);
+        let newer = false;
+        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+          const x = a[i] || 0, y = b[i] || 0;
+          if (x > y) { newer = true; break; }
+          if (x < y) { newer = false; break; }
+        }
+        if (newer) {
+          try { const d = localStorage.getItem("shos-sw-update-dismissed"); if (d && (Date.now() - parseInt(d)) < 86400000) return; } catch { /* ignore */ }
+          setSwUpdateAvailable(true);
+        }
+      } catch {
+        // network/offline - ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   // ADDED — real gap found via a total-app audit: storageAdapter.js's
   // save() has always returned true/false so a caller could notice a
   // failed write, but a full grep found every one of the ~31 real call

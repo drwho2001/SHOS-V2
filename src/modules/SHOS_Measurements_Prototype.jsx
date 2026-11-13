@@ -71,7 +71,7 @@ const buildLight = () => ({
   // ACTION.gold is 5.69:1 on white but 2.99:1 on the dark surface, and has no
   // dark counterpart in designTokens (it is hardcoded in
   // applyRealAccentOverrides). Same treatment Medication Dashboard already uses.
-  goldText: "#8A6100",
+  goldText: ACTION.gold,
 });
 const buildDark = () => ({
   ...NEUTRAL_DARK,
@@ -79,7 +79,7 @@ const buildDark = () => ({
   actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
   actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
   actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  goldText: "#FFD666",
+  goldText: resolveDarkAccent("gold", ACTION.gold, "#FFD666"),
 });
 const radius = RADIUS;
 

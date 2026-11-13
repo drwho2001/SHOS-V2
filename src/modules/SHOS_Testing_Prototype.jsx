@@ -108,7 +108,7 @@ function buildLight() {
     // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
     // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
     actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
-    goldText: "#8A6100", // FIXED 27 Sep 2026 - see the note above buildDark()
+    goldText: ACTION.gold, // FIXED 27 Sep 2026 - see the note above buildDark()
     navActive: ACCENTS.healthcare,
   };
 }
@@ -124,7 +124,7 @@ function buildDark() {
     // Dark mode's resolved actionRed/actionGreen already have real
     // headroom against a near-black background — reuse as-is.
     actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  goldText: "#FFD666", // FIXED 27 Sep 2026 - the Platforms-gold dark accent; 12.19:1 on this surface
+  goldText: resolveDarkAccent("gold", ACTION.gold, "#FFD666"), // FIXED 27 Sep 2026 - the Platforms-gold dark accent; 12.19:1 on this surface
     navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
   };
 }
