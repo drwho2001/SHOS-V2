@@ -212,7 +212,7 @@ function loadContacts() {
 }
 
 function btnStyle(color, variant) {
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: "pointer", minHeight: 44, border: variant === "outline" ? `1px solid ${color}` : "none", background: variant === "filled" ? color : "transparent", color: variant === "filled" ? "#FFFFFF" : color };
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", minHeight: 44, border: variant === "outline" ? `1px solid ${color}` : "none", background: variant === "filled" ? color : "transparent", color: variant === "filled" ? "#FFFFFF" : color };
 }
 
 function focusNextField(el) {
@@ -398,16 +398,16 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
               placeholder="Paste the JSON text someone sent you"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box", resize: "vertical" }} />
           </div>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doImportPaste} style={{ textAlign: "center", padding: "10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", background: pasteText.trim() ? T.contactsTeal : T.surfaceVariant, color: pasteText.trim() ? "#FFFFFF" : T.textDisabled, marginBottom: 10}}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doImportPaste} style={{ textAlign: "center", padding: "10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", background: pasteText.trim() ? T.contactsTeal : T.surfaceVariant, color: pasteText.trim() ? "#FFFFFF" : T.textDisabled, marginBottom: 10}}>
             Import from pasted text
           </div>
-          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer"}}>
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textPrimary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
             <Upload size={15} /> Import from file
             <input type="file" accept="application/json" onChange={doImportFile} style={{ display: "none" }} />
           </label>
         </SectionCard>
         {status && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 14, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreenText : T.actionRedText, fontSize: 13 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 14, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreenText : T.actionRedText, fontSize: TYPE.control.fontSize }}>
             {status.ok ? <Check size={16} /> : <X size={16} />}
             {status.msg}
           </div>
@@ -654,7 +654,7 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
           {loading && <div style={{ padding: 10, fontSize: 12, color: T.textDisabled }}>Searching…</div>}
           {results.map((r) => (
             <div key={r.place_id} onMouseDown={() => pick(r)}
-              style={{ padding: "8px 10px", fontSize: 13, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}`}}>
+              style={{ padding: "8px 10px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}`}}>
               {r.display_name}
             </div>
           ))}
@@ -731,7 +731,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
               {opt}
             </div>
           );
@@ -823,7 +823,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
             const isTwitterX = /^(twitter(?:\s*\/\s*x)?|x)$/i.test(tag.trim());
             return (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
-                style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
+                style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
                 {platform && <img src={`${CONTACT_ICON_BASE}${platform.file}`} alt="" aria-hidden="true" style={{ width: 14, height: 14, objectFit: "cover", borderRadius: 3, background: /^fab ?(guys|swingers)$/i.test(tag) ? "#FFFFFF" : "transparent", filter: platform.edge && T.bg !== NEUTRAL_DARK.bg ? "drop-shadow(0 1px 1px rgba(0,0,0,.28))" : "none" }} />}
                 {isEmail && <Envelope size={12} />}{isTwitterX && <TwitterLogo size={12} />} {tag} <X size={11} />
               </div>
@@ -848,7 +848,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(e.target); } }}
         onBlur={() => commitDraft(null)}
         placeholder={placeholder || "Type one or more, comma-separated, then press Enter"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
           {visibleSuggestions.map((s) => (
@@ -1153,7 +1153,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(e.target); } }}
         onBlur={() => commitDraft(null)}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
       {/* ADDED — real ask: "did you mean...?" prompt. Shown instead of
           silently deciding for the user — accepting a suggestion or
           keeping the typed word exactly as-is are both one tap away,
@@ -1168,12 +1168,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {pendingSuggestion.specific.map((entry) => (
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name, pendingSuggestion.role); setPendingSuggestion(null); }}
-                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, background: ACCENTS.contacts, color: "#FFFFFF", cursor: "pointer"}}>
+                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, background: ACCENTS.contacts, color: "#FFFFFF", cursor: "pointer"}}>
                     Use "{entry.name}"
                   </div>
                 ))}
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
                   Keep "{pendingSuggestion.typedAs}"
                 </div>
               </div>
@@ -1185,11 +1185,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion, pendingSuggestion.role); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, background: ACCENTS.contacts, color: "#FFFFFF", cursor: "pointer"}}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, background: ACCENTS.contacts, color: "#FFFFFF", cursor: "pointer"}}>
                   Yes, use "{pendingSuggestion.suggestion}"
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
                   No, add "{pendingSuggestion.typedAs}" as new
                 </div>
               </div>
@@ -1269,11 +1269,11 @@ function PhotoPicker({ value, onChange, T }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => inputRef.current?.click()}
-          style={{ fontSize: 13, fontWeight: 600, color: T.contactsTeal, cursor: "pointer"}}>
+          style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.contactsTeal, cursor: "pointer"}}>
           {value ? "Change photo" : "Add photo"}
         </div>
         {value && (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: 13, color: T.actionRed, cursor: "pointer"}}>{tr("contacts.remove", "Remove")}</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: TYPE.control.fontSize, color: T.actionRed, cursor: "pointer"}}>{tr("contacts.remove", "Remove")}</div>
         )}
       </div>
       <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
@@ -1495,7 +1495,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
       {linkable.length > 0 && (
         <>
           <select value={pickerValue} onChange={(e) => setPickerValue(e.target.value)}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, marginBottom: pickerValue ? 6 : 0 }}>
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, marginBottom: pickerValue ? 6 : 0 }}>
             <option value="">+ Link another contact</option>
             {linkable.map((c) => <option key={c.id} value={c.id}>{displayName(c, anonymise)}</option>)}
           </select>
@@ -2148,7 +2148,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               be found easily, not stumbled on. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.acknowledgeIncomplete", "Acknowledge incomplete / anonymous record")}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{tr("contacts.acknowledgeIncomplete", "Acknowledge incomplete / anonymous record")}</div>
               <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>{tr("contacts.acknowledgeIncompleteDesc", "I understand these mandatory details are missing. Hide the warnings and allow this intentionally incomplete or anonymous record to be saved.")}</div>
             </div>
             <ToggleSwitch T={T} value={form.markedComplete} onChange={set("markedComplete")} />
@@ -2178,7 +2178,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
                   means (a contact you're not tracking forward). */}
               <ClockCounterClockwise size={16} color={T.textSecondary} style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
-                <div style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.oneOff", "One-off / never expect to recur")}</div>
+                <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{tr("contacts.oneOff", "One-off / never expect to recur")}</div>
                 <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>{tr("contacts.oneOffDesc", "Excludes this contact from the inactive flag entirely — for a genuine one-time encounter, not a gap you'd want flagged.")}</div>
               </div>
             </div>
@@ -2192,7 +2192,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           <SelectField T={T} label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} />
           <SelectField T={T} label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
-            <span style={{ fontSize: 13, color: T.textPrimary }}>Outdoor/public meetups</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Outdoor/public meetups</span>
             <ToggleSwitch T={T} value={!!form.outdoorMeetup} onChange={set("outdoorMeetup")} />
           </div>
           {(form.travels === "Yes" || form.travels === "Sometimes") && (
@@ -2202,7 +2202,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             placeholder="Start typing an address..." onCityDetected={set("city")} />
           <ComboField T={T} label="City" value={form.city} onChange={set("city")} options={cityOptions} requiredMissing={missingRequiredFields.includes("city")} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
-            <span style={{ fontSize: 13, color: T.textPrimary }}>{tr("contacts.drives", "Drives")}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{tr("contacts.drives", "Drives")}</span>
             <ToggleSwitch T={T} value={form.drives} onChange={set("drives")} />
           </div>
           {form.drives && (
@@ -2274,7 +2274,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           {form.gender?.trim().toLowerCase() === "female" && !revealPhysicalAnyway && !hasPhysicalDetail(form) && (
             <div role="button" tabIndex={0} onClick={() => setRevealPhysicalAnyway(true)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealPhysicalAnyway(true); } }}
-              style={{ fontSize: 13, color: T.contactsTealText, cursor: "pointer", padding: "4px 0"}}>+ Record these details anyway</div>
+              style={{ fontSize: TYPE.control.fontSize, color: T.contactsTealText, cursor: "pointer", padding: "4px 0"}}>+ Record these details anyway</div>
           )}
           {/* ADDED — real ask: contraception, shown when Gender is
               Female or Trans-male (see the same gating condition used
@@ -2293,7 +2293,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
           ) : (
             <div role="button" tabIndex={0} onClick={() => setRevealContraceptionAnyway(true)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealContraceptionAnyway(true); } }}
-              style={{ fontSize: 13, color: T.contactsTealText, cursor: "pointer", padding: "4px 0"}}>+ Track contraception anyway</div>
+              style={{ fontSize: TYPE.control.fontSize, color: T.contactsTealText, cursor: "pointer", padding: "4px 0"}}>+ Track contraception anyway</div>
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
@@ -2420,7 +2420,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
 
         <SectionCard T={T} title="Notes">
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes" placeholder={contactNotesPlaceholder(form)}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
         <SectionCard T={T} title="Linked contacts">
@@ -2462,7 +2462,7 @@ function ReadRow({ label, value, T, requiredMissing = false }) {
   if (isEmpty && !showBlank && !requiredMissing) return null;
   const display = requiredMissing && isEmpty ? "— missing mandatory detail" : isEmpty ? "— not set" : (Array.isArray(value) ? value.join(", ") : value === true ? "Yes" : value);
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: TYPE.control.fontSize }}>
       <span style={{ color: requiredMissing ? T.actionRed : T.textSecondary }}>{requiredMissing && <span aria-hidden="true" style={{ fontWeight: 800 }}>* </span>}{label}</span>
       <span style={{ color: requiredMissing ? T.actionRed : isEmpty ? T.textDisabled : T.textPrimary, fontWeight: requiredMissing ? 600 : isEmpty ? 400 : 500, fontStyle: isEmpty ? "italic" : "normal", textAlign: "right" }}>{display}</span>
     </div>
@@ -2591,13 +2591,13 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             <>
               <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 39 }} />
               <div role="menu" style={{ position: "absolute", top: 28, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 40, minWidth: 170, overflow: "hidden" }}>
-                <div onClick={() => { if (!contact.isDemo) { onEdit(contact.id); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(contact.id); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}>
+                <div onClick={() => { if (!contact.isDemo) { onEdit(contact.id); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(contact.id); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}>
                   <Settings2 size={14} color={T.textSecondary} /> Edit contact
                 </div>
-                <div onClick={() => { setConfirmArchive(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmArchive(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+                <div onClick={() => { setConfirmArchive(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmArchive(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.actionRed, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                   <Archive size={14} /> Archive contact
                 </div>
-                <div onClick={() => { if (!contact.isDemo) { setConfirmDelete(true); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmDelete(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+                <div onClick={() => { if (!contact.isDemo) { setConfirmDelete(true); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmDelete(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.actionRed, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                   <Trash2 size={14} /> Delete permanently
                 </div>
               </div>
@@ -2611,7 +2611,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}15`, display: "flex", gap: 8, alignItems: "flex-start" }}>
           <AlertTriangle size={16} color={T.actionRed} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.actionRedText }}>{tr("contacts.markedDontMeetAgain", "Marked: don't meet again")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.actionRedText }}>{tr("contacts.markedDontMeetAgain", "Marked: don't meet again")}</div>
             {contact.dontMeetAgainReason && <div style={{ fontSize: 12, color: T.textPrimary, marginTop: 2 }}>{contact.dontMeetAgainReason}</div>}
           </div>
         </div>
@@ -2701,7 +2701,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             );
             if (summary.count === 0) {
               return (
-                <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", textAlign: "center", padding: "16px 4px" }}>
+                <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", textAlign: "center", padding: "16px 4px" }}>
                   No encounters logged with this contact yet.
                 </div>
               );
@@ -2738,7 +2738,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                   // Real cross-module navigation now exists (see
                   // App.jsx's navigateToRecord) — no longer read-only.
                   <div key={e.id} onClick={() => onNavigateToRecord?.("activity", e.id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked encounter" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("activity", e.id); } } : undefined}
-                    style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: onNavigateToRecord ? "pointer" : "default" }}>
+                    style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: TYPE.control.fontSize, cursor: onNavigateToRecord ? "pointer" : "default" }}>
                     <div style={{ color: T.textPrimary, fontWeight: 600 }}>{e.title || "Untitled encounter"}</div>
                     <div style={{ color: T.textSecondary, fontSize: 12 }}>{e.date ? formatStoredDate(e.date) : "No date"}</div>
                   </div>
@@ -2798,7 +2798,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           {!anonymise && formatAvailabilitySummary(contact) && <ReadRow T={T} label={tr("contacts.weeklyAvailability", "Weekly availability")} value={formatAvailabilitySummary(contact)} />}
           {!anonymise && contact.weeklyAvailability?.length > 0 && <ReadRow T={T} label={tr("contacts.availabilityTimezone", "Contact's local timezone")} value={getContactTimeZone(contact)} />}
           {!anonymise && contact.availabilityExceptions?.length > 0 && (
-            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
+            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: TYPE.control.fontSize }}>
               <div style={{ color: T.textSecondary, marginBottom: 4 }}>{tr("contacts.availabilityExceptionsOneOff", "Date-specific exceptions")}</div>
               {contact.availabilityExceptions.map((exception) => (
                 <div key={exception.id} style={{ color: T.textPrimary, fontSize: 12, marginBottom: 2 }}>
@@ -2930,7 +2930,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
 
         <SectionCard T={T} title="Kink">
           {hideFurther ? (
-            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "6px 0" }}>{MASKED}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", padding: "6px 0" }}>{MASKED}</div>
           ) : (
             <>
               {/* FIXED — live audit Finding 8c: with every Kink field empty this
@@ -2948,7 +2948,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               {resolvedStatedKinks.length === 0 && resolvedLimits.length === 0 && emptyish(contact.bdsmRole) && emptyish(contact.sexualPosition) ? (
                 // §49b — colour-indent/backfill empty state (tinted bg +
                 // coloured left border, matching encounters-card-mockup.html).
-                <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.kink}`, borderRadius: radius.sm, background: `${ACCENTS.kink}15` }}>Nothing recorded yet.</div>
+                <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.kink}`, borderRadius: radius.sm, background: `${ACCENTS.kink}15` }}>Nothing recorded yet.</div>
               ) : (
                 <>
                   <ReadRow T={T} label="Stated kinks" value={resolvedStatedKinks} />
@@ -2968,7 +2968,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               fields entirely) still applies to every other field. */}
           {/* §49b — colour-indent/backfill empty state. */}
           {contact.knownChems.length === 0 ? (
-            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACTION.amber}`, borderRadius: radius.sm, background: `${ACTION.amber}15` }}>None known</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACTION.amber}`, borderRadius: radius.sm, background: `${ACTION.amber}15` }}>None known</div>
           ) : (
             <ReadRow T={T} label="Known chems" value={contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean)} />
           )}
@@ -2982,7 +2982,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               channels, so checking it covers the whole set cheaply. */}
           {methods.length === 0 && !contact.phone && !contact.email && !contact.snapchat && !contact.fabguys && !contact.fabswingers && !contact.recon ? (
             // §49b — colour-indent/backfill empty state.
-            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.contacts}`, borderRadius: radius.sm, background: `${ACCENTS.contacts}15` }}>No contact methods recorded.</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.contacts}`, borderRadius: radius.sm, background: `${ACCENTS.contacts}15` }}>No contact methods recorded.</div>
           ) : (
             <>
               <ReadRow T={T} label="Contactable via" value={methods} />
@@ -3008,7 +3008,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             {linkedContactProfiles
               .map((c) => (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onOpenContact(c.id)}
-                  style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.contactsTeal, fontWeight: 600, cursor: "pointer"}}>
+                  style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: TYPE.control.fontSize, color: T.contactsTeal, fontWeight: 600, cursor: "pointer"}}>
                   {displayName(c, anonymise)}
                 </div>
               ))}
@@ -3280,11 +3280,11 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               that screen's red — this is a softer, scored signal, not
               a same-name exact flag. */}
           {duplicateCandidates.length > 0 && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: T.actionAmberSurface, color: T.actionAmberText, fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: T.actionAmberSurface, color: T.actionAmberText, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>
               <AlertTriangle size={12} color={T.actionAmberText} /> {duplicateCandidates.length}
             </div>
           )}
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
             {selectMode ? "Done" : "Select"}
           </span>
           {/* CHANGED 19 Aug 2026 — real icon confusion the user flagged:
@@ -3378,14 +3378,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         // moved its safe-area inset from `top` into its own top
         // padding, shrinking its net height by 8px, so 70 became 62.
         <div style={{ position: "sticky", top: `calc(var(--shos-top-banner-h, 0px) + ${STICKY_SUBHEADING_TOP})`, zIndex: 6, background: T.surfaceVariant, border: `1px solid ${T.border}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
-          <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{selectedIds.length} selected</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather
                 than manual 1 by 1", scoped to whatever's currently
                 visible (respects an active search/filter, same as
                 everything else this screen shows). */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((c) => c.id))}
-              style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+              style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
               {selectedIds.length === filtered.length ? "Deselect all" : "Select all"}
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
@@ -3393,15 +3393,15 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
             <span role="button" tabIndex={0} aria-label={tr("contacts.exportAria", "Export contact")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.export", "Export")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length === 1 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.export", "Export")}</span>
             <span role="button" tabIndex={0} aria-label={tr("contacts.archiveAria", "Archive contacts")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.archive", "Archive")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? T.textPrimary : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.archive", "Archive")}</span>
             {/* CHANGED 10 Sep 2026 — standardised delete confirmation:
                 was a native window.confirm() dialog, now the same shared
                 inline card every module uses. */}
             <span role="button" tabIndex={0} aria-label={tr("contacts.deleteAria", "Delete contacts")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.delete", "Delete")}</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("common.cancel", "Cancel")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? buildDark().actionRed : T.textDisabled, fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("contacts.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600, cursor: "pointer", padding: "12px 8px", minHeight: 44, display: "inline-flex", alignItems: "center" }}>{tr("common.cancel", "Cancel")}</span>
           </div>
         </div>
       )}
@@ -3439,7 +3439,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 
       <div style={{ padding: "0 16px 10px", display: "flex", alignItems: "center", gap: 8 }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts" aria-label="Search contacts"
-          style={{ flex: 1, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44 }} />
+          style={{ flex: 1, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44 }} />
         {/* ADDED 26 Aug 2026 — real ask: filter by role/position, not
             just search. */}
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${activeFilterCount > 0 ? T.contactsTeal : T.border}`, color: activeFilterCount > 0 ? T.contactsTeal : T.textSecondary, fontSize: 12, fontWeight: 600, flexShrink: 0}}>
@@ -3455,7 +3455,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               const active = filterRoles.includes(r);
               return (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={r} onClick={() => setFilterRoles((f) => active ? f.filter((x) => x !== r) : [...f, r])}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
                   {r}
                 </div>
               );
@@ -3467,7 +3467,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               const active = filterPositions.includes(p);
               return (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => setFilterPositions((f) => active ? f.filter((x) => x !== p) : [...f, p])}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
                   {p}
                 </div>
               );
@@ -3481,14 +3481,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               const active = filterHosts.includes(h);
               return (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={h} onClick={() => setFilterHosts((f) => active ? f.filter((x) => x !== h) : [...f, h])}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
                   {h}
                 </div>
               );
             })}
           </div>
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setFilterDrives((d) => !d)}
-            style={{ display: "inline-flex", padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 6, border: `1px solid ${filterDrives ? T.contactsTeal : T.border}`, color: filterDrives ? T.contactsTealText : T.textSecondary, background: filterDrives ? `${T.contactsTeal}15` : "transparent"}}>
+            style={{ display: "inline-flex", padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", marginBottom: 6, border: `1px solid ${filterDrives ? T.contactsTeal : T.border}`, color: filterDrives ? T.contactsTealText : T.textSecondary, background: filterDrives ? `${T.contactsTeal}15` : "transparent"}}>
             Drives
           </div>
           {!anonymise && (
@@ -3509,14 +3509,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 <label style={{ display: "block", marginTop: 8, color: T.textSecondary, fontSize: 11 }}>
                   Your local date and time
                   <input type="datetime-local" aria-label="Check availability at your local date and time" value={filterAvailabilityAt} min={localDateTimeInputValue(availabilityNow)} onChange={(e) => setFilterAvailabilityAt(e.target.value)}
-                    style={{ display: "block", width: "100%", minHeight: 44, boxSizing: "border-box", marginTop: 4, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
+                    style={{ display: "block", width: "100%", minHeight: 44, boxSizing: "border-box", marginTop: 4, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize }} />
                 </label>
               )}
               <div style={{ fontSize: 10, color: T.textDisabled, marginTop: 5 }}>Weekly windows use each contact's local timezone. Filters only include contacts with a saved weekly schedule.</div>
             </div>
           )}
           {activeFilterCount > 0 && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setFilterRoles([]); setFilterPositions([]); setFilterHosts([]); setFilterDrives(false); setFilterAvailability(""); }} style={{ fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", display: "block", marginTop: 6}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setFilterRoles([]); setFilterPositions([]); setFilterHosts([]); setFilterDrives(false); setFilterAvailability(""); }} style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", display: "block", marginTop: 6}}>
               Clear filters
             </div>
           )}
@@ -3547,7 +3547,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           { key: "incomplete", label: "Incomplete" },
         ].map((opt) => (
           <div key={opt.key} onClick={() => setSortBy(opt.key)} role="button" tabIndex={0} aria-pressed={sortBy === opt.key} aria-label={opt.label || opt.key} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortBy(opt.key); } }}
-            style={{ padding: "6px 12px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", border: `1px solid ${sortBy === opt.key ? T.contactsTeal : T.border}`, color: sortBy === opt.key ? T.contactsTealText : T.textSecondary}}>
+            style={{ padding: "6px 12px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", border: `1px solid ${sortBy === opt.key ? T.contactsTeal : T.border}`, color: sortBy === opt.key ? T.contactsTealText : T.textSecondary}}>
             {opt.label}
           </div>
         ))}
@@ -3644,14 +3644,14 @@ function InactiveThresholdCard({ T, tr, onUpdated }) {
 
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>{tr("contacts.inactiveContactThreshold", "Inactive contact threshold")}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>{tr("contacts.inactiveContactThreshold", "Inactive contact threshold")}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
         Days since a Contact's last Encounter before it shows the red "inactive" flag. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
           style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.surfaceVariant, color: T.textPrimary }} />
-        <span style={{ fontSize: 13, color: T.textSecondary }}>days</span>
+        <span style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary }}>days</span>
         <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: T.contactsBanner, color: "#FFFFFF", fontWeight: 700, cursor: "pointer"}}>
           Save
         </button>
@@ -3673,7 +3673,7 @@ function ShowRoleOnCardsToggleCard({ T, onUpdated }) {
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44 }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Show Dom/sub & Top/bottom on cards</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>Show Dom/sub & Top/bottom on cards</div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Already shown on a contact's own profile — this adds it to the list view too, visible at a glance. Off by default.</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.showRoleOnContactCards ? T.contactsTeal : T.border, position: "relative", flexShrink: 0 }}>
@@ -3698,7 +3698,7 @@ function ShowAvailabilityOnCardsToggleCard({ T, onUpdated }) {
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44 }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{tr("contacts.showAvailabilityOnCards", "Show weekly availability on contact cards")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{tr("contacts.showAvailabilityOnCards", "Show weekly availability on contact cards")}</div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{tr("contacts.availabilityCardSummary", "Adds a compact schedule summary to list cards. Off by default.")}</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? T.contactsTeal : T.border, position: "relative", flexShrink: 0 }}>
@@ -3734,7 +3734,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
             <ChevronRight size={16} color={T.textDisabled} />
           </div>
         )}
-        <div onClick={onOpenGeneralSettings} role="button" tabIndex={0} aria-label="Go to general app settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenGeneralSettings(); } }} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0"}}>
+        <div onClick={onOpenGeneralSettings} role="button" tabIndex={0} aria-label="Go to general app settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenGeneralSettings(); } }} style={{ textAlign: "center", fontSize: TYPE.control.fontSize, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0"}}>
           Go to general app settings
         </div>
       </div>
@@ -3901,7 +3901,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
-          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.contactsTeal, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.contactsTeal, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Contact updated — tap to undo" : "Undone — tap to redo"}
         </div>

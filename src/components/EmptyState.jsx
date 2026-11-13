@@ -43,7 +43,7 @@ export default function EmptyState({ T, icon, message, actionLabel, onAction, pa
           {glyph}
         </div>
       ) : null}
-      <div style={{ ...TYPE.caption, fontSize: 13, color: T.textDisabled, maxWidth: 420 }}>{message}</div>
+      <div style={{ ...TYPE.caption, fontSize: TYPE.control.fontSize, color: T.textDisabled, maxWidth: 420 }}>{message}</div>
       {hasAction ? (
         <button
           type="button"
@@ -57,7 +57,7 @@ export default function EmptyState({ T, icon, message, actionLabel, onAction, pa
             background: T.surfaceVariant,
             color: T.textPrimary,
             fontFamily: FONT_FAMILY,
-            fontSize: 13,
+            fontSize: TYPE.control.fontSize,
             fontWeight: 600,
             cursor: "pointer",
           }}

@@ -149,12 +149,12 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface }}>
       <Bell size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.getReminded", "Get reminded about medications and other due dates")}</div>
+        <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{tr("home.getReminded", "Get reminded about medications and other due dates")}</div>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>{tr("home.enableNotifications", "Enable notifications")}</button>
+          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>{tr("home.enableNotifications", "Enable notifications")}</button>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>{tr("home.notNow", "Not now")}</span>
         </div>
       </div>
@@ -946,8 +946,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
     <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: onClick ? "pointer" : "default" }}>
-      <span style={{ fontSize: 13, color: moduleColor || (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", paddingRight: 12 }}>{label}</span>
-      <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, textAlign: "right", minWidth: 0, overflowWrap: "anywhere" }}>{value}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: moduleColor || (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", paddingRight: 12 }}>{label}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, textAlign: "right", minWidth: 0, overflowWrap: "anywhere" }}>{value}</span>
     </div>
   );
 
@@ -968,7 +968,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     const sizeMap = {
       standard: { padding: "14px 16px", minHeight: 44, iconSize: 22, fontSize: 15 },
       compact: { padding: "8px 8px", minHeight: 36, iconSize: 20, fontSize: 14 },
-      compactPlus: { padding: "6px 6px", minHeight: 32, iconSize: 18, fontSize: 13 },
+      compactPlus: { padding: "6px 6px", minHeight: 32, iconSize: 18, fontSize: TYPE.control.fontSize },
     }
     const s = sizeMap[size] || sizeMap.compact
     return (
@@ -1062,7 +1062,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <NotificationPermissionNudge status={notifPermStatus} onStatusChange={setNotifPermStatus} />
       {/* ADDED 19 Aug 2026 — welcome text, the user's own wording as the
           basis: open, non-judgemental, genuinely useful tone. */}
-      <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5, marginBottom: 20 }}>
+      <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5, marginBottom: 20 }}>
         Welcome to your personal sexual health operating system. Log hookups, testing, clinic visits, medications, and more — all in one place, with clear summaries when you need them. No judgement here, just a useful record that's actually yours.
       </div>
 
@@ -1100,9 +1100,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             <Activity size={24} color={encountersColor} />
           </div>
           <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-            <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: encountersColor, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
-            <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onNavigateToRecord("activity"); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${encountersColor}`, color: encountersColor, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Open log</div>
-            <div role="button" tabIndex={0} onClick={async (e) => { e.stopPropagation(); if (confirm("Cancel this session? Any encounters already logged will be kept but unlinked.")) { await SessionRepository.delete(activeSession.id); if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed")); } }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${actionRedColor}`, color: actionRedColor, textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Cancel</div>
+            <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onQuickAddWithPrefill?.("activity", null, { sessionId: activeSession.id }); } }} style={{ flex: 1, padding: "9px 12px", borderRadius: RADIUS.sm, background: encountersColor, color: "#FFFFFF", textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 800, cursor: "pointer" }}>+ Add activity</div>
+            <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onNavigateToRecord("activity"); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${encountersColor}`, color: encountersColor, textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 800, cursor: "pointer" }}>Open log</div>
+            <div role="button" tabIndex={0} onClick={async (e) => { e.stopPropagation(); if (confirm("Cancel this session? Any encounters already logged will be kept but unlinked.")) { await SessionRepository.delete(activeSession.id); if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed")); } }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${actionRedColor}`, color: actionRedColor, textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 800, cursor: "pointer" }}>Cancel</div>
           </div>
         </div>
       )}
@@ -1115,7 +1115,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         }}>
           <Syringe size={18} color={doxyStatus.overdue ? actionRedColor : medsBlue} style={{ marginTop: 1 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? actionRedColor : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) }}>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: doxyStatus.overdue ? actionRedColor : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) }}>
               {doxyStatus.overdue ? "DoxyPEP dose overdue" : "DoxyPEP dose due soon"}
             </div>
             <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 1 }}>
@@ -1568,7 +1568,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           number is the only part of that sentence anyone needs. */}
       {sampleData.total > 0 && !sampleDataHidden && (
         <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : "#F0FDFA" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
             This app starts with demo data
           </div>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4, lineHeight: 1.45 }}>
@@ -1622,7 +1622,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {backupInfo.dueForReminder && (
         <div role="status" aria-live="polite" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${ACTION.amber}40`, background: darkMode ? DARK.surface : "#FFF7ED", cursor: "pointer" }}>
           <Database size={15} color={ACTION.gold} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.gold }}>
+          <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: ACTION.gold }}>
             {backupInfo.lastAt ? `No backup in ${backupInfo.daysSince} days — export one` : "You've never exported a backup — do it now"}
           </span>
         </div>
@@ -1641,7 +1641,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {autoExportRan && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${actionGreenColor}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
           <Database size={15} color={actionGreenColor} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: actionGreenColor }}>{tr("home.backedUpAutomatically", "Backed up automatically — saved to Documents")}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: actionGreenColor }}>{tr("home.backedUpAutomatically", "Backed up automatically — saved to Documents")}</span>
         </div>
       )}
 
@@ -1657,7 +1657,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <a href={RELEASE_APK_URL} target="_blank" rel="noreferrer"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : `${homeColor}10`, textDecoration: "none" }}>
           <Download size={15} color={homeColor} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: homeColorText }}>Update available ({updateInfo.latestSha}) — tap to download</span>
+          <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: homeColorText }}>Update available ({updateInfo.latestSha}) — tap to download</span>
         </a>
       )}
 

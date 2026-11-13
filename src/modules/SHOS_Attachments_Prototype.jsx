@@ -140,12 +140,12 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px" }}>
         <div role="button" tabIndex={0} aria-pressed={filterType === ""} aria-label={t("attachments.showAll", "Show all attachments")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilterType(""); } }} onClick={() => setFilterType("")}
-          style={{ padding: "5px 10px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcare : T.border}`, color: filterType === "" ? T.healthcare : T.textSecondary, background: filterType === "" ? `${T.healthcare}15` : "transparent"}}>
+          style={{ padding: "5px 10px", borderRadius: 999, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcare : T.border}`, color: filterType === "" ? T.healthcare : T.textSecondary, background: filterType === "" ? `${T.healthcare}15` : "transparent"}}>
           {t("attachments.filterAll", "All")}
         </div>
         {TYPE_OPTIONS.map((t) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setFilterType(t)}
-            style={{ padding: "5px 10px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === t ? T.healthcare : T.border}`, color: filterType === t ? T.healthcare : T.textSecondary, background: filterType === t ? `${T.healthcare}15` : "transparent"}}>
+            style={{ padding: "5px 10px", borderRadius: 999, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === t ? T.healthcare : T.border}`, color: filterType === t ? T.healthcare : T.textSecondary, background: filterType === t ? `${T.healthcare}15` : "transparent"}}>
             {t}
           </div>
         ))}
@@ -205,7 +205,7 @@ function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }
         </div>
       )}
       <div onClick={() => onNavigateToSource?.(a.sourceType, a.sourceId)} role={onNavigateToSource ? "button" : undefined} tabIndex={onNavigateToSource ? 0 : -1} aria-label={onNavigateToSource ? t("attachments.openSource", "Open source record") : undefined} onKeyDown={onNavigateToSource ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToSource(a.sourceType, a.sourceId); } } : undefined} style={{ flex: 1, minWidth: 0, cursor: onNavigateToSource ? "pointer" : "default" }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
+        <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
     {a.isDemo && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: T.surfaceElevated, color: T.textSecondary, textTransform: "uppercase" }}>Demo</span>}
         <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
       </div>

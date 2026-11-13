@@ -512,7 +512,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
         <div style={{ display: "flex", gap: 6, padding: "10px 16px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, paddingBottom: 10 }}>
           {[{ key: "chronological", label: tr("globalSearch.mostRecent", "Most recent") }, { key: "alphabetical", label: tr("globalSearch.aToZ", "A\u2013Z") }].map((s) => (
             <div key={s.key} onClick={() => setSortMode(s.key)} role="button" tabIndex={0} aria-pressed={sortMode === s.key} aria-label={s.label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortMode(s.key); } }}
-              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? T.surface : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent"}}>
+              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? T.surface : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent"}}>
               {s.label}
             </div>
           ))}
@@ -530,7 +530,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
 
       <div tabIndex={0} style={{ flex: 1, overflowY: "auto" }}>
         {query.trim().length === 0 && (
-          <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
+          <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: TYPE.control.fontSize }}>
             {tr("globalSearch.startTyping", "Start typing to search across every record in SHOS \u2014 Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Measurements, and Menstrual Health.")}
           </div>
         )}
@@ -538,12 +538,12 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
           // See the indexReady comment above. Deliberately says nothing about
           // whether there are matches, because at this point we genuinely do
           // not know.
-          <div role="status" style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
+          <div role="status" style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: TYPE.control.fontSize }}>
             {tr("globalSearch.searching", "Searching…")}
           </div>
         )}
         {query.trim().length > 0 && indexReady && results.length === 0 && (
-          <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
+          <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: TYPE.control.fontSize }}>
             {tr("globalSearch.noMatches", "No matches for \"{query}\".", { query })}
           </div>
         )}

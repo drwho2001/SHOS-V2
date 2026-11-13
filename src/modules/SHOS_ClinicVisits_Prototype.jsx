@@ -191,7 +191,7 @@ function ReadRow({ label, value, T }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
       <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
     </div>
   );
 }
@@ -228,7 +228,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
               {nameFor(id)}<X size={11} />
             </div>
           ))}
@@ -304,7 +304,7 @@ function ClinicianField({ value, onChange, T }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c} onClick={() => removeClinician(c)}
-              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
+              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
               {c} <X size={11} />
             </div>
           ))}
@@ -381,7 +381,7 @@ function ReasonForVisitField({ value, onChange, options, T, listName }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((r) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={r} onClick={() => removeReason(r)}
-              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
+              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
               {r} <X size={11} />
             </div>
           ))}
@@ -595,7 +595,7 @@ function TakeHomeMedicationsField({ value, onChange, meds, T }) {
         return (
           <div key={e.medicationId} style={{ padding: "6px 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ flex: 1, fontSize: 13, color: T.textPrimary }}>{nameFor(e.medicationId)}</span>
+              <span style={{ flex: 1, fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{nameFor(e.medicationId)}</span>
               {showToggle && (
                 <div style={{ display: "flex", border: `1px solid ${T.border}`, borderRadius: radius.full, overflow: "hidden", flexShrink: 0 }}>
                   {[{ k: "containers", l: "containers" }, { k: "units", l: "pills" }].map((opt) => {
@@ -621,7 +621,7 @@ function TakeHomeMedicationsField({ value, onChange, meds, T }) {
                 onChange={(ev) => setQty(i, ev.target.value)}
                 aria-label={`Quantity of ${nameFor(e.medicationId)} to take home, in ${unit}`}
                 placeholder="Qty"
-                style={{ width: 78, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
+                style={{ width: 78, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}
               />
               <div role="button" tabIndex={0}
                 onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
@@ -642,7 +642,7 @@ function TakeHomeMedicationsField({ value, onChange, meds, T }) {
             value={query} onChange={(ev) => setQuery(ev.target.value)}
             placeholder="Add a medication to take home..."
             aria-label="Add a medication to take home"
-            style={{ width: "100%", padding: "9px 11px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "9px 11px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}
           />
           {suggestions.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
@@ -720,11 +720,11 @@ function RecordVaccinationInline({ visitDate, location, onCreated, T }) {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Vaccine - continue details in Vaccinations"
         aria-label="Vaccination name"
         onKeyDown={(e) => { if (e.key === "Enter") create(); }}
-        style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13 }} />
+        style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize }} />
       <div role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
         onClick={create}
-        style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
+        style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
         {busy ? "..." : "Add"}
       </div>
     </div>
@@ -738,11 +738,11 @@ function RecordVaccinationInline({ visitDate, location, onCreated, T }) {
 function YesNoQuestion({ question, value, onChange, T }) {
   return (
     <div style={{ padding: "10px 0" }}>
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{question}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{question}</div>
       <div style={{ display: "flex", gap: 8 }}>
         {[{ label: "Yes", val: true }, { label: "No", val: false }].map((opt) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={opt.label} onClick={() => onChange(opt.val)}
-            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: radius.sm, cursor: "pointer", fontSize: 13, fontWeight: 700, border: `1px solid ${value === opt.val ? T.healthcare : T.border}`, background: value === opt.val ? `${T.healthcare}15` : "transparent", color: value === opt.val ? T.healthcare : T.textSecondary, display: "flex", alignItems: "center", justifyContent: "center"}}>
+            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: radius.sm, cursor: "pointer", fontSize: TYPE.control.fontSize, fontWeight: 700, border: `1px solid ${value === opt.val ? T.healthcare : T.border}`, background: value === opt.val ? `${T.healthcare}15` : "transparent", color: value === opt.val ? T.healthcare : T.textSecondary, display: "flex", alignItems: "center", justifyContent: "center"}}>
             {opt.label}
           </div>
         ))}
@@ -813,7 +813,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
             <div key={m.id} style={{ padding: "6px 10px", borderRadius: radius.sm, background: T.surfaceVariant }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <div style={{ minWidth: 0, overflowWrap: "break-word" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
                   {m.notes && <div style={{ fontSize: 11, color: T.textSecondary }}>{m.notes}</div>}
                 </div>
                 <X size={20} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0, padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => remove(m.id)} aria-label={`Remove ${m.name}`} title="Remove medication" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
@@ -863,10 +863,10 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
           below rather than fighting them for horizontal space. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ceftriaxone 1g IM" aria-label="Medication name"
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
         <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" aria-label="Medication notes"
-          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, boxSizing: "border-box" }} />
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={add} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center"}}>Add</div>
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={add} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center"}}>Add</div>
       </div>
     </div>
   );
@@ -906,8 +906,8 @@ function StartTestInline({ visitId, visitDate, onCreated, T }) {
     <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Test name — continue details in Testing"
         onKeyDown={(e) => { if (e.key === "Enter") create(); }}
-        style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13 }} />
-      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={create} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>{tr("clinicVisits.start", "Start")}</div>
+        style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize }} />
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={create} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>{tr("clinicVisits.start", "Start")}</div>
     </div>
   );
 }
@@ -1204,7 +1204,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("clinicVisits.newVisit", "New visit") : tr("clinicVisits.editVisit", "Edit visit")}</h1>
         <div onClick={() => canSave && !isSaving && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isSaving) save(); } } : undefined}
-          style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcare : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
+          style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcare : "rgba(255,255,255,0.7)", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
           {isSaving ? tr("common.saving", "Saving…") : tr("common.save", "Save")}
         </div>
       </div>
@@ -1318,7 +1318,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
                   set("followUpType")("");
                   set("nextReviewDate")(null);
                 }
-              }} style={{ padding: "8px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6}}>
+              }} style={{ padding: "8px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontWeight: 600, fontSize: TYPE.control.fontSize, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6}}>
                 <Calendar size={14} /> Confirm attendance
               </div>
             </div>
@@ -1482,7 +1482,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.clinicalNotes", "Clinical notes")}</div>
             <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3} aria-label="Clinical notes"
               placeholder="e.g. Discussed PrEP adherence, no concerns raised. Advised to continue current regimen."
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </SectionCard>
 
@@ -1572,7 +1572,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span role="button" tabIndex={0} aria-label={tr("clinicVisits.editVisit", "Edit clinic visit")} style={{ fontSize: 13, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={() => onEdit(visitId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>{tr("common.edit", "Edit")}</span>
+          <span role="button" tabIndex={0} aria-label={tr("clinicVisits.editVisit", "Edit clinic visit")} style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={() => onEdit(visitId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>{tr("common.edit", "Edit")}</span>
           <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
@@ -1621,7 +1621,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
                 const isPositive = resultNames.some((n) => n.toLowerCase() === "positive");
                 return (
                   <div key={t.id} onClick={() => onOpenTest?.(t.id)} role={onOpenTest ? "button" : undefined} tabIndex={onOpenTest ? 0 : undefined} aria-label={onOpenTest ? "Open linked test" : undefined} onKeyDown={onOpenTest ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenTest(t.id); } } : undefined} style={{ cursor: onOpenTest ? "pointer" : "default", marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, color: T.healthcare, fontWeight: 600 }}>{t.title || "Test"}</div>
+                    <div style={{ fontSize: TYPE.control.fontSize, color: T.healthcare, fontWeight: 600 }}>{t.title || "Test"}</div>
                     {/* CHANGED 19 Aug 2026 — embeds the linked test's OWN
                         real result live, replacing the old standalone
                         (and duplicative) resultIds field. */}
@@ -1647,7 +1647,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.administeredTracker", "Administered in clinic (tracker)")}</div>
               {medNames.map((n, i) => (
-                <div key={i} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{n}</div>
+                <div key={i} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 2 }}>{n}</div>
               ))}
             </div>
           )}
@@ -1655,7 +1655,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>{tr("clinicVisits.administeredOneOff", "Administered in clinic (one-off)")}</div>
               {visit.adHocMedicationsGiven.map((m) => (
-                <div key={m.id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}{m.notes ? ` — ${m.notes}` : ""}</div>
+                <div key={m.id} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 2 }}>{m.name}{m.notes ? ` — ${m.notes}` : ""}</div>
               ))}
             </div>
           )}
@@ -1687,7 +1687,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
                   unitWord = "containers";
                 }
                 return (
-                  <div key={entry.medicationId} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>
+                  <div key={entry.medicationId} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 2 }}>
                     {name}{qty != null ? ` — ${qty} ${unitWord}` : ""}
                   </div>
                 );
@@ -1703,7 +1703,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             <div style={{ padding: "7px 0" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("clinicVisits.specificSymptomEntries", "Specific symptom entries")}</div>
               {symptomLogEntries.map((s) => (
-                <div key={s.id} style={{ fontSize: 13, color: visit.primaryReasonSymptomLogId === s.id ? T.actionRed : T.textPrimary, fontWeight: visit.primaryReasonSymptomLogId === s.id ? 700 : 400, marginBottom: 2 }}>
+                <div key={s.id} style={{ fontSize: TYPE.control.fontSize, color: visit.primaryReasonSymptomLogId === s.id ? T.actionRed : T.textPrimary, fontWeight: visit.primaryReasonSymptomLogId === s.id ? 700 : 400, marginBottom: 2 }}>
                   {s.title}{visit.primaryReasonSymptomLogId === s.id ? " — why I'm here" : ""}
                 </div>
               ))}
@@ -1719,7 +1719,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           {measurements.map((m) => (
             <ReadRow key={m.id} label={m.type} value={m.type === "Blood pressure" ? `${m.systolic}/${m.diastolic} mmHg` : `${m.value} ${m.unit}`} T={T} />
           ))}
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowAddMeasurement(true)} style={{ fontSize: 13, fontWeight: 700, color: T.healthcare, cursor: "pointer", padding: "7px 0"}}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowAddMeasurement(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.healthcare, cursor: "pointer", padding: "7px 0"}}>
             + Add measurement
           </div>
         </SectionCard>
@@ -1739,7 +1739,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             {visit.attachments.map((a) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
                 <Paperclip size={13} color={T.textSecondary} />
-                <span style={{ fontSize: 13, color: T.textPrimary }}>{a.title}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{a.title}</span>
                 <span style={{ fontSize: 11, color: T.textDisabled }}>({a.type})</span>
               </div>
             ))}
@@ -1861,24 +1861,24 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
       {selectMode && (
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                 rather than manual 1 by 1", scoped to whatever's
                 currently visible under the active search/filters. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === sorted.length ? [] : sorted.map((v) => v.id))}
-              style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
+              style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
               {selectedIds.length === sorted.length ? "Deselect all" : "Select all"}
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
             <span role="button" tabIndex={0} aria-label={tr("clinicVisits.exportAria", "Export clinic visit")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("clinicVisits", await ClinicVisitsRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
             <span role="button" tabIndex={0} aria-label={tr("clinicVisits.archiveAria", "Archive clinic visits")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await ClinicVisitsRepository.bulkArchive(selectedIds); syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll()); refresh(); exitSelectMode(); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
             <span role="button" tabIndex={0} aria-label={tr("clinicVisits.deleteAria", "Delete clinic visits")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
           </div>
         </div>
       )}
@@ -1902,7 +1902,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       {/* ADDED 26 Aug 2026 — real ask: search within module. */}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search clinic visits"
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
       </div>
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {sorted.length > 0 ? `${sorted.length} clinic visits${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No clinic visits match" : "No clinic visits logged"}
@@ -2140,7 +2140,7 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-label={editUndo.toast.mode === "undo" ? "Undo edit" : "Redo edit"} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
-          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Clinic visit updated — tap to undo" : "Undone — tap to redo"}
         </div>

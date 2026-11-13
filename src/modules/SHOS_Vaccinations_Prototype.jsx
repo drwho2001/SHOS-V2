@@ -130,7 +130,7 @@ function MultiSelectChips({ label, value, onChange, options, T, listName }) {
           return (
             <div key={optionValue(opt)} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.healthcare : T.border}`, color: active ? T.healthcare : T.textSecondary, background: active ? `${T.healthcare}15` : "transparent"}}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.healthcare : T.border}`, color: active ? T.healthcare : T.textSecondary, background: active ? `${T.healthcare}15` : "transparent"}}>
               {optionLabel(opt)}
             </div>
           );
@@ -165,7 +165,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
               {nameFor(id)}<X size={11} />
             </div>
           ))}
@@ -197,7 +197,7 @@ function ReadRow({ label, value, T, alert }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
       <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: alert ? T.actionRed : T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: alert ? T.actionRed : T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
     </div>
   );
 }
@@ -346,7 +346,7 @@ function DoseByDose({ doses, onChange, vaccineName, T, tr }) {
     return (
       <div style={{ padding: "8px 0" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>{tr("vaccinations.noDosesLoggedYet", "No doses logged yet")}</div>
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>
           <Plus size={16} /> {tr("vaccinations.addFirstDose", "Add first dose")}
         </div>
       </div>
@@ -365,42 +365,42 @@ function DoseByDose({ doses, onChange, vaccineName, T, tr }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Date</div>
-              <input type="date" value={dose.date ?? ""} onChange={(e) => updateDose(index, "date", e.target.value)} aria-label="Date" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
+              <input type="date" value={dose.date ?? ""} onChange={(e) => updateDose(index, "date", e.target.value)} aria-label="Date" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Time</div>
-              <input type="time" value={dose.time ?? ""} onChange={(e) => updateDose(index, "time", e.target.value)} aria-label="Time" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
+              <input type="time" value={dose.time ?? ""} onChange={(e) => updateDose(index, "time", e.target.value)} aria-label="Time" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.provider", "Provider")}</div>
-              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label={tr("vaccinations.provider", "Provider")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label={tr("vaccinations.provider", "Provider")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.injectionSite", "Injection site")}</div>
-              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label={tr("vaccinations.injectionSite", "Injection site")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label={tr("vaccinations.injectionSite", "Injection site")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.nextDue", "Next due")}</div>
-              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label={tr("vaccinations.nextDue", "Next due")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
+              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label={tr("vaccinations.nextDue", "Next due")} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, fontFamily: FONT_FAMILY, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.doseNumber", "Dose #")}</div>
-              <input type="number" min="1" value={dose.doseNumber ?? index + 1} onChange={(e) => updateDose(index, "doseNumber", e.target.value ? Number(e.target.value) : null)} aria-label="Dose number" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, textAlign: "center", boxSizing: "border-box" }} />
+              <input type="number" min="1" value={dose.doseNumber ?? index + 1} onChange={(e) => updateDose(index, "doseNumber", e.target.value ? Number(e.target.value) : null)} aria-label="Dose number" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, textAlign: "center", boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ padding: "8px 0 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.notes", "Notes")}</div>
             <textarea value={dose.notes ?? ""} onChange={(e) => updateDose(index, "notes", e.target.value)} rows={2} aria-label={tr("vaccinations.notes", "Dose notes")}
-              style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
           </div>
           <EarlyDoseNotice doses={doses} index={index} vaccineName={vaccineName} T={T} tr={tr} />
         </div>
       ))}
-      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 8}}>
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", marginTop: 8}}>
         <Plus size={16} /> Add dose / booster
       </div>
     </div>
@@ -461,7 +461,7 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T, tr }) {
         <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("vaccinations.notLinkedToVisit", "Not linked to a clinic visit.")}</div>
       ) : (
         visits.map((x) => (
-          <div key={x.id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{labelOf(x)}</div>
+          <div key={x.id} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 2 }}>{labelOf(x)}</div>
         ))
       )}
       {showPicker ? (
@@ -470,7 +470,7 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T, tr }) {
             value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={tr("vaccinations.findClinicVisit", "Find a clinic visit...")}
             aria-label={tr("vaccinations.findClinicVisitAria", "Find a clinic visit to link this vaccination to")}
-            style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}
           />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
             {candidates.length === 0 && <span style={{ fontSize: 11, color: T.textDisabled }}>{tr("vaccinations.noMatchingVisits", "No matching visits.")}</span>}
@@ -624,7 +624,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
           <div style={{ padding: "8px 0 20px" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("vaccinations.notes", "Notes")}</div>
             <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("vaccinations.notes", "Notes")}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
@@ -677,7 +677,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span role="button" tabIndex={0} aria-label="Edit vaccination" style={{ fontSize: 13, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={() => { if (!v.isDemo) onEdit(vaccinationId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
+          <span role="button" tabIndex={0} aria-label="Edit vaccination" style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={() => { if (!v.isDemo) onEdit(vaccinationId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
           <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
@@ -741,7 +741,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
                 {dose.notes && <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 4 }}>{dose.notes}</div>}
               </div>
             ))}
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onEdit(vaccinationId)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 8}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onEdit(vaccinationId)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", marginTop: 8}}>
               <Plus size={16} /> Add dose / booster
             </div>
           </SectionCard>
@@ -896,7 +896,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, tr, vaccinations, refresh, dele
       {hepatitisBGuidance && (
         <div role="region" aria-label="Hepatitis B guidance"
           style={{ margin: "12px 16px 4px", padding: 12, borderRadius: 10, background: T.surfaceVariant, border: `1px solid ${T.border}` }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>
             {hepatitisBGuidance.title}
           </div>
           <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>
@@ -911,27 +911,27 @@ function VaccinationsLanding({ onOpen, onAdd, T, tr, vaccinations, refresh, dele
       {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
       {selectMode && (
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                 rather than manual 1 by 1", scoped to whatever's
                 currently visible under the active search/filters. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === sorted.length ? [] : sorted.map((v) => v.id))}
-              style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
+              style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
               {selectedIds.length === sorted.length ? tr("common.deselectAll", "Deselect all") : tr("common.selectAll", "Select all")}
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
             <span role="button" tabIndex={0} aria-label={tr("vaccinations.exportAria", "Export vaccination")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
             {/* ADDED 20 Oct 2026 (t130) - an archived vaccination's event has
                 to LEAVE the phone's calendar, or the archive is a lie on the
                 home screen. */}
             <span role="button" tabIndex={0} aria-label={tr("vaccinations.archiveAria", "Archive vaccinations")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); await syncVaccinationsToCalendar(await VaccinationRepository.getAll()); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.archive", "Archive")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.archive", "Archive")}</span>
             <span role="button" tabIndex={0} aria-label={tr("vaccinations.deleteAria", "Delete vaccinations")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>{tr("common.cancel", "Cancel")}</span>
+              style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>{tr("common.cancel", "Cancel")}</span>
           </div>
         </div>
       )}
@@ -956,7 +956,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, tr, vaccinations, refresh, dele
       {/* ADDED 26 Aug 2026 — real ask: search within module. */}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search vaccinations"
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
       </div>
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {sorted.length > 0 ? `${sorted.length} vaccinations${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No vaccinations match" : "No vaccinations logged"}
@@ -1204,7 +1204,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-label={editUndo.toast.mode === "undo" ? "Undo edit" : "Redo edit"} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
-          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Vaccination updated — tap to undo" : "Undone — tap to redo"}
         </div>

@@ -169,12 +169,12 @@ function PhotoPicker({ value, onChange, T }) {
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => inputRef.current?.click()} style={{ fontSize: 13, fontWeight: 600, color: T.contactsTeal, cursor: "pointer"}}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => inputRef.current?.click()} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.contactsTeal, cursor: "pointer"}}>
           {value ? "Change photo" : "Add photo"}
         </div>
         <div style={{ fontSize: 11, color: T.textDisabled }}>Only shared if you export this profile to someone else — not needed for your own device.</div>
         {value && (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: 13, color: T.actionRed, cursor: "pointer"}}>Remove</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: TYPE.control.fontSize, color: T.actionRed, cursor: "pointer"}}>Remove</div>
         )}
       </div>
       <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
@@ -332,7 +332,7 @@ function CityAutocomplete({ label, value, onChange, T, placeholder }) {
             <div key={r.place.place_id} role="button" tabIndex={0}
               onMouseDown={() => pick(r)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(r); } }}
-              style={{ padding: "8px 10px", fontSize: 13, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}`}}>
+              style={{ padding: "8px 10px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}`}}>
               {r.city}
             </div>
           ))}
@@ -368,7 +368,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
               {nameFor(id)}<X size={11} />
             </div>
           ))}
@@ -481,7 +481,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent"}}>
               {opt}
             </div>
           );
@@ -558,7 +558,7 @@ function TagInput({ label, value, onChange, T, tr, placeholder }) {
             const PlatformIcon = platformIconFor(tag);
             return (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
-                style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
+                style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
                 {PlatformIcon && <PlatformIcon size={12} />} {tag} <X size={11} />
               </div>
             );
@@ -577,7 +577,7 @@ function TagInput({ label, value, onChange, T, tr, placeholder }) {
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         onBlur={commit}
         placeholder={placeholder || "Type, comma-separated, then Enter"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
     </div>
   );
 }
@@ -801,7 +801,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(); } }}
         onBlur={commitDraft}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
       {/* ADDED — real ask: "did you mean...?" prompt, same behavior as
           Contacts/Encounters. */}
       {pendingSuggestion && (
@@ -814,12 +814,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {pendingSuggestion.specific.map((entry) => (
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name); setPendingSuggestion(null); }}
-                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, background: T.contactsTeal, color: "#FFFFFF", cursor: "pointer"}}>
+                    style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, background: T.contactsTeal, color: "#FFFFFF", cursor: "pointer"}}>
                     Use "{entry.name}"
                   </div>
                 ))}
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
                   Keep "{pendingSuggestion.typedAs}"
                 </div>
               </div>
@@ -831,11 +831,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, background: T.contactsTeal, color: "#FFFFFF", cursor: "pointer"}}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, background: T.contactsTeal, color: "#FFFFFF", cursor: "pointer"}}>
                   Yes, use "{pendingSuggestion.suggestion}"
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs); setPendingSuggestion(null); }}
-                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
+                  style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer"}}>
                   No, add "{pendingSuggestion.typedAs}" as new
                 </div>
               </div>
@@ -913,7 +913,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T, tr }) {
           placeholder="Optional note"
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, fontSize: 12, boxSizing: "border-box", marginBottom: 8 }} />
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addRule}
-          style={{ textAlign: "center", padding: "8px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", background: draft.days.length ? T.contactsTeal : T.surfaceVariant, color: draft.days.length ? "#FFFFFF" : T.textDisabled}}>
+          style={{ textAlign: "center", padding: "8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", background: draft.days.length ? T.contactsTeal : T.surfaceVariant, color: draft.days.length ? "#FFFFFF" : T.textDisabled}}>
           Add exception
         </div>
       </div>
@@ -1108,7 +1108,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
       <div ref={sheetBannerRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(16px + env(safe-area-inset-top)) 16px 16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onCancel} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{tr("myProfile.editTitle", "Edit My Profile")}</h1>
-        <div onClick={handleSave} role="button" tabIndex={0} aria-label="Save" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer"}}>Save</div>
+        <div onClick={handleSave} role="button" tabIndex={0} aria-label="Save" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>Save</div>
       </div>
 
       <div style={{ padding: "0 16px 100px" }}>
@@ -1218,7 +1218,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
           {form.gender?.trim().toLowerCase() === "female" && !revealPhysicalAnyway && !hasPhysicalDetail(form) && (
             <div role="button" tabIndex={0} onClick={() => setRevealPhysicalAnyway(true)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealPhysicalAnyway(true); } }}
-              style={{ fontSize: 13, color: T.contactsTealText, cursor: "pointer", padding: "4px 0"}}>+ Record these details anyway</div>
+              style={{ fontSize: TYPE.control.fontSize, color: T.contactsTealText, cursor: "pointer", padding: "4px 0"}}>+ Record these details anyway</div>
           )}
         </SectionCard>
         ) : null}
@@ -1240,7 +1240,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
         ) : (
           <div role="button" tabIndex={0} onClick={() => setRevealContraceptionAnyway(true)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealContraceptionAnyway(true); } }}
-            style={{ fontSize: 13, color: T.contactsTealText, cursor: "pointer", padding: "4px 0 12px"}}>+ Track contraception anyway</div>
+            style={{ fontSize: TYPE.control.fontSize, color: T.contactsTealText, cursor: "pointer", padding: "4px 0 12px"}}>+ Track contraception anyway</div>
         )}
 
         <SectionCard accent={T.contactsTeal} title="Sexual health status" T={T}>
@@ -1367,7 +1367,7 @@ function ReadRow({ label, value, T }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
       <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
     </div>
   );
 }
@@ -1628,12 +1628,12 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
     return (
       <div style={{ padding: "8px 16px 100px" }}>
         <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, padding: 14, textAlign: "center" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 10 }}>
             {confirming === "file" ? "Download your profile as a file?" : "Copy your profile as text?"}
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming(null)} style={{ padding: "7px 16px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer"}}>Cancel</div>
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={confirming === "file" ? doExportFile : doCopyText} style={{ padding: "7px 16px", borderRadius: radius.full, background: T.textPrimary, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming(null)} style={{ padding: "7px 16px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>Cancel</div>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={confirming === "file" ? doExportFile : doCopyText} style={{ padding: "7px 16px", borderRadius: radius.full, background: T.textPrimary, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>
               {confirming === "file" ? "Download" : "Copy"}
             </div>
           </div>
@@ -1651,7 +1651,7 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
           {includeLastTestedDate && <Check size={12} color="#FFFFFF" />}
         </div>
         <div>
-          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeLastTestedDate", "Include last tested date")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeLastTestedDate", "Include last tested date")}</div>
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>Just the date itself (±time) — never linked to the actual test record.</div>
         </div>
       </div>
@@ -1669,7 +1669,7 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
           {includeHivStatus && <Check size={12} color="#FFFFFF" />}
         </div>
         <div>
-          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeHIVStatus", "Include my HIV status")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeHIVStatus", "Include my HIV status")}</div>
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>
             {includeHivStatus
               ? "Your status and the date it applies to will be written into this file. It stays off unless you tick it."
@@ -1681,10 +1681,10 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
         Sharing sends only what's above — never relationship notes or how-we-met info, since those don't exist on this record.
       </div>
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("file")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer"}}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("file")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
           <Download size={13} /> Save as file
         </div>
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("text")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer"}}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("text")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
           <Copy size={13} /> Copy as text
         </div>
       </div>
@@ -1709,7 +1709,7 @@ function ProfileSummary({ profile, T, onEdit }) {
     <div style={{ padding: "16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: T.textPrimary }}>{profile.nickname || profile.displayName || t("myProfile.title", "My Profile")}</h1>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onEdit} style={{ padding: "8px 16px", borderRadius: radius.full, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, fontSize: 13, fontWeight: 600, cursor: "pointer"}}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onEdit} style={{ padding: "8px 16px", borderRadius: radius.full, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
             {t("common.edit", "Edit")}
           </div>
       </div>

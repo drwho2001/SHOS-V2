@@ -30,7 +30,7 @@
 // (and Testing owns translated ones) - this component must not acquire a
 // second i18n convention on top of the one the modules already use.
 import React from "react";
-import { FONT_FAMILY, RADIUS, TOAST } from "../calculations/designTokens";
+import { FONT_FAMILY, RADIUS, TOAST, TYPE } from "../calculations/designTokens";
 
 export default function UndoToast({ mode = "undo", message, actionLabel, accentColor, onAction }) {
   if (!message) return null;
@@ -70,8 +70,8 @@ export default function UndoToast({ mode = "undo", message, actionLabel, accentC
         fontFamily: FONT_FAMILY,
       }}
     >
-      <span style={{ fontSize: 13 }}>{message}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: accentColor, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: TYPE.control.fontSize }}>{message}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: accentColor, flexShrink: 0 }}>{label}</span>
     </div>
   );
 }

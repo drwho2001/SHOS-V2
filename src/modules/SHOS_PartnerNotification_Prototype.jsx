@@ -169,7 +169,7 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("partnerNotification.clinicalVersion", "Clinical version")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{t("partnerNotification.clinicalVersion", "Clinical version")}</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds DOB, Age, and Address per contact — for handing to a clinic's own partner notification team, who need enough to actually locate someone themselves.</div>
           </div>
           {/* CHANGED 28 Oct 2026 (Lily, t209) — 44px hit area around an unchanged
@@ -202,7 +202,7 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
       <div style={{ position: "relative", marginBottom: 12 }}>
         <Search size={15} color={T.textDisabled} style={{ position: "absolute", left: 12, top: 12 }} />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts…"
-          style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+          style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
       </div>
 
       {/* ADDED 5 Nov 2026 — A2: the filtered contact list changes as you type but nothing announced it. */}
@@ -218,7 +218,7 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
           // looked broken with no way forward. Now it distinguishes the two
           // cases and, when there are no contacts at all, says the one thing
           // that actually helps: add someone first.
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>
+          <div style={{ padding: 16, fontSize: TYPE.control.fontSize, color: T.textDisabled }}>
             {contacts.length === 0
               ? t("partnerNotification.noContacts", "You have no contacts yet. Add someone in the Contacts tab first, then come back here.")
               : t("partnerNotification.noContactsMatch", "No contacts match your search.")}

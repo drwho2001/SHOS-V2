@@ -97,6 +97,81 @@ Status: idea captured - needs design discussion before implementation.
 
 ---
 
+## DESIGN DECISIONS (13 Nov 2026) - agreed with owner
+
+### 0g. Female reproductive health
+- PMS quick-log: Deep link from cycle entry (inline, not separate screen)
+- Headache/symptoms: Live under Symptoms module, deep-linked/embeddable in other screens. 2-way linkage: symptom <-> cycle entry.
+- Cycle stats: Both - menstrual screen header + home widget
+- Fertile window: EXCLUDE (medical liability, dedicated apps exist)
+- Contraception side effects: Link to SymptomLog (sideEffectIds), not standalone
+- Contraception reason stopped: Add field (switched, side effects, planned pregnancy, no longer needed, other)
+- PMS symptoms: Mood, bloating, headache, breast tenderness, fatigue, irritability, cravings, sleep, acne, joint pain
+- Period details: Clot size (None/Small/Medium/Large), pain level (0-10), spotting, missed period flag
+- Headache diary: Extend SymptomLog with optional headacheDetail sub-record (type, duration, severity, triggers[], aura, medicationTaken, medicationEffective). Not a dedicated module.
+- Pregnancy: Gestational weeks + trimester (calculated). Link to contraception at conception. Lower priority.
+- Vaginal health: Treatment field, outcome field (resolved/recurring/chronic), recurrenceCount (derived), link to Testing.
+- Cycle prediction: Show average + variability + next predicted. No complex algorithms. Surface existing data.
+- Key principle: Deep-link from cycle view to symptom logging. Value is in correlation.
+- What NOT to build: Fertility tracking, pregnancy week-by-week content, hormone trending (already in measurements), medication reminders (already in medication), period prediction algorithms.
+
+### 0. Safety contact sharing
+- Fields: User selects via checkboxes. Default: name, address, vehicle. Optional: photo, phone.
+- Live location: Google Maps first. System share sheet for static message.
+- Message template: "I'm meeting [name] at [location] around [time]. If you don't hear from me by [time+Xh], here's their info: [details]"
+- Timer: User decides X hours. In-app reminders at 50% and 10% time remaining.
+- Disclaimer: Both - tooltip on button + footer in shared message.
+- Delivery: System share sheet. No server-side storage. No auto-share.
+- Scope: Contact detail only for v1. Encounter-flow integration deferred.
+
+### 0b. Healthcare header/toolbar standardisation
+- Banner (module-wide, fixed): Exit/back (top-left), Search (top-right), Settings (overflow). Max 3 icons.
+- Tab header (per-tab, scrollable): Add, Filter, Sort, Export. Max 2 icons + overflow.
+- Apply to: Healthcare first, then all modules.
+- Banner: Fixed. Tab header: scrolls with content.
+- Document in: DESIGN-MANUAL.md.
+
+### 0d. Demo data completeness
+- Quantities: 2 of each type, 3-5 common types.
+- Marking: isDemo flag. Clearly identifiable.
+- Clear sample data: Must remove all demo data.
+- Edge cases: Empty states, overflow text, long names, special characters.
+
+### 0e. Widget render and design check
+- First step: Grep src/ for widget components.
+- States: All (populated + empty, dark + light).
+- Method: Playwright batch capture + visual inspection.
+
+### 0f. Design manual currency check
+- Scope: Cards, home, modules, add forms. Targeted, not full rewrite.
+- Method: Automated (grep tokens vs manual) then manual review then automated verification.
+
+### 0h. Three essential data display states
+- Unfilled fields: Required incomplete in red. Summary card hides unfilled. Detail view ghosts with toggle button to show/hide incomplete data. Edit/add form: ghost unless in use to hide.
+- Empty state: "No X yet" + add CTA (consistent across modules). CTA = Call To Action.
+- Scope: Start with 3 representative modules (Contacts, Encounters, Medication), then apply pattern to rest.
+- Note: 8a/8c/8e/10 already fixed in code. This is now a consistency check.
+
+### 0c. "A new version is ready" banner
+- Dev-mode guard: Skip both triggers in dev mode (done).
+- Dismissed state: localStorage with 24h cooldown (done).
+- GitHub integration: Check GitHub releases API for latest version tag, compare to __APP_VERSION__. Only show if GitHub version > current.
+- Cooldown: Don't check more than once per hour.
+
+### 0g. Female reproductive health - wiring
+- PMS quick-log: Add "Log PMS symptom" button on cycle entry. Pre-fills cycle day + phase. Creates SymptomLog entry with cycleDay + cyclePhase fields.
+- Symptom <-> Cycle linkage: 2-way. SymptomLog gets optional cycleDay/cyclePhase. Cycle view shows linked symptoms. Symptom view shows cycle phase.
+- Contraception side effects: sideEffectIds -> SymptomsRegistry. Correlate by date range.
+- Headache diary: Extend SymptomLog with optional headacheDetail sub-record (type, duration, severity, triggers[], aura, medicationTaken, medicationEffective). Not a dedicated module.
+- Cycle stats UI: Average cycle length, variability, next predicted date. Prominent on menstrual screen, compact widget on home.
+- PMS pattern recognition: "Headaches on days 24-27 in 3 of last 4 cycles" - calculated from existing data.
+- Contraception reason stopped: Enum (switched, side effects, planned pregnancy, no longer needed, other).
+- Period details: clotSize (None/Small/Medium/Large), painLevel (0-10), spotting (boolean + date), missedPeriod (flag + reason).
+- Vaginal health: treatment field, outcome field (resolved/recurring/chronic), recurrenceCount (derived), link to Testing.
+- Pregnancy: gestationalWeeks (calculated), trimester (derived), link to contraception at conception.
+
+---
+
 ## 0h. Three essential data display states per module (IDEA - not started)
 Requested: every module should have 3 standardised display states that are
 visually checked and consistent. Currently some modules have all 3, some

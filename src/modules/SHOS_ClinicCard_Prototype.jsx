@@ -158,7 +158,7 @@ function Row({ dot, title, subtitle, alert, color, onTap, T }) {
 }
 
 function EmptyRow({ children, T }) {
-  return <div style={{ padding: "14px", fontSize: 13, color: T.textDisabled }}>{children}</div>;
+  return <div style={{ padding: "14px", fontSize: TYPE.control.fontSize, color: T.textDisabled }}>{children}</div>;
 }
 
 function StubRow({ children, T }) {
@@ -503,7 +503,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         </div>
         {timeframe === "custom" && (
           <input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} aria-label="Custom date"
-            style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
+            style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize }} />
         )}
         {timeframe === "sinceLastTest" && !lastTestDate && (
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6, fontStyle: "italic" }}>{tr("clinicCard.noTestsShowingAll", "No tests logged yet — showing all time instead.")}</div>
@@ -773,7 +773,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => setPendingNav(null)}>
           <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: T.textPrimary, marginBottom: 4 }}>{tr("clinicCard.openIn", "Open in {module}?", { module: pendingNav.moduleLabel })}</div>
-            <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 16 }}>{pendingNav.label}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary, marginBottom: 16 }}>{pendingNav.label}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setPendingNav(null)} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</button>
               <button onClick={() => { goTo(pendingNav.tab, pendingNav.subTab, pendingNav.recordId); setPendingNav(null); }} style={{ flex: 1, padding: 12, borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{tr("clinicCard.open", "Open")}</button>

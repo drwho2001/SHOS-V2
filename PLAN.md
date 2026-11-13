@@ -61,19 +61,19 @@
 
 ---
 
-## Batch 4 — New features (needs design discussion first)
-**Risk: Medium. Design before code.**
+## Batch 4 — New features (design decisions agreed 13 Nov 2026)
+**Risk: Medium. Design settled — ready to build.**
 
-| # | Task | Prerequisite | Effort |
-|---|------|-------------|--------|
-| 4a | Female reproductive health (0g) — PMS quick-log, cycle phase, contraception side effects | Design discussion | 2-3 days |
-| 4b | Safety contact sharing (0) — field selection + share sheet | Design discussion | 1-2 days |
-| 4c | Healthcare header/toolbar standardisation (0b) — design decision | Design discussion | 1 day |
-| 4d | Widget render and design check (0e) — Playwright batch capture | None | 0.5 day |
-| 4e | Demo data completeness (0d) — fill gaps | Feature matrix | 1 day |
-| 4f | Demo data display states (0h) — fix 8a/8c/8e/10, spot-check | Batch 2 done | 0.5 day |
+| # | Task | Prerequisite | Effort | Design decisions |
+|---|------|-------------|--------|-----------------|
+| 4a | Female reproductive health (0g) — PMS quick-log, cycle phase, contraception side effects, headache diary | Design settled | 2-3 days | Deep link from cycle; symptoms live under Symptoms module with 2-way linkage; headache extends SymptomLog; cycle stats on both screens; exclude fertility tracking |
+| 4b | Safety contact sharing (0) — field selection + share sheet + timer | Design settled | 1-2 days | User selects fields (default: name/address/vehicle); Google Maps first; system share sheet; user-defined timer with 50%/10% reminders; disclaimer both places |
+| 4c | Healthcare header/toolbar standardisation (0b) — banner + tab header | Design settled | 1 day | Banner (fixed): exit/search/settings. Tab header (scrollable): add/filter/sort/export. Healthcare first, then all modules. |
+| 4d | Widget render and design check (0e) — Playwright batch capture | Grep first | 0.5 day | Grep for widgets first, then capture all states (populated+empty, dark+light) |
+| 4e | Demo data completeness (0d) — fill gaps | Feature matrix | 1 day | 2 of each type, 3-5 common types, isDemo flag, clear sample data |
+| 4f | Demo data display states (0h) — fix + spot-check | Batch 2 done | 0.5 day | Required incomplete in red; summary hides unfilled; detail ghosts with toggle; edit form ghost unless in use. Start with 3 modules. |
 
-**Order:** 4d first (no deps). Then 4a/4b/4c need design. 4e/4f after Batch 2.
+**Order:** 4a first (highest value). Then 4b, 4c. Then 4d, 4e, 4f.
 
 ---
 
@@ -118,14 +118,16 @@
 
 ## Recommended next steps (in priority order)
 
-1. **Batch 1** — Commit + rename + dead exports + baseline (protect work)
-2. **Batch 2** — Fix 8a/8c/8e/10 + banner guard (known, scoped)
-3. **Batch 3** — Tokenise 13px + fix hexes + update manual + CI guard
-4. **Batch 4** — Female reproductive health (highest-value new feature)
-5. **Batch 4** — Safety sharing (design discussion first)
-6. **Batch 4** — Widget audit (no dependencies)
-7. **Batch 4** — Demo data completeness
-8. **Batch 5** — Port mockups, decide contactMerge, final verification
+1. **Batch 1** — ✅ DONE (committed, renamed, baseline verified)
+2. **Batch 2** — ✅ DONE (8a/8c/8e/10 already fixed, banner guard done)
+3. **Batch 3** — Tokenise 13px (516 sites) + fix stray hexes (~30) + update manual + CI guard
+4. **Batch 4a** — Female reproductive health (design settled, ready to build) — 2-3 days
+5. **Batch 4b** — Safety contact sharing (design settled) — 1-2 days
+6. **Batch 4c** — Healthcare header/toolbar standardisation (design settled) — 1 day
+7. **Batch 4d** — Widget render and design check (grep first) — 0.5 day
+8. **Batch 4e** — Demo data completeness (feature matrix) — 1 day
+9. **Batch 4f** — Demo data display states (spot-check 3 modules) — 0.5 day
+10. **Batch 5** — Port mockups, decide contactMerge, final verification
 
 ## How to use this plan
 

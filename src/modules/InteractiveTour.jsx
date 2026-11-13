@@ -251,11 +251,11 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
         <div style={{ fontSize: 12, color: textSecondary }}>{index + 1} / {steps.length}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {!isFirst && (
-            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, fontFamily: FONT_FAMILY, cursor: "pointer"}}>
+            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: TYPE.control.fontSize, fontWeight: 600, fontFamily: FONT_FAMILY, cursor: "pointer"}}>
               <ChevronLeft size={14} weight="bold" /> Back
             </button>
           )}
-          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: FONT_FAMILY, cursor: "pointer"}}>
+          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 600, fontFamily: FONT_FAMILY, cursor: "pointer"}}>
             {isLast ? "Done" : "Next"} {!isLast && <ChevronRight size={14} weight="bold" />}
           </button>
         </div>

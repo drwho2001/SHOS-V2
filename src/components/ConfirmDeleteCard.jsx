@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef } from "react";
-import { RADIUS } from "../calculations/designTokens";
+import { RADIUS, TYPE } from "../calculations/designTokens";
 import { useEscapeToClose } from "./useEscapeToClose";
 
 // Shared delete-confirmation UI, extracted from a real live audit finding
@@ -79,7 +79,7 @@ export default function ConfirmDeleteCard({
         background: `${T.actionRed}11`,
       }}
     >
-      <div id={messageId} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10, lineHeight: 1.5 }}>{message}</div>
+      <div id={messageId} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 10, lineHeight: 1.5 }}>{message}</div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
           ref={cancelRef}

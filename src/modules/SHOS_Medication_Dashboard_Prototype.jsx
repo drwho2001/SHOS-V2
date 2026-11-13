@@ -502,28 +502,28 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         <>
           <div onClick={() => onToggleMenu(null)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 39 }} />
           <div role="menu" style={{ position: "absolute", top: 40, right: 14, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 40, minWidth: 190, overflow: "hidden" }}>
-            <div onClick={() => { onEditMedication(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}>
+            <div onClick={() => { onEditMedication(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}>
               <Settings2 size={14} color={T.textSecondary} /> Edit medication
             </div>
             {/* ADDED 26 Aug 2026 — real ask: dose changes (e.g.
                 sertraline 150mg→300mg) as their own real action, not a
                 silent field edit that would blur old/new dose history
                 together. */}
-            <div onClick={() => { onUpdateDose(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+            <div onClick={() => { onUpdateDose(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
               <ArrowUp size={14} color={T.textSecondary} /> Update dose
             </div>
             {stock.tracked && !requested && (
-              <div onClick={() => { onMarkRequested(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { onMarkRequested(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                 <Send size={14} color={T.textSecondary} /> Request refill early
               </div>
             )}
             {stock.tracked && (
-              <div onClick={() => { onLogWaste(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { onLogWaste(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                 <Trash2 size={14} color={T.textSecondary} /> Log waste/lost
               </div>
             )}
             {stock.tracked && (
-              <div onClick={() => { onCorrectStock(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { onCorrectStock(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                 <RefreshCcw size={14} color={T.textSecondary} /> Correct stock level
               </div>
             )}
@@ -536,22 +536,22 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                 gated behind a new "is this a short course" field you'd
                 have to declare upfront — you know at completion time
                 which wording actually fits, not before. */}
-            <div onClick={() => { onArchive(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+            <div onClick={() => { onArchive(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
               <Check size={14} color={T.actionGreen} /> Course completed
             </div>
-            <div onClick={() => { onArchive(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+            <div onClick={() => { onArchive(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
               <Archive size={14} color={T.textSecondary} /> Archive medication
             </div>
-            <div onClick={() => { setConfirmDelete(true); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+            <div onClick={() => { setConfirmDelete(true); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.actionRed, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
               <Trash2 size={14} /> Delete permanently
             </div>
             {!isFirst && (
-              <div onClick={() => { onMoveUp(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { onMoveUp(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                 <ArrowUp size={14} color={T.textSecondary} /> Move up
               </div>
             )}
             {!isLast && (
-              <div onClick={() => { onMoveDown(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { onMoveDown(med.id); onToggleMenu(null); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                 <ArrowDown size={14} color={T.textSecondary} /> Move down
               </div>
             )}
@@ -795,7 +795,7 @@ function btnStyle(color, variant, disabled, T) {
   const textColor = disabled ? disText : (variant === "filled" ? "#FFFFFF" : color);
   const borderColor = disabled ? disBorder : (variant === "outline" ? color : "none");
   const bgColor = disabled ? disBg : (variant === "filled" ? color : "transparent");
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", border: variant === "outline" ? `1px solid ${borderColor}` : "none", background: bgColor, color: textColor };
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", border: variant === "outline" ? `1px solid ${borderColor}` : "none", background: bgColor, color: textColor };
 }
 
 // ADDED — real ask: "an option... for medication to update each stock
@@ -859,7 +859,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
         {isRefill && med.unitsPerContainer && (
           <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 18 }}>
             {["container", "unit"].map((m) => (
-               <div key={m} onClick={() => { setUnitMode(m); setAmount(1); }} role="button" tabIndex={0} aria-pressed={unitMode === m} aria-label={`Use ${m} unit`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setUnitMode(m); setAmount(1); } }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: unitMode === m ? T.surface : "transparent", color: unitMode === m ? T.medsBlue : T.textSecondary}}>
+               <div key={m} onClick={() => { setUnitMode(m); setAmount(1); }} role="button" tabIndex={0} aria-pressed={unitMode === m} aria-label={`Use ${m} unit`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setUnitMode(m); setAmount(1); } }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: TYPE.control.fontSize, fontWeight: 600, background: unitMode === m ? T.surface : "transparent", color: unitMode === m ? T.medsBlue : T.textSecondary}}>
                 {m === "container" ? "Containers" : "Units"}
               </div>
             ))}
@@ -976,7 +976,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
           <button onClick={() => onSave(amount, date, reason, sideEffects)} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>{tr("medication.saveCorrection", "Save correction")}</button>
         )}
         {!confirmVoid ? (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: 13, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6}}>{tr("medication.voidEntry", "This entry was a mistake — void it")}</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: TYPE.control.fontSize, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6}}>{tr("medication.voidEntry", "This entry was a mistake — void it")}</div>
         ) : (
           <div style={{ textAlign: "center", padding: 6 }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>{tr("medication.voidedKept", "Voided entries are kept, not deleted — same as anywhere else in SHOS.")}</div>
@@ -1073,7 +1073,7 @@ function LogTab({ meds, T, onOpenCorrection }) {
                 {tg.entries.map((r, i) => (
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={i} onClick={() => onOpenCorrection(r.med.id, r)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, opacity: r.voided ? 0.6 : 1 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: r.voided ? T.textDisabled : T.textPrimary, textDecoration: r.voided ? "line-through" : "none" }}>{r.med.name}</div>
+                      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: r.voided ? T.textDisabled : T.textPrimary, textDecoration: r.voided ? "line-through" : "none" }}>{r.med.name}</div>
                       {tg.entries.length === 1 && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{timeLabel(r.date)}{r.voided ? " · voided" : ""}</div>}
                       {/* ADDED — see CorrectionSheet's comment: reason/sideEffects
                           now have somewhere to actually show up once set. */}
@@ -1125,7 +1125,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                 <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, minWidth: 0 }}>{m.name}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, minWidth: 0 }}>{m.name}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 24, flexShrink: 0 }}>
                 <span style={{ fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
@@ -1172,7 +1172,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
 function NumberField({ label, value, onChange, min = 0, step = 1, T }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
-      <span style={{ fontSize: 13, color: T.textPrimary }}>{label}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{label}</span>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <HoldButton onStep={(dir) => onChange(Math.max(min, +(value + dir * step).toFixed(2)))} dir={-1} style={{ ...stepperBtn(T), width: 32, height: 32, fontSize: 16 }}>−</HoldButton>
         <input
@@ -1203,7 +1203,7 @@ function ToggleRow({ label, value, onChange, T }) {
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", minHeight: 44, cursor: "pointer", borderBottom: `1px solid ${T.border}` }}
     >
-      <span style={{ fontSize: 13, color: T.textPrimary }}>{label}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{label}</span>
       <div style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.medsBlue : T.surfaceVariant, position: "relative", flexShrink: 0, pointerEvents: "none", transition: reducedMotion ? "none" : "background 150ms ease" }}>
         <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: reducedMotion ? "none" : "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
       </div>
@@ -1267,7 +1267,7 @@ function ScheduledTimesField({ dosesPerDay, value, onChange, T }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{count === 1 ? "Dose time" : "Dose times"}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{count === 1 ? "Dose time" : "Dose times"}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1297,9 +1297,9 @@ function ScheduledTimesField({ dosesPerDay, value, onChange, T }) {
 function SelectRow({ label, value, onChange, options, T, listName }) {
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
       <select value={value} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}>
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
       </select>
@@ -1341,14 +1341,14 @@ function MultiSelectRow({ label, value, onChange, options, T, onAddNew, listName
   };
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: onAddNew ? 8 : 0 }}>
         {options.map((opt) => {
           const active = value.includes(opt);
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.medsBlue : T.border}`, color: active ? T.medsBlue : T.textSecondary, background: active ? `${T.medsBlue}15` : "transparent"}}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.medsBlue : T.border}`, color: active ? T.medsBlue : T.textSecondary, background: active ? `${T.medsBlue}15` : "transparent"}}>
               {opt}
             </div>
           );
@@ -1389,17 +1389,17 @@ function DoseComponentsField({ value, onChange, T }) {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.doseStrength", "Dose strength")}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.doseStrength", "Dose strength")}</div>
       {components.map((c, i) => (
         <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
           {components.length > 1 && (
             <input value={c.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder="Ingredient"
-              style={{ flex: "1 1 40%", minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              style={{ flex: "1 1 40%", minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
           )}
           <input value={c.value} onChange={(e) => setRow(i, { value: e.target.value })} placeholder="e.g. 245" inputMode="decimal"
-            style={{ flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+            style={{ flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
           <select value={c.unit} onChange={(e) => setRow(i, { unit: e.target.value })}
-            style={{ width: 90, flexShrink: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}>
+            style={{ width: 90, flexShrink: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}>
             <option value="">—</option>
             {DOSE_UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
@@ -1408,7 +1408,7 @@ function DoseComponentsField({ value, onChange, T }) {
           )}
         </div>
       ))}
-      <div onClick={addRow} role="button" tabIndex={0} aria-label="Add a dose component" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addRow(); } }} style={{ fontSize: 13, color: T.medsBlue, fontWeight: 600, cursor: "pointer"}}>
+      <div onClick={addRow} role="button" tabIndex={0} aria-label="Add a dose component" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addRow(); } }} style={{ fontSize: TYPE.control.fontSize, color: T.medsBlue, fontWeight: 600, cursor: "pointer"}}>
         + Add another active ingredient (e.g. combination products like PrEP or co-codamol)
       </div>
     </div>
@@ -1466,14 +1466,14 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
           </div>
           <DoseComponentsField value={doseComponents} onChange={setDoseComponents} T={T} />
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.unitsPerDose", "Units per dose")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.unitsPerDose", "Units per dose")}</div>
             <input type="number" min="1" value={unitsPerDose} onChange={(e) => setUnitsPerDose(e.target.value)} aria-label="Units per dose"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
           </div>
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.noteOptional", 'Note (optional — e.g. "GP increased dose")')}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.noteOptional", 'Note (optional — e.g. "GP increased dose")')}</div>
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason for the change"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
           </div>
           {/* ADDED 26 Aug 2026 — real ask: option to update stock at
               the same time as the dose change (e.g. new prescription
@@ -1484,13 +1484,13 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
             <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${updateStockToo ? T.medsBlue : T.border}`, background: updateStockToo ? T.medsBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {updateStockToo && <Check size={12} color="#FFFFFF" />}
             </div>
-            <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{tr("medication.updateStockNow", "Also update stock now")}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("medication.updateStockNow", "Also update stock now")}</span>
           </div>
           {updateStockToo && (
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("medication.stockChange", "Stock change (+ for adding, − for removing)")}</div>
               <input type="number" value={stockDelta} onChange={(e) => setStockDelta(e.target.value)} placeholder="e.g. 30 or -5" aria-label="Stock change"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
             </div>
           )}
         </div>
@@ -1624,7 +1624,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             the user's explicit scope call — no day-of-week complexity. */}
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 12 }}>
           {["daily", "custom", "prn"].map((p) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => set("usagePattern")(p)} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: form.usagePattern === p ? T.surface : "transparent", color: form.usagePattern === p ? T.medsBlue : T.textSecondary}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => set("usagePattern")(p)} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: TYPE.control.fontSize, fontWeight: 600, background: form.usagePattern === p ? T.surface : "transparent", color: form.usagePattern === p ? T.medsBlue : T.textSecondary}}>
               {p === "daily" ? "Daily" : p === "custom" ? "Custom" : "As needed"}
             </div>
           ))}
@@ -1655,18 +1655,18 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         )}
 
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
         </div>
         {/* ADDED — real bug fix: a real Notes field, genuinely wired to
             edit/save/card display — see the `notes` field comment above
             for why this was missing despite already existing in some
             real records' raw data. */}
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         {/* ADDED 26 Aug 2026 — real ask: dose history display, showing
             the real embedded history built by updateDose() — the same
@@ -1676,7 +1676,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{tr("medication.doseHistory", "Dose history")}</div>
             {[...med.doseHistory].reverse().map((h, i) => (
               <div key={i} style={{ padding: "6px 0", borderBottom: i < med.doseHistory.length - 1 ? `1px solid ${T.border}` : "none" }}>
-                <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{formatDoseComponents(getDoseComponents(h), h.unitsPerDose || 1) || "—"}</div>
+                <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{formatDoseComponents(getDoseComponents(h), h.unitsPerDose || 1) || "—"}</div>
                 <div style={{ fontSize: 11, color: T.textDisabled }}>
                   Until {new Date(h.supersededAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
                   {h.note ? ` · ${h.note}` : ""}
@@ -1828,7 +1828,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
 
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 12 }}>
           {["daily", "custom", "prn"].map((p) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => set("usagePattern")(p)} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: form.usagePattern === p ? T.surface : "transparent", color: form.usagePattern === p ? T.medsBlue : T.textSecondary}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => set("usagePattern")(p)} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: TYPE.control.fontSize, fontWeight: 600, background: form.usagePattern === p ? T.surface : "transparent", color: form.usagePattern === p ? T.medsBlue : T.textSecondary}}>
               {p === "daily" ? "Daily" : p === "custom" ? "Custom" : "As needed"}
             </div>
           ))}
@@ -1856,14 +1856,14 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         )}
 
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.usualSupplier", "Usual supplier")}</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
         </div>
         <div style={{ padding: "10px 0" }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 6 }}>{tr("medication.notes", "Notes")}</div>
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         </div>
 
@@ -1955,7 +1955,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
               <div style={{ display: "flex", gap: 6 }}>
                 {[15, 30, 60].map((mins) => (
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={mins} onClick={() => setSnoozeMinutes(mins)}
-                    style={{ padding: "6px 14px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${prefs.snoozeMinutes === mins ? T.medsBlue : T.border}`, color: prefs.snoozeMinutes === mins ? T.medsBlue : T.textSecondary, background: prefs.snoozeMinutes === mins ? `${T.medsBlue}15` : "transparent"}}>
+                    style={{ padding: "6px 14px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", border: `1px solid ${prefs.snoozeMinutes === mins ? T.medsBlue : T.border}`, color: prefs.snoozeMinutes === mins ? T.medsBlue : T.textSecondary, background: prefs.snoozeMinutes === mins ? `${T.medsBlue}15` : "transparent"}}>
                     {mins} min
                   </div>
                 ))}
@@ -1985,7 +1985,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: every per-module settings
             screen ends with a link back to general/app Settings. */}
-        <div onClick={onOpenGeneralSettings} role="button" tabIndex={0} aria-label="Open general settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenGeneralSettings(); } }} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0"}}>
+        <div onClick={onOpenGeneralSettings} role="button" tabIndex={0} aria-label="Open general settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenGeneralSettings(); } }} style={{ textAlign: "center", fontSize: TYPE.control.fontSize, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0"}}>
           Go to general app settings
         </div>
       </div>
@@ -2468,7 +2468,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
                 not long-press (see the selectMode state comment above
                 for why). */}
-            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit selection mode" : "Enter selection mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
+            <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} role="button" tabIndex={0} aria-label={selectMode ? "Exit selection mode" : "Enter selection mode"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
               {selectMode ? "Done" : "Select"}
             </span>
             {/* CHANGED 26 Aug 2026 — real content now exists (dose
@@ -2481,7 +2481,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <div style={{ background: T.bg, padding: "6px 16px 0" }}>
           <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
             {["Registry", "Log", "Inventory"].map((t) => (
-              <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 13, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
+              <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: TYPE.control.fontSize, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
             ))}
           </div>
           </div>
@@ -2489,24 +2489,24 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
-            <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                   rather than manual 1 by 1", scoped to whatever's
                   currently visible under the active search filter. */}
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { const visible = activeMeds.filter(matchesMedSearch).map((m) => m.id); setSelectedIds(selectedIds.length === visible.length ? [] : visible); }}
-                style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
+                style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>
                 {selectedIds.length === activeMeds.filter(matchesMedSearch).length ? "Deselect all" : "Select all"}
               </span>
 {/* ADDED 26 Aug 2026 — real ask: export/print a single
                    record, enabled only when exactly one is selected. */}
                <span role="button" tabIndex={0} aria-label={tr("medication.exportAria", "Export medication")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("medications", await MedicationRepository.getById(selectedIds[0])); }}
-                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
+                 style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
                <span role="button" tabIndex={0} aria-label={tr("medication.archiveAria", "Archive medications")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
-                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
+                 style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
                <span role="button" tabIndex={0} aria-label={tr("medication.deleteAria", "Delete medications")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-                 style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
-               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
+                 style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
+               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer"}}>Cancel</span>
             </div>
           </div>
         )}
@@ -2557,7 +2557,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <div onClick={undoLastLog}
             role="button" tabIndex={0} aria-live="polite"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); undoLastLog(); } }}
-            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: T.textPrimary, color: T.bg, borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: T.textPrimary, color: T.bg, borderRadius: radius.full, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Check size={14} /> Dose logged — tap to undo
           </div>
         )}
@@ -2570,7 +2570,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <div onClick={redoLastUndo}
             role="button" tabIndex={0} aria-live="polite"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); redoLastUndo(); } }}
-            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <RefreshCcw size={14} /> Undone — tap to redo
           </div>
         )}
@@ -2583,7 +2583,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
             role="button" tabIndex={0} aria-live="polite"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
-            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
             {editUndo.toast.mode === "undo" ? "Medication updated — tap to undo" : "Undone — tap to redo"}
           </div>
@@ -2619,7 +2619,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {/* ADDED 26 Aug 2026 — real ask: search within module. */}
             <div style={{ padding: "0 16px 8px" }}>
               <input ref={medSearchInputRef} value={medQuery} onChange={(e) => setMedQuery(e.target.value)} placeholder="Search medications"
-                style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
             </div>
             <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
               {activeMeds.filter(matchesMedSearch).length > 0 ? `${activeMeds.filter(matchesMedSearch).length} medications${medQuery.trim() ? `, searched "${medQuery}"` : ""}` : medQuery.trim() ? "No medications match" : `${activeMeds.length} medications`}
@@ -2701,7 +2701,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
 
               {archivedMeds.length > 0 && (
                 <div style={{ marginTop: 8 }}>
-                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", minHeight: 44, padding: "8px 0", fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", minHeight: 44, padding: "8px 0", fontSize: TYPE.control.fontSize, color: T.textSecondary, fontWeight: 600 }}>
                     <Archive size={14} /> {showArchived ? "Hide" : "Show"} archived ({archivedMeds.length})
                   </div>
                   {showArchived && archivedMeds.map((med) => (

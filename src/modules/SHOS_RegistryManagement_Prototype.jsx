@@ -230,7 +230,7 @@ export default function RegistryManagementScreen({ registry, label, color, rende
             </div>
             <div tabIndex={0} style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
               {duplicatePairs.length === 0 ? (
-                <div style={{ fontSize: 13, color: T.textDisabled, padding: "20px 0", textAlign: "center" }}>{t("registry.noDuplicates", "No likely duplicates found.")}</div>
+                <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, padding: "20px 0", textAlign: "center" }}>{t("registry.noDuplicates", "No likely duplicates found.")}</div>
               ) : duplicatePairs.map(({ a, b }) => (
                 <div key={`${a.id}-${b.id}`} style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom: 8 }}>
                   {[a, b].map((entry) => (
@@ -278,13 +278,13 @@ export default function RegistryManagementScreen({ registry, label, color, rende
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 0", overflow: "hidden", columnCount: isDesktopWidth && active.length > 0 ? 2 : undefined, columnGap: 0 }}>
         {active.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>{t("registry.noEntries", "No entries yet.")}</div>
+          <div style={{ padding: 16, fontSize: TYPE.control.fontSize, color: T.textDisabled }}>{t("registry.noEntries", "No entries yet.")}</div>
         ) : active.map(Row)}
       </div>
 
       {archived.length > 0 && (
         <div style={{ margin: "16px 16px 24px" }}>
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 0", fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 0", fontSize: TYPE.control.fontSize, color: T.textSecondary, fontWeight: 600 }}>
             {showArchived ? t("registry.hideArchived", "Hide") : t("registry.showArchived", "Show")} archived ({archived.length})
           </div>
           {showArchived && (

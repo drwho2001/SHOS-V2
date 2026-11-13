@@ -155,7 +155,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
                 after deselecting some meant tapping every group's own
                 checkbox one at a time. One tap for the whole list now. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
-              style={{ fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2}}>
+              style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: healthcareColor, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2}}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
@@ -175,7 +175,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleItem(item.dataKey); } }}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px 9px 34px", cursor: "pointer", minHeight: 44 }}>
                   <Box state={checked.has(item.dataKey) ? "full" : "empty"} />
-                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{item.label}</span>
+                  <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{item.label}</span>
                 </div>
               ))}
             </div>
@@ -190,12 +190,12 @@ function SelectiveExportSheet({ onClose, onExported }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -214,7 +214,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer", padding: "10px 0 0"}}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doExportToFolder} style={{ textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 600, color: healthcareColor, cursor: "pointer", padding: "10px 0 0"}}>
               Choose a folder instead…
             </div>
           )}
@@ -272,12 +272,12 @@ function CSVExportSheet({ onClose }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -289,7 +289,7 @@ function CSVExportSheet({ onClose }) {
               <div style={{ padding: "12px 14px 6px", ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{group.label}</div>
               {group.items.map((item) => (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={item.dataKey} onClick={() => doExport(item)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", cursor: "pointer", minHeight: 44, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-                  <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{item.label}</span>
+                  <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{item.label}</span>
                   {status?.dataKey === item.dataKey ? (
                     <span style={{ fontSize: 11, color: status.ok === false ? ACTION.red : status.ok ? ACTION.green : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }}>{status.msg}</span>
                   ) : (
@@ -421,7 +421,7 @@ function EncryptedExportSheet({ onClose }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
             <span style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>What to include</span>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
-              style={{ fontSize: 13, fontWeight: 600, color: healthcareColor, cursor: "pointer"}}>
+              style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: healthcareColor, cursor: "pointer"}}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
@@ -439,7 +439,7 @@ function EncryptedExportSheet({ onClose }) {
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleItem(item.dataKey); } }}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px 9px 34px", cursor: "pointer", minHeight: 44 }}>
                   <Box state={checked.has(item.dataKey) ? "full" : "empty"} />
-                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{item.label}</span>
+                  <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{item.label}</span>
                 </div>
               ))}
             </div>
@@ -454,12 +454,12 @@ function EncryptedExportSheet({ onClose }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -478,7 +478,7 @@ function EncryptedExportSheet({ onClose }) {
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div onClick={exporting ? undefined : doExportToFolder} role="button" tabIndex={exporting ? -1 : 0} aria-disabled={exporting} aria-label="Choose a folder to export to" onKeyDown={(e) => { if (!exporting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); doExportToFolder(); } }} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : healthcareColor, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
+            <div onClick={exporting ? undefined : doExportToFolder} role="button" tabIndex={exporting ? -1 : 0} aria-disabled={exporting} aria-label="Choose a folder to export to" onKeyDown={(e) => { if (!exporting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); doExportToFolder(); } }} style={{ textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : healthcareColor, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
               Choose a folder instead…
             </div>
           )}
@@ -920,7 +920,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             (5.07:1) so it was purely a visual jolt, but it sat directly on top
             of the dark app. App.jsx's own equivalent fallback already branches
             on darkMode — this was the one that hadn't been converted. */}
-        <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: FONT_FAMILY, fontSize: 13 }}>Loading...</div>}>
+        <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize }}>Loading...</div>}>
       {showSelectiveExport && (
         <SelectiveExportSheet onClose={() => setShowSelectiveExport(false)} />
       )}

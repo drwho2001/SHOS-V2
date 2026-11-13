@@ -251,7 +251,7 @@ function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, 
   const showBottom = pack === "hands" && (role === "bottom" || role === "Vers" || !role);
   return (
     <div style={{ marginTop: 8, padding: 10, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{kinkName || "Activity details"}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.textPrimary }}>{kinkName || "Activity details"}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, margin: "3px 0 6px" }}>
         Optional details. They stay on this activity and are not sent to widgets.
       </div>
@@ -991,7 +991,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
           {selected.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => toggle(c.id)}
-              style={{ padding: "6px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, background: `${T.encountersPink}15` }}>
+              style={{ padding: "6px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, background: `${T.encountersPink}15` }}>
               {anonymise ? ANONYMISED : (c.nickname || c.name)} <X size={12} />
             </div>
           ))}
@@ -1015,7 +1015,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
       )}
       {q && matches.length === 0 && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={handleCreate}
-          style={{ marginTop: 6, padding: "10px 12px", fontSize: 13, fontWeight: 600, color: T.encountersPink, border: `1px dashed ${T.encountersPink}`, borderRadius: radius.sm, cursor: "pointer" }}>
+          style={{ marginTop: 6, padding: "10px 12px", fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.encountersPink, border: `1px dashed ${T.encountersPink}`, borderRadius: radius.sm, cursor: "pointer" }}>
           + {tr("encounters.addAsNewContact", 'Add "{name}" as a new contact', { name: query.trim() })}
         </div>
       )}
@@ -1028,7 +1028,7 @@ function ReadRow({ label, value, T }) {
   const display = Array.isArray(value) ? value.join(", ") : value;
   if (!display && display !== 0) return null;
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: TYPE.control.fontSize }}>
       <span style={{ color: T.textSecondary }}>{label}</span>
       <span style={{ color: T.textPrimary, fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{display}</span>
     </div>
@@ -1503,7 +1503,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
           {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
@@ -1512,24 +1512,24 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
-            <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{tr("encounters.selectedCount", "{count} selected", { count: selectedIds.length })}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600 }}>{tr("encounters.selectedCount", "{count} selected", { count: selectedIds.length })}</span>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                   rather than manual 1 by 1", scoped to whatever's
                   currently visible under the active search/filters. */}
               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === visible.length ? [] : visible.map((e) => e.id))}
-                style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
+                style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
                 {selectedIds.length === visible.length ? tr("encounters.deselectAll", "Deselect all") : tr("encounters.selectAll", "Select all")}
               </span>
 {/* ADDED 26 Aug 2026 — real ask: export/print a single
                    record, enabled only when exactly one is selected. */}
                <span role="button" tabIndex={0} aria-label={tr("encounters.exportAria", "Export encounter")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("encounters", await EncounterRepository.getById(selectedIds[0])); }}
-                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
+                 style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>{tr("common.export", "Export")}</span>
                <span role="button" tabIndex={0} aria-label={tr("encounters.archiveAria", "Archive encounters")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
-                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
+                 style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("contacts.archive", "Archive")}</span>
                <span role="button" tabIndex={0} aria-label={tr("encounters.deleteAria", "Delete encounters")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-                 style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
-               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</span>
+                 style={{ fontSize: TYPE.control.fontSize, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>{tr("common.delete", "Delete")}</span>
+               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: TYPE.control.fontSize, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</span>
             </div>
           </div>
         )}
@@ -1552,7 +1552,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             placement/pattern as every sibling module's own search box. */}
         <div style={{ padding: "8px 16px 0" }}>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search encounters"
-            style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
         </div>
         {activeSession && (
           <div style={{ margin: "8px 16px 0", padding: 12, borderRadius: radius.md, background: `${T.encountersPink}12`, border: `1px solid ${T.encountersPink}`, overflow: "hidden" }}>
@@ -1604,7 +1604,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               tabIndex={0}
               onClick={() => onAdd(activeSession.id)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(activeSession.id); } }}
-              style={{ marginTop: 10, padding: "9px 12px", borderRadius: radius.sm, background: T.encountersPink, color: "#FFFFFF", textAlign: "center", fontSize: 13, fontWeight: 800, cursor: "pointer" }}
+              style={{ marginTop: 10, padding: "9px 12px", borderRadius: radius.sm, background: T.encountersPink, color: "#FFFFFF", textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 800, cursor: "pointer" }}
             >
               + Add activity to this session
             </div>
@@ -1655,7 +1655,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSessionFilter(active ? "" : session.id); } }}
                   style={{ minWidth: 190, padding: 10, borderRadius: radius.md, border: `1px solid ${active ? T.encountersPink : T.border}`, background: active ? `${T.encountersPink}12` : T.surface, cursor: "pointer" }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{session.title || "Untitled session"}</div>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.textPrimary }}>{session.title || "Untitled session"}</div>
                   <div style={{ marginTop: 4, fontSize: 11, color: T.textSecondary }}>
                     {session.items.length} activities · {session.people} people · {session.kinks} kinks
                     {session.loads ? ` · ${session.loads} ${session.loads === 1 ? "load" : "loads"}` : ""}
@@ -1903,11 +1903,11 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label={tr("encounters.moreOptions", "More options")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
           {menuOpen && (
             <div role="menu" style={{ position: "absolute", right: 0, top: 26, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 10, minWidth: 140 }}>
-              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>{tr("common.edit", "Edit")}</div>
-              <div onClick={archive} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); archive(); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); onEdit(encounter.id); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); onEdit(encounter.id); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, cursor: "pointer", color: T.textPrimary }}>{tr("common.edit", "Edit")}</div>
+              <div onClick={archive} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); archive(); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
                 <Archive size={14} /> {encounter.isArchived ? tr("common.unarchive", "Unarchive") : tr("common.archive", "Archive")}
               </div>
-              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); setConfirmDelete(true); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
+              <div onClick={() => { if (!encounter.isDemo) { setMenuOpen(false); setConfirmDelete(true); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen(false); setConfirmDelete(true); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}` }}>
                 <Trash2 size={14} /> {tr("common.deletePermanently", "Delete permanently")}
               </div>
             </div>
@@ -1951,7 +1951,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 
         <SectionCard title={tr("encounters.attendees", "Attendees")} T={T}>
           {encounter.attendeeIds.length === 0
-            ? <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "8px 0" }}>{tr("encounters.noneRecorded", "None recorded.")}</div>
+            ? <div style={{ fontSize: TYPE.control.fontSize, color: T.textDisabled, fontStyle: "italic", padding: "8px 0" }}>{tr("encounters.noneRecorded", "None recorded.")}</div>
             : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, paddingTop: 2 }}>
               {encounter.attendeeIds.map((id) => (
                 // CHANGED — real ask: "attendees should link through to
@@ -1960,7 +1960,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
                 // CHANGED — attendee walk is now two-column tiles, not a
                 // single long list.
                 <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked contact" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("contacts", id); } } : undefined}
-                  style={{ padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 13, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  style={{ padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, fontSize: TYPE.control.fontSize, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {anonymise ? ANONYMISED : contactName(contacts, id)}
                 </div>
               ))}
@@ -2020,7 +2020,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             linkedEpisodes.map((ep) => (
               <div key={ep.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
                 <div>
-                  <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{ep.title || "Episode"}</div>
+                  <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{ep.title || "Episode"}</div>
                   <div style={{ fontSize: 11, color: T.textSecondary }}>{ep.triggerReason || ""} {ep.resolvedDate ? "· Resolved" : "· Open"}</div>
                 </div>
                 <span role="button" tabIndex={0} onClick={() => unlinkEpisode(ep.id)} style={{ color: T.textSecondary, cursor: "pointer", fontSize: 12 }}>Remove</span>
@@ -2380,7 +2380,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
         <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("encounters.addEncounter", "Add Encounter") : tr("encounters.editEncounter", "Edit Encounter")}</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div onClick={() => canSave && !isSaving && save()} role={canSave ? "button" : undefined} tabIndex={canSave ? 0 : undefined} aria-label="Save" onKeyDown={canSave ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isSaving) save(); } } : undefined}
-            style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
+            style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: TYPE.control.fontSize, cursor: canSave ? "pointer" : "default" }}>
             {isSaving ? tr("common.saving", "Saving…") : tr("common.save", "Save")}
           </div>
           <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
@@ -2388,7 +2388,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
       </div>
 
       {form.sessionId && sessions.find((s) => s.id === form.sessionId) && (
-        <div style={{ margin: "10px 16px 0", padding: "10px 14px", borderRadius: radius.md, background: `${T.encountersPink}18`, border: `2px solid ${T.encountersPink}`, fontSize: 13, color: T.textPrimary, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ margin: "10px 16px 0", padding: "10px 14px", borderRadius: radius.md, background: `${T.encountersPink}18`, border: `2px solid ${T.encountersPink}`, fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6, color: T.encountersPink }}>{tr("encounters.session", "Session")}</span>
           {sessions.find((s) => s.id === form.sessionId)?.title || "Untitled session"}
           {sessions.find((s) => s.id === form.sessionId)?.status === "active" ? " (active)" : " (closed)"}
@@ -2588,7 +2588,7 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
     <div onClick={isUndo ? onUndo : onRedo}
       role="button" tabIndex={0} aria-label={isUndo ? "Undo" : "Redo"} aria-live="polite"
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
-      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.encountersPink, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.encountersPink, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
       {isUndo ? "Encounter updated — tap to undo" : "Undone — tap to redo"}
     </div>

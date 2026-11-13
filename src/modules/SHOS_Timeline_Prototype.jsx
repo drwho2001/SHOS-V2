@@ -191,12 +191,12 @@ function PartnerMessageHelper({ infectionNames, T }) {
         </div>
       )}
       <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5} aria-label="Message draft"
-        style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+        style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
       <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
+        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>
           <Copy size={13} /> Copy
         </button>
-        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(false)} style={{ fontSize: 13, color: T.textSecondary, cursor: "pointer"}}>Close</span>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(false)} style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary, cursor: "pointer"}}>Close</span>
         {status && <span style={{ fontSize: 11, color: status.ok ? T.actionGreen : T.actionRed }}>{status.msg}</span>}
       </div>
     </div>
@@ -286,7 +286,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
       {linkedIds.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {linkedIds.map((id) => (
-            <div key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400 }}>
+            <div key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400 }}>
               {onOpen ? (
                 <span role="button" tabIndex={0} onClick={() => onOpen(id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(id); } }} style={{ cursor: "pointer", textDecoration: "underline" }}>{nameFor(id)}</span>
               ) : (
@@ -325,7 +325,7 @@ function ReadRow({ label, value, T, alert }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
       <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: alert ? T.actionRed : T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: alert ? T.actionRed : T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
     </div>
   );
 }
@@ -635,7 +635,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
                     <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${notified ? T.actionGreen : T.textDisabled}`, background: notified ? T.actionGreen : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {notified && <Check size={12} color="#FFFFFF" weight="bold" />}
                     </div>
-                    <span style={{ fontSize: 13, color: T.textPrimary }}>{encounterLabel(linkedEncounterById[id])}</span>
+                    <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{encounterLabel(linkedEncounterById[id])}</span>
                   </div>
                 );
               })}
@@ -658,7 +658,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
 
         <SectionCard title="Notes" T={T} accent={T.healthcare}>
           <textarea value={episode.notes} onChange={(e) => update({ notes: e.target.value })} rows={3} aria-label="Notes"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
         {isOpen ? (
@@ -682,7 +682,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
               <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }} aria-label="End date"
-                style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13 }} />
+                style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
               {RESOLUTION_OPTIONS.map((opt) => (
@@ -695,12 +695,12 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
           </SectionCard>
         ) : (
           <SectionCard title="Resolved" T={T} accent={T.healthcare}>
-            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>{episode.resolution}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 10 }}>{episode.resolution}</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
                 <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }} aria-label="End date"
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
               </div>
               {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (
                 <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcare, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Save</button>
@@ -790,7 +790,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
             <span style={{ fontSize: 12, color: T.textSecondary, flex: 1 }}>
               {neverResolved.length} episode{neverResolved.length > 1 ? "s" : ""} still open after {NEVER_RESOLVED_DAYS}+ days
             </span>
-            <span role="button" tabIndex={0} aria-label="Dismiss" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDismissedNeverResolved(true); } }} onClick={() => setDismissedNeverResolved(true)} style={{ fontSize: 13, fontWeight: 700, color: T.textDisabled, cursor: "pointer", padding: "2px 4px"}}>
+            <span role="button" tabIndex={0} aria-label="Dismiss" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDismissedNeverResolved(true); } }} onClick={() => setDismissedNeverResolved(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.textDisabled, cursor: "pointer", padding: "2px 4px"}}>
               Dismiss
             </span>
           </div>
@@ -870,7 +870,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
       <div onClick={isUndo ? onUndo : onRedo}
       role="button" tabIndex={0} aria-label={isUndo ? "Undo" : "Redo"} aria-live="polite"
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
-      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: TYPE.control.fontSize, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
       {isUndo ? "Episode deleted — tap to undo" : "Undone — tap to redo"}
     </div>

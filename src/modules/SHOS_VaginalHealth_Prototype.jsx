@@ -206,7 +206,7 @@ function ConditionPicker({ T, onPick, onCancel }) {
         );
       })}
       <button type="button" onClick={onCancel}
-        style={{ marginTop: 8, padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+        style={{ marginTop: 8, padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer" }}>
         {t("common.cancel", "Cancel")}
       </button>
     </div>
@@ -234,7 +234,7 @@ function RecordEditor({ T, record, onChange, onDone, onRequestDelete, pendingDel
         type="date"
         value={record.date || ""}
         onChange={(e) => onChange({ date: e.target.value })}
-        style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}
       />
 
       <label style={{ ...TYPE.caption, color: T.textSecondary, display: "block", marginBottom: 4 }} htmlFor="vh-notes">
@@ -246,16 +246,16 @@ function RecordEditor({ T, record, onChange, onDone, onRequestDelete, pendingDel
         onChange={(e) => onChange({ notes: e.target.value })}
         rows={4}
         placeholder={t("vaginalHealth.notesPlaceholder", "Symptoms, treatment, who you saw…")}
-        style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }}
+        style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }}
       />
 
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button type="button" onClick={onDone}
-          style={{ flex: 1, padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: "none", background: T.healthcare, color: ON_ACCENT, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          style={{ flex: 1, padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: "none", background: T.healthcare, color: ON_ACCENT, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer" }}>
           {t("common.done", "Done")}
         </button>
         <button type="button" onClick={onRequestDelete}
-          style={{ padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: `1px solid ${T.border}`, background: "transparent", color: T.actionRedText, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          style={{ padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: `1px solid ${T.border}`, background: "transparent", color: T.actionRedText, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer" }}>
           {t("vaginalHealth.delete", "Delete record")}
         </button>
       </div>

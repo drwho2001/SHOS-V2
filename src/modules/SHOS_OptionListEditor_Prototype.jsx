@@ -195,7 +195,7 @@ export function OptionListDetail({ listName, onClose }) {
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 24px", overflow: "hidden" }}>
         {options.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>{t("optionList.noOptions", "No options \u2014 add one above.")}</div>
+          <div style={{ padding: 16, fontSize: TYPE.control.fontSize, color: T.textDisabled }}>{t("optionList.noOptions", "No options \u2014 add one above.")}</div>
         ) : options.map((opt, i) => {
           const protectedValue = CustomOptionListsRepository.isProtected(listName, opt);
           return (

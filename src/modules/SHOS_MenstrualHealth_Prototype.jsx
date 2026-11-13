@@ -225,7 +225,7 @@ function ReadRow({ label, value, T, alert }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
       <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: alert ? T.actionRed : T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
+      <span style={{ fontSize: TYPE.control.fontSize, color: alert ? T.actionRed : T.textPrimary, fontWeight: 500, textAlign: "right" }}>{display}</span>
     </div>
   );
 }
@@ -246,7 +246,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder, searchP
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer"}}>
               {nameFor(id)}<X size={11} />
             </div>
           ))}
@@ -254,7 +254,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder, searchP
       )}
       {available.length > 0 && (
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={searchPlaceholder} aria-label={searchPlaceholder}
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: 6 }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44, marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -353,7 +353,7 @@ function DetailHeader({ onBack, onEdit, onDelete, T }) {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
       <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <span role="button" tabIndex={0} aria-label="Edit" style={{ fontSize: 13, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={onEdit} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
+        <span role="button" tabIndex={0} aria-label="Edit" style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={onEdit} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
         <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={onDelete} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
       </div>
     </div>
@@ -449,7 +449,7 @@ function CycleSheet({ cycle, onSave, onClose, T, tr }) {
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
@@ -743,7 +743,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T, tr }) {
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
@@ -914,7 +914,7 @@ function PregnancySheet({ pregnancy, onSave, onClose, T, tr }) {
           {isResolved && (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => set("sensitive")(!form.sensitive)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", cursor: "pointer", minHeight: 44 }}>
               {form.sensitive ? <EyeSlash size={16} color={T.healthcare} /> : <Eye size={16} color={T.textSecondary} />}
-              <span style={{ fontSize: 13, color: T.textPrimary }}>Mask this entry (shown as "tap to reveal" in your list)</span>
+              <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Mask this entry (shown as "tap to reveal" in your list)</span>
             </div>
           )}
         </>
@@ -922,7 +922,7 @@ function PregnancySheet({ pregnancy, onSave, onClose, T, tr }) {
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
-          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical" }} />
       </div>
     </BottomSheet>
   );
@@ -1004,7 +1004,7 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
           {masked ? (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
               <EyeSlash size={22} color={T.textSecondary} style={{ marginBottom: 8 }} />
-              <div style={{ fontSize: 13, color: T.textSecondary }}>{tr("menstrual.pregnancySensitive", "This entry is marked sensitive. Tap to reveal.")}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary }}>{tr("menstrual.pregnancySensitive", "This entry is marked sensitive. Tap to reveal.")}</div>
             </div>
           ) : (
             <>
@@ -1154,7 +1154,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t.key} onClick={() => setSubTab(t.key)}
-              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 13, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcare : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcare : T.border}`}}>
+              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcare : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcare : T.border}`}}>
               {t.label}
             </div>
           ))}
