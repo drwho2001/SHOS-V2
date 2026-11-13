@@ -9,7 +9,7 @@ import { HivStatusNote } from "../components/HivStatusNote";
 import { JargonNote } from "../components/JargonNote";
 import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
-  ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
+  ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2, ShieldIcon as Shield,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
   CrosshairIcon as Crosshair, SignOutIcon as SignOut, EnvelopeSimpleIcon as Envelope, TreeEvergreenIcon as TreeEvergreen,
   // ADDED 10 Sep 2026 — real ask: a single "how we'd meet" icon ranked
@@ -354,6 +354,84 @@ function SectionCard({ title, T, children }) {
 // managed, not on the "about me" screen. Self-contained, same as every
 // other module's own UI this session — doesn't import UI from
 // SHOS_MyProfile_Prototype.jsx, just the pure functions it needs.
+function SafetyShareSheet({ contact, T, tr, onClose }) {
+  const { t: trFn } = useTranslation();
+  const t = tr || trFn;
+  useEscapeToClose(onClose);
+  const [fields, setFields] = useState({ name: true, address: true, vehicle: true, photo: false, phone: false });
+  const [includeLiveLocation, setIncludeLiveLocation] = useState(false);
+  const [status, setStatus] = useState(null);
+  const sheetRef = useRef(null);
+  useEffect(() => { sheetRef.current?.focus(); }, []);
+
+  const toggle = (k) => setFields((f) => ({ ...f, [k]: !f[k] }));
+
+  const buildMessage = () => {
+    const lines = [];
+    const name = contact?.name || contact?.nickname || "Contact";
+    if (fields.name) lines.push(`Name: ${name}`);
+    if (fields.phone && contact?.phone) lines.push(`Phone: ${contact.phone}`);
+    if (fields.address && contact?.address) lines.push(`Address: ${contact.address}`);
+    if (fields.vehicle && contact?.vehicle) lines.push(`Vehicle: ${contact.vehicle}`);
+    const msg = `I'm meeting ${name} around ${new Date().toLocaleString()}. If you don't hear from me within a few hours, here's their info:\n${lines.join("\n")}\n\nSharing is not a safety guarantee.`;
+    return msg;
+  };
+
+  const doShare = async () => {
+    const msg = buildMessage();
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Safety share", text: msg });
+        setStatus({ ok: true, msg: "Shared." });
+      } else {
+        await navigator.clipboard.writeText(msg);
+        setStatus({ ok: true, msg: "Copied to clipboard (share sheet unavailable)." });
+      }
+    } catch (e) {
+      setStatus({ ok: false, msg: "Share cancelled or failed." });
+    }
+    if (includeLiveLocation) {
+      try { window.open("https://www.google.com/maps", "_blank"); } catch {}
+    }
+  };
+
+  return (
+    <div role="dialog" aria-label="Share for safety" ref={sheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <span style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Share for safety</span>
+      </div>
+      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        <SectionCard T={T}>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary, marginBottom: 8 }}>Choose which fields to include:</div>
+          {[
+            { key: "name", label: "Name / nickname" },
+            { key: "phone", label: "Phone number" },
+            { key: "address", label: "Address" },
+            { key: "vehicle", label: "Vehicle details" },
+            { key: "photo", label: "Profile photo note" },
+          ].map((opt) => (
+            <div key={opt.key} onClick={() => toggle(opt.key)} role="button" tabIndex={0} aria-pressed={fields[opt.key]} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt.key); } }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", cursor: "pointer", minHeight: 44 }}>
+              <input type="checkbox" checked={fields[opt.key]} onChange={() => toggle(opt.key)} style={{ width: 18, height: 18 }} />
+              <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{opt.label}</span>
+            </div>
+          ))}
+        </SectionCard>
+        <SectionCard T={T}>
+          <div onClick={() => setIncludeLiveLocation((v) => !v)} role="button" tabIndex={0} aria-pressed={includeLiveLocation} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIncludeLiveLocation((v) => !v); } }} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", minHeight: 44 }}>
+            <input type="checkbox" checked={includeLiveLocation} onChange={() => setIncludeLiveLocation((v) => !v)} style={{ width: 18, height: 18 }} />
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Include live location (opens Google Maps)</span>
+          </div>
+        </SectionCard>
+        <div style={{ fontSize: 11, color: T.textSecondary, fontStyle: "italic" }}>Sharing is not a safety guarantee. Shared data leaves this device via your chosen app.</div>
+        <button onClick={doShare} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: T.contactsTeal, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>Share</button>
+        {status && <div style={{ fontSize: 12, color: status.ok ? T.actionGreenText : T.actionRedText }}>{status.msg}</div>}
+        <div style={{ fontSize: 11, color: T.textDisabled, whiteSpace: "pre-wrap", background: T.surface, padding: 8, borderRadius: 6 }}>{buildMessage()}</div>
+      </div>
+    </div>
+  );
+}
+
 function ImportSharedProfileSheet({ T, onClose, onImported }) {
   const { t: tr } = useTranslation();
   useEscapeToClose(onClose);
@@ -2492,6 +2570,8 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // ADDED — real ask: "not just edit or archive contact but also
   // option to delete permanently."
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Safety sharing (0): pre-compose discreet identification message.
+  const [showSafetyShare, setShowSafetyShare] = useState(false);
   // ADDED 19 Aug 2026 — Anonymise mode, same read pattern as ContactsList.
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
@@ -2591,6 +2671,9 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             <>
               <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 39 }} />
               <div role="menu" style={{ position: "absolute", top: 28, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 40, minWidth: 170, overflow: "hidden" }}>
+                <div onClick={() => { setShowSafetyShare(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSafetyShare(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Shield size={14} color={T.textSecondary} /> Share for safety
+                </div>
                 <div onClick={() => { if (!contact.isDemo) { onEdit(contact.id); setMenuOpen(false); } }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(contact.id); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}>
                   <Settings2 size={14} color={T.textSecondary} /> Edit contact
                 </div>
@@ -2606,6 +2689,10 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           </div>
         </div>
       </div>
+
+      {showSafetyShare && (
+        <SafetyShareSheet contact={contact} T={T} tr={tr} onClose={() => setShowSafetyShare(false)} />
+      )}
 
       {flaggedDontMeetAgain && (
         <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}15`, display: "flex", gap: 8, alignItems: "flex-start" }}>
