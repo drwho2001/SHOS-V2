@@ -199,6 +199,14 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - The bottom nav stays on record/detail screens and hides on Settings and other full-screen stacks.
 - Tab order can be customised, but Home remains in the centre position.
 - My Profile is not a primary tab. It is reached from Home or Settings.
+
+### Module header / toolbar standard (0b)
+
+**Module title banner (fixed, module-wide):** Exit/back (top-left), title, Search (top-right), Settings (overflow). Max 3 icons. Uses module accent background with white text. Stays fixed at top.
+
+**Tab sticky header (scrollable, per-tab):** Add, Filter, Sort, Export. Max 2 icons + overflow. Scrolls with content under the banner. Tab-specific actions only — never module-wide controls.
+
+**App-wide:** Exit/back always top-left; Search top-right; Settings in banner or overflow. These never move between screens. Applies to all modules.
 - Settings is reached from the gear icon on Home.
 - Global Search is available from the header and searches across modules.
 - **Healthcare sub-tabs:** Symptoms, Testing, Clinic Visits, Vaccinations, Measurements, Menstrual & Contraception (gated behind `menstrualTrackingEnabled`), Vaginal Health (also gated). Additional entry points: Episodes (Timeline), Attachments, Clinic Card.
