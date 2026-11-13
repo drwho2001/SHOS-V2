@@ -31,6 +31,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby, SyringeIcon as Syringe, BandaidsIcon as Bandaids, AnchorSimpleIcon as AnchorSimple } from "@phosphor-icons/react";
 import { MenstrualCycleRepository, DEFAULT_CYCLE } from "../repositories/menstrualCycleRepository";
+import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
@@ -565,6 +566,18 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
             {c.spotting ? <ReadRow label="Spotting" value={c.spottingDate ? formatDate(c.spottingDate) : "Yes"} T={T} /> : null}
             {c.missedPeriod ? <ReadRow label="Missed period" value={c.missedReason || "Yes"} T={T} /> : null}
             <ReadRow label="Symptoms" value={symptomNames} T={T} />
+            <div style={{ marginTop: 8 }}>
+              <button onClick={async () => {
+                const start = new Date(c.startDate);
+                const now = new Date();
+                const cycleDay = Math.floor((now - start) / 86400000) + 1;
+                const phase = cycleDay <= 5 ? "menstrual" : cycleDay <= 13 ? "follicular" : cycleDay <= 16 ? "ovulation" : "luteal";
+                await SymptomLogRepository.create({ title: "PMS symptom", cycleDay, cyclePhase: phase, dateStarted: now.toISOString().slice(0, 10) });
+                refresh();
+              }} style={{ padding: "8px 16px", borderRadius: radius.md, border: `1px solid ${T.menstrualPurple}`, background: `${T.menstrualPurple}15`, color: T.menstrualPurple, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer" }}>
+                Log PMS symptom (cycle day {(() => { const start = new Date(c.startDate); const now = new Date(); return Math.floor((now - start) / 86400000) + 1; })()})
+              </button>
+            </div>
           </SectionCard>
           <SectionCard title="Notes" T={T}><ReadRow label="Notes" value={c.notes} T={T} /></SectionCard>
         </div>
