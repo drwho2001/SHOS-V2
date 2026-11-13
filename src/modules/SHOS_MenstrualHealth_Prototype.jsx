@@ -1053,6 +1053,8 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
               <SectionCard title="Details" T={T}>
                 <ReadRow label="Test result" value={p.testResult} T={T} />
                 <ReadRow label="Estimated due date" value={p.estimatedDueDate ? formatDate(p.estimatedDueDate) : ""} T={T} />
+                {p.estimatedDueDate ? <ReadRow label="Gestational weeks" value={(() => { const due = new Date(p.estimatedDueDate); const now = new Date(); const weeks = Math.floor((280 - Math.ceil((due - now) / 86400000)) / 7); return weeks > 0 && weeks <= 42 ? `${weeks} weeks` : ""; })()} T={T} /> : null}
+                {p.estimatedDueDate ? <ReadRow label="Trimester" value={(() => { const due = new Date(p.estimatedDueDate); const now = new Date(); const weeks = Math.floor((280 - Math.ceil((due - now) / 86400000)) / 7); return weeks <= 13 ? "1st" : weeks <= 26 ? "2nd" : weeks <= 42 ? "3rd" : ""; })()} T={T} /> : null}
                 <ReadRow label="Status" value={p.status} T={T} alert={OUTCOME_OPTIONS.includes(p.status) && p.status !== "Live birth"} />
                 <ReadRow label="Outcome date" value={p.outcomeDate ? formatDate(p.outcomeDate) : ""} T={T} />
               </SectionCard>
