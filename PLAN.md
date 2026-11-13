@@ -85,14 +85,14 @@
 ---
 
 ## Batch 5 — Infrastructure (after audit completes)
-**Risk: Low. Do last.**
+**Risk: Low. Do last. ✅ ALL DONE**
 
-| # | Task | Prerequisite |
-|---|------|-------------|
-| 5a | Port mockup design language into live app | Audit complete (§49b) |
-| 5b | Decide contactMerge.js fate (wire or delete) | None |
-| 5c | Run full vitest after all changes | All batches done |
-| 5d | Final smoke test on all mockups | All batches done |
+| # | Task | Prerequisite | Status |
+|---|------|-------------|--------|
+| 5a | Port mockup design language into live app | Audit complete (§49b) | ✅ Done (commit 721b250) |
+| 5b | Decide contactMerge.js fate (wire or delete) | None | ✅ Wired (duplicateCandidatePanel in use) |
+| 5c | Run full vitest after all changes | All batches done | ✅ Run; 1 guard failure fixed (5dc2e3f) |
+| 5d | Final smoke test on all mockups | All batches done | ✅ 0 FAIL on all 18 mockups |
 
 ---
 
