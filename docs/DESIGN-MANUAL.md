@@ -262,19 +262,35 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - Standard card: white/surface background, 1px border, `RADIUS.md`, 12-14px padding.
 - Do not add a shadow to an ordinary card.
 - Use module accent only for the card's label or primary action, not the whole card.
+- **Dates** follow one standard: day-first unpadded (`12 Nov`), with a weekday
+  prefix on planned/future dates only (`Sat 14 Nov`). Never month-first
+  (`Nov 12`), never zero-padded (`02 Nov`).
+- **In-card notes and advisories** use the testing-card pattern: indent, 3px
+  accent left bar, and a tinted background (8px radius). The reference is
+  `healthcare-testing-card-mockup.html`'s `.advisory`. Bare 2px italic rules
+  are for page-level documentation annotations only, never inside a card.
+- **Card action buttons** have two tiers: base `.btn` at 40px min-height and a
+  compact `.btn-sm` at 32px for in-card actions. Interactive elements carry a
+  `:focus-visible` ring (2px module-accent outline, 2px offset), and card
+  layouts include the `@media (max-width:360px)` narrow-viewport block.
+- **Reason tags**: a `tag-btn` when the user can change the reason, a static
+  span when it is derived from data (episode, record). Never a button that
+  leads nowhere.
 
 ### 10.2.1 Card anatomy (encounters, contacts, medication, healthcare)
 
-Record cards in this app share one anatomy: **title row → byline → grouped chip cloud → summary footer**. The settled references are the encounter card (`encounters-card-mockup.html`), the contact card (`contacts-card-mockup.html`), the medication card (`medication-card-mockup.html`), and the healthcare card (`healthcare-card-mockup.html`); all are 393dp dark-mode renderings and must agree with this section.
+Record cards in this app share one anatomy: **title row → byline → grouped chip cloud → summary line**. The settled references are the encounter card (`encounters-card-mockup.html`), the contact card (`contacts-card-mockup.html`), the medication card (`medication-card-mockup.html`), and the healthcare card (`healthcare-card-mockup.html`); all are 393dp dark-mode renderings and must agree with this section. The STI test card (`healthcare-sti-test-card.html`) is the reference grammar for the summary state line, in-card context groups, and card action tiers.
 
 - **Healthcare cards** carry the module accent (`healthcareBlue`) on interactive elements only (quick-add buttons, pill outlines, action bar CTA). The card background is plain surface with a 1px `border` in `T.border`. Do not tint the whole card background with the module accent — dark mode drops the tint and keeps only the outline (same pattern as Home quick add buttons, 5 Nov 2026).
 
 - **Healthcare list cards (audited 8 Nov 2026).** The four healthcare lists — Testing, Clinic visits, Symptom log, Vaccinations — are audited against this section, one mockup each: `healthcare-testing-card-mockup.html`, `healthcare-clinicvisit-card-mockup.html`, `healthcare-symptom-card-mockup.html`, `healthcare-vaccination-card-mockup.html`. Rules settled by that audit:
   - **The status dot means "does this need action"** in every healthcare list, not a per-module colour idea. Testing: result (red positive / green negative). Vaccinations: red overdue, accent up to date. Symptom log: severity while active, green once resolved. Clinic visits: accent booked/future, amber follow-up due, muted completed. A new healthcare list picks from those meanings rather than inventing one.
   - **Older-record treatment is one component.** Fade the card (`surface` → `surfaceVariant`, `textPrimary` → `textSecondary`, `textSecondary` → `textDisabled`) *and* show a grey pill in the title row — `Older test`, `Older visit`, `Older entry`, `Older dose`. A line of 11/700 text is not a substitute for the pill. An active/ongoing record and a future appointment are never faded.
+  - **Samples / tense (STI and booked collection):** planned or future collection reads "Samples to be taken from"; once the appointment/result context is attended or past it reads "Samples taken from". Tense must follow the record's state, not just its date string.
+  - **Treatment on STI/test cards:** do not show a treatment action when there is nothing to treat yet (pending/awaiting result). When a result is positive, treatment becomes actionable and is recorded through a **clinic visit** (the quick-add → New clinic visit form), not as a free-floating fact — capture medication/dose and how it was given (**Given at clinic / Started at clinic / Prescribed / For at home**) plus visit date. "Confirm" and "Different treatment" both route into that clinic-visit capture; the card shows the locked-in outcome (e.g. `Confirmed · Given at clinic`, `Manual · Prescribed`) and a "Added to clinic visit" note. Negative/void/overdue states carry no treatment-to-act-on.
   - **Red border** is reserved for "needs attention now": positive result (Testing), overdue (Vaccinations), active *and* severe (Symptom log). Clinic visits have no red-border state.
-  - **Every card carries two actions**, primary filled + secondary outline (e.g. `+1 Log test` / `Schedule retest`), not zero. Healthcare accent on the button, never on the card fill.
-  - **Unresolved gaps in the shipped lists:** none of the four renders a grouped chip cloud or a summary footer, and all four stack 12px text lines instead of one 10px icon byline. Clinic visits has no status dot at all; Vaccinations has no older-record treatment. Fix toward the mockups as those files are next touched.
+  - **Every card carries two actions**, primary filled + secondary outline (e.g. `Log test` / `Schedule retest`), not zero. Healthcare accent on the button, never on the card fill.
+  - **Unresolved gaps in the shipped lists:** none of the four renders a grouped chip cloud or a summary footer, and all four stack 12px text lines instead of one 10px icon byline. Clinic visits has no status dot at all; Vaccinations has no older-record treatment. Fix toward the mockups as those files are next touched. The mockups themselves were brought onto the shared standards on 11 Nov 2026 (summary state lines, action tiers, focus rings, narrow-viewport block) and now pass the smoke test with zero failures. **Clinic visit renders** (next planned card set) must cover the full 1:1 of the form → card: a visit is the canonical owner of treatment given/prescribed and can be started from a test or from quick-add; the card must represent every capturable form fact (at least in summary/grouped form) even when some are collapsed, and must not invent concepts absent from the form.
 
 - **Healthcare chip groups** (status/relationship chips): metadata chips are `textSecondary` on `surfaceVariant`; warning chips (`Overdue`) use the amber pair; search-hit tags are accent-filled. Attendee pills use the amber `#e0a166` fill with white text: full-name pill for a single attendee, initials pills for several, **3 pills + a `+N` overflow pill**. Encounter kinks/activities use the encounters purple accent, position uses teal, protection uses green, cum/loads uses pink. Medication schedule/dose-form group uses teal, stock chips use medication blue, refill-requested uses blue with an inline `×`.
 
@@ -287,7 +303,9 @@ Record cards in this app share one anatomy: **title row → byline → grouped c
     - **Landscape scaling** — on a ~405dp tall landscape viewport (status bar + app bar + bottom nav eat most of it), cards can overflow the screen. To avoid overflow, cards use internal scrolling (no fixed height) and tighter spacing: padding 12px vs 16px, gap 3px vs 4px, and reduced title font size (13px vs 15px) on landscape viewports.
    A progress bar that has a meaningful threshold (medication stock) draws that threshold as a marker on the track and states it beside the stock quantity itself ("22 capsules left — restock at 10 capsules"), not as one more chip among the rate/supplier/requested chips: the chips answer "what do I do next", the number answers "how low is low". The track is scaled to `max(stock on hand, container size)` so the bar reads full when the user holds at least a container's worth; scaling to the refill quantity alone pushed both fill and marker to 100% on multi-container supplies and hid the marker at the bar's end. The marker itself is red (`#F97316`-class action red) so it reads as the "refill needed" line regardless of fill level.
 4. **Independent verdicts, not one averaged box.** Where a card reports several related rates (medication adherence), give each fact its own tile and its own status colour — streak, 7-day, this container can be green / amber / red independently. Never wrap them in one background that implies a single verdict. Thresholds for rate tiles: ≥80% green, ≥50% amber, below red. A live streak's flame is filled orange-red (`#F97316`); the 7-day tile carries an up/down trend arrow against the previous 7 days, shown only when both windows contain due days and the medication was already running in the previous week (a medication started this week has no baseline to climb from).
-5. **Footer / summary line.** 11px `textSecondary`, one wrapping row: count → rating → recency, with the heart inline on the rating. Climax/status markers use the module accent (filled drop = happened, drop-slash = didn't); never gold.
+5. **Summary line.** Two kinds — never mix them on one card:
+   - **State summary** (healthcare lists, STI tests): lead-word state in caps, a `·` separator, then the key fact — `NEGATIVE · Next due ~14 weeks`, `OVERDUE · Second dose missing since Jun 2025` — coloured by state (green for settled/complete, red for attention, amber for pending/due). The vocabulary is per module and must not be invented ad hoc: STI tests use BOOKED, PENDING, POSITIVE, NEGATIVE, OVERDUE, VOID; clinic visits use DUE, BOOKED, COMPLETED; the symptom log uses ACTIVE, RESOLVED; vaccinations use COMPLETE, OVERDUE; general healthcare records use NEGATIVE, OVERDUE, ACTIVE. A card's chips must not repeat what the summary line already states (store-once).
+   - **Metadata summary** (encounters, contacts): count → rating → recency, 11px `textSecondary`, one wrapping row, with the heart inline on the rating. Climax/status markers use the module accent (filled drop = happened, drop-slash = didn't); never gold.
 6. **Action affordances.** Filter-style toggles are labelled pills, not plain text (see the Show archived switch below); bulk-select bars wrap inside the card column width and never overflow.
 
 ### 10.2.2 Toggles and switches
@@ -363,7 +381,7 @@ SHOS ships the same React UI to all platforms, but the surrounding shell and cap
 
 - Reduced motion is supported through `useReducedMotion`. Respect it for transitions and animated UI.
 - Quick exit is available on screens and must remain functional. A visible panic control that does nothing is worse than no control.
-- Touch targets should be at least 44px high for interactive controls.
+- Touch targets should be at least 44px high for interactive controls. The card action tiers are the documented exception: in-card `.btn` is 40px and `.btn-sm` is 32px so two actions fit a dense card row; screen-level primary CTAs still meet 44px.
 - Use `aria-live="polite"` for status updates.
 - Icon-only controls need accessible labels.
 - Contrast must pass WCAG for text and UI components.

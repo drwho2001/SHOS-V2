@@ -67,11 +67,13 @@ export { SETTING_OPTIONS };
 // PregnancyRepository once a positive result exists) but had no way to
 // be recorded as the reason FOR testing in the first place. "Other"
 // stays last per this list's own established convention above.
-export const TESTING_FOR_OPTIONS = ["Gonorrhoea", "HIV", "Syphilis", "Chlamydia", "Hepatitis A", "Hepatitis B", "Hepatitis C", "Mpox", "MGen", "HPV", "Herpes (HSV)", "Trichomoniasis", "Bacterial vaginosis", "C&S (symptomatic/treatment)", "Pregnancy", "Other"];
+export const TESTING_FOR_OPTIONS = ["Gonorrhoea", "HIV", "Syphilis", "Chlamydia", "Hepatitis A", "Hepatitis B", "Hepatitis C", "Mpox", "MGen", "HPV", "Herpes (HSV)", "Trichomoniasis", "Bacterial vaginosis", "C&S (symptomatic/treatment)", "Pregnancy", "Thrush", "Other"];
 
 export const DEFAULT_TEST = {
   isDemo: false,
   title: "",
+  // ADDED — structured reason for testing (mockup alignment)
+  reason: "",       // "symptoms" | "routine" | "positive_contact" | "partner_notification" | "exposure" | ""
   date: null,
   // ADDED 19 Aug 2026 — real feedback batch: Result Date, separate
   // from the specimen/test date above — the date the RESULT actually
@@ -86,6 +88,9 @@ export const DEFAULT_TEST = {
   resultIds: [],         // → ResultsRegistry, real and wired
   mostRecent: false,
   followUpActionedDate: null,
+  // ADDED - BACKLOG 7: chase tracking for pending results. Array of ISO
+  // dates when the user chased the clinic for a result.
+  chaseDates: [],
   // ADDED 19 Aug 2026 — real feedback batch: a free-text "written
   // plan" — e.g. "f/u in 2 weeks for treatment" — distinct from the
   // structured Follow-up Actioned Date above. The date field answers

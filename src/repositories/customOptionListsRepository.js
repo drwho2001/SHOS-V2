@@ -62,7 +62,7 @@ const SEED_LISTS = {
   route: ["Oral", "IM - Gluteal", "IM - Deltoid", "SubQ", "Injection"],
   reasonForVisit: ["Symptoms", "Doxy refill", "Routine screening", "PrEP review", "Vaccination", "Treatment", "Pregnancy care", "Other"],
   followUpType: ["TOC", "Routine", "Other", "None"],
-  sampleType: ["Blood", "Urine", "Throat swab", "Rectal swab", "Vaginal/front hole swab"],
+  sampleType: ["Blood", "Urine", "Throat swab", "Rectal swab", "Vaginal/front hole swab", "Mouth swab", "Urethral swab"],
   // CHANGED 26 Aug 2026 — real ask: removed "Other" — the Vaccine
   // field is already real free text with auto-save-as-suggestion
   // (see VaccineField in the Vaccinations module), so a literal
@@ -212,8 +212,12 @@ export const OPTION_LIST_LABELS = {
 // Healthcare-domain ones, encountersPink for Clinic-Visit-adjacent
 // Reason-for-visit) rather than inventing new arbitrary colors.
 export const OPTION_LIST_ICONS = {
-  medicationType: { icon: "Pill", color: "#3D63C9" },
-  route: { icon: "ArrowRightCircle", color: "#3D63C9" },
+  // CHANGED 12 Nov 2026 — these three medication entries were the ones the
+  // earlier "replace the stale pre-Tier-1 blue with the real shared token" pass
+  // missed: the healthcare/contacts entries above all use ACCENTS.*, but these
+  // still hardcoded #3D63C9, a blue that appears nowhere in the app's palette.
+  medicationType: { icon: "Pill", color: ACCENTS.medication },
+  route: { icon: "ArrowRightCircle", color: ACCENTS.medication },
   reasonForVisit: { icon: "ClipboardList", color: ACCENTS.healthcare },
   followUpType: { icon: "CalendarClock", color: ACCENTS.healthcare },
   sampleType: { icon: "TestTube", color: ACCENTS.healthcare },
@@ -221,7 +225,7 @@ export const OPTION_LIST_ICONS = {
   vaccinationReason: { icon: "CalendarCheck", color: ACCENTS.healthcare },
   injectionSite: { icon: "MapPin", color: ACCENTS.healthcare },
   episodeTriggerReason: { icon: "PlayCircle", color: ACCENTS.healthcare },
-  medicationCategory: { icon: "Tag", color: "#3D63C9" },
+  medicationCategory: { icon: "Tag", color: ACCENTS.medication },
   relationshipType: { icon: "Heart", color: ACCENTS.contacts },
   gender: { icon: "User", color: ACCENTS.contacts },
   pronouns: { icon: "User", color: ACCENTS.contacts },

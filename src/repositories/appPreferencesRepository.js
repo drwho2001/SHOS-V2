@@ -15,6 +15,8 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 const STORAGE_KEY = "shos_app_preferences";
 
 export const DEFAULT_APP_PREFERENCES = {
+  // Locale for spelling (en-GB or en-US). Drives the shared string table.
+  locale: "en-GB",
   // Days since last Encounter before a Contact shows as "inactive"
   // (the red dot). Was hardcoded at 90 — real ask to make this a
   // genuine preference.

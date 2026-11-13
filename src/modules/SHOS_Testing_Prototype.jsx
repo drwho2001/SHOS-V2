@@ -5,6 +5,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // FIXED 10 Sep 2026 — real bug found by adding ESLint to the project:
 // findClosestMatch (the "did you mean?" typo-suggestion check, used
@@ -39,6 +40,7 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 // shows its linked tests, Testing's never showed its linked visits.
 // One real direction of a two-way link with no UI at all.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
+import { EpisodeRepository } from "../repositories/episodeRepository";
 // ADDED — real gap found in a full-app audit: relatedSymptomIds existed
 // on DEFAULT_TEST with no UI anywhere. Same fix pattern as linkedVisits
 // above — Symptom Log's own relatedTestIds is the real source of truth
@@ -669,6 +671,11 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
   // second, unsynced way to represent the same relationship.
   const [linkVersion, setLinkVersion] = useState(0);
   const linkedVisits = useLoadedMemo(() => (testId ? ClinicVisitsRepository.getByLinkedTest(testId) : []), [testId, linkVersion], []);
+  // CHANGED 12 Nov 2026 — the episode-linking state and helpers that used to
+  // live here were DEAD: nothing in this sheet ever rendered them. The UI that
+  // consumes them is in TestDetail (which is the screen that owns "link this
+  // test to an episode"), so they were moved there. Keeping them here as well
+  // would have been a second, unsynced copy of the same relation.
   // CHANGED 1 Sep 2026 — real ask: "old options listed first and not
   // searchable" — this list had no .sort() at all (storage order =
   // oldest first) and rendered into a bare native <select>, the exact
@@ -692,6 +699,12 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
     const visit = await ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
     await ClinicVisitsRepository.update(visitId, { linkedTestIds: [...(visit.linkedTestIds || []), testId] });
+    // Write back the other side of the two-way link so test.clinicVisitIds
+    // stays in sync (single fact, canonical owner on each side).
+    const test = await TestingRepository.getById(testId);
+    if (test) {
+      await TestingRepository.update(testId, { clinicVisitIds: [...(test.clinicVisitIds || []), visitId] });
+    }
     setLinkVersion((v) => v + 1);
   };
   // ADDED — real ask: there was no way to remove a linked clinic visit,
@@ -703,6 +716,12 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
     const visit = await ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
     await ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
+    // Keep the other side of the two-way link in sync: drop this visit
+    // from test.clinicVisitIds so a stale reference does not linger.
+    const test = await TestingRepository.getById(testId);
+    if (test) {
+      await TestingRepository.update(testId, { clinicVisitIds: (test.clinicVisitIds || []).filter((id) => id !== visitId) });
+    }
     setLinkVersion((v) => v + 1);
   };
   // CHANGED — real ask, after shipping this as read-only: link/unlink
@@ -849,7 +868,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
       )}
 
       <div style={{ padding: "0 16px 100px" }}>
-        <SectionCard title={tr("testing.overview", "Overview")} T={T}>
+        <SectionCard title={tr("testing.overview", "Overview")} accent={T.healthcareBlue} T={T}>
           <TextField label={tr("testing.title", "Title")} value={form.title} onChange={set("title")} T={T} placeholder={tr("testing.routineScreenPlaceholder", "e.g. Routine 3-month screen")} />
           <TextField label={tr("testing.date", "Date")} value={form.date ? form.date.slice(0, 10) : ""} onChange={(v) => set("date")(v ? new Date(v).toISOString() : null)} T={T} type="date" />
           {/* ADDED 20 Oct 2026 (t128) - the form says what a future date
@@ -878,7 +897,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
           </div>
         </SectionCard>
 
-        <SectionCard title={tr("testing.result", "Result")} T={T}>
+        <SectionCard title={tr("testing.result", "Result")} accent={T.healthcareBlue} T={T}>
           {/* REORDERED — real ask: Result should come before Organism
               ("positive blood, then HIV" — the result is the headline,
               which organism (if any) is the detail underneath it). */}
@@ -969,7 +988,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
           })()}
         </SectionCard>
 
-        <SectionCard title={tr("testing.notes", "Notes")} T={T}>
+        <SectionCard title={tr("testing.notes", "Notes")} accent={T.healthcareBlue} T={T}>
           {/* CHANGED 19 Aug 2026 — real feedback batch: clarified this
               is specifically for home test kits, and only shown when
               Setting is actually Home — was previously always visible
@@ -998,7 +1017,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
         </SectionCard>
 
         {!isNew && (
-          <SectionCard title={tr("testing.attachments", "Attachments")} T={T}>
+          <SectionCard title={tr("testing.attachments", "Attachments")} accent={T.healthcareBlue} T={T}>
             <AttachmentManager testId={testId} attachments={form.attachments || []} onChanged={async () => setForm(await TestingRepository.getById(testId))} T={T} />
           </SectionCard>
         )}
@@ -1016,6 +1035,13 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
 function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, onDataChanged, T, triggerDelete, refresh, allTests, registerModuleBackHandler }) {
   const { t: tr } = useTranslation();
   const [test, setTest] = useLoadedState(() => TestingRepository.getById(testId), [testId], null);
+  // ADDED — BACKLOG 7: track load failure for error state display.
+  const [loadError, setLoadError] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    TestingRepository.getById(testId).then(() => { if (!cancelled) setLoadError(false); }).catch(() => { if (!cancelled) setLoadError(true); });
+    return () => { cancelled = true; };
+  }, [testId]);
   // ADDED — real ask: "hide result until result date... similar to
   // Dom/sub half-toggle." Soft-masked by default rather than fully
   // hidden with no way to see it — a real result is real data, not
@@ -1089,6 +1115,40 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
   // went async — hoisted above the `!test` guard, same reasoning as
   // relatedSymptoms/partnerNotifyList above.
   const linkedVisits = useLoadedMemo(() => ClinicVisitsRepository.getByLinkedTest(testId), [testId], []);
+  // ADDED — BACKLOG 4: episode linking from the detail view. Episodes own
+  // their own testIds, so this is the one direction the relation is stored in
+  // — same single-source-of-truth rule as the clinic-visit link above.
+  const [episodeVersion, setEpisodeVersion] = useState(0);
+  const linkedEpisodes = useLoadedMemo(async () => {
+    if (!testId) return [];
+    return (await EpisodeRepository.getAll()).filter((e) => (e.testIds || []).includes(testId));
+  }, [testId, episodeVersion], []);
+  const unlinkedEpisodes = useLoadedMemo(async () => {
+    if (!testId) return [];
+    return (await EpisodeRepository.getAll())
+      .filter((e) => !(e.testIds || []).includes(testId))
+      .map((e) => ({ id: e.id, name: `${e.title || tr("testing.episode", "Episode")} · ${e.triggerReason || ""}`.trim(), searchText: (e.triggerReason || "").toLowerCase() }));
+  }, [testId, episodeVersion], []);
+  const linkEpisode = async (episodeId) => {
+    const ep = await EpisodeRepository.getById(episodeId);
+    if (!ep) return;
+    await EpisodeRepository.update(episodeId, { testIds: [...(ep.testIds || []), testId] });
+    setEpisodeVersion((v) => v + 1);
+    onDataChanged?.();
+  };
+  const unlinkEpisode = async (episodeId) => {
+    const ep = await EpisodeRepository.getById(episodeId);
+    if (!ep) return;
+    await EpisodeRepository.update(episodeId, { testIds: (ep.testIds || []).filter((id) => id !== testId) });
+    setEpisodeVersion((v) => v + 1);
+    onDataChanged?.();
+  };
+  if (loadError) return (
+    <div style={{ padding: 24, textAlign: "center" }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: T.actionRed, marginBottom: 8 }}>Failed to load test</div>
+      <div style={{ fontSize: 12, color: T.textSecondary }}>Check your connection and try again.</div>
+    </div>
+  );
   if (!test) return null;
 
   const organismNames = (test.organismIds || []).map((id) => organismNameById.get(id)).filter(Boolean);
@@ -1177,7 +1237,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
         </div>
         <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>{formatDate(test.date)}</div>
 
-        <SectionCard title={tr("testing.overview", "Overview")} T={T}>
+        <SectionCard title={tr("testing.overview", "Overview")} accent={T.healthcareBlue} T={T}>
           {/* MOVED — real ask: Result date should read near the top,
               matching the edit form's own field order (Date, then
               Result date, ahead of Setting/Sample type/etc.) — this
@@ -1191,7 +1251,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
           <ReadRow label={tr("testing.mostRecent", "Most recent")} value={test.mostRecent ? tr("common.yes", "Yes") : ""} T={T} />
         </SectionCard>
 
-        <SectionCard title={tr("testing.result", "Result")} T={T}>
+        <SectionCard title={tr("testing.result", "Result")} accent={T.healthcareBlue} T={T}>
           {/* REORDERED — real ask: Result should come before Organism. */}
           {resultPending ? (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealEarly(true)} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: "pointer"}}>
@@ -1199,7 +1259,15 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
               <span style={{ color: T.textDisabled, fontStyle: "italic" }}>{tr("testing.pendingReveal", "Pending — expected {date}. Tap to reveal anyway.", { date: formatDate(test.resultDate) })}</span>
             </div>
           ) : (
-            <ReadRow label={tr("testing.result", "Result")} value={resultNames} T={T} />
+            <>
+              <ReadRow label={tr("testing.result", "Result")} value={resultNames} T={T} />
+              {/* ADDED — BACKLOG 7: void result state (destructive/red). */}
+              {resultNames.some((r) => r.toLowerCase() === "void") && (
+                <div style={{ background: `${T.actionRed}15`, border: `1px solid ${T.actionRed}`, borderRadius: radius.sm, padding: "10px 12px", marginTop: 8, fontSize: 12, color: T.actionRedText, lineHeight: 1.4 }}>
+                  <strong>Result void.</strong> The lab flagged this result as invalid. Re-collect and re-submit. Previous result invalidated — do not rely on it.
+                </div>
+              )}
+            </>
           )}
           <ReadRow label={tr("testing.organism", "Organism")} value={organismNames} T={T} />
           <ReadRow label={tr("testing.dateOfTreatment", "Date of treatment")} value={formatDate(test.followUpActionedDate) !== "—" ? formatDate(test.followUpActionedDate) : ""} T={T} />
@@ -1231,6 +1299,32 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
                   ? tr("testing.contactListProgress", "Contact list · {notified}/{total} notified", { notified: partnerNotifyList.items.filter((i) => i.notified).length, total: partnerNotifyList.items.length })
                   : tr("testing.generateContactList", "Generate contact list")}
               </span>
+              <ChevronRight size={14} color={T.healthcareBlue} />
+            </div>
+          )}
+          {/* ADDED — BACKLOG 7: empty tracking state. */}
+          {!test.kitCodePk && !test.kitCodeSk && !test.trackingInfo && isHomeSetting(test.setting) && (
+            <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", padding: "8px 0", lineHeight: 1.4 }}>
+              No tracking link set up. Results will appear here once a test is logged and linked to a tracking service.
+            </div>
+          )}
+          {/* ADDED — positive result with no treatment visit yet: offer to
+              book a clinic visit for treatment, writing the two-way
+              test↔visit link so the visit owns the treatment. */}
+          {isPositive && linkedVisits.length === 0 && (
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => {
+              const created = await ClinicVisitsRepository.create({
+                title: tr("testing.treatmentVisitTitle", "Treatment"),
+                date: test.date || new Date().toISOString(),
+                linkedTestIds: [testId],
+                reasonForVisit: ["Treatment"],
+                isFutureAppointment: false,
+              });
+              await TestingRepository.update(testId, { clinicVisitIds: [...(test.clinicVisitIds || []), created.id] });
+              onNavigateToRecord?.("healthcare", created.id, "clinicVisits");
+            }}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", minHeight: 44, marginTop: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.healthcareBlue }}>{tr("testing.bookClinicVisit", "Book clinic visit for treatment")}</span>
               <ChevronRight size={14} color={T.healthcareBlue} />
             </div>
           )}
@@ -1289,7 +1383,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
         {/* ADDED — Measurements inline entry point: e.g. CD4 count or
             viral load drawn alongside this test — a real, linked
             Measurement, not a duplicate field on Testing itself. */}
-        <SectionCard title={tr("testing.measurements", "Measurements")} T={T}>
+        <SectionCard title={tr("testing.measurements", "Measurements")} accent={T.healthcareBlue} T={T}>
           {measurements.map((m) => (
             <ReadRow key={m.id} label={m.type} value={m.type === "Blood pressure" ? `${m.systolic}/${m.diastolic} mmHg` : `${m.value} ${m.unit}`} T={T} />
           ))}
@@ -1298,7 +1392,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
           </div>
         </SectionCard>
 
-        <SectionCard title={tr("testing.notes", "Notes")} T={T}>
+        <SectionCard title={tr("testing.notes", "Notes")} accent={T.healthcareBlue} T={T}>
           {isHomeSetting(test.setting) && (
             <>
               <ReadRow label={tr("testing.kitCodePk", "Kit code (PK)")} value={test.kitCodePk} T={T} />
@@ -1313,7 +1407,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
         </SectionCard>
 
         {test.attachments.length > 0 && (
-          <SectionCard title={tr("testing.attachments", "Attachments")} T={T}>
+          <SectionCard title={tr("testing.attachments", "Attachments")} accent={T.healthcareBlue} T={T}>
             {test.attachments.map((a) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
                 <Paperclip size={13} color={T.textSecondary} />
@@ -1332,7 +1426,7 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
             exist yet anywhere in the app. Real and useful stop short of
             that, not a silent downgrade. */}
         {linkedVisits.length > 0 && (
-          <SectionCard title={tr("testing.linkedClinicVisits", "Linked clinic visits")} T={T}>
+          <SectionCard title={tr("testing.linkedClinicVisits", "Linked clinic visits")} accent={T.healthcareBlue} T={T}>
             {linkedVisits.map((v) => (
               <div key={v.id} style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
                 <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{v.title || (v.reasonForVisit || []).join("/") || tr("testing.clinicVisit", "Clinic visit")}</div>
@@ -1341,8 +1435,63 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
             ))}
           </SectionCard>
         )}
-        {relatedSymptoms.length > 0 && (
-          <SectionCard title={tr("testing.relatedSymptoms", "Related symptom entries")} T={T}>
+        {testId && (
+            <SectionCard title={tr("testing.linkedEpisodes", "Linked episodes")} accent={T.healthcareBlue} T={T}>
+              {linkedEpisodes.length > 0 ? (
+                linkedEpisodes.map((ep) => (
+                  <div key={ep.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+                    <div>
+                      <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{ep.title || tr("testing.episode", "Episode")}</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>{ep.triggerReason || ""} {ep.resolvedDate ? "· Resolved" : "· Open"}</div>
+                    </div>
+                    <X size={18} color={T.healthcareBlue} onClick={() => unlinkEpisode(ep.id)} title={tr("testing.removeLink", "Remove link")} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("testing.notLinkedEpisode", "Not linked to an episode yet.")}</div>
+              )}
+              {unlinkedEpisodes.length > 0 && <LinkPicker items={unlinkedEpisodes} onPick={linkEpisode} T={T} placeholder={tr("testing.searchEpisode", "Search by title or reason…")} />}
+              <div role="button" tabIndex={0} onClick={async () => {
+                await EpisodeRepository.create({ title: tr("testing.newEpisode", "New episode"), testIds: [testId] });
+                setEpisodeVersion((v) => v + 1);
+                onDataChanged?.();
+              }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
+                style={{ fontSize: 12, color: T.healthcareBlue, fontWeight: 600, cursor: "pointer", marginTop: 6 }}>
+                + {tr("testing.startEpisode", "Start a new episode with this test")}
+              </div>
+            </SectionCard>
+          )}
+          {/* ADDED — BACKLOG 7: chase tracking for pending results. */}
+          {(test.resultIds || []).some((r) => {
+            const name = resultNameById.get(r);
+            return name?.toLowerCase() === "pending";
+          }) && (
+            <SectionCard title={tr("testing.chaseHistory", "Chase history")} accent={T.healthcareBlue} T={T}>
+              {(test.chaseDates || []).length > 0 ? (
+                (test.chaseDates || []).map((d, i) => (
+                  <div key={i} style={{ fontSize: 12, color: T.textSecondary, padding: "4px 0", borderBottom: `1px solid ${T.border}` }}>
+                    {tr("testing.chaseN", "Chase {n}", { n: i + 1 })} · {formatDate(d)}
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("testing.noChases", "No chases logged yet.")}</div>
+              )}
+              {(test.chaseDates || []).length >= 3 && (
+                <div style={{ background: `${T.actionAmber}15`, border: `1px solid ${T.actionAmber}`, borderRadius: radius.sm, padding: "8px 10px", marginTop: 8, fontSize: 12, color: T.actionAmberText, lineHeight: 1.4 }}>
+                  <strong>Still pending after {(test.chaseDates || []).length} chases.</strong> Contact the clinic directly.
+                </div>
+              )}
+              <div role="button" tabIndex={0} onClick={async () => {
+                const updated = await TestingRepository.update(testId, { chaseDates: [...(test.chaseDates || []), new Date().toISOString()] });
+                if (updated) setTest(updated);
+              }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}
+                style={{ fontSize: 12, color: T.healthcareBlue, fontWeight: 600, cursor: "pointer", marginTop: 6 }}>
+                + {tr("testing.logChase", "Log a chase")}
+              </div>
+            </SectionCard>
+          )}
+          {relatedSymptoms.length > 0 && (
+          <SectionCard title={tr("testing.relatedSymptoms", "Related symptom entries")} accent={T.healthcareBlue} T={T}>
             {relatedSymptoms.map((s) => (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={s.id} onClick={() => onNavigateToRecord?.("healthcare", s.id, "symptomLog")}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44 }}>
@@ -1568,19 +1717,15 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
       )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? tr("testing.undoDelete", "Undo delete") : tr("testing.redoDelete", "Redo delete")} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? tr(deleteToast.records.length === 1 ? "testing.oneTestDeleted" : "testing.testsDeleted", deleteToast.records.length === 1 ? "1 test deleted" : "{count} tests deleted", { count: deleteToast.records.length })
-              : tr(deleteToast.records.length === 1 ? "testing.oneTestRestored" : "testing.testsRestored", deleteToast.records.length === 1 ? "1 test restored" : "{count} tests restored", { count: deleteToast.records.length })}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>
-            {deleteToast.mode === "undo" ? tr("common.tapToUndo", "Tap to undo") : tr("common.tapToRedo", "Tap to redo")}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? tr(deleteToast.records.length === 1 ? "testing.oneTestDeleted" : "testing.testsDeleted", deleteToast.records.length === 1 ? "1 test deleted" : "{count} tests deleted", { count: deleteToast.records.length })
+            : tr(deleteToast.records.length === 1 ? "testing.oneTestRestored" : "testing.testsRestored", deleteToast.records.length === 1 ? "1 test restored" : "{count} tests restored", { count: deleteToast.records.length })}
+          actionLabel={deleteToast.mode === "undo" ? tr("common.tapToUndo", "Tap to undo") : tr("common.tapToRedo", "Tap to redo")}
+          accentColor={T.healthcareBlue}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
     </div>
   );

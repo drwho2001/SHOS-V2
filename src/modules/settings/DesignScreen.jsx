@@ -350,7 +350,8 @@ export function DesignScreen({ onClose }) {
           </div>
         )}
         <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 8, alignItems: "start" } : undefined}>
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        {/* §49b — colour-indent/backfill: tinted background + coloured left border. */}
+        <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
             <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Dark mode</span>
             {/* CHANGED — real bug: the knob used to switch to
@@ -368,7 +369,8 @@ export function DesignScreen({ onClose }) {
             </div>
           </div>
         </div>
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        {/* §49b — colour-indent/backfill: tinted background + coloured left border. */}
+        <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Colour-blind friendly palette</span>

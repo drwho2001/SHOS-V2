@@ -3,6 +3,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, Arr
 import { VaccinationRepository, DEFAULT_VACCINATION } from "../repositories/vaccinationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 19 Aug 2026 — VACCINE_OPTIONS/REASON_OPTIONS/INJECTION_SITE_OPTIONS
@@ -696,7 +697,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>{formatDate(v.date)}</div>
 
-        <SectionCard title="Overview" T={T}>
+        <SectionCard title="Overview" T={T} accent={T.healthcareBlue}>
           <ReadRow label="Vaccine" value={v.vaccine} T={T} />
           <ReadRow label="Reason" value={v.reason} T={T} />
           {v.doses?.length > 0 ? (
@@ -709,7 +710,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         </SectionCard>
 
         {v.doses?.length > 0 && (
-          <SectionCard title="Dose series" T={T}>
+          <SectionCard title="Dose series" T={T} accent={T.healthcareBlue}>
             {v.doses.map((dose, index) => (
               <div key={index} style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "12px", marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -747,7 +748,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         )}
 
         {(symptomNames.length > 0 || visitNames.length > 0) && (
-          <SectionCard title="Related records" T={T}>
+          <SectionCard title="Related records" T={T} accent={T.healthcareBlue}>
             {symptomNames.length > 0 && (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onNavigateToRecord?.("healthcare", v.symptomIds[0], "symptomLog"); }} style={{ cursor: "pointer", padding: "4px 0"}}>
                 <ReadRow label="Symptom" value={symptomNames} T={T} />
@@ -761,7 +762,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
           </SectionCard>
         )}
 
-        <SectionCard title="Notes" T={T}>
+        <SectionCard title="Notes" T={T} accent={T.healthcareBlue}>
           <ReadRow label="Notes" value={v.notes} T={T} />
         </SectionCard>
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
@@ -1010,19 +1011,14 @@ function VaccinationsLanding({ onOpen, onAdd, T, tr, vaccinations, refresh, dele
       )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} vaccination${deleteToast.records.length > 1 ? "s" : ""} deleted`
-              : `${deleteToast.records.length} vaccination${deleteToast.records.length > 1 ? "s" : ""} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} vaccination${deleteToast.records.length > 1 ? "s" : ""} deleted`
+            : `${deleteToast.records.length} vaccination${deleteToast.records.length > 1 ? "s" : ""} restored`}
+          accentColor={T.healthcareBlue}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
     </div>
   );

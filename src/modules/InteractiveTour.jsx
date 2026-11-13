@@ -92,6 +92,23 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
 
   const step = index >= 0 && index < steps.length ? steps[index] : null;
 
+  // ADDED — t210: the navigation effect below used to list onNavigate,
+  // onOpenSettings and onCloseSettings in its dependency array. All three
+  // are passed in by App.jsx as plain arrow functions, so EVERY App
+  // re-render gave them new identities, the effect saw a dependency change,
+  // re-ran, called onNavigate, App re-rendered again — an infinite loop
+  // that React reported as "Maximum update depth exceeded" in the console
+  // for as long as the tour was open (the original BUG 1). The callbacks
+  // themselves never change meaning within a tour, so the latest value is
+  // captured here and read inside the effect via refs; the effect now only
+  // genuinely re-runs when `step` changes.
+  const onNavigateRef = useRef(onNavigate);
+  const onOpenSettingsRef = useRef(onOpenSettings);
+  const onCloseSettingsRef = useRef(onCloseSettings);
+  onNavigateRef.current = onNavigate;
+  onOpenSettingsRef.current = onOpenSettings;
+  onCloseSettingsRef.current = onCloseSettings;
+
   useLayoutEffect(() => {
     if (cardRef.current) setCardHeight(cardRef.current.getBoundingClientRect().height);
   }, [step]);
@@ -127,35 +144,48 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
   // ADDED - tour deep-link: switch the active tab / open Settings to match
   // the step being shown, so the user sees each screen's content as the
   // tour explains it rather than staring at Home for the whole tour.
+  // t210: the dependency array used to include onNavigate/onOpenSettings/
+  // onCloseSettings. Those are App.jsx arrow functions, so every App render
+  // recreated them, the effect re-ran, called onNavigate, App re-rendered —
+  // the infinite loop that was BUG 1. They are now read from refs (see
+  // above) so this effect depends ONLY on `step`.
   useEffect(() => {
     if (!step) return;
-    if (step.navigate && step.navigate !== "home" && step.navigate !== "settings" && onNavigate) {
-      onNavigate(step.navigate);
+    if (step.navigate && step.navigate !== "home" && step.navigate !== "settings" && onNavigateRef.current) {
+      onNavigateRef.current(step.navigate);
     }
-    if (step.navigate === "settings" && onOpenSettings) {
-      onOpenSettings();
+    if (step.navigate === "settings" && onOpenSettingsRef.current) {
+      onOpenSettingsRef.current();
       // Settings is lazy-loaded; wait for it to render before measuring.
       setTimeout(() => recalc(), 600);
     }
     // Close settings when leaving a settings step.
-    if (step.navigate !== "settings" && prevNavigateRef.current === "settings" && onCloseSettings) {
-      onCloseSettings();
+    if (step.navigate !== "settings" && prevNavigateRef.current === "settings" && onCloseSettingsRef.current) {
+      onCloseSettingsRef.current();
     }
     prevNavigateRef.current = step.navigate;
-  }, [step, onNavigate, onOpenSettings, onCloseSettings, recalc]);
+  }, [step, recalc]);
 
   // Real anchors (bottom nav tabs in particular) can shift slightly as
   // other transient UI (a due-reminder banner, an update-available
   // banner) appears/disappears — a cheap poll while the tour is open
   // keeps the spotlight aligned without needing a bespoke observer for
   // every possible layout-shifting element.
+  // t210: the poll used to call forceRecalc on a 400ms interval, which is
+  // fine, but it ALSO re-ran recalc() on every recalc identity change
+  // (line 180). recalc is useCallback([step]), so it changes whenever the
+  // step changes — and stepping through the tour is exactly what changes
+  // the step. That meant the poll and the step-change were both
+  // re-triggering the same measurement, and because the measurement's
+  // result (setRect) is the only state this component writes, the tour
+  // card could jitter on every step. The poll is still here; the
+  // redundant re-run on recalc change is removed — the measurement runs
+  // once per step via the navigation effect, and the poll only covers
+  // layout drift between steps.
   useEffect(() => {
     const id = setInterval(() => forceRecalc((n) => n + 1), 400);
     return () => clearInterval(id);
   }, []);
-  useEffect(() => {
-    recalc();
-  }, [recalc]);
 
   if (!step) return null;
 
@@ -216,7 +246,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
         <div style={{ ...TYPE.subScreenTitle, color: textPrimary }}>{step.title}</div>
         <X size={20} weight="bold" color={textSecondary} role="button" aria-label="Skip tour" style={{ cursor: "pointer", flexShrink: 0, marginTop: 2, padding: 12, boxSizing: "content-box", marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => onDone("skipped")} />
       </div>
-      <div style={{ fontSize: 13.5, color: textSecondary, lineHeight: 1.5, marginTop: 8 }}>{step.body}</div>
+      <div style={{ fontSize: 14, color: textSecondary, lineHeight: 1.5, marginTop: 8 }}>{step.body}</div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
         <div style={{ fontSize: 12, color: textSecondary }}>{index + 1} / {steps.length}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

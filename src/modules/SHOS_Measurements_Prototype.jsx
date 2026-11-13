@@ -21,6 +21,7 @@ import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } fro
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
@@ -994,19 +995,14 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, t
         })()}
       </div>
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} measurement${deleteToast.records.length > 1 ? "s" : ""} deleted`
-              : `${deleteToast.records.length} measurement${deleteToast.records.length > 1 ? "s" : ""} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} measurement${deleteToast.records.length > 1 ? "s" : ""} deleted`
+            : `${deleteToast.records.length} measurement${deleteToast.records.length > 1 ? "s" : ""} restored`}
+          accentColor={T.healthcareBlue}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
     </div>
   );

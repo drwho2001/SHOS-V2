@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="module" src="strings.js"></script>
+<title>Healthcare · Testing — card render set (1:1 with form)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1C1C1F; --variant:#26262A; --border:#3A3A3F;
+    --primary:#F2F2F4; --secondary:#B8B8BE; --disabled:#89898C;
+    --hc:#0E8144; --hc-soft:#8FD6B4;
+    --teal-soft:#4CCFCF;
+    --green:#5fd9a4; --green-tint:#5fd9a415;
+    --hc-deep-tint:#09582E15; --red:#ff7a7e; --red-tint:#ff7a7e15; --amber:#F59E0B; --amber-tint:#F59E0B12;
+    --meds-blue:#5B85F5; --meds-blue-soft:#A9C8FF; --meds-blue-tint:#5B85F510;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:12px;font-size:11px}
+  .device{width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── Card (§10.2.1 anatomy — STI/testing reference grammar) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card.superseded{opacity:0.55}
+  .card.older{background:var(--variant);color:var(--secondary)}
+  .card.older .name,.card.older .summary,.card.older .chip,.card.older .ctx-title,.card.older .byline span{color:var(--disabled)}
+  .card.older .dot{background:var(--disabled)}
+  .card.older .byline svg{color:var(--disabled)}
+  .card.older .ctx-group{background:#ffffff03;border-left-color:var(--border)}
+  .card.older .advisory,.card.older .note{background:var(--variant);border-left-color:var(--border);color:var(--disabled)}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled);cursor:pointer}
+  .menu:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding-right:30px}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .dot.green{background:var(--green)}
+  .dot.red{background:var(--red)}
+  .dot.amber{background:var(--amber)}
+  .dot.muted{background:var(--disabled)}
+  .dot.healthcare{background:var(--hc)}
+  .name{font-size:15px;line-height:1.3;font-weight:600;min-width:0;overflow-wrap:break-word}
+  .older-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled);background:var(--variant);border:1px solid var(--border);border-radius:999px;padding:1px 6px;margin-left:8px}
+
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500;min-width:0}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .byline .nowrap{white-space:nowrap}
+
+  .summary{font-size:13px;font-weight:700;letter-spacing:.02em;line-height:1.4;margin-top:6px}
+  .summary.negative{color:var(--green)}
+  .summary.positive{color:var(--red)}
+  .summary.pending{color:var(--amber)}
+  .summary.void{color:var(--amber)}
+  .summary.booked{color:var(--green)}
+  .summary.overdue{color:var(--red)}
+
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px;min-width:0}
+  .chip-group:first-of-type{margin-top:8px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin-bottom:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap;min-width:0}
+  .chip.healthcare{background:var(--hc-deep-tint);border-color:var(--hc);color:#fff}
+  .chip.green{background:transparent;border-color:var(--green);color:#fff}
+  .chip.red{background:transparent;border-color:var(--red);color:#fff}
+  .chip.amber{background:transparent;border-color:var(--amber);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.more{opacity:0.35;cursor:pointer;font-weight:700;background:var(--variant);border:1px solid transparent;color:#fff}
+  .chip.ghost{opacity:0.35;cursor:pointer;font-weight:700;background:var(--variant);border:1px solid transparent;color:#fff}
+
+  /* Context groups — indent + 3px colour bar + tinted background */
+  .ctx-group{margin-top:8px;padding:8px 8px 8px 10px;border-left:3px solid transparent;border-radius:0;background:transparent;min-width:0}
+  .ctx-group.result{border-left-color:var(--green);background:#5fd9a40a}
+  .ctx-group.alert{border-left-color:var(--red);background:#ff7a7e0a}
+  .ctx-group.warning{border-left-color:var(--amber);background:#F59E0B0a}
+  .ctx-group.info{border-left-color:var(--hc);background:#09582E0a}
+  .ctx-group.med{border-left-color:var(--meds-blue);background:var(--meds-blue-tint)}
+  .ctx-group.neutral{border-left-color:var(--border);background:#ffffff05}
+  .ctx-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .ctx-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .ctx-title.red{color:var(--red)}
+  .ctx-title.amber{color:var(--amber)}
+  .ctx-title.med{color:var(--meds-blue-soft)}
+  .ctx-title.healthcare{color:var(--teal-soft)}
+  .ctx-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:999px;margin-left:auto}
+  .tx-status.ok{color:var(--green);background:var(--green-tint)}
+  .tx-status.manual{color:var(--meds-blue-soft);background:var(--meds-blue-tint)}
+  .tx-status{color:var(--amber);background:var(--amber-tint)}
+  .status-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--secondary);min-width:0}
+
+  /* Advisory (bar + tint) */
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:var(--hc-deep-tint);border-left:3px solid var(--hc);color:var(--secondary)}
+  .advisory svg{width:13px;height:13px;flex:0 0 13px;margin-top:1px}
+  .note{margin-top:8px;padding:7px 9px;border-left:3px solid var(--hc);border-radius:8px;background:var(--hc-deep-tint);font-size:11px;line-height:1.4;color:var(--secondary);font-style:italic}
+  .annotation{margin-top:14px;border-left:2px solid var(--hc);padding-left:10px;font-size:12px;line-height:1.5;color:var(--secondary);font-style:italic}
+
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;min-width:0}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--primary);font-family:inherit}
+  .btn-sm{flex:0 0 auto;min-height:32px;padding:6px 10px;font-size:11px;font-weight:600}
+  .btn:focus-visible,.btn-sm:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+  .btn.filled{background:var(--hc);color:#fff;border:1px solid var(--hc)}
+  .btn.outline-sm{flex:0 0 auto;min-height:40px;padding:10px 14px;font-size:13px;background:transparent;border:1px solid var(--hc);color:var(--hc-soft)}
+  .btn.outline-sm.btn-sm{min-height:32px;padding:6px 10px;font-size:11px}
+  .btn svg{width:14px;height:14px;flex:0 0 auto}
+
+  @media (max-width:360px){
+    .device{padding:10px 10px 20px}
+    .card{padding:12px 26px 12px 12px}
+    .actions{flex-wrap:wrap}
+    .actions .btn{flex:1 1 auto}
+    .byline{flex-wrap:wrap}
+  }
+
+  /* ADDED 12 Nov 2026 — four classes this file's markup uses were never
+     defined here; they exist in healthcare-sti-test-card.html, which is the
+     card this render set is describing, so they are copied from there. */
+  .ctx-sub{flex:0 0 62px;padding-top:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--secondary)}
+  .group-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .group-actions .btn{flex:1 1 auto}
+  .wrap-text{flex:0 1 auto;min-width:0;white-space:normal;text-align:center;line-height:1.25;padding:8px 14px}
+  .btn.outline{background:transparent;color:var(--primary);border:1px solid var(--border)}
+  .ctx-badge.suggested{color:var(--amber);background:var(--amber-tint)}
+
+  /* ADDED 12 Nov 2026 — the loading skeleton, empty state and error banner are
+     all referenced by this file's own markup, but none of the three had a rule
+     here, so they rendered as unstyled boxes (the skeleton was three invisible
+     divs). Definitions taken from healthcare-sti-test-card.html, which already
+     specified them. */
+  .skeleton-line{height:10px;border-radius:4px;background:var(--variant);border:1px solid var(--border);margin:4px 0;animation:pulse 1.5s infinite ease-in-out}
+  .skeleton-line.short{width:60%}
+  .skeleton-line.medium{width:80%}
+  .skeleton-line.long{width:100%}
+  @keyframes pulse{0%{opacity:.4}50%{opacity:.7}100%{opacity:.4}}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 16px;color:var(--secondary)}
+  .empty-state h2{font-size:15px;font-weight:600;color:var(--primary);margin:0 0 6px}
+  .empty-state p{font-size:12px;color:var(--secondary);margin:0}
+  .error-banner{display:flex;gap:8px;align-items:center;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:var(--red-tint);border-left:3px solid var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Testing — card render set</h1>
+  <p class="lead">Testing is the reference grammar for card anatomy (title row → byline → summary state line → context groups). Each card carries title, date/time + tense, location, reason for testing, sites/organisms, result, treatment (via clinic visit), follow-up, sample tracking, notes, and attachments. Every capturable form fact is represented on the card — nothing is invented for the card that the form cannot capture. Rendered on a 393dp device that shrinks to fit narrow panes.</p>
+
+  <h2>States</h2>
+  <p class="caption" data-i18n="caption.summary.vocab.booked.pending.positive.ne">Summary vocab: BOOKED / PENDING / POSITIVE / NEGATIVE / OVERDUE / VOID. Dot colour = state. Treatment only appears on positive results (nothing to treat when pending/negative/void). Treatment is recorded through a clinic visit (mode: Given at clinic / Started at clinic / Prescribed / For at home).</p>
+
+  <section class="device">
+    <div class="group-label">Testing · states</div>
+
+    <!-- Card 1 — BOOKED (future appointment) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot healthcare"></span><span class="name">Chlamydia follow-up</span><span class="chip grey">Booked</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">Sat 14 Nov · 10:00 AM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Clinic</span>
+      </div>
+      <div class="summary booked" data-summary-key="summary.booked">BOOKED · Chlamydia follow-up</div>
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title healthcare">Sites &amp; organisms</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Samples to be taken from</span><span style="flex:1"><span class="chip grey">Blood</span><span class="chip grey">Rectal swab</span><span class="chip grey">Throat swab</span><span class="chip grey">Urine</span></span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Testing for</span><span style="flex:1"><span class="chip grey">Chlamydia</span><span class="chip grey">Gonorrhoea</span><span class="chip grey">HIV</span><span class="chip grey">Syphilis</span></span></div>
+      </div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ctx-title amber">Schedule</span></div>
+        <div class="status-row"><span>Booked for Sat 14 Nov · in 4 days</span></div>
+        <div class="actions">
+          <span class="btn filled btn-sm" data-i18n="action.set.reminder">Set reminder</span>
+          <span class="btn outline btn-sm" data-i18n="action.i.attended"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>I attended</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card 2 — POSITIVE (resulted, treatment armed) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot red"></span><span class="name">Home test</span><span class="chip red" aria-label="Why tested: Symptoms">Symptoms</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>8 Nov · 2:30 PM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="summary positive" data-summary-key="summary.positive">POSITIVE · Chlamydia</div>
+      <div style="font-size:11px;color:var(--secondary);line-height:1.4">Resulted 10 Nov · Lab confirmed</div>
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title healthcare">Sites &amp; organisms</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Samples taken from</span><span style="flex:1"><span class="chip red">Urine</span><span class="chip green">Blood</span><span class="chip green">Rectal swab</span></span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Testing for</span><span style="flex:1"><span class="chip red">Chlamydia · positive</span><span class="chip green">Gonorrhoea</span><span class="chip green">HIV</span><span class="chip green">Syphilis</span></span></div>
+      </div>
+      <div class="ctx-group med">
+        <div class="ctx-header"><span class="ctx-title med">Treatment</span><span class="ctx-badge tx-status suggested">Suggested</span></div>
+        <div class="status-row"><span>Doxycycline 100mg BD × 7 days</span></div>
+        <div class="status-row"><span style="font-size:11px;color:var(--secondary)">Start after clinic review</span></div>
+        <div class="status-row"><span style="font-size:11px;color:var(--amber)">No sex until the course is finished and symptoms have cleared</span></div>
+        <div class="group-actions">
+          <span class="btn filled btn-sm" data-i18n="action.confirm.treatment">Confirm treatment</span>
+          <span class="btn outline-sm btn-sm wrap-text" data-i18n="action.different.treatment">Different treatment</span>
+        </div>
+      </div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M237.66,66.34l-48-48a8,8,0,0,0-11.32,11.32L196.69,48,168,76.69,133.66,42.34a8,8,0,0,0-11.32,11.32L128.69,60l-84,84A15.86,15.86,0,0,0,40,155.31v49.38L18.34,226.34a8,8,0,0,0,11.32,11.32L51.31,216h49.38A15.86,15.86,0,0,0,112,211.31l84-84,6.34,6.35a8,8,0,0,0,11.32-11.32L179.31,88,208,59.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"/></svg><span class="ctx-title amber">Follow-up &amp; schedule</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Next visit</span><span style="flex:1">Book the clinic as soon as possible</span></div>
+        <div class="actions">
+          <span class="btn filled btn-sm" data-i18n="action.book.clinic.visit">Book clinic visit</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card 3 — NEGATIVE -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot green"></span><span class="name">STI screen</span><span class="chip grey" aria-label="Why tested: Routine">Routine</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>28 Oct · 4:00 PM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="summary negative" data-summary-key="summary.negative">NEGATIVE</div>
+      <div style="font-size:11px;color:var(--secondary);line-height:1.4">Negative at collection</div>
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title healthcare">Sites &amp; organisms</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Samples taken from</span><span style="flex:1"><span class="chip green">Blood</span><span class="chip green">Rectal swab</span><span class="chip green">Throat swab</span><span class="chip green">Urine</span></span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Testing for</span><span style="flex:1"><span class="chip green">Chlamydia</span><span class="chip green">Gonorrhoea</span><span class="chip green">HIV</span><span class="chip green">Syphilis</span></span></div>
+      </div>
+      <div class="ctx-group med">
+        <div class="ctx-header"><span class="ctx-title med">Treatment</span></div>
+        <div class="status-row"><span>None needed</span></div>
+      </div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ctx-title amber">Schedule</span></div>
+        <div class="status-row"><span>No other appointments planned</span></div>
+        <div class="status-row"><span>Routine retest suggested · 2–6 months · Wed 10 Feb</span></div>
+      </div>
+    </article>
+
+    <!-- Card 4 — PENDING (no treatment, no results) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot amber"></span><span class="name">STI screen</span><span class="chip grey" aria-label="Why tested: Routine">Routine</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>3 Nov · 10:00 AM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="summary pending" data-summary-key="summary.pending">PENDING since 3 Nov</div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><span class="ctx-title amber">No result yet</span></div>
+        <div class="status-row"><span>Check in with the clinic if you haven't heard by Tue 17 Nov</span></div>
+        <div class="status-row"><span style="font-size:11px;color:var(--secondary)">Most results come back within 2 weeks</span></div>
+        <div class="group-actions">
+          <span class="btn filled btn-sm" data-i18n="action.add.results">Add results</span>
+          <span class="btn outline-sm btn-sm" data-i18n="action.follow.up.on.test">Follow up on test</span>
+        </div>
+      </div>
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title healthcare">Sites &amp; organisms</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Samples taken from</span><span style="flex:1"><span class="chip amber">Blood</span><span class="chip amber">Rectal swab</span><span class="chip amber">Throat swab</span><span class="chip amber">Urine</span></span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Testing for</span><span style="flex:1"><span class="chip amber">Chlamydia</span><span class="chip amber">Gonorrhoea</span><span class="chip amber">HIV</span><span class="chip amber">Syphilis</span></span></div>
+      </div>
+      <div class="ctx-group med" data-treatment-pending>
+        <div class="ctx-header"><span class="ctx-title med">Treatment</span><span class="ctx-badge tx-status">Suggested</span></div>
+        <div class="status-row"><span>None — wait for result</span></div>
+      </div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ctx-title amber">Schedule</span></div>
+        <div class="status-row"><span>Next routine test · 2–6 months after result · Walk-in</span></div>
+      </div>
+    </article>
+
+    <!-- Card 5 — VOID (sample not processable) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot amber"></span><span class="name">STI screen</span><span class="chip red">Void</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>9 Nov · 10:00 AM</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="summary void" data-summary-key="summary.void">VOID · re-collect needed</div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><span class="ctx-title amber">Lab could not process the sample</span></div>
+        <div class="status-row"><span>Reason: sample volume insufficient · collection date 9 Nov</span></div>
+        <div class="status-row"><span style="font-size:11px;color:var(--secondary)">Lab reference SHUK-77012 · no result issued</span></div>
+        <div class="group-actions">
+          <span class="btn filled btn-sm" data-i18n="action.re.collect">Re-collect</span>
+          <span class="btn outline-sm btn-sm" data-i18n="action.follow.up.on.test">Follow up on test</span>
+        </div>
+      </div>
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title healthcare">Sites &amp; organisms</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Samples taken from</span><span style="flex:1"><span class="chip grey">Blood</span><span class="chip grey">Rectal swab</span><span class="chip grey">Throat swab</span><span class="chip grey">Urine</span></span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Testing for</span><span style="flex:1"><span class="chip grey">Chlamydia</span><span class="chip grey">Gonorrhoea</span><span class="chip grey">HIV</span><span class="chip grey">Syphilis</span></span></div>
+      </div>
+      <div class="ctx-group med">
+        <div class="ctx-header"><span class="ctx-title med">Treatment</span></div>
+        <div class="status-row"><span>None needed — re-collect first</span></div>
+      </div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ctx-title amber">Schedule</span></div>
+        <div class="status-row"><span>Re-collect kit posted Wed 18 Nov · walk-in</span></div>
+      </div>
+    </article>
+
+    <!-- Card 6 — OVERDUE (routine re-test) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot red"></span><span class="name">Routine re-test</span><span class="chip red">Overdue</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Last test · 28 Jul · 15 weeks ago</span>
+      </div>
+      <div class="summary overdue" data-summary-key="summary.overdue">OVERDUE · Routine re-test</div>
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title healthcare">Last test · Sites &amp; organisms</span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Samples taken from</span><span style="flex:1"><span class="chip grey">Urine</span></span></div>
+        <div class="status-row"><span class="ctx-sub" style="flex:0 0 62px">Testing for</span><span style="flex:1"><span class="chip grey">Chlamydia</span><span class="chip grey">Gonorrhoea</span><span class="chip grey">HIV</span><span class="chip grey">Syphilis</span></span></div>
+      </div>
+      <div class="ctx-group med">
+        <div class="ctx-header"><span class="ctx-title med">Treatment</span></div>
+        <div class="status-row"><span>None needed · test first</span></div>
+      </div>
+      <div class="ctx-group warning">
+        <div class="ctx-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="ctx-title amber">Schedule</span></div>
+        <div class="status-row"><span>Overdue for re-test · Walk-in, no booking needed</span></div>
+        <div class="actions">
+          <span class="btn filled btn-sm" data-i18n="action.plan.visit">Plan visit</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <p class="annotation" data-i18n="annotation.render.note.this.is.a.design.mockup.trea">Render note: this is a design mockup. Treatment on pending cards is hidden (nothing to treat until a result). Treatment on positive cards is recorded through a clinic visit — the card shows the outcome reference, not a second editable copy. The live testing module owns persistence, loading/empty states, native-dialog replacement, and the two-way clinic-visit link (BACKLOG 13). Those are wiring gaps, not card-design defects.</p>
+<!-- Loading skeleton (shown briefly on first load) -->
+  <div id="loading-skeleton" class="empty-state" hidden>
+    <div class="skeleton-line long"></div>
+    <div class="skeleton-line medium"></div>
+    <div class="skeleton-line short"></div>
+  </div>
+
+  <!-- Empty state (shown when no tests) -->
+  <div id="empty-state" class="empty-state" hidden>
+    <h2 data-i18n="testing.noTestsYet">No tests yet</h2>
+    <p>Nothing here yet. Use Log test to record your first test.</p>
+  </div>
+
+  <!-- Error banner (failed/void result, chase failure) -->
+  <div class="error-banner" id="error-banner" hidden>
+    <span id="error-message">Failed to load data. Please try again.</span>
+  </div>
+
+  <!-- Void result state -->
+  <div class="error-banner" id="void-banner" hidden>
+    <span id="void-message">Result void — re-collect needed. Previous result invalidated.</span>
+  </div>
+
+  <!-- Pending after repeated chases -->
+  <div class="error-banner" id="chase-banner" hidden>
+    <span id="chase-message">Result still pending after repeated chases. Contact the clinic.</span>
+  </div>
+
+  <!-- string table: ST() keys mapped via strings.js; locale en-GB -->
+</main>
+
+  <script type="module">
+    (function () {
+      var els = document.querySelectorAll('.summary[data-summary-key]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-summary-key');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+
+  <script type="module">
+    (function () {
+      var els = document.querySelectorAll('[data-i18n]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

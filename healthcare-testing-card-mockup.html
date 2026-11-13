@@ -21,7 +21,7 @@
   .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
   .lead{margin-bottom:20px}
   .caption{margin-bottom:10px;font-size:11px}
-  .device{width:393px;max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .device{width: min(393px, 100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
   .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
 
   /* ── CURRENT (shipped) row ── */
@@ -43,6 +43,11 @@
   .footer{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:var(--secondary);font-size:11px;line-height:1.35;margin-top:6px}
   .footer svg{width:11px;height:11px;flex:0 0 11px}
   .footer .hot{color:var(--primary);font-weight:600}
+  /* .summary = STI-card grammar back-port: lead-word state line (NEGATIVE/POSITIVE/…) */
+  .summary{font-size:12px;font-weight:700;margin-top:2px}
+  .summary.negative{color:var(--green)}
+  .summary.positive{color:var(--red)}
+  .summary.pending{color:var(--amber)}
   .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px}
   .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
   .chips{display:flex;flex-wrap:wrap;gap:4px}
@@ -54,11 +59,12 @@
   .chip.amber{background:#F59E0B12;border-color:#F59E0B66;color:#fff}
   .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:#0E814412;border-left:3px solid var(--hc);color:var(--secondary)}
   .actions{display:flex;gap:8px;margin-top:12px}
-  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-sm{flex:0 0 auto;min-height:32px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer}
+  .btn:focus-visible,.btn-sm:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
   .btn.filled{background:var(--hc);color:#fff;border:1px solid var(--hc)}
   .btn.outline{background:transparent;color:var(--hc);border:1px solid var(--hc)}
   .btn svg{width:14px;height:14px}
-  .btn .plus1{font-size:14px;font-weight:800;line-height:1;letter-spacing:-.02em}
 
   table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}
   th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
@@ -66,6 +72,7 @@
   .ok{color:var(--green);font-weight:700}
   .miss{color:var(--red);font-weight:700}
   .part{color:var(--amber);font-weight:700}
+  @media (max-width:360px){.device{padding:10px 10px 20px}.actions{flex-wrap:wrap}.actions .btn{flex:1 1 auto}}
 </style>
 </head>
 <body>
@@ -111,7 +118,7 @@
       <div class="body">
         <div class="title-line"><span class="dot" style="background:var(--disabled);opacity:.5"></span><span class="title" style="color:var(--secondary)">HIV test</span>
           <span class="chip grey">Older test</span></div>
-        <div class="line" style="color:var(--disabled)">02 Jan 2025</div>
+        <div class="line" style="color:var(--disabled)">2 Jan 2025</div>
         <div class="result" style="color:var(--disabled)">Negative</div>
       </div>
     </div>
@@ -130,10 +137,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
         <span>Clinic</span>
       </div>
-      <div class="footer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <span>Result <span class="hot">Negative</span></span><span>·</span><span>Next due <span class="hot">~14 weeks</span></span>
-      </div>
+      <div class="summary negative">NEGATIVE · Next due ~14 weeks</div>
       <div class="chip-group">
         <div class="chip-group-title">Panel</div>
         <div class="chips">
@@ -147,13 +151,12 @@
       <div class="chip-group">
         <div class="chip-group-title">Result</div>
         <div class="chips">
-          <span class="chip green">All negative</span>
           <span class="chip grey">Results 30 Oct</span>
         </div>
       </div>
       <div class="actions">
-        <span class="btn filled"><span class="plus1">+1</span> Log test</span>
-        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Schedule retest</span>
+        <span class="btn filled btn-sm">Log test</span>
+        <span class="btn outline btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Schedule retest</span>
       </div>
     </article>
 
@@ -166,20 +169,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/></svg>
         <span>Home</span>
       </div>
-      <div class="footer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <span>Result <span class="hot" style="color:var(--red)">Positive</span></span><span>·</span><span>Treatment started</span>
-      </div>
+      <div class="summary positive">POSITIVE · Treatment started</div>
       <div class="advisory">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
         <span style="flex:1">A positive result needs partner notification and a repeat test after treatment.</span>
-      </div>
-      <div class="chip-group">
-        <div class="chip-group-title">Result</div>
-        <div class="chips">
-          <span class="chip red">Positive</span>
-          <span class="chip amber">Treatment required</span>
-        </div>
       </div>
       <div class="chip-group">
         <div class="chip-group-title">Treatment</div>
@@ -190,8 +183,8 @@
         </div>
       </div>
       <div class="actions">
-        <span class="btn filled"><span class="plus1">+1</span> Log test</span>
-        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 11-2.6-6.3M21 4v5h-5"/></svg>Log clinic visit</span>
+        <span class="btn filled btn-sm">Log test</span>
+        <span class="btn outline btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 11-2.6-6.3M21 4v5h-5"/></svg>Log clinic visit</span>
       </div>
     </article>
 
@@ -200,9 +193,9 @@
       <div class="name-line"><span class="dot" style="background:var(--disabled);opacity:.5"></span><span class="name" style="color:var(--secondary)">HIV test</span><span class="chip grey">Older test</span></div>
       <div class="byline" style="color:var(--disabled)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <span>02 Jan 2025</span>
+        <span>2 Jan 2025</span>
       </div>
-      <div class="footer" style="color:var(--disabled)"><span>Result <span class="hot" style="color:var(--disabled)">Negative</span></span></div>
+      <div class="summary negative" style="color:var(--disabled)">NEGATIVE</div>
       <div class="chip-group">
         <div class="chip-group-title">Result</div>
         <div class="chips"><span class="chip grey">Negative</span><span class="chip grey">Home test</span></div>

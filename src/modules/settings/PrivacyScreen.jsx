@@ -390,7 +390,8 @@ useEffect(() => {
             or citing a specific incident, since that's not something
             this app's own UI copy can responsibly verify or keep
             current. */}
-        <div style={{ display: "flex", gap: 10, padding: 14, borderRadius: RADIUS.md, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginBottom: 16 }}>
+        {/* §49b — colour-indent/backfill: tinted background + coloured left border. */}
+        <div style={{ display: "flex", gap: 10, padding: 14, borderRadius: RADIUS.sm, background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginBottom: 16 }}>
           <Lock size={18} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
             {t("privacy.noCloud", "SHOS has no account, no server, and no cloud sync \u2014 everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.")}
@@ -409,7 +410,8 @@ useEffect(() => {
             Settings → Widgets (see widgetPrivacy.js), which is a deliberately
             separate and finer control. See also the duress-mode copy below,
             which already states this split. */}
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        {/* §49b — colour-indent/backfill: tinted background + coloured left border. */}
+        <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
             {t("privacy.lockScreenDetail", "Lock screen & notification detail")}
           </div>
@@ -494,7 +496,7 @@ useEffect(() => {
         </div>
 
         {settings.anonymiseModeActive && (
-          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), padding: 16, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               {settings.hasAppLockPin ? "Enter your PIN to turn it back off" : "Turn it back off"}
             </div>
@@ -547,7 +549,7 @@ useEffect(() => {
         {/* ADDED 19 Aug 2026 — App Lock, real ask, separate from
             Anonymise mode: gates opening the app at all, not just
             masking fields once it's open. */}
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), padding: 16, marginBottom: 16 }}>
           <div onClick={toggleAppLock} role="switch" tabIndex={0} aria-checked={settings.appLockEnabled} aria-label="App Lock"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAppLock(); } }}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: "pointer" }}>

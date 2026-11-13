@@ -5,7 +5,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, TYPE, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -196,7 +196,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }) {
   const { t } = useTranslation();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: `${T.healthcareBlue}08`, borderLeft: `4px solid ${T.healthcareBlue}`, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, padding: 12, marginBottom }}>
       {isImage(a.fileDataUrl) ? (
         <img src={a.fileDataUrl} alt={a.title} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
       ) : (

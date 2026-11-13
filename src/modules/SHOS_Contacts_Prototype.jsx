@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { FormTabs } from "../components/FormTabs";
 import { HivStatusNote } from "../components/HivStatusNote";
 // ADDED 9 Oct 2026 (t052) — role-vs-position note, same shared copy as
@@ -67,7 +68,8 @@ function platformIconFor(tag) {
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString, formatStoredDate, daysSinceStoredDay } from "../calculations/dateInputHelpers";
-import { fuzzyIncludes, findClosestMatch, findContactDuplicateCandidates } from "../calculations/fuzzyMatch";
+import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
+import { duplicateCandidatePanel } from "../calculations/contactMerge";
 import {
   ContactRepository, DEFAULT_CONTACT,
   HOSTS_OPTIONS, TRAVELS_OPTIONS, TRAVEL_MODE_OPTIONS,
@@ -1903,7 +1905,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         <div style={{ fontSize: 12, color: T.actionRed, fontWeight: 600 }}>{tr("contacts.dontMeetAgain", "Don't meet again")}</div>
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5, fontSize: 11, color: T.textDisabled, fontStyle: summary.lastInteraction ? "normal" : "italic" }}>
-          {anonymise ? <span>Activity hidden</span> : summary.count > 0 && <strong style={{ color: T.textSecondary, fontWeight: 600 }}>{summary.count} encounters</strong>}
+          {anonymise ? <span>Activity hidden</span> : summary.count > 0 && <strong style={{ color: T.textSecondary, fontWeight: 600 }}>{summary.count} {summary.count === 1 ? "encounter" : "encounters"}</strong>}
           {!anonymise && summary.averageEnjoyment != null && <span><span style={{ color: "#D978AD" }}>♥</span> {Math.round(summary.averageEnjoyment)}/100 avg.</span>}
           {!anonymise && summary.lastInteraction && <span>Last met {formatRelativeDate(summary.lastInteraction)}</span>}
           {!anonymise && !summary.lastInteraction && summary.count === 0 && <span>No encounters logged yet</span>}
@@ -2448,6 +2450,12 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
 // — same real behavior, far smaller real diff.
 const ShowBlankFieldsContext = React.createContext(false);
 
+// True for null/undefined/''/false/empty-array — matches ReadRow's emptiness
+// semantics, including the empty-array case where `!v` would be false.
+function emptyish(v) {
+  return v == null || v === '' || v === false || (Array.isArray(v) && v.length === 0);
+}
+
 function ReadRow({ label, value, T, requiredMissing = false }) {
   const showBlank = React.useContext(ShowBlankFieldsContext);
   const isEmpty = value === "" || value == null || (Array.isArray(value) && value.length === 0) || value === false;
@@ -2533,6 +2541,25 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   if (!contact) return null;
+  // ADDED — live audit Finding 8c: the Kink card's empty-state guard used to
+  // test `contact.statedKinks.length === 0`, but a record can hold a kinkId
+  // whose registry entry no longer exists (renamed/removed item), giving a
+  // non-empty array while every row below filters itself out — so the card
+  // still rendered as a bare title. Resolve the names once and test those.
+  // Deliberately BELOW the `!contact` guard: contact is null while the
+  // repository loads, and reading statedKinks above it crashed the profile.
+  const resolvedStatedKinks = contact.statedKinks
+    .map((sel) => {
+      const name = kinkNameById.get(sel.kinkId);
+      return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
+    })
+    .filter(Boolean);
+  const resolvedLimits = contact.limits
+    .map((sel) => {
+      const name = kinkNameById.get(sel.kinkId);
+      return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
+    })
+    .filter(Boolean);
   const missingRequiredFields = (anonymise || hideFurther) ? [] : getMissingRequiredContactFields(contact);
   const missingRequiredLabels = requiredLabelsForKeys(missingRequiredFields, tr);
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
@@ -2906,16 +2933,30 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "6px 0" }}>{MASKED}</div>
           ) : (
             <>
-              <ReadRow T={T} label="Stated kinks" value={contact.statedKinks.map((sel) => {
-                const name = kinkNameById.get(sel.kinkId);
-                return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
-              }).filter(Boolean)} />
-              <ReadRow T={T} label="Limits" value={contact.limits.map((sel) => {
-                const name = kinkNameById.get(sel.kinkId);
-                return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
-              }).filter(Boolean)} />
-              <ReadRow T={T} label="Role" value={contact.bdsmRole} />
-              <ReadRow T={T} label="Position" value={contact.sexualPosition} />
+              {/* FIXED — live audit Finding 8c: with every Kink field empty this
+                  card rendered as a bare title with nothing under it, which
+                  reads as a rendering failure rather than "nothing recorded".
+                  Matches the Chems "None known" and Notes "No notes yet."
+                  fallbacks elsewhere in this profile.
+
+                  The check is against RESOLVED names, not the raw selected IDs:
+                  a record can still hold a kinkId whose registry entry no
+                  longer exists (a renamed/removed registry item), giving
+                  statedKinks.length > 0 while every row below filters itself
+                  out — which is exactly how the first version of this guard
+                  still showed a blank card. */}
+              {resolvedStatedKinks.length === 0 && resolvedLimits.length === 0 && emptyish(contact.bdsmRole) && emptyish(contact.sexualPosition) ? (
+                // §49b — colour-indent/backfill empty state (tinted bg +
+                // coloured left border, matching encounters-card-mockup.html).
+                <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.kink}`, borderRadius: radius.sm, background: `${ACCENTS.kink}15` }}>Nothing recorded yet.</div>
+              ) : (
+                <>
+                  <ReadRow T={T} label="Stated kinks" value={resolvedStatedKinks} />
+                  <ReadRow T={T} label="Limits" value={resolvedLimits} />
+                  <ReadRow T={T} label="Role" value={contact.bdsmRole} />
+                  <ReadRow T={T} label="Position" value={contact.sexualPosition} />
+                </>
+              )}
             </>
           )}
         </SectionCard>
@@ -2925,21 +2966,39 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               "None known" rather than the row just disappearing —
               ReadRow's default behavior everywhere else (hide empty
               fields entirely) still applies to every other field. */}
-          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean) : "None known"} />
+          {/* §49b — colour-indent/backfill empty state. */}
+          {contact.knownChems.length === 0 ? (
+            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACTION.amber}`, borderRadius: radius.sm, background: `${ACTION.amber}15` }}>None known</div>
+          ) : (
+            <ReadRow T={T} label="Known chems" value={contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean)} />
+          )}
         </SectionCard>
 
         <SectionCard T={T} title="Contact methods">
-          <ReadRow T={T} label="Contactable via" value={methods} />
-          <ReadRow T={T} label="Phone/WhatsApp" value={contact.phone} />
-          {contact.email && <ReadRow T={T} label={tr("contacts.email", "Email")} value={anonymise ? MASKED : contact.email} />}
-          <ReadRow T={T} label="Snapchat" value={contact.snapchat} />
-          <ReadRow T={T} label="Fabguys" value={contact.fabguys} />
-          <ReadRow T={T} label="Fabswingers" value={contact.fabswingers} />
-          <ReadRow T={T} label="Recon" value={contact.recon} />
+          {/* FIXED — live audit Finding 8c: Contact methods rendered as a bare
+              title whenever every field was empty (ReadRow hides empty values
+              by default). Same "say so explicitly" treatment as Chems and
+              Notes above. `methods` is the already-derived list of contactable
+              channels, so checking it covers the whole set cheaply. */}
+          {methods.length === 0 && !contact.phone && !contact.email && !contact.snapchat && !contact.fabguys && !contact.fabswingers && !contact.recon ? (
+            // §49b — colour-indent/backfill empty state.
+            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.contacts}`, borderRadius: radius.sm, background: `${ACCENTS.contacts}15` }}>No contact methods recorded.</div>
+          ) : (
+            <>
+              <ReadRow T={T} label="Contactable via" value={methods} />
+              <ReadRow T={T} label="Phone/WhatsApp" value={contact.phone} />
+              {contact.email && <ReadRow T={T} label={tr("contacts.email", "Email")} value={anonymise ? MASKED : contact.email} />}
+              <ReadRow T={T} label="Snapchat" value={contact.snapchat} />
+              <ReadRow T={T} label="Fabguys" value={contact.fabguys} />
+              <ReadRow T={T} label="Fabswingers" value={contact.fabswingers} />
+              <ReadRow T={T} label="Recon" value={contact.recon} />
+            </>
+          )}
         </SectionCard>
 
         <SectionCard T={T} title="Notes">
-          <div style={{ fontSize: 14, color: contact.notes ? T.textPrimary : T.textDisabled, fontStyle: contact.notes ? "normal" : "italic" }}>
+          {/* §49b — colour-indent/backfill empty state. */}
+          <div style={{ fontSize: 14, color: contact.notes ? T.textPrimary : T.textDisabled, fontStyle: contact.notes ? "normal" : "italic", padding: contact.notes ? 0 : "7px 9px", borderLeft: contact.notes ? "none" : `3px solid ${ACCENTS.home}`, borderRadius: contact.notes ? 0 : radius.sm, background: contact.notes ? "transparent" : `${ACCENTS.home}15` }}>
             {contact.notes || "No notes yet."}
           </div>
         </SectionCard>
@@ -3015,11 +3074,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   const [showFilters, setShowFilters] = useState(false);
   // ADDED — real ask: a duplicate checker for Contacts specifically,
   // scored across multiple fields (not just name) — see
+  // contactMerge.js (capped, reversible-by-design: re-point only, no
+  // field combining, full preview, source goes to Trash) and
   // findContactDuplicateCandidates' own comment in fuzzyMatch.js for
   // the confidence-tier reasoning. Same "compute once, the data's
   // small enough" judgment as the shared-registry duplicate checker
   // this is modeled on.
-  const allDuplicateCandidates = useMemo(() => findContactDuplicateCandidates(activeContacts), [activeContacts]);
+  const allDuplicateCandidates = useMemo(() => duplicateCandidatePanel("contact", activeContacts)?.candidates ?? [], [activeContacts]);
   // ADDED — real ask: a per-pair dismiss, so a pair that's genuinely
   // two different people (a shared name, a coincidental phone-number
   // typo, whatever the real signal was) stops reappearing every time
@@ -3519,19 +3580,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           support redo, matching editUndoHelpers.js's own undo/redo
           toast pattern for consistency. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} contact${deleteToast.records.length > 1 ? "s" : ""} deleted`
-              : `${deleteToast.records.length} contact${deleteToast.records.length > 1 ? "s" : ""} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.contactsTeal }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} contact${deleteToast.records.length > 1 ? "s" : ""} deleted`
+            : `${deleteToast.records.length} contact${deleteToast.records.length > 1 ? "s" : ""} restored`}
+          accentColor={T.contactsTeal}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
 
 

@@ -2,7 +2,7 @@
   "_readme": "Ratchet baseline for styleColourGuard.test.js. 'hex' counts raw hex/rgba colour literals in JSX style object values; 'accent' counts raw ACCENTS.* / ACTION.* reads used directly as style values. The guard fails when a count rises or a new file appears. When a legitimate new use is added, update this file in the same commit and say why. See docs/DESIGN-AUDIT.md section 8, 'Tests worth adding'.",
   "totals": {
     "hex": 318,
-    "accent": 90
+    "accent": 91
   },
   "files": {
     "App.jsx": {
@@ -95,7 +95,7 @@
     },
     "modules/SHOS_Encounters_Prototype.jsx": {
       "hex": 30,
-      "accent": 1
+      "accent": 2
     },
     "modules/SHOS_Healthcare_Prototype.jsx": {
       "hex": 1,

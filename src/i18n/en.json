@@ -283,7 +283,16 @@
     "keepItPlanned": "Keep it as planned",
     "archiveScheduledRetest": "Archive the scheduled retest",
     "archiveThem": "Archive them",
-    "archiveIt": "Archive it"
+    "archiveIt": "Archive it",
+    "linkedEpisodes": "Linked episodes",
+    "notLinkedEpisode": "Not linked to an episode yet.",
+    "searchEpisode": "Search by title or reason…",
+    "newEpisode": "New episode",
+    "startEpisode": "Start a new episode with this test",
+    "chaseHistory": "Chase history",
+    "chaseN": "Chase {n}",
+    "noChases": "No chases logged yet.",
+    "episode": "Episode"
   },
   "vaccinations": {
     "logVaccination": "Log vaccination",
@@ -437,7 +446,8 @@
     "clinicCard": "Clinic Card",
     "activeSymptoms": "Active symptoms",
     "overdueVaccinations": "Overdue vaccinations",
-    "testsThisYear": "Tests this year"
+    "testsThisYear": "Tests this year",
+    "vaginalHealth": "Vaginal health"
   },
   "registry": {
     "duplicateHelp": "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.",
@@ -607,7 +617,9 @@
     "navigation": "Navigation",
     "healthcare": "Healthcare",
     "moveLeft": "Move {tab} left",
-    "moveRight": "Move {tab} right"
+    "moveRight": "Move {tab} right",
+    "locale": "Spelling (en-GB / en-US)",
+    "localeDesc": "Choose British or American English spelling. Applies app-wide."
   },
   "privacy": {
     "title": "Privacy & Security",
@@ -737,7 +749,10 @@
     "exportAsText": "Export as text",
     "deleteThisList": "Delete this list",
     "deleteConfirm": "This permanently deletes the checklist — unlike archiving, there's no getting it back.",
-    "contactList": "Contact list"
+    "contactList": "Contact list",
+    "suggested": "Suggested partners ({count})",
+    "suggestedHint": "Contacts you encountered since your last negative test for this organism.",
+    "selectAllSuggested": "Select all suggested"
   },
   "globalSearch": {
     "title": "Global Search",
@@ -941,5 +956,32 @@
     "shareLink": "Share link",
     "savePdf": "Open share page (Save as PDF)",
     "footer": "Local-first — nothing here leaves the device unless you choose to export or share it."
-  }
+  },
+  "vaginalHealth": {
+    "title": "Vaginal health",
+    "add": "Add",
+    "addTitle": "Add vaginal health record",
+    "addHint": "Pick the closest description. The badge shows how quickly it usually needs attention.",
+    "editTitle": "Edit vaginal health record",
+    "empty": "No vaginal health records yet. Use Add to record your first entry.",
+    "noDate": "No date",
+    "date": "Date",
+    "notes": "Notes",
+    "notesPlaceholder": "Symptoms, treatment, who you saw…",
+    "delete": "Delete record",
+    "deleteConfirm": "This deletes this vaginal health record permanently — unlike archiving, there's no getting it back.",
+    "deleteConfirmAction": "Delete record",
+    "urgent": "Urgent",
+    "prompt": "Prompt",
+    "routine": "Routine",
+    "refer": "Refer",
+    "condition": {
+      "pid": "Pelvic inflammatory disease (PID)",
+      "trichomoniasis": "Trichomoniasis",
+      "bv": "Bacterial vaginosis (BV)",
+      "candidiasis": "Candidiasis (thrush)",
+      "pregnancy": "Pregnancy"
+    }
+  },
+  "contact": {}
 }

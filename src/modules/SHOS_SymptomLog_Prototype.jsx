@@ -3,6 +3,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, Arr
 import { SymptomLogRepository, DEFAULT_SYMPTOM_ENTRY, SEVERITY_OPTIONS } from "../repositories/symptomLogRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -522,7 +523,7 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
           {isActive ? "Active" : `Resolved ${formatDate(entry.dateResolved)}`}
         </div>
 
-        <SectionCard title="Overview" T={T}>
+        <SectionCard title="Overview" T={T} accent={T.healthcareBlue}>
           <ReadRow label="Symptoms" value={symptomNames} T={T} />
           <ReadRow label="Severity" value={entry.severity} T={T} alert={entry.severity === "Severe"} />
           <ReadRow label="Started" value={formatDate(entry.dateStarted)} T={T} />
@@ -530,13 +531,13 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
         </SectionCard>
 
         {(encounterNames.length > 0 || testNames.length > 0) && (
-          <SectionCard title="Related records" T={T}>
+          <SectionCard title="Related records" T={T} accent={T.healthcareBlue}>
             <ReadRow label="Encounters" value={encounterNames} T={T} />
             <ReadRow label="Tests" value={testNames} T={T} />
           </SectionCard>
         )}
 
-        <SectionCard title="Notes" T={T}>
+        <SectionCard title="Notes" T={T} accent={T.healthcareBlue}>
           <ReadRow label="Notes" value={entry.notes} T={T} />
         </SectionCard>
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
@@ -820,19 +821,14 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
       </div>
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} entr${deleteToast.records.length > 1 ? "ies" : "y"} deleted`
-              : `${deleteToast.records.length} entr${deleteToast.records.length > 1 ? "ies" : "y"} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} entr${deleteToast.records.length > 1 ? "ies" : "y"} deleted`
+            : `${deleteToast.records.length} entr${deleteToast.records.length > 1 ? "ies" : "y"} restored`}
+          accentColor={T.healthcareBlue}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
     </div>
   );

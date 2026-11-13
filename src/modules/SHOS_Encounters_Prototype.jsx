@@ -16,6 +16,7 @@
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { FormTabs } from "../components/FormTabs";
 // ADDED 9 Oct 2026 (t052) — the point-of-use explanation for "2-1-1" and for
 // the role chips' Vers/Switch, which the Glossary defines but this form used
@@ -40,6 +41,7 @@ import {
   PREP_COVERAGE_OPTIONS, WOULD_MEET_AGAIN_OPTIONS,
 } from "../repositories/encounterRepository";
 import { TrashRepository } from "../repositories/trashRepository";
+import { EpisodeRepository } from "../repositories/episodeRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { timeOfDay, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
 import { inferProtectionContext, findPrEPMedication, resolveDoxyPepDisplay } from "../calculations/encounterProtectionContext";
@@ -129,7 +131,7 @@ function buildDark() {
     ...NEUTRAL_DARK,
     encountersPink: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"),
     actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-    medication: resolveDarkAccent("medication", ACCENTS.medication, "#4a90e2"),
+    medication: resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5"),
     // Dark mode's resolved actionRed/actionGreen already have real
     // headroom against a near-black background — no separate darker text
     // variant needed, so these just reuse the same values as above.
@@ -1201,55 +1203,73 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         {/* Chip groups */}
         <div style={{ marginTop: 4 }}>
           {/* Position (me) — teal */}
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginBottom: 3 }}>Position (me)</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {(encounter.myPosition || []).map((p, i) => (
-              <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#00858515", border: "1px solid #008585", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{p}</span>
-            ))}
-          </div>
+          {(encounter.myPosition || []).length > 0 && (
+            <>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginBottom: 3 }}>Position (me)</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {(encounter.myPosition || []).map((p, i) => (
+                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.home}15`, border: `1px solid ${ACCENTS.home}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{p}</span>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Activities/kinks — purple */}
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Activities</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {kinkNames.map((name, i) => (
-              <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#7F30A615", border: "1px solid #7F30A6", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
-            ))}
-          </div>
+          {kinkNames.length > 0 && (
+            <>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Activities</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {kinkNames.map((name, i) => (
+                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.encounters}15`, border: `1px solid ${ACCENTS.encounters}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Protection & medication — green + blue */}
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Protection & medication</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {protectionNames.map((name, i) => (
-              <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
-            ))}
-            {/* ADDED 8 Nov 2026 — derived, never stored: a PrEP-only record
-                used to read as protection-handled with no barrier recorded. */}
-            {!hasBarrierMethod(protectionNames) && (
-              <span style={{ padding: "2px 8px", borderRadius: "999px", border: "1px dashed #F59E0B", color: "#F59E0B", background: "#F59E0B12", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{NO_BARRIER_LABEL}</span>
-            )}
-            {encounter.myPrepCoverage && (
-              <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
-            )}
-          </div>
+          {protectionNames.length > 0 || encounter.myPrepCoverage || (!hasBarrierMethod(protectionNames) && !protectionNames.includes(NO_BARRIER_LABEL)) ? (
+            <>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Protection & medication</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {protectionNames.map((name, i) => (
+                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+                ))}
+                {/* ADDED 8 Nov 2026 — derived, never stored: a PrEP-only record
+                    used to read as protection-handled with no barrier recorded. */}
+                {!hasBarrierMethod(protectionNames) && !protectionNames.includes(NO_BARRIER_LABEL) && (
+                  <span style={{ padding: "2px 8px", borderRadius: "999px", border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12`, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{NO_BARRIER_LABEL}</span>
+                )}
+                {encounter.myPrepCoverage && (
+                  <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
+                )}
+              </div>
+            </>
+          ) : null}
 
           {/* Cum / loads — pink */}
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 6 }}>Cum / loads</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {(encounter.whereICame || []).map((loc, i) => (
-              <span key={`ic-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: "#E24E9C15", border: "1px solid #E24E9C", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
-            ))}
-            {(encounter.whereHeCame || []).map((loc, i) => (
-              <span key={`hc-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: "#E24E9C15", border: "1px solid #E24E9C", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
-            ))}
-            {encounter.loadsCount > 0 && (
-              <span style={{ padding: "2px 8px", borderRadius: "999px", background: "#E24E9C15", border: "1px solid #E24E9C", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{encounter.loadsCount} {encounter.loadsCount === 1 ? "load" : "loads"}</span>
-            )}
-          </div>
+          {(((encounter.whereICame || []).length > 0 || (encounter.whereHeCame || []).length > 0 || encounter.loadsCount > 0)) ? (
+            <>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 6 }}>Cum / loads</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {(encounter.whereICame || []).map((loc, i) => (
+                  <span key={`ic-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
+                ))}
+                {(encounter.whereHeCame || []).map((loc, i) => (
+                  <span key={`hc-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
+                ))}
+                {encounter.loadsCount > 0 && (
+                  <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{encounter.loadsCount} {encounter.loadsCount === 1 ? "load" : "loads"}</span>
+                )}
+              </div>
+            </>
+          ) : null}
         </div>
 
-        {/* Notes annotation */}
+        {/* Notes annotation — §49b mockup port: colour-indent/backfill
+            section row (tinted background + coloured left border + padding),
+            matching the encounters-card-mockup.html design language. */}
         {encounter.notes && (
-          <div style={{ marginTop: 10, borderLeft: "2px solid #008585", paddingLeft: 10, fontSize: 11, lineHeight: 1.4, color: T.textSecondary, marginBottom: 6 }}>
+          <div style={{ marginTop: 10, padding: "7px 9px", borderLeft: `3px solid ${ACCENTS.home}`, borderRadius: radius.sm, background: `${ACCENTS.home}15`, fontSize: 11, lineHeight: 1.4, color: T.textSecondary, marginBottom: 6 }}>
             <strong style={{ color: T.textPrimary }}>Notes:</strong> {encounter.notes}
           </div>
         )}
@@ -1330,7 +1350,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // now matches the exact same field set for consistency.
   const [query, setQuery] = useState("");
   const [dismissedPrepWarning, setDismissedPrepWarning] = useState(false);
-  const encountersList = encounters || [];
+  const encountersList = useMemo(() => encounters || [], [encounters]);
   const anyPrepCoverage = encountersList?.some((e) => e.myPrepCoverage) && !dismissedPrepWarning;
 
   // ADDED 4 Sep 2026 — encryption groundwork: pulled the "sinceLastTest"
@@ -1711,19 +1731,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       </div>
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} activit${deleteToast.records.length > 1 ? "ies" : "y"} deleted`
-              : `${deleteToast.records.length} activit${deleteToast.records.length > 1 ? "ies" : "y"} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.encountersPink }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} activit${deleteToast.records.length > 1 ? "ies" : "y"} deleted`
+            : `${deleteToast.records.length} activit${deleteToast.records.length > 1 ? "ies" : "y"} restored`}
+          accentColor={T.encountersPink}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
       {/* CHANGED 19 Aug 2026 — same fix as Contacts' Add button: now
           clears the nav bar (was sitting within its height) and
@@ -1748,6 +1763,37 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   const { t: tr } = useTranslation();
   const [encounter, setEncounter] = useLoadedState(() => EncounterRepository.getById(encounterId), [encounterId], null);
   const contacts = useLoadedMemo(loadContacts, [], []);
+  // ADDED — BACKLOG 12: episode linking (episodes hold encounterIds via
+  // startEncounterId / atRiskEncounterIds).
+  const [episodeVersion, setEpisodeVersion] = useState(0);
+  const linkedEpisodes = useLoadedMemo(async () => {
+    if (!encounterId) return [];
+    const all = await EpisodeRepository.getAll();
+    return all.filter((e) => e.startEncounterId === encounterId || (e.atRiskEncounterIds || []).includes(encounterId));
+  }, [encounterId, episodeVersion], []);
+  const unlinkedEpisodes = useLoadedMemo(async () => {
+    if (!encounterId) return [];
+    const all = await EpisodeRepository.getAll();
+    return all
+      .filter((e) => e.startEncounterId !== encounterId && !(e.atRiskEncounterIds || []).includes(encounterId))
+      .map((e) => ({ id: e.id, name: `${e.title || "Episode"} · ${e.triggerReason || ""}`.trim(), searchText: (e.triggerReason || "").toLowerCase() }));
+  }, [encounterId, episodeVersion], []);
+  const linkEpisode = async (episodeId) => {
+    const ep = await EpisodeRepository.getById(episodeId);
+    if (!ep) return;
+    await EpisodeRepository.update(episodeId, { atRiskEncounterIds: [...(ep.atRiskEncounterIds || []), encounterId] });
+    setEpisodeVersion((v) => v + 1);
+  };
+  const unlinkEpisode = async (episodeId) => {
+    const ep = await EpisodeRepository.getById(episodeId);
+    if (!ep) return;
+    await EpisodeRepository.update(episodeId, { atRiskEncounterIds: (ep.atRiskEncounterIds || []).filter((id) => id !== encounterId) });
+    setEpisodeVersion((v) => v + 1);
+  };
+  const startEpisode = async () => {
+    const created = await EpisodeRepository.create({ title: "New episode", startEncounterId: encounterId, atRiskEncounterIds: [] });
+    setEpisodeVersion((v) => v + 1);
+  };
   // ADDED — real bug report: Anonymise mode masked Contacts but not
   // an encounter's own linked-attendee names shown here.
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
@@ -1942,7 +1988,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             // label while the registry map is still empty and an id is
             // waiting to resolve.
             const loaded = (encounter.protectionUsed || []).length === 0 || protectionNameById.size > 0;
-            return <ReadRow label="Protection used" value={loaded && !hasBarrierMethod(names) ? [...names, NO_BARRIER_LABEL] : names} T={T} />;
+            return <ReadRow label="Protection used" value={loaded && !hasBarrierMethod(names) ? [...names.filter((n) => n !== NO_BARRIER_LABEL), NO_BARRIER_LABEL] : names} T={T} />;
           })()}
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
           <ReadRow label="My DoxyPEP status" value={doxyPepDisplay.value} T={T} />
@@ -1966,6 +2012,37 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
         <SectionCard title={tr("encounters.notes", "Notes")} T={T}>
           <div style={{ fontSize: 14, color: encounter.notes ? T.textPrimary : T.textDisabled, fontStyle: encounter.notes ? "normal" : "italic" }}>
             {encounter.notes || "No notes yet."}
+          </div>
+        </SectionCard>
+        {/* ADDED — BACKLOG 12: episode linking. */}
+        <SectionCard title="Linked episodes" T={T}>
+          {linkedEpisodes.length > 0 ? (
+            linkedEpisodes.map((ep) => (
+              <div key={ep.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+                <div>
+                  <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{ep.title || "Episode"}</div>
+                  <div style={{ fontSize: 11, color: T.textSecondary }}>{ep.triggerReason || ""} {ep.resolvedDate ? "· Resolved" : "· Open"}</div>
+                </div>
+                <span role="button" tabIndex={0} onClick={() => unlinkEpisode(ep.id)} style={{ color: T.textSecondary, cursor: "pointer", fontSize: 12 }}>Remove</span>
+              </div>
+            ))
+          ) : (
+            <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>Not linked to an episode yet.</div>
+          )}
+          {unlinkedEpisodes.length > 0 && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Link to existing episode</div>
+              {unlinkedEpisodes.map((ep) => (
+                <div key={ep.id} role="button" tabIndex={0} onClick={() => linkEpisode(ep.id)}
+                  style={{ fontSize: 12, color: T.encountersPink, cursor: "pointer", padding: "4px 0" }}>
+                  + {ep.name}
+                </div>
+              ))}
+            </div>
+          )}
+          <div role="button" tabIndex={0} onClick={startEpisode}
+            style={{ fontSize: 12, color: T.encountersPink, fontWeight: 600, cursor: "pointer", marginTop: 6 }}>
+            + Start a new episode with this encounter
           </div>
         </SectionCard>
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
@@ -2443,7 +2520,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
 
         <SectionCard title={tr("encounters.protectionMedication", "Protection & medication context")} T={T}>
           <RegistryTagPicker label="Protection used" value={form.protectionUsed} onChange={set("protectionUsed")} T={T} registry={ProtectionRegistry}
-            derivedChips={showNoBarrier ? [{ label: NO_BARRIER_LABEL }] : []} />
+            derivedChips={showNoBarrier && !selectedProtectionNames.includes(NO_BARRIER_LABEL) ? [{ label: NO_BARRIER_LABEL }] : []} />
           {showNoBarrier && (
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -2, marginBottom: 8, lineHeight: 1.4 }}>
               Add a condom or dental dam if one was used — otherwise this record shows “{NO_BARRIER_LABEL}”. The label is worked out from your selections; nothing extra is stored.

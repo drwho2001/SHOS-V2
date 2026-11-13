@@ -47,7 +47,7 @@
   .caption { margin-bottom: 10px; font-size: 11px; }
 
   .device {
-    width: 393px;
+    width: min(393px, 100%);
     max-width: 100%;
     margin: 0 auto;
     padding: 14px 16px 24px;
@@ -73,10 +73,10 @@
   .menu { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; color: var(--disabled); }
 
   /* ── Card anatomy (§10.2.1): title row → byline → chip groups → footer ── */
-  .name-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .name-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; padding-right: 30px; } /* clears corner menu button */
   .dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--meds-blue); }
   .dot.red { background: var(--red); }
-  .name { color: var(--primary); font-size: 15px; line-height: 1.3; font-weight: 600; }
+  .name { color: var(--primary); font-size: 15px; line-height: 1.3; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
   .demo { font-size: 9px; font-weight: 700; color: var(--disabled); background: var(--variant); border-radius: 4px; padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
 
   .byline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--secondary); font-size: 10px; line-height: 1.3; font-weight: 500; }
@@ -135,14 +135,16 @@
   .footer .hot { color: var(--primary); font-weight: 600; }
   .footer.top { margin-top: 2px; }
 
-  .note { margin-top: 8px; border-left: 2px solid var(--teal); padding-left: 10px; font-size: 11px; line-height: 1.4; color: var(--secondary); font-style: italic; }
+  .note { margin-top: 8px; padding: 7px 9px; border-left: 3px solid var(--teal); border-radius: 8px; background: var(--tint-teal); font-size: 11px; line-height: 1.4; color: var(--secondary); font-style: italic; }
 
   .actions { display: flex; gap: 8px; margin-top: 12px; }
   .actions .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .actions .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 10px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .actions .btn-sm { flex: 0 0 auto; min-height: 32px; padding: 6px 10px; font-size: 11px; font-weight: 600; }
+  .actions .btn:focus-visible, .actions .btn-sm:focus-visible { outline: 2px solid var(--meds-blue-dark); outline-offset: 2px; }
   .btn.outline { background: transparent; color: var(--meds-blue); border: 1px solid var(--meds-blue); }
   .btn.filled { background: var(--meds-blue); color: #fff; border: 1px solid var(--meds-blue); }
   .btn svg { width: 14px; height: 14px; }
-  .btn .plus1 { font-size: 14px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
   .ringbox { display: inline-flex; align-items: center; gap: 8px; }
   .ringbox svg { width: 30px; height: 30px; flex: 0 0 30px; }
 
@@ -155,6 +157,11 @@
     line-height: 1.55;
   }
   .annotation strong { color: var(--primary); font-weight: 600; }
+  @media (max-width: 360px) {
+    .device { padding: 10px 10px 20px; }
+    .actions { flex-wrap: wrap; }
+    .actions .btn { flex: 1 1 auto; }
+  }
 </style>
 </head>
 <body>
@@ -211,8 +218,8 @@
       </div>
 
       <div class="actions">
-        <span class="btn filled"><span class="plus1">+1</span> Log dose</span>
-        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log refill</span>
+        <span class="btn filled btn-sm">Log dose</span>
+        <span class="btn outline btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log refill</span>
       </div>
     </article>
 
@@ -272,8 +279,8 @@
       </div>
 
       <div class="actions">
-        <span class="btn filled"><span class="plus1">+1</span> Log dose</span>
-        <span class="btn outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log refill</span>
+        <span class="btn filled btn-sm">Log dose</span>
+        <span class="btn outline btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>Log refill</span>
       </div>
     </article>
 
@@ -304,13 +311,13 @@
       </div>
 
       <div class="actions">
-        <span class="btn filled"><span class="plus1">+1</span> Log dose</span>
+        <span class="btn filled btn-sm">Log dose</span>
       </div>
     </article>
   </section>
 
   <div class="annotation">
-    <strong>Shipped anatomy:</strong> the same card grammar as encounters/contacts (§10.2.1). Title row: status dot + 15/600 name + ⋮ menu. The byline is now <em>one</em> line carrying quantity and timing together — dose form, total strength per dose and schedule — so the card answers "1 tablet · 200mg/245mg · Daily · 4:00 PM" in one read. When a dose takes more than one unit the strength is stated as a total ("2 tablets · 300mg total"), and ingredient names are kept when the title is a brand ("Zapain · 2 tablets · codeine 60mg/paracetamol 1000mg total"). The last/next dose line moves <em>up</em> to sit directly under that byline, before any numbers. Stock keeps its big number + progress bar under a STOCK group label, with the restock level stated beside the quantity ("restock at 7 tablets") and marked on the track; refill state is chips (red = action needed, grey = days remaining/supplier, blue = mark as requested, or the requested-awaiting chip with its × dismiss). Adherence is <strong>three independent tiles</strong> — streak, 7-day, this container — each with its own verdict colour (≥80% green, ≥50% amber, below red), so a green streak can sit beside a red container. The streak flame is filled orange-red when the streak is live, and the 7-day tile carries an up/down arrow against the previous 7 days. Buttons stay the two-button row, with `+1 Log dose`.
+    <strong>Shipped anatomy:</strong> the same card grammar as encounters/contacts (§10.2.1). Title row: status dot + 15/600 name + ⋮ menu. The byline is now <em>one</em> line carrying quantity and timing together — dose form, total strength per dose and schedule — so the card answers "1 tablet · 200mg/245mg · Daily · 4:00 PM" in one read. When a dose takes more than one unit the strength is stated as a total ("2 tablets · 300mg total"), and ingredient names are kept when the title is a brand ("Zapain · 2 tablets · codeine 60mg/paracetamol 1000mg total"). The last/next dose line moves <em>up</em> to sit directly under that byline, before any numbers. Stock keeps its big number + progress bar under a STOCK group label, with the restock level stated beside the quantity ("restock at 7 tablets") and marked on the track; refill state is chips (red = action needed, grey = days remaining/supplier, blue = mark as requested, or the requested-awaiting chip with its × dismiss). Adherence is <strong>three independent tiles</strong> — streak, 7-day, this container — each with its own verdict colour (≥80% green, ≥50% amber, below red), so a green streak can sit beside a red container. The streak flame is filled orange-red when the streak is live, and the 7-day tile carries an up/down arrow against the previous 7 days. Buttons stay the two-button row (`Log dose` filled + `Log refill` outline, base 40px / compact 32px tiers).
   </div>
 
   <h2>Layout intent</h2>

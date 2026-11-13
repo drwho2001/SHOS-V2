@@ -134,7 +134,9 @@ function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleC
 }
 
 function SectionCard({ children, T }) {
-  return <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
+  // §49b — colour-indent/backfill: tinted background + coloured left border,
+  // matching encounters-card-mockup.html section-row style.
+  return <div style={{ background: `${T.healthcareBlue}08`, borderLeft: `4px solid ${T.healthcareBlue}`, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
 }
 
 function Row({ dot, title, subtitle, alert, color, onTap, T }) {

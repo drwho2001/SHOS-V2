@@ -41,6 +41,17 @@ export const NEUTRAL = {
   textDisabled: "#656568",
 };
 
+// ADDED 12 Nov 2026 — the undo/confirm bar's inversion pair. It is
+// deliberately NOT a themed surface: the bar sits over whatever the page is
+// showing and must stay legible in both themes, so it keeps one fixed
+// near-black fill and white text. Previously typed as two raw literals at
+// nine call sites (see components/UndoToast.jsx), which meant any change to
+// it had nine places to miss.
+export const TOAST = {
+  surface: "#1B1B1F",
+  text: "#FFFFFF",
+};
+
 // Dark-mode counterpart, values matched to Medication's own hand-tuned
 // DARK object (the module dark mode was first built for) so every
 // module now adopting dark mode reads as one consistent system rather
@@ -469,6 +480,12 @@ export const TYPE = {
   bodyEmphasis: { fontSize: 14, fontWeight: 600 },
   caption: { fontSize: 12, fontWeight: 400 },
   captionEmphasis: { fontSize: 12, fontWeight: 600 },
+  // ADDED 12 Nov 2026 — 13px is the de-facto standard control/button/field
+  // size (516 sites in src/) but had no named token, so every site hand-typed
+  // it. Named here so it can't silently drift; conversion of the existing
+  // sites to TYPE.control is a follow-up pass (mechanical, low risk).
+  control: { fontSize: 13, fontWeight: 400 },
+  controlEmphasis: { fontSize: 13, fontWeight: 600 },
   // ADDED — C9: documented floor for micro-text (badges, chips, status
   // lines). 9px DEMO badge stays as an explicit exception.
   microLabel: { fontSize: 11, fontWeight: 600 },

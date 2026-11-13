@@ -96,6 +96,12 @@ export function AboutScreen({ onClose }) {
              </a>
            </div>
          </div>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginBottom: 8 }}>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.sendFeedback", "Send feedback / bug report")}</span>
+          <a href="mailto:adminshos@gmail.com?subject=SHOS%20feedback" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
+            {t("about.email", "Email")}
+          </a>
+        </div>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", marginTop: 16 }}>
           {t("about.footer", "Local-first — nothing here leaves this device unless you choose to export or share it.")}
         </div>

@@ -33,6 +33,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, Tra
 import { MenstrualCycleRepository, DEFAULT_CYCLE } from "../repositories/menstrualCycleRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";
 import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS } from "../repositories/pregnancyRepository";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -358,16 +359,21 @@ function DetailHeader({ onBack, onEdit, onDelete, T }) {
     </div>
   );
 }
+// CHANGED 12 Nov 2026 — this used to be a fourth hand-written copy of the same
+// fixed-position undo bar. It now delegates to the shared UndoToast
+// (components/UndoToast.jsx), which is the one implementation of that bar for
+// the whole app; the `noun` prop stays because it is what makes this module's
+// three lists read differently ("3 periods", "2 entries").
 function DeleteToast({ toast, onUndo, onRedo, T, noun }) {
   if (!toast) return null;
+  const n = toast.records.length;
   return (
-    <div onClick={toast.mode === "undo" ? onUndo : onRedo}
-      role="button" tabIndex={0} aria-live="polite"
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (toast.mode === "undo" ? onUndo : onRedo)(); } }}
-      style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-      <span style={{ fontSize: 13 }}>{toast.mode === "undo" ? `${toast.records.length} ${noun}${toast.records.length > 1 ? "s" : ""} deleted` : `${toast.records.length} ${noun}${toast.records.length > 1 ? "s" : ""} restored`}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>{toast.mode === "undo" ? "Tap to undo" : "Tap to redo"}</span>
-    </div>
+    <UndoToast
+      mode={toast.mode}
+      message={toast.mode === "undo" ? `${n} ${noun}${n > 1 ? "s" : ""} deleted` : `${n} ${noun}${n > 1 ? "s" : ""} restored`}
+      accentColor={T.healthcareBlue}
+      onAction={toast.mode === "undo" ? onUndo : onRedo}
+    />
   );
 }
 

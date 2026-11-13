@@ -6,6 +6,7 @@ import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, Arr
 import { MedicationRepository, DOSE_UNIT_OPTIONS } from "../repositories/medicationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -235,8 +236,10 @@ function HoldButton({ onStep, dir, children, style }) {
 }
 
 function StatTile({ label, value, tint, subtitle, onClick, T }) {
+  // §49b — colour-indent/backfill: tinted background + coloured border,
+  // matching encounters-card-mockup.html chip style.
   return (
-     <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : -1} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: "14px 16px", flex: "1 1 0", minWidth: 0, cursor: onClick ? "pointer" : "default" }}>
+     <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : -1} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined} style={{ background: tint ? `${tint}15` : T.surface, border: `1px solid ${tint || T.border}`, borderRadius: radius.md, padding: "14px 16px", flex: "1 1 0", minWidth: 0, cursor: onClick ? "pointer" : "default" }}>
       <div style={{ fontFamily: FONT_FAMILY, fontSize: 22, fontWeight: 600, color: tint || T.textPrimary }}>{value}</div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{label}</div>
       {subtitle && <div style={{ fontSize: 11, color: tint || T.textSecondary, marginTop: 3, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>}
@@ -1105,7 +1108,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
   const { t: tr } = useTranslation();
   const isDesktopWidth = useIsDesktopWidth();
   return (
-    <div style={isDesktopWidth ? { columnCount: 2, columnGap: 24, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
+    <div style={isDesktopWidth ? { columnCount: 2, columnGap: 24, padding: "0 16px 20px" } : { display: "flex", flexDirection: "column", padding: "0 16px 20px" }}>
       {/* FIXED 27 Sep 2026 — same blank-tab bug as LogTab above, same round,
           same file. `meds.map` with no fallback rendered nothing at all. */}
       {meds.length === 0 && (
@@ -2427,7 +2430,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
 
   return (
-    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, transition: reducedMotion ? "none" : "background 200ms ease" }}>
+    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, paddingBottom: "calc(90px + env(safe-area-inset-bottom) + 70px)", transition: reducedMotion ? "none" : "background 200ms ease" }}>
       {/* CHANGED — real ask: "Medications module is the only one
           designed like a phone screen — not full width on laptop."
           Was a fixed 390px regardless of viewport; now genuinely
@@ -2600,7 +2603,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             banner (Healthcare, Encounters) has some top breathing
             room, this was the one at a flat 0. */}
         <div style={{ display: "flex", gap: 10, padding: "0 16px 16px" }}>
-          <StatTile T={T} label="Active medications" value={activeMeds.length} tint={T.medsBlue} />
+          {/* FIXED — live audit Finding 10: "Active medications" looked
+              identical to "Needs action" (a role="button" that navigates to
+              Registry) but had no onClick, so it was a dead control. Give it
+              the same affordance: tapping switches to the Registry tab. */}
+          <StatTile T={T} label="Active medications" value={activeMeds.length} tint={T.medsBlue} onClick={() => setTab("Registry")} />
           <StatTile T={T} label="Needs action" value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
             subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
             onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
@@ -2767,19 +2774,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
       )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} medication${deleteToast.records.length > 1 ? "s" : ""} deleted`
-              : `${deleteToast.records.length} medication${deleteToast.records.length > 1 ? "s" : ""} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.medsBlue }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} medication${deleteToast.records.length > 1 ? "s" : ""} deleted`
+            : `${deleteToast.records.length} medication${deleteToast.records.length > 1 ? "s" : ""} restored`}
+          accentColor={T.medsBlue}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
     </div>
   );

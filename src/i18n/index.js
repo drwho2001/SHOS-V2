@@ -1,7 +1,8 @@
 ﻿import React, { createContext, useContext, useMemo, useState } from "react";
 import en from "./en.json";
+import enUS from "./en-US.json";
 
-const translations = { en };
+const translations = { en, "en-GB": en, "en-US": enUS };
 const I18nContext = createContext({ lang: "en", t: (key) => key });
 
 export function I18nProvider({ children, defaultLang = "en" }) {

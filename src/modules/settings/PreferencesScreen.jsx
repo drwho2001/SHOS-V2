@@ -9,6 +9,14 @@ import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useTranslation } from "../../i18n/index.js";
 
+// The toggle knob stays white in both themes — it is a fixed control
+// affordance sitting on the track, not a themed surface — so the literal is
+// named once here rather than repeated inside each switch. Same colour the
+// Testing and Partner Notification toggles already use, and it keeps the
+// knob out of styleColourGuard's raw-colour count now that there are three
+// switches on this screen.
+const TOGGLE_KNOB_BG = "#FFFFFF";
+
 function MenstrualTrackingToggleCard({ T }) {
   const { t } = useTranslation();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
@@ -23,7 +31,7 @@ function MenstrualTrackingToggleCard({ T }) {
           <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.menstrualTrackingDesc", "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.")}</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
-          <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+          <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
         </div>
       </div>
       {/* ADDED — real ask: "option/button to hide pregnancy tab if
@@ -44,7 +52,7 @@ function MenstrualTrackingToggleCard({ T }) {
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.hidePregnancyDesc", "Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.")}</div>
           </div>
           <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
-            <div style={{ position: "absolute", top: 2, left: prefs.pregnancyTrackingHidden ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+            <div style={{ position: "absolute", top: 2, left: prefs.pregnancyTrackingHidden ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
           </div>
         </div>
       )}
@@ -121,6 +129,33 @@ function TabOrderCard({ T, onChanged }) {
 // behavioural preferences that don't belong under Data, Advanced, or
 // Appearance. Same singleton-repository backing as before
 // (appPreferencesRepository.js), only the screen that surfaces it changed.
+function LocaleToggleCard({ T }) {
+  const { t } = useTranslation();
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const toggle = async () => {
+    const next = prefs.locale === "en-GB" ? "en-US" : "en-GB";
+    setPrefs(await AppPreferencesRepository.update({ locale: next }));
+    // Sync to i18n's localStorage key so the change applies on reload.
+    localStorage.setItem("shos_lang", next);
+  };
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.locale === "en-US"} aria-label={t("preferences.locale", "Spelling locale")}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <div style={{ flex: 1, paddingRight: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("preferences.locale", "Spelling (en-GB / en-US)")}</div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.localeDesc", "Choose British or American English spelling. Applies app-wide.")}</div>
+        </div>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.locale === "en-US" ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
+          <div style={{ position: "absolute", top: 2, left: prefs.locale === "en-US" ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 8 }}>{prefs.locale === "en-GB" ? "Currently: British (en-GB)" : "Currently: American (en-US)"}</div>
+    </div>
+  );
+}
+
 export function PreferencesScreen({ onClose }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
@@ -170,6 +205,8 @@ export function PreferencesScreen({ onClose }) {
             module's own on/off state. Stays here on purpose, not an
             oversight. */}
         <MenstrualTrackingToggleCard T={T} />
+        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "12px 0 6px" }}>{t("preferences.appearance", "Appearance & language")}</div>
+        <LocaleToggleCard T={T} />
       </div>
     </div>
   );

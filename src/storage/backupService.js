@@ -85,6 +85,7 @@ import { CustomGroupsRepository } from "../repositories/customGroupsRepository.j
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
 import { ContraceptionRepository } from "../repositories/contraceptionRepository.js";
 import { PregnancyRepository } from "../repositories/pregnancyRepository.js";
+import { VaginalHealthRepository } from "../repositories/vaginalHealthRepository.js";
 // ADDED 11 Sep 2026 — real gap found via a total-app audit: these four
 // were never wired into backup at all, despite CLAUDE.md's own standing
 // rule ("a new repository must be wired into backupService.js in the
@@ -147,6 +148,7 @@ export const EXPORT_GROUPS = [
     { dataKey: "menstrualCycles", label: "Menstrual cycle log" },
     { dataKey: "contraception", label: "Contraception history" },
     { dataKey: "pregnancies", label: "Pregnancy tracking" },
+    { dataKey: "vaginalHealth", label: "Vaginal health" },
   ] },
   { key: "registries", label: "Kink / Chems / Protection / Symptoms / Locations", items: [
     { dataKey: "kinks", label: "Kink Registry" },
@@ -205,6 +207,7 @@ const DATE_FIELD_BY_KEY = {
   menstrualCycles: "startDate",
   contraception: "startDate",
   pregnancies: "testDate",
+  vaginalHealth: "date",
 };
 
 function withinDateRange(records, field, dateRange) {
@@ -306,6 +309,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     menstrualCycles: await MenstrualCycleRepository.getAll(),
     contraception: await ContraceptionRepository.getAll(),
     pregnancies: await PregnancyRepository.getAll(),
+    vaginalHealth: await VaginalHealthRepository.getAll(),
     measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
     customGroups: await CustomGroupsRepository.getAllForBackup(),
     customOptionLists: await CustomOptionListsRepository.getAllForBackup(),
@@ -471,7 +475,7 @@ function sanitizeBackupData(data) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export async function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, customOptionListsArchived, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash, darkModePreference, clinicCardVisibility, sessions } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, customOptionListsArchived, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, vaginalHealth, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash, darkModePreference, clinicCardVisibility, sessions } = parsedBackup.data;
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
@@ -495,6 +499,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(menstrualCycles)) await MenstrualCycleRepository.replaceAll(menstrualCycles);
   if (Array.isArray(contraception)) await ContraceptionRepository.replaceAll(contraception);
   if (Array.isArray(pregnancies)) await PregnancyRepository.replaceAll(pregnancies);
+  if (Array.isArray(vaginalHealth)) await VaginalHealthRepository.replaceAll(vaginalHealth);
   // FIXED — real gap found during backup-import fuzz testing (10 Sep
   // 2026): `typeof x === "object"` is also true for an ARRAY (JS quirk),
   // so a malformed backup with e.g. `privacySettings: ["a","b"]` used to
@@ -604,6 +609,7 @@ export async function mergeBackup(parsedBackup) {
   await append(MenstrualCycleRepository, data.menstrualCycles);
   await append(ContraceptionRepository, data.contraception);
   await append(PregnancyRepository, data.pregnancies);
+  await append(VaginalHealthRepository, data.vaginalHealth);
   await append(EpisodeRepository, data.episodes);
   await append(SessionRepository, data.sessions);
   // FIXED — same real singleton/array-typeof gap as restoreBackup()

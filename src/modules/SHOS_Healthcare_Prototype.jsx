@@ -22,6 +22,7 @@ const SymptomLogModule = lazy(() => import("./SHOS_SymptomLog_Prototype"));
 const VaccinationsModule = lazy(() => import("./SHOS_Vaccinations_Prototype"));
 const MeasurementsModule = lazy(() => import("./SHOS_Measurements_Prototype"));
 const MenstrualHealthModule = lazy(() => import("./SHOS_MenstrualHealth_Prototype"));
+const VaginalHealthModule = lazy(() => import("./SHOS_VaginalHealth_Prototype"));
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useLoadedState } from "../calculations/loadedRepositoryState";
 import { isVaccinationOverdue } from "../calculations/vaccinationCalculations";
@@ -210,7 +211,9 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   }, [showTimeline]);
 
   const SummaryStat = ({ label, value, alert }) => (
-    <div style={{ flex: 1, textAlign: "center" }}>
+    // §49b — colour-indent/backfill: tinted background + coloured border,
+    // matching encounters-card-mockup.html stat tile style.
+    <div style={{ flex: 1, textAlign: "center", padding: "10px 8px", borderRadius: RADIUS.md, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}` }}>
       <div style={{ fontSize: 22, fontWeight: 700, color: alert && value > 0 ? ACTION.red : T.healthcareBlue }}>{value}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{label}</div>
     </div>
@@ -286,6 +289,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // shown at all otherwise �?" same "opt-in, off by default"
             // treatment as every other feature area in this app.
             ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Menstrual & Contraception") }] : []),
+             ...(menstrualTrackingEnabled ? [{ key: "vaginalHealth", label: tr("healthcare.vaginalHealth", "Vaginal health") }] : []),
           ].map((tab) => (
             // CHANGED — real audit finding (exhaustive screen-reader
             // audit): these sub-tab pills were 100% unreachable via
@@ -349,7 +353,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
-        <div style={{ display: "flex", background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
+        <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.healthcareBlue}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
           <SummaryStat label={tr("healthcare.activeSymptoms", "Active symptoms")} value={summary.activeSymptoms} alert />
           <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
           <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />
@@ -365,6 +369,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "measurements" ? (
         <MeasurementsModule openAddOnMount={openAddOnMount && quickAddTarget === "measurements"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
+      ) : subTab === "vaginalHealth" ? (
+        <VaginalHealthModule />
       ) : (
         <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
@@ -403,7 +409,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               earlier. Desktop centring moves here, where it does not affect
               the scroll geometry. Pinned by scrollingFlexGuard.test.js. */}
           <div style={{ width: "100%", margin: "0 auto" }}>
-            <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
+            <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} onNavigateToRecord={onNavigateToRecord} />
           </div>
         </div>
       )}

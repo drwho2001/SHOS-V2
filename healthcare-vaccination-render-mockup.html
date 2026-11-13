@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="module" src="strings.js"></script>
+<title>Healthcare · Vaccinations - card render set (1:1 with form)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1C1C1F; --variant:#26262A; --border:#3A3A3F;
+    --primary:#F2F2F4; --secondary:#B8B8BE; --disabled:#89898C;
+    --hc:#0E8144; --hc-soft:#8FD6B4; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --red-tint:#ff7a7e15; --amber:#F59E0B; --amber-tint:#F59E0B12;
+    --teal:#008585; --teal-tint:#00858510; --teal-soft:#4CCFCF;
+    --meds-blue-soft:#A9C8FF;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:12px;font-size:11px}
+  .device{width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── Card (§10.2.1 anatomy) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card.older{background:var(--variant);color:var(--secondary)}
+  .card.older .name,.card.older .summary,.card.older .chip,.card.older .ctx-title,.card.older .byline span{color:var(--disabled)}
+  .card.older .dot{background:var(--disabled)}
+  .card.older .byline svg{color:var(--disabled)}
+  .card.older .ctx-group{background:#ffffff03;border-left-color:var(--border)}
+  .card.older .advisory,.card.older .note{background:var(--variant);border-left-color:var(--border);color:var(--disabled)}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled);cursor:pointer}
+  .menu:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding-right:30px}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .dot.hc{background:var(--hc)}
+  .dot.green{background:var(--green)}
+  .dot.red{background:var(--red)}
+  .dot.amber{background:var(--amber)}
+  .dot.muted{background:var(--disabled)}
+  .dot.teal{background:var(--teal)}
+  .name{font-size:15px;line-height:1.3;font-weight:600;min-width:0;overflow-wrap:break-word}
+  .older-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled);background:var(--variant);border:1px solid var(--border);border-radius:999px;padding:1px 6px;margin-left:8px}
+
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500;min-width:0}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .byline .nowrap{white-space:nowrap}
+  .side{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);background:var(--variant);border:1px solid var(--border);border-radius:999px;padding:1px 5px;margin-left:5px}
+
+  .summary{font-size:12px;font-weight:700;letter-height:1.4;margin-top:2px}
+  .summary.complete{color:var(--green)}
+  .summary.overdue{color:var(--red)}
+  .summary.due{color:var(--amber)}
+  .summary.revaccination{color:var(--teal-soft)}
+  .summary.suggested{color:var(--amber)}
+
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px;min-width:0}
+  .chip-group:first-of-type{margin-top:8px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin-bottom:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap;min-width:0}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:#fff}
+  .chip.green{background:var(--green);color:#002214;border-color:var(--green)}
+  .chip.amber{background:var(--amber-tint);border-color:var(--amber);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.red{background:var(--red-tint);border-color:var(--red);color:#fff}
+  .chip.ghost{opacity:0.35;cursor:pointer;font-weight:700;background:var(--variant);border:1px solid transparent;color:#fff}
+  .chip.more{opacity:0.35;cursor:pointer;font-weight:700;background:var(--variant);border:1px solid transparent;color:#fff}
+
+  /* Dose progress strip */
+  .dose-strip{display:flex;align-items:center;gap:6px;margin-top:8px;min-width:0}
+  .dose{width:18px;height:6px;border-radius:999px;flex:0 0 18px}
+  .dose.done{background:var(--green)}
+  .dose.due{background:var(--amber)}
+  .dose.empty{background:var(--variant);border:1px solid var(--border)}
+  .dose-label{font-size:10px;color:var(--secondary);margin-left:6px;font-weight:600}
+
+  /* Context groups — indent + 3px colour bar + tinted background */
+  .ctx-group{margin-top:8px;padding:8px 8px 8px 10px;border-left:3px solid transparent;border-radius:0;background:transparent;min-width:0}
+  .ctx-group.info{border-left-color:var(--hc);background:var(--hc-tint)}
+  .ctx-group.warning{border-left-color:var(--amber);background:var(--amber-tint)}
+  .ctx-group.neutral{border-left-color:var(--border);background:#ffffff05}
+  .ctx-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .ctx-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .ctx-title.hc{color:var(--hc-soft)}
+  .ctx-title.amber{color:var(--amber)}
+  .ctx-title.teal{color:var(--teal-soft)}
+  .status-row{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--secondary);min-width:0}
+  .fu-label{flex:0 0 74px;padding-top:1px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--secondary)}
+  .fu-body{flex:1;min-width:0;font-size:12px;color:var(--primary);line-height:1.45}
+
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:var(--hc-tint);border-left:3px solid var(--hc);color:var(--secondary)}
+  .advisory.teal{background:var(--teal-tint);border-left-color:var(--teal)}
+  .advisory svg{width:13px;height:13px;flex:0 0 13px;margin-top:1px}
+  .note{margin-top:8px;padding:7px 9px;border-left:3px solid var(--hc);border-radius:8px;background:var(--hc-tint);font-size:11px;line-height:1.4;color:var(--secondary);font-style:italic}
+  .annotation{margin-top:14px;border-left:2px solid var(--hc);padding-left:10px;font-size:12px;line-height:1.5;color:var(--secondary);font-style:italic}
+
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;min-width:0}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--primary);font-family:inherit}
+  .btn-sm{flex:0 0 auto;min-height:32px;padding:6px 10px;font-size:11px;font-weight:600}
+  .btn:focus-visible,.btn-sm:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+  .btn.filled{background:var(--hc);color:#fff;border-color:var(--hc)}
+  .btn.outline{background:transparent;color:var(--hc);border-color:var(--hc)}
+  .btn svg{width:14px;height:14px;flex:0 0 auto}
+
+  @media (max-width:360px){
+    .device{padding:10px 10px 20px}
+    .card{padding:12px 26px 12px 12px}
+    .actions{flex-wrap:wrap}
+    .actions .btn{flex:1 1 auto}
+    .byline{flex-wrap:wrap}
+  }
+
+  /* ADDED 12 Nov 2026 — used by the card's due/stock line, never defined. */
+  .footer{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:var(--secondary);font-size:11px;line-height:1.35;margin-top:6px}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Vaccinations — card render set</h1>
+  <p class="lead">Vaccinations carries a dose series (1 of 2, 2 of 3…), per-dose next-due, provider, injection site (+ arm side), reason, symptom/reaction link, and clinic-visit linkage (visit owns the link via vaccinationsGivenIds). Every capturable form fact is represented on the card — nothing is invented for the card that the form cannot capture. Rendered in the STI/testing grammar on a 393dp device that shrinks to fit narrow panes.</p>
+
+  <h2>States</h2>
+  <p class="caption" data-i18n="caption.dot.action.state.clinic.accent.hc.up.to.">Dot = action state: clinic accent (hc) = up to date, amber = next dose due, red = overdue, teal = revaccination / antibody check due. Summary is a store-once lead-word state line (COMPLETE / OVERDUE / DUE / REVACCINATION / SUGGESTED); chips never repeat the summary.</p>
+
+  <section class="device">
+    <div class="group-label">Vaccinations · states</div>
+
+    <!-- Card 1 — COMPLETE (full course done) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot hc"></span><span class="name">Meningitis B (4CMenB)</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">14 Mar 2026 · Deltoid · <span class="side">Left arm</span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Clinic 3, St Thomas'</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose done"></span><span class="dose done"></span>
+        <span class="dose-label">2 / 2 complete</span>
+      </div>
+      <div class="summary complete" data-summary-key="summary.complete">COMPLETE · Booster due Mar 2028</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips">
+          <span class="chip hc">2-dose course</span>
+          <span class="chip grey">Completed</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.dose.details">View dose details</span>
+        <span class="btn outline btn-sm" data-i18n="action.add.note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add note</span>
+      </div>
+    </article>
+
+    <!-- Card 2 — OVERDUE (series incomplete, past window — readable) -->
+    <article class="card" style="border-color:var(--red)">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot red"></span><span class="name">Hepatitis B</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">1 of 2 doses · Sep 2025 · Deltoid · <span class="side">Left arm</span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Clinic 3, St Thomas'</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose done"></span><span class="dose due"></span>
+        <span class="dose-label">1 / 2 complete</span>
+      </div>
+      <div class="summary overdue" data-summary-key="summary.overdue">OVERDUE · Second dose 5 months late</div>
+      <div class="status-row" style="font-size:12px;color:var(--secondary);margin-top:6px">
+        <span style="color:var(--red);font-weight:700">Second dose missing</span>
+      </div>
+      <div class="advisory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Series incomplete and past the recommended window. Book a catch-up dose — the second dose completes the course.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.status">Status</div>
+        <div class="chips"><span class="chip red">Overdue</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips">
+          <span class="chip hc">2-dose course</span>
+          <span class="chip grey">Started Sep 2025</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.book.catch.up.dose">Book catch-up dose</span>
+        <span class="btn outline btn-sm" data-i18n="action.log.vaccination"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Log vaccination</span>
+      </div>
+    </article>
+
+    <!-- Card 3 — DUE (next dose upcoming) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot amber"></span><span class="name">Hepatitis A/B (Twinrix)</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">2 of 3 doses · 30 Oct 2026 · Gluteal</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Clinic 3, St Thomas'</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose done"></span><span class="dose done"></span><span class="dose due"></span>
+        <span class="dose-label">2 / 3 complete</span>
+      </div>
+      <div class="summary due" data-summary-key="summary.due">DUE · Third dose · Sat 17 Apr</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips">
+          <span class="chip hc">3-dose course</span>
+          <span class="chip grey">In progress</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.book.third.dose">Book third dose</span>
+        <span class="btn outline btn-sm" data-i18n="action.view.schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>View schedule</span>
+      </div>
+    </article>
+
+    <!-- Card 4 — Revaccination (antibody check due ~5 years, risk-based — NOT routine) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot teal"></span><span class="name">Hepatitis B</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">Course complete · Nov 2021</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Occupational health</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose done"></span><span class="dose done"></span><span class="dose done"></span>
+        <span class="dose-label">3 / 3 complete</span>
+      </div>
+      <div class="summary revaccination" data-summary-key="summary.revaccination">REVACCINATION · Antibody check due · 5 years since course</div>
+      <div class="status-row"><span class="fu-label">Last dose</span><span class="fu-body">Nov 2021 · antibody levels may have declined</span></div>
+      <div class="status-row"><span class="fu-label">Reason</span><span class="fu-body">Occupational exposure risk</span></div>
+      <div class="advisory teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Anti-HBs levels may decline — about 1 in 10 lose detectable antibodies after 5 years. Immune memory stays intact. CDC does not recommend routine boosters or antibody checks for healthy adults — only if still at occupational or sexual-exposure risk.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips"><span class="chip hc">3-dose course</span><span class="chip grey">Completed Nov 2021</span></div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.schedule.antibody.check">Schedule antibody check</span>
+        <span class="btn outline btn-sm" data-i18n="action.bookBoosterIfLow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Book booster if low</span>
+      </div>
+    </article>
+
+    <!-- Card 5 — Serum antibody check (new feature: titer test) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot teal"></span><span class="name">Hepatitis B surface antibody</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">Serum antibody check · Wed 18 Nov</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Clinic 3, St Thomas'</span>
+      </div>
+      <div class="summary due" data-summary-key="summary.due">DUE · Antibody (titer) test</div>
+      <div class="advisory teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Serum antibody (anti-HBs) titer checks detectable antibody levels after vaccination. If low, a booster restores protection — no need to repeat the full course. Immune memory means protection often persists even when antibodies are undetectable.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.test.type">Test type</div>
+        <div class="chips"><span class="chip hc">Serology</span><span class="chip grey">Anti-HBs titer</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.reason">Reason</div>
+        <div class="chips"><span class="chip hc">Post-vaccination immunity check</span><span class="chip grey">Risk-based</span></div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.book.antibody.test">Book antibody test</span>
+        <span class="btn outline btn-sm" data-i18n="action.logResult"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Log result</span>
+      </div>
+    </article>
+
+    <!-- Card 6 — Older dose (faded + Older dose pill) -->
+    <article class="card older">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot muted"></span><span class="name">HPV</span><span class="older-pill">Older dose</span></div>
+      <div class="byline" style="color:var(--disabled)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>2 of 2 doses · 11 Aug 2019 · Deltoid</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span>School programme</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose" style="background:var(--disabled)"></span><span class="dose" style="background:var(--disabled)"></span>
+        <span class="dose-label">2 / 2 complete</span>
+      </div>
+      <div class="summary complete" data-summary-key="summary.complete">COMPLETE · 11 Aug 2019</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips"><span class="chip grey">2-dose course</span><span class="chip grey">Completed 2019</span></div>
+      </div>
+    </article>
+  </section>
+
+  <h2>Legacy data import (no continuous provider)</h2>
+  <p class="caption" data-i18n="caption.user.vaccinated.for.hep.b.at.occupationa">User vaccinated for Hep B at occupational health, needs it again in 5 years, may have lost immunity / be at risk sexually and eligible — doses may not be at any one provider. The form supports importing a historical dose without requiring a continuous provider chain: record what happened, where known, and let the series + revaccination logic compute what's next.</p>
+
+  <section class="device">
+    <div class="group-label">Vaccinations · legacy entry</div>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot hc"></span><span class="name">Hepatitis B · historical entry</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">3 doses · 2019–2020 · multiple sites</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Occupational health</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose done"></span><span class="dose done"></span><span class="dose done"></span>
+        <span class="dose-label">3 / 3 complete</span>
+      </div>
+      <div class="summary complete" data-summary-key="summary.complete">LEGACY ENTRY · Hep B · course complete 2020</div>
+      <div class="status-row"><span class="fu-label">Entry type</span><span class="fu-body">Historical import · no continuous provider</span></div>
+      <div class="status-row"><span class="fu-label">Provider</span><span class="fu-body">Occupational health · doses at different sites</span></div>
+      <div class="status-row"><span class="fu-label">Next review</span><span class="fu-body nowrap">2025–2026 · 5-year revaccination window</span></div>
+      <div class="advisory teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Imported historical record — doses given at occupational health across different sites; no single provider holds the full series. Record what happened where known; series logic computes what's next. Consider antibody check before booster.</span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips"><span class="chip hc">3-dose course</span><span class="chip grey">Imported · 2019–2020</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.reason">Reason</div>
+        <div class="chips"><span class="chip hc">Occupational</span><span class="chip ghost" aria-label="Add reason">+ add reason</span></div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.schedule.revaccination">Schedule revaccination</span>
+        <span class="btn outline btn-sm" data-i18n="action.antibodyCheckFirst"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Antibody check first</span>
+      </div>
+    </article>
+  </section>
+
+  <h2>Risk-profile eligibility suggestion</h2>
+  <p class="caption" data-i18n="caption.based.on.sexual.health.risk.profile.the.">Based on sexual-health risk profile, the app can suggest vaccinations the user is eligible for but hasn't had — e.g. Hepatitis B, Mpox, HPV — even if no dose has ever been logged. Each suggestion carries a reason and links to guidance.</p>
+
+  <section class="device">
+    <div class="group-label">Vaccinations · eligibility suggestion</div>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot amber"></span><span class="name">Mpox vaccine</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">Not yet recorded</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Eligible · risk-based</span>
+      </div>
+      <div class="summary suggested" data-summary-key="summary.suggested">SUGGESTED · First dose not yet given</div>
+      <div class="advisory amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;flex:0 0 13px;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+        <span style="flex:1">Based on your sexual-health risk profile (multiple partners in past 6 months), Mpox vaccination is suggested — 2-dose series, no doses logged yet. <a href="https://www.cdc.gov/poxvirus/mpox/prevention/vaccine.html" target="_blank" rel="noopener" style="color:var(--meds-blue-soft)">CDC Mpox vaccine guidance</a></span>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.eligibility.reason">Eligibility reason</div>
+        <div class="chips"><span class="chip amber">Sexual-health risk</span><span class="chip grey">Multiple partners</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.series">Series</div>
+        <div class="chips"><span class="chip hc">2-dose course</span><span class="chip grey">0 / 2 doses</span></div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.book.first.dose">Book first dose</span>
+        <span class="btn outline btn-sm" data-i18n="action.dismiss.suggestion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Dismiss suggestion</span>
+      </div>
+    </article>
+  </section>
+
+  <h2>Fully-populated card (every capturable form field)</h2>
+  <p class="caption" data-i18n="caption.hepatitis.a.b.twinrix.dose.2.every.field">Hepatitis A/B (Twinrix) dose 2 — every field the vaccination form can capture: title, vaccine, reason, date/time, provider, injection site (+ side), notes, symptom/reaction link, dose series with per-dose next-due, attachments count. Clinic-visit linkage is owned by the visit (vaccinationsGivenIds); the vaccination derives it. Legacy entries and revaccination are supported without requiring a continuous provider chain.</p>
+
+  <section class="device">
+    <div class="group-label">Vaccinations · full 1:1 render</div>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot hc"></span><span class="name">Hepatitis A/B (Twinrix)</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">30 Oct 2026 · 11:20 · Gluteal</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+        <span class="nowrap">Clinic 3, St Thomas'</span>
+      </div>
+      <div class="dose-strip">
+        <span class="dose done"></span><span class="dose done"></span><span class="dose due"></span>
+        <span class="dose-label">2 / 3 complete</span>
+      </div>
+      <div class="summary due" data-summary-key="summary.due">DUE · Third dose due Sat 17 Apr</div>
+
+      <!-- Vaccine + reason -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.vaccine">Vaccine</div>
+        <div class="chips"><span class="chip hc">Hepatitis A/B</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.reason">Reason</div>
+        <div class="chips">
+          <span class="chip grey">Routine</span>
+          <button class="chip grey" aria-label="Add reason">+ add reason</button>
+        </div>
+      </div>
+
+      <!-- Provider / injection site (+ side) / notes -->
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title hc">Given at</span></div>
+        <div class="status-row"><span class="fu-label">Provider</span><span class="fu-body">Clinic 3, St Thomas'</span></div>
+        <div class="status-row"><span class="fu-label">Injection site</span><span class="fu-body">Gluteal · <span class="side">Right side</span></span></div>
+      </div>
+      <div class="note">Second dose, on schedule. Third and final dose due at the 6-month mark.</div>
+
+      <!-- Symptom / reaction link -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.symptom.reaction.discussed">Symptom / reaction discussed</div>
+        <div class="chips"><span class="chip grey">None recorded</span><button class="chip grey" aria-label="Add symptom">+ add reaction</button></div>
+      </div>
+
+      <!-- Dose schedule with per-dose next-due -->
+      <div class="ctx-group warning">
+        <div class="ctx-header"><span class="ctx-title amber">Dose schedule</span></div>
+        <div class="status-row"><span class="fu-label">Dose 1</span><span class="fu-body">30 Aug 2026 · Deltoid · complete</span></div>
+        <div class="status-row"><span class="fu-label">Dose 2</span><span class="fu-body">30 Oct 2026 · Gluteal · complete</span></div>
+        <div class="status-row"><span class="fu-label">Dose 3</span><span class="fu-body nowrap">Sat 17 Apr · due · 6-month mark</span></div>
+      </div>
+
+      <!-- Attachments (small icon) -->
+      <div class="footer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:9px;height:9px;flex:0 0 9px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Attachments · 0</span>
+      </div>
+
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.book.third.dose">Book third dose</span>
+        <span class="btn outline btn-sm" data-i18n="action.view.schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>View schedule</span>
+      </div>
+    </article>
+  </section>
+
+  <p class="annotation" data-i18n="annotation.render.note.this.is.a.design.mockup.new.">Render note: this is a design mockup. New features shown — serum antibody (titer) check, revaccination after ~5 years (risk-based only, per CDC), legacy/historical import without continuous provider, risk-profile eligibility suggestions, injection-site side marker — are acceptable additions to the form schema. The live vaccination module owns persistence, loading/empty states, native-dialog replacement, and amendments/modifications (BACKLOG 13). Those are wiring gaps, not card-design defects.</p>
+<!-- string table: ST() keys mapped via strings.js; locale en-GB -->
+</main>
+  <script>
+    (function () {
+      var els = document.querySelectorAll('.summary[data-summary-key]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-summary-key');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      var els = document.querySelectorAll('[data-i18n]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

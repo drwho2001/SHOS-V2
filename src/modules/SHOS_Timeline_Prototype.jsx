@@ -274,7 +274,7 @@ function SingleEncounterSelect({ value, onChange, T, items }) {
 // pre-filtered by the caller (e.g. "after the start date, not already
 // linked") — suggestions are ALWAYS tappable chips, NEVER auto-added,
 // per the user's explicit instruction on how linking should work here.
-function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T, alertIds = [] }) {
+function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T, alertIds = [], onOpen }) {
   // FIXED 28 Sep 2026 — Anonymise mode, read ONCE here. Reading it inside the
   // render of each candidate chip below would be a hooks violation (a hook
   // called inside a .map() callback), which React can turn into a real error
@@ -286,9 +286,13 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
       {linkedIds.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {linkedIds.map((id) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(linkedIds.filter((v) => v !== id))}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer"}}>
-              {nameFor(id)}<X size={11} />
+            <div key={id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 13, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400 }}>
+              {onOpen ? (
+                <span role="button" tabIndex={0} onClick={() => onOpen(id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(id); } }} style={{ cursor: "pointer", textDecoration: "underline" }}>{nameFor(id)}</span>
+              ) : (
+                <span>{nameFor(id)}</span>
+              )}
+              <span role="button" tabIndex={0} onClick={() => onChange(linkedIds.filter((v) => v !== id))} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(linkedIds.filter((v) => v !== id)); } }} style={{ cursor: "pointer", display: "inline-flex", alignItems: "center" }} aria-label="Remove link"><X size={11} /></span>
             </div>
           ))}
         </div>
@@ -358,7 +362,7 @@ function StartSheet({ onSave, onClose, T }) {
   );
 }
 
-function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
+function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateToRecord }) {
   const { t: tr } = useTranslation();
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -581,12 +585,12 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           {episodeStatusLabel(episode, hasPositive, formatDate, { showResolution: true })}
         </div>
 
-        <SectionCard title="Start" T={T}>
+        <SectionCard title="Start" T={T} accent={T.healthcareBlue}>
           <ReadRow label="Exposure Encounter" value={encounterLabel(startEncounter)} T={T} />
           <ReadRow label="Why this started" value={episode.triggerReason} T={T} />
         </SectionCard>
 
-        <SectionCard title="At-risk encounters" T={T}>
+        <SectionCard title="At-risk encounters" T={T} accent={T.healthcareBlue}>
           <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>
             Anyone logged after the start date, while this stayed open. {hasPositive && "Tap a name once you've notified them — it'll show marked below."}
           </div>
@@ -640,25 +644,25 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           )}
         </SectionCard>
 
-        <SectionCard title="Testing" T={T}>
-          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter((t) => testIsPositive(t, resultNameById)).map((t) => t.id)} />
+        <SectionCard title="Testing" T={T} accent={T.healthcareBlue}>
+          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter((t) => testIsPositive(t, resultNameById)).map((t) => t.id)} onOpen={onNavigateToRecord ? (id) => { onBack?.(); onNavigateToRecord("healthcare", id, "testing"); } : undefined} />
         </SectionCard>
 
-        <SectionCard title="Treatment" T={T}>
+        <SectionCard title="Treatment" T={T} accent={T.healthcareBlue}>
           <LinkedItemsSection label="Clinic visits" linkedIds={episode.clinicVisitIds} onChange={(v) => update({ clinicVisitIds: v })} candidates={visitCandidates} nameFor={(id) => visitLabel(linkedVisitById[id])} T={T} />
         </SectionCard>
 
-        <SectionCard title="Symptoms" T={T}>
+        <SectionCard title="Symptoms" T={T} accent={T.healthcareBlue}>
           <LinkedItemsSection label="Symptom Log entries" linkedIds={episode.symptomLogIds} onChange={(v) => update({ symptomLogIds: v })} candidates={symptomCandidates} nameFor={(id) => linkedSymptomLabelById[id] || "—"} T={T} />
         </SectionCard>
 
-        <SectionCard title="Notes" T={T}>
+        <SectionCard title="Notes" T={T} accent={T.healthcareBlue}>
           <textarea value={episode.notes} onChange={(e) => update({ notes: e.target.value })} rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
         {isOpen ? (
-          <SectionCard title="Resolve" T={T}>
+          <SectionCard title="Resolve" T={T} accent={T.healthcareBlue}>
             {(() => {
               const startCoverage = getEncounterCoverage(startDate, linkedTests);
               return startCoverage.status === "uncovered" ? (
@@ -690,7 +694,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
             </div>
           </SectionCard>
         ) : (
-          <SectionCard title="Resolved" T={T}>
+          <SectionCard title="Resolved" T={T} accent={T.healthcareBlue}>
             <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>{episode.resolution}</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
@@ -873,7 +877,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
   );
 }
 
-export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
+export default function TimelineModule({ onClose, registerModuleBackHandler, onNavigateToRecord } = {}) {
   const { t: tr } = useTranslation();
   const reducedMotion = useReducedMotion();
   useEscapeToClose(onClose);
@@ -979,7 +983,7 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
           in the flow. Pinned by scrollingFlexGuard.test.js. */}
       <DeleteUndoToast toast={deleteToast} onUndo={undoDelete} onRedo={redoDelete} T={T} />
       {screen.name === "list" && <TimelineLanding key={refreshKey} T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
-      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} onDelete={handleDelete} />}
+      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} onDelete={handleDelete} onNavigateToRecord={onNavigateToRecord} />}
       {screen.name === "add" && <StartSheet T={T} onSave={startEpisode} onClose={backToList} />}
     </div>
   );

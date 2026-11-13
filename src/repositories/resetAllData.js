@@ -50,6 +50,7 @@ import { MeasurementRepository } from "./measurementRepository";
 import { MenstrualCycleRepository } from "./menstrualCycleRepository";
 import { ContraceptionRepository } from "./contraceptionRepository";
 import { PregnancyRepository } from "./pregnancyRepository";
+import { VaginalHealthRepository } from "./vaginalHealthRepository";
 import { SymptomLogRepository } from "./symptomLogRepository";
 import { LocationsRepository } from "./locationsRepository";
 import { EpisodeRepository } from "./episodeRepository";
@@ -83,6 +84,7 @@ const LIST_REPOSITORIES = [
   ["Menstrual cycles", MenstrualCycleRepository],
   ["Contraception", ContraceptionRepository],
   ["Pregnancy entries", PregnancyRepository],
+  ["Vaginal health entries", VaginalHealthRepository],
   ["Symptom log entries", SymptomLogRepository],
   ["Locations", LocationsRepository],
   ["Episodes", EpisodeRepository],
@@ -143,6 +145,27 @@ export async function resetAllData() {
       ok.push(name);
     } catch (e) {
       failed.push({ name, error: e?.message || String(e) });
+    }
+  }
+
+  // UI filter state that lives outside the repository layer (see
+  // SHOS_Contacts_Prototype.jsx:3067-3081): six `shos_contact_filter_*` keys
+  // written via raw localStorage. Not user data, so they are not backed up,
+  // but a reset that leaves them behind is not "all data" either.
+  const CONTACT_FILTER_KEYS = [
+    "shos_contact_filter_roles",
+    "shos_contact_filter_positions",
+    "shos_contact_filter_hosts",
+    "shos_contact_filter_drives",
+    "shos_contact_filter_availability",
+    "shos_contact_filter_availability_at",
+  ];
+  for (const key of CONTACT_FILTER_KEYS) {
+    try {
+      localStorage.removeItem(key);
+      ok.push(`Contact filter: ${key}`);
+    } catch (e) {
+      failed.push({ name: `Contact filter: ${key}`, error: e?.message || String(e) });
     }
   }
 

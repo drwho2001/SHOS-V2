@@ -18,10 +18,12 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { CaretLeftIcon as ChevronLeft, XIcon as X, MagnifyingGlassIcon as Search, CheckIcon as Check, PencilSimpleIcon as Edit, ExportIcon as ExportIcon, TrashIcon as Trash2, SignOutIcon as SignOut } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
+import { EpisodeRepository } from "../repositories/episodeRepository";
+import { TestingRepository } from "../repositories/testingRepository";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { exportTextFile } from "../storage/fileExportHelper";
-import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -74,7 +76,7 @@ function itemFromContact(c, anonymise = false) {
 }
 
 // ── Contact picker (the "build/edit" step) ──
-function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, onCancel, T }) {
+function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGenerate, onCancel, T }) {
   const { t } = useTranslation();
   // FIXED 28 Sep 2026 — Anonymise mode. This screen lists every contact by
   // name, so it is one of the places the 28 Sep security review found a real
@@ -102,6 +104,34 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   const sortedContacts = useMemo(() => {
     return [...contacts].sort((a, b) => new Date(lastEncounterAt.get(b.id) || 0) - new Date(lastEncounterAt.get(a.id) || 0));
   }, [contacts, lastEncounterAt]);
+
+  // ADDED — BACKLOG 5: identify possible partners from encounters since
+  // the last negative test for this test's organisms. Pre-selects those
+  // contacts so the user can quickly build the notification list.
+  const suggestedContactIds = useLoadedMemo(async () => {
+    if (!testId) return new Set();
+    const test = await TestingRepository.getById(testId);
+    if (!test) return new Set();
+    const organismIds = test.organismIds || [];
+    // Find the most recent negative test for any of these organisms.
+    const allTests = await TestingRepository.getAll();
+    const lastNegativeDate = allTests
+      .filter((t) => t.id !== testId && (t.organismIds || []).some((o) => organismIds.includes(o)))
+      .filter((t) => (t.resultIds || []).some((r) => String(r).toLowerCase().includes("negative")))
+      .map((t) => t.resultDate || t.date)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    const cutoff = lastNegativeDate ? new Date(lastNegativeDate) : new Date(0);
+    // Encounters after the last negative test → their attendees are candidates.
+    const encounters = await EncounterRepository.getAll();
+    const ids = new Set();
+    encounters.forEach((e) => {
+      if (!e.date || new Date(e.date) <= cutoff) return;
+      (e.attendeeIds || []).forEach((id) => ids.add(id));
+    });
+    return ids;
+  }, [testId], new Set());
 
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState(() => new Set(initialSelectedIds));
@@ -147,12 +177,27 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
           <div onClick={() => setClinical((c) => !c)} role="switch" tabIndex={0} aria-checked={clinical} aria-label="Clinical version"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setClinical((c) => !c); } }}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44, margin: "-10px 0", cursor: "pointer", flexShrink: 0 }}>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? ACCENTS.healthcare : T.surfaceVariant, position: "relative", pointerEvents: "none" }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? T.healthcareBlue : T.surfaceVariant, position: "relative", pointerEvents: "none" }}>
               <div style={{ position: "absolute", top: 2, left: clinical ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
         </div>
       </div>
+
+      {suggestedContactIds.size > 0 && (
+        <div style={{ background: `${T.healthcareBlue}12`, border: `1px solid ${T.healthcareBlue}`, borderRadius: radius.md, padding: 12, marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, marginBottom: 4 }}>
+            {t("partnerNotification.suggested", "Suggested partners ({count})", { count: suggestedContactIds.size })}
+          </div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 8 }}>
+            {t("partnerNotification.suggestedHint", "Contacts you encountered since your last negative test for this organism.")}
+          </div>
+          <button onClick={() => setSelectedIds((prev) => { const next = new Set(prev); suggestedContactIds.forEach((id) => next.add(id)); return next; })}
+            style={{ fontSize: 12, fontWeight: 600, color: T.healthcareBlue, background: "transparent", border: `1px solid ${T.healthcareBlue}`, borderRadius: radius.sm, padding: "6px 12px", cursor: "pointer" }}>
+            {t("partnerNotification.selectAllSuggested", "Select all suggested")}
+          </button>
+        </div>
+      )}
 
       <div style={{ position: "relative", marginBottom: 12 }}>
         <Search size={15} color={T.textDisabled} style={{ position: "absolute", left: 12, top: 12 }} />
@@ -191,7 +236,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
                     someone at least as strongly as a name does. */}
                 {!anonymise && summarizeContactMethods(c) && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{summarizeContactMethods(c)}</div>}
               </div>
-              <div style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${isSelected ? ACCENTS.healthcare : T.border}`, background: isSelected ? ACCENTS.healthcare : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {isSelected && <Check size={14} color="#FFFFFF" weight="bold" />}
               </div>
             </div>
@@ -202,7 +247,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <button onClick={onCancel} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
         <button onClick={generate} disabled={selectedIds.size === 0}
-          style={{ flex: 2, padding: 12, borderRadius: 999, border: "none", background: selectedIds.size === 0 ? T.textDisabled : ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: selectedIds.size === 0 ? "default" : "pointer" }}>
+          style={{ flex: 2, padding: 12, borderRadius: 999, border: "none", background: selectedIds.size === 0 ? T.textDisabled : T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: selectedIds.size === 0 ? "default" : "pointer" }}>
           {selectedIds.size === 0 ? t("partnerNotification.selectAtLeastOne", "Select at least one") : t("partnerNotification.generateList", "Generate list ({count})", { count: selectedIds.size })}
         </button>
       </div>
@@ -211,14 +256,41 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
 }
 
 // ── Checklist (the generated list itself) ──
-function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
+function ChecklistStep({ testId, list, onEditContacts, onDelete, onClose, T }) {
   const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const toggleNotified = async (contactId) => { await PartnerNotificationRepository.toggleNotified(list.id, contactId); refresh(); };
+  const toggleNotified = async (contactId) => {
+    await PartnerNotificationRepository.toggleNotified(list.id, contactId);
+    // ADDED — BACKLOG 4: sync notified status to any linked episode's
+    // notifiedEncounterIds. Find encounters where this contact was an
+    // attendee since the last negative test, and mark them notified.
+    try {
+      const episodes = await EpisodeRepository.getAll();
+      const linked = episodes.filter((e) => (e.testIds || []).includes(testId));
+      if (linked.length > 0) {
+        const encounters = await EncounterRepository.getAll();
+        const contactEncounterIds = encounters
+          .filter((e) => (e.attendeeIds || []).includes(contactId))
+          .map((e) => e.id);
+        for (const ep of linked) {
+          const current = new Set(ep.notifiedEncounterIds || []);
+          // Toggle: if any of this contact's encounters are notified, add them; else remove
+          const item = list.items.find((i) => i.contactId === contactId);
+          if (item?.notified) {
+            contactEncounterIds.forEach((id) => current.add(id));
+          } else {
+            contactEncounterIds.forEach((id) => current.delete(id));
+          }
+          await EpisodeRepository.update(ep.id, { notifiedEncounterIds: [...current] });
+        }
+      }
+    } catch (e) { /* episode sync is best-effort; don't block notification toggle */ }
+    refresh();
+  };
   const editField = async (contactId, field, value) => { await PartnerNotificationRepository.updateItem(list.id, contactId, { [field]: value }); refresh(); };
 
     const notifiedCount = list.items.filter((i) => i.notified).length;
@@ -333,14 +405,14 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
         <button onClick={onEditContacts} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>
           <Edit size={14} /> {t("partnerNotification.editContacts", "Edit contacts")}
         </button>
-        <button onClick={doExport} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={doExport} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
           <ExportIcon size={14} /> {t("partnerNotification.exportAsText", "Export as text")}
         </button>
       </div>
       {confirmDelete ? (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={ACCENTS.healthcare}
+          moduleColor={T.healthcareBlue}
           margin="0"
           message={t("partnerNotification.deleteConfirm", "This permanently deletes the checklist \u2014 unlike archiving, there's no getting it back.")}
           confirmLabel={t("partnerNotification.deleteThisList", "Delete this list")}
@@ -360,7 +432,15 @@ export default function PartnerNotificationSheet({ testId, onClose, onQuickExit 
   const { t } = useTranslation();
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : NEUTRAL;
+  // CHANGED 12 Nov 2026 — this sheet read the raw ACCENTS.healthcare token
+  // straight into style values (a styleColourGuard regression), which also
+  // meant it kept the LIGHT accent on a dark surface. Resolved through the
+  // same helper Healthcare/Testing use, so light mode is unchanged and dark
+  // mode now gets the readable companion instead of a dark green on near-black.
+  const T = {
+    ...(darkMode ? DARK : NEUTRAL),
+    healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare,
+  };
   const sheetRef = useRef(null);
   useEffect(() => { sheetRef.current?.focus(); }, []);
   // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
@@ -442,6 +522,7 @@ export default function PartnerNotificationSheet({ testId, onClose, onQuickExit 
       </div>
       {editing ? (
         <ContactPickerStep
+          testId={testId}
           initialSelectedIds={(list?.items || []).map((i) => i.contactId)}
           initialClinical={list?.clinical || false}
           onGenerate={handleGenerate}
@@ -449,7 +530,7 @@ export default function PartnerNotificationSheet({ testId, onClose, onQuickExit 
           T={T}
         />
       ) : (
-        <ChecklistStep list={list} onEditContacts={() => setEditing(true)} onDelete={handleDelete} onClose={onClose} T={T} />
+        <ChecklistStep testId={testId} list={list} onEditContacts={() => setEditing(true)} onDelete={handleDelete} onClose={onClose} T={T} />
       )}
       </div>
     </div>

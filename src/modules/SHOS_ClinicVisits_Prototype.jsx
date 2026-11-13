@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair, StethoscopeIcon as Stethoscope } from "@phosphor-icons/react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
+import UndoToast from "../components/UndoToast";
 // ADDED — real ask: "use current location" on Clinic Visits, the last
 // of the three modules with a location-ish field (Contacts/Encounters
 // already have it) — same Nominatim reverse-geocode service, no second
@@ -120,8 +121,10 @@ function formatDateTime(iso) {
 }
 
 function SectionCard({ title, T, children }) {
+  // §49b — colour-indent/backfill: tinted background + coloured left border,
+  // matching encounters-card-mockup.html section-row style.
   return (
-    <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
+    <div style={{ border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.healthcareBlue}`, borderRadius: radius.sm, background: `${T.healthcareBlue}08`, padding: "4px 12px 12px", marginTop: 14 }}>
       <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
@@ -878,7 +881,7 @@ function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
 // already used everywhere else cross-module linking happens in this
 // app — there's no plumbing anywhere yet for opening one specific
 // record from outside its own module.
-function StartTestInline({ visitDate, onCreated, T }) {
+function StartTestInline({ visitId, visitDate, onCreated, T }) {
   const { t: tr } = useTranslation();
   const [name, setName] = useState("");
   const [showInput, setShowInput] = useState(false);
@@ -886,6 +889,9 @@ function StartTestInline({ visitDate, onCreated, T }) {
     const trimmed = name.trim();
     if (!trimmed) return;
     const test = await TestingRepository.create({ title: trimmed, date: visitDate || new Date().toISOString() });
+    // Write back the other side of the two-way link: test.clinicVisitIds
+    // points at this visit, mirroring visit.linkedTestIds.
+    await TestingRepository.update(test.id, { clinicVisitIds: [...(test.clinicVisitIds || []), visitId] });
     onCreated(test.id);
     setName(""); setShowInput(false);
   };
@@ -1128,8 +1134,21 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
     setIsSaving(true);
     try {
     clearDraft(draftKey);
+    // Capture the visit's previous linked-test set BEFORE writing, so the
+    // two-way test.clinicVisitIds links can be diffed and kept in sync.
+    const previousVisit = isNew ? null : await ClinicVisitsRepository.getById(visitId);
+    const previousLinkedTests = previousVisit?.linkedTestIds || [];
+    const nextLinkedTests = form.linkedTestIds || [];
+
     if (isNew) {
       const created = await ClinicVisitsRepository.create(form);
+      // Write the other side of the two-way link for newly added tests.
+      for (const tid of nextLinkedTests) {
+        const t = await TestingRepository.getById(tid);
+        if (t && !(t.clinicVisitIds || []).includes(created.id)) {
+          await TestingRepository.update(tid, { clinicVisitIds: [...(t.clinicVisitIds || []), created.id] });
+        }
+      }
       // ADDED — real ask: reminders for an actual booked appointment.
       // A brand-new visit could itself be the soonest one now, or
       // could displace/cancel-out a stale prior schedule — either way
@@ -1147,6 +1166,21 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
       // itself is now async too, same reasoning as Testing's own save().
       await onBeforeEdit?.(visitId);
       await ClinicVisitsRepository.update(visitId, form);
+      // Diff linked tests and sync test.clinicVisitIds both directions.
+      const added = nextLinkedTests.filter((id) => !previousLinkedTests.includes(id));
+      const removed = previousLinkedTests.filter((id) => !nextLinkedTests.includes(id));
+      for (const tid of added) {
+        const t = await TestingRepository.getById(tid);
+        if (t && !(t.clinicVisitIds || []).includes(visitId)) {
+          await TestingRepository.update(tid, { clinicVisitIds: [...(t.clinicVisitIds || []), visitId] });
+        }
+      }
+      for (const tid of removed) {
+        const t = await TestingRepository.getById(tid);
+        if (t) {
+          await TestingRepository.update(tid, { clinicVisitIds: (t.clinicVisitIds || []).filter((id) => id !== visitId) });
+        }
+      }
       await onAfterEdit?.(visitId);
       syncClinicVisitReminders();
       syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
@@ -1325,7 +1359,7 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
           <RelationPicker label="Linked tests" value={form.linkedTestIds} onChange={set("linkedTestIds")} items={allTests} T={T} placeholder="No tests logged yet" />
           {/* ADDED 19 Aug 2026 — real feedback batch: start a test
               here with just a name, continue the rest in Testing. */}
-          <StartTestInline visitDate={form.date} onCreated={(testId) => { set("linkedTestIds")([...form.linkedTestIds, testId]); setRefreshKey((k) => k + 1); }} T={T} />
+          <StartTestInline visitId={visitId} visitDate={form.date} onCreated={(testId) => { set("linkedTestIds")([...form.linkedTestIds, testId]); setRefreshKey((k) => k + 1); }} T={T} />
           </>
           )}
           {/* The RESULTS of already-linked tests are deliberately NOT gated,
@@ -1922,19 +1956,14 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
-        <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
-          role="button" tabIndex={0} aria-label={deleteToast.mode === "undo" ? "Undo delete" : "Redo delete"} aria-live="polite"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
-          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minHeight: 44, zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
-          <span style={{ fontSize: 13 }}>
-            {deleteToast.mode === "undo"
-              ? `${deleteToast.records.length} visit${deleteToast.records.length > 1 ? "s" : ""} deleted`
-              : `${deleteToast.records.length} visit${deleteToast.records.length > 1 ? "s" : ""} restored`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>
-            {deleteToast.mode === "undo" ? "Tap to undo" : "Tap to redo"}
-          </span>
-        </div>
+        <UndoToast
+          mode={deleteToast.mode}
+          message={deleteToast.mode === "undo"
+            ? `${deleteToast.records.length} visit${deleteToast.records.length > 1 ? "s" : ""} deleted`
+            : `${deleteToast.records.length} visit${deleteToast.records.length > 1 ? "s" : ""} restored`}
+          accentColor={T.healthcareBlue}
+          onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+        />
       )}
     </div>
   );

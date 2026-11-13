@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="module" src="strings.js"></script>
+<title>Healthcare · Encounters — card render set (1:1 with form)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1C1C1F; --variant:#26262A; --border:#3A3A3F;
+    --primary:#F2F2F4; --secondary:#B8B8BE; --disabled:#89898C;
+    --hc:#0E8144; --hc-soft:#8FD6B4; --hc-tint:#0E814415;
+    --green:#5fd9a4; --red:#ff7a7e; --red-tint:#ff7a7e15; --amber:#F59E0B; --amber-tint:#F59E0B12;
+    --teal:#008585; --teal-tint:#00858510;
+    --purple:#7f30a6; --purple-tint:#7f30a610; --purple-soft:#b388f0;
+    --pink:#e24e9c; --pink-tint:#e24e9c10; --pink-soft:#f07ab8;
+    --meds-blue:#5B85F5; --meds-blue-tint:#5B85F510;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:12px;font-size:11px}
+  .device{width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
+  .group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin:14px 0 6px}
+
+  /* ── Card (§10.2.1 anatomy — encounters: metadata summary instead of state vocab) ── */
+  .card{position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card.older{background:var(--variant);color:var(--secondary)}
+  .card.older .name,.card.older .chip,.card.older .ctx-title,.card.older .byline span{color:var(--disabled)}
+  .card.older .dot{background:var(--disabled)}
+  .card.older .byline svg{color:var(--disabled)}
+  .card.older .ctx-group{background:#ffffff03;border-left-color:var(--border)}
+  .card.older .advisory,.card.older .note{background:var(--variant);border-left-color:var(--border);color:var(--disabled)}
+  .menu{position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled);cursor:pointer}
+  .menu:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+
+  .name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding-right:30px}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .dot.hc{background:var(--hc)}
+  .dot.green{background:var(--green)}
+  .dot.muted{background:var(--disabled)}
+  .name{font-size:15px;line-height:1.3;font-weight:600;min-width:0;overflow-wrap:break-word}
+  .older-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled);background:var(--variant);border:1px solid var(--border);border-radius:999px;padding:1px 6px;margin-left:8px}
+
+  .byline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;color:var(--secondary);font-size:10px;line-height:1.3;font-weight:500;min-width:0}
+  .byline svg{width:11px;height:11px;flex:0 0 11px}
+  .byline .nowrap{white-space:nowrap}
+
+  /* Metadata summary: rating · date · relative · climax indicator (derived, optional) */
+  .summary{font-size:12px;font-weight:700;letter-height:1.4;margin-top:2px}
+  .summary.enjoyment{color:var(--hc-soft)}
+  .summary span{font-weight:600}
+
+  .chip-group{display:flex;flex-direction:column;gap:3px;margin-top:10px;margin-bottom:4px;min-width:0}
+  .chip-group:first-of-type{margin-top:8px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin-bottom:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+  .chip{padding:2px 8px;border-radius:999px;border:1px solid transparent;font-size:10px;font-weight:600;white-space:nowrap;min-width:0}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:#fff}
+  .chip.green{background:var(--green);color:#002214;border-color:var(--green)}
+  .chip.amber{background:var(--amber-tint);border-color:var(--amber);color:#fff}
+  .chip.grey{background:var(--variant);color:var(--secondary);border-color:var(--border)}
+  .chip.red{background:var(--red-tint);border-color:var(--red);color:#fff}
+  .chip.teal{background:var(--teal-tint);border-color:var(--teal);color:#fff}
+  .chip.purple{background:var(--purple-tint);border-color:var(--purple);color:#fff}
+  .chip.pink{background:var(--pink-tint);border-color:var(--pink);color:#fff}
+  .chip.meds-blue{background:var(--meds-blue-tint);border-color:var(--meds-blue);color:#fff}
+  .chip.more{opacity:0.35;cursor:pointer;font-weight:700;background:var(--variant);border:1px solid transparent;color:#fff}
+  .chip.ghost{opacity:0.35;cursor:pointer;font-weight:700;background:var(--variant);border:1px solid transparent;color:#fff}
+
+  /* Context groups — indent + 3px colour bar + tinted background */
+  .ctx-group{margin-top:8px;padding:8px 8px 8px 10px;border-left:3px solid transparent;border-radius:0;background:transparent;min-width:0}
+  .ctx-group.info{border-left-color:var(--hc);background:var(--hc-tint)}
+  .ctx-group.neutral{border-left-color:var(--border);background:#ffffff05}
+  .ctx-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .ctx-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled)}
+  .ctx-title.hc{color:var(--hc-soft)}
+  .ctx-title.purple{color:var(--purple-soft)}
+  .status-row{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--secondary);min-width:0}
+  .fu-label{flex:0 0 74px;padding-top:1px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--secondary)}
+  .fu-body{flex:1;min-width:0;font-size:12px;color:var(--primary);line-height:1.45}
+
+  .advisory{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:var(--hc-tint);border-left:3px solid var(--hc);color:var(--secondary)}
+  .advisory svg{width:13px;height:13px;flex:0 0 13px;margin-top:1px}
+  .note{margin-top:8px;padding:7px 9px;border-left:3px solid var(--hc);border-radius:8px;background:var(--hc-tint);font-size:11px;line-height:1.4;color:var(--secondary);font-style:italic}
+  .annotation{margin-top:14px;border-left:2px solid var(--hc);padding-left:10px;font-size:12px;line-height:1.5;color:var(--secondary);font-style:italic}
+
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;min-width:0}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:10px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--primary);font-family:inherit}
+  .btn-sm{flex:0 0 auto;min-height:32px;padding:6px 10px;font-size:11px;font-weight:600}
+  .btn:focus-visible,.btn-sm:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+  .btn.filled{background:var(--hc);color:#fff;border-color:var(--hc)}
+  .btn.outline{background:transparent;color:var(--hc);border-color:var(--hc)}
+  .btn svg{width:14px;height:14px;flex:0 0 auto}
+
+  @media (max-width:360px){
+    .device{padding:10px 10px 20px}
+    .card{padding:12px 26px 12px 12px}
+    .actions{flex-wrap:wrap}
+    .actions .btn{flex:1 1 auto}
+    .byline{flex-wrap:wrap}
+  }
+
+  /* �� In-app modal form (add/log encounter) �� */
+  .modal-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.show { display: flex; }
+  .modal { width: min(420px, 92%); max-height: 85vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+  .modal .modal-title { font-size: 15px; font-weight: 700; margin: 0 0 12px; color: var(--primary); }
+  .modal .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .modal .field label { font-size: 11px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: .04em; }
+  .modal .field input, .modal .field select, .modal .field textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--variant); color: var(--primary); font-family: inherit; font-size: 13px; }
+  .modal .field textarea { resize: vertical; min-height: 60px; }
+  .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .modal .modal-btn { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--secondary); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .modal .modal-btn.primary { background: var(--hc); color: #fff; border-color: var(--hc); }
+  .modal .modal-btn.secondary { background: var(--variant); color: var(--primary); border-color: var(--border); }
+  .modal .modal-btn:focus-visible { outline: 2px solid var(--hc); outline-offset: 2px; }
+
+  /* Toast notification */
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 10px 16px; border-radius: 999px; background: var(--variant); color: var(--primary); font-size: 12px; font-weight: 600; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,.3); display: none; align-items: center; gap: 8px; }
+  .toast.show { display: flex; }
+
+  /* ADDED 12 Nov 2026 — the loading skeleton, empty state and error banner are
+     all referenced by this file's own markup, but none of the three had a rule
+     here, so they rendered as unstyled boxes (the skeleton was three invisible
+     divs). Definitions taken from healthcare-sti-test-card.html, which already
+     specified them. */
+  .skeleton-line{height:10px;border-radius:4px;background:var(--variant);border:1px solid var(--border);margin:4px 0;animation:pulse 1.5s infinite ease-in-out}
+  .skeleton-line.short{width:60%}
+  .skeleton-line.medium{width:80%}
+  .skeleton-line.long{width:100%}
+  @keyframes pulse{0%{opacity:.4}50%{opacity:.7}100%{opacity:.4}}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 16px;color:var(--secondary)}
+  .empty-state h2{font-size:15px;font-weight:600;color:var(--primary);margin:0 0 6px}
+  .empty-state p{font-size:12px;color:var(--secondary);margin:0}
+  .error-banner{display:flex;gap:8px;align-items:center;margin-top:8px;padding:7px 9px;border-radius:8px;font-size:11px;line-height:1.4;background:var(--red-tint);border-left:3px solid var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Encounters — card render set</h1>
+  <p class="lead">Encounters is a record list, not a state screen — there is no state vocab (no BOOKED/COMPLETED). Each card carries a metadata summary (enjoyment rating · date · relative · climax indicator) plus attendee, position, activity, protection, position, loads, and notes. Every capturable form fact is represented on the card — nothing is invented for the card that the form cannot capture. Rendered in the STI/testing grammar on a 393dp device that shrinks to fit narrow panes.</p>
+
+  <h2>States</h2>
+  <p class="caption" data-i18n="encounter.captionNoStateVocab">No state vocab — encounters are records, not status screen. Dot = module accent (teal) since encounters have no inherent state. Summary line reads enjoyment rating · date · relative · climax indicator (derived from whereICame/whereHeCame, optional).</p>
+
+  <div style="margin: 0 0 12px;">
+    <button class="btn filled btn-sm" id="add-encounter-btn" type="button">+ Add encounter</button>
+  </div>
+
+  <!-- Loading skeleton (shown briefly on first load) -->
+  <div id="loading-skeleton" class="empty-state" hidden>
+    <div class="skeleton-line long"></div>
+    <div class="skeleton-line medium"></div>
+    <div class="skeleton-line short"></div>
+  </div>
+
+  <!-- Empty state (shown when no encounters) -->
+  <div id="empty-state" class="empty-state" hidden>
+    <h2 data-i18n="encounter.noEncountersYet">No encounters yet</h2>
+    <p>Nothing here yet. Use Add encounter to record your first encounter.</p>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="error-banner" hidden>
+    <span id="error-message">Failed to load data. Please try again.</span>
+  </div>
+
+  <section class="device">
+    <div class="group-label">Encounters · states</div>
+
+    <!-- Card 1 — Complete encounter (full metadata) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot teal"></span><span class="name">Afternoon delight</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">15 Jul 2026 · 10:30–12:30</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="nowrap">Alex's flat · Hook-up</span>
+      </div>
+      <div class="summary enjoyment"><strong>84/100</strong> <span style="color:var(--secondary)">·</span> <span>15 Jul 2026</span> <span style="color:var(--secondary)">·</span> <span>3 months ago</span> <span style="color:var(--pink-soft)"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2 C12 2 5 9 5 14 C5 17.3 8.7 20 12 20 C15.3 20 18 17.3 18 14 C18 9 12 2 12 2 Z"/></svg></span></div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.position">Position (me)</div>
+        <div class="chips"><span class="chip teal">Anal - receiving</span><span class="chip teal">Oral - giving</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.activities">Activities</div>
+        <div class="chips"><span class="chip purple">Roleplay</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.protection">Protection & medication</div>
+        <div class="chips"><span class="chip green">Condom</span><span class="chip meds-blue">PrEP</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.came">Cum / loads</div>
+        <div class="chips"><span class="chip pink">Internal - Ass</span><span class="chip pink">3 loads</span></div>
+      </div>
+      <div class="note">Great connection, very communicative about boundaries. Would repeat.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.encounter.details">View encounter details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Edit</span>
+      </div>
+    </article>
+
+    <!-- Card 2 — Sparse / minimal encounter -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot teal"></span><span class="name">Untitled encounter</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">Timings not known</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="nowrap">No location recorded</span>
+      </div>
+      <div class="summary enjoyment">No rating yet <span style="color:var(--secondary)">·</span> <span>No date recorded</span></div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.attendees">Attendees</div>
+        <div class="chips"><span class="chip ghost" aria-label="Add attendee">+ add attendee</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.position">Position</div>
+        <div class="chips"><span class="chip ghost" aria-label="Add position">+ add position</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.activities">Activities</div>
+        <div class="chips"><span class="chip ghost" aria-label="Add activity">+ add activity</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.protection">Protection</div>
+        <div class="chips"><span class="chip ghost" aria-label="Add protection">+ add protection</span></div>
+      </div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="encounter.editEncounter">Edit encounter</span>
+        <span class="btn outline btn-sm" data-i18n="generic.archive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Archive</span>
+      </div>
+    </article>
+
+    <!-- Card 3 — Older encounter (faded, not a red state) -->
+    <article class="card older">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot muted"></span><span class="name">Morgan — first date</span><span class="older-pill">Older encounter</span></div>
+      <div class="byline" style="color:var(--disabled)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">111 days ago · 19:30</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="nowrap">Restaurant · Dinner date</span>
+      </div>
+      <div class="summary enjoyment"><strong>72/100</strong> <span style="color:var(--disabled)">·</span> <span>111 days ago</span> <span style="color:var(--disabled)">·</span> <span>Really clicked — seeing her again.</span></div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.attendees">Attendees</div>
+        <div class="chips"><span class="chip grey">Morgan</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.activities">Activities</div>
+        <div class="chips"><span class="chip grey">Dinner</span><span class="chip grey">Conversation</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.protection">Protection</div>
+        <div class="chips"><span class="chip grey">Not applicable</span></div>
+      </div>
+    </article>
+
+    <!-- Card 5 — Group session encounter (multiple attendees, session group, loads/fist) -->
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot teal"></span><span class="name">Ash's after-party</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">20 days ago · 23:00</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="nowrap">Ash's flat · Group session</span>
+      </div>
+      <div class="summary enjoyment"><strong>88/100</strong> <span style="color:var(--secondary)">·</span> <span>20 days ago</span> <span style="color:var(--secondary)">·</span> <span>Ended up back at Ash's after the party.</span></div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.attendees">Attendees</div>
+        <div class="chips"><span class="chip grey">Ash</span><span class="chip grey">Jordan</span><span class="chip grey">Riley</span><span class="chip more">+1</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.session">Session</div>
+        <div class="chips"><span class="chip hc">Group session</span><span class="chip grey">Session ID: sess-8001</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.protection">Protection & medication</div>
+        <div class="chips"><span class="chip green">Condom</span><span class="chip meds-blue">PrEP</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.loads">Loads</div>
+        <div class="chips"><span class="chip pink">4 loads</span><span class="chip pink">1 fist</span></div>
+      </div>
+      <div class="note">Ended up back at Ash's after the party.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.encounter.details">View encounter details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Edit</span>
+      </div>
+    </article>
+  </section>
+
+  <h2>Fully-populated card (every capturable form field)</h2>
+  <p class="caption" data-i18n="caption.one.encounter.carrying.every.field.the.e">One encounter carrying every field the encounter form can capture: title, date/time (+ end time), location, encounter type, attendees, position, activities/kinks, protection & medication, cum/loads, PrEP/doxyPEP status, came-with, would-meet-again, symptoms noted, enjoyment rating, notes, linked test, linked encounter, session group, loads/fist counts. Encounters links to Testing (relatedTestIds), Contacts (attendeeIds), Symptoms (symptomsNoted).</p>
+
+  <section class="device">
+    <div class="group-label">Encounters · full 1:1 render</div>
+
+    <article class="card">
+      <svg class="menu" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      <div class="name-line"><span class="dot teal"></span><span class="name">Grace — first date</span></div>
+      <div class="byline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="nowrap">2 days ago · 19:00–22:00</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="nowrap">Bar · First date</span>
+      </div>
+      <div class="summary enjoyment"><strong>90/100</strong> <span style="color:var(--secondary)">·</span> <span>2 days ago</span> <span style="color:var(--secondary)">·</span> <span>Good first date, meeting again next week.</span></div>
+
+      <!-- Attendees -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.attendees">Attendees</div>
+        <div class="chips"><span class="chip grey">Grace</span></div>
+      </div>
+
+      <!-- Position -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.position">Position (me)</div>
+        <div class="chips"><span class="chip teal">Oral - giving</span></div>
+      </div>
+
+      <!-- Activities / kinks -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.activities.kinks">Activities / kinks</div>
+        <div class="chips"><span class="chip purple">Kissing</span><span class="chip purple">Massage</span></div>
+      </div>
+
+      <!-- Protection & medication -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="encounter.protection">Protection & medication</div>
+        <div class="chips"><span class="chip green">Condom</span><span class="chip meds-blue">PrEP</span><span class="chip meds-blue">DoxyPEP</span></div>
+      </div>
+
+      <!-- Climax / came -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.came">Came</div>
+        <div class="chips"><span class="chip pink">Me</span><span class="chip pink">Them</span></div>
+      </div>
+
+      <!-- Linked test / encounter / symptoms -->
+      <div class="ctx-group info">
+        <div class="ctx-header"><span class="ctx-title hc">Linked records</span></div>
+        <div class="status-row"><span class="fu-label">Linked test</span><span class="fu-body">Symptomatic screen · Gonorrhoea positive</span></div>
+        <div class="status-row"><span class="fu-label">Linked encounter</span><span class="fu-body">Grace — coffee date · 1 week ago</span></div>
+        <div class="status-row"><span class="fu-label">Symptoms noted</span><span class="fu-body">None reported</span></div>
+      </div>
+
+      <!-- Status flags -->
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.status">Status</div>
+        <div class="chips">
+          <span class="chip hc">PrEP covered</span>
+          <span class="chip hc">DoxyPEP taken</span>
+          <span class="chip green">Would meet again</span>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="note">Good first date, meeting again next week.</div>
+
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.encounter.details">View encounter details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Edit</span>
+      </div>
+    </article>
+  </section>
+
+  <p class="annotation" data-i18n="annotation.render.note.this.is.a.design.mockup.enco">Render note: this is a design mockup. Encounters is a record list, not a state screen — there is no BOOKED/COMPLETED vocab. The live encounter module owns persistence, loading/empty states, native-dialog replacement, and amendments/modifications (BACKLOG 13). Those are wiring gaps, not card-design defects.</p>
+<!-- string table: ST() keys mapped via strings.js; locale en-GB -->
+</main>
+
+  <!-- Add/log encounter modal -->
+  <div class="modal-overlay" id="encounter-modal" hidden>
+    <div class="modal" role="dialog" aria-label="Add encounter">
+      <h2 class="modal-title" data-i18n="encounter.addEncounter">Add encounter</h2>
+      <div class="field">
+        <label for="enc-title" data-i18n="generic.title">Title</label>
+        <input id="enc-title" type="text" placeholder="e.g. Alex — coffee then back to theirs" />
+      </div>
+      <div class="field">
+        <label for="enc-date" data-i18n="encounter.dateTime">Date & time</label>
+        <input id="enc-date" type="datetime-local" />
+      </div>
+      <div class="field">
+        <label for="enc-type" data-i18n="encounter.encounterType">Encounter type</label>
+        <select id="enc-type">
+          <option value="">Select type</option>
+          <option value="hookup">Hook-up</option>
+          <option value="date">Date</option>
+          <option value="group">Group session</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="enc-attendees" data-i18n="encounter.attendees">Attendees</label>
+        <input id="enc-attendees" type="text" placeholder="Comma-separated names" />
+      </div>
+      <div class="field">
+        <label for="enc-location" data-i18n="encounter.location">Location</label>
+        <input id="enc-location" type="text" placeholder="e.g. His place, Sauna, or address" />
+      </div>
+      <div class="field">
+        <label for="enc-rating" data-i18n="encounter.enjoymentRating">Enjoyment rating (0–100)</label>
+        <input id="enc-rating" type="number" min="0" max="100" />
+      </div>
+      <div class="field">
+        <label for="enc-notes" data-i18n="generic.notes">Notes</label>
+        <textarea id="enc-notes" rows="3"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" id="enc-cancel" type="button" data-i18n="action.cancel">Cancel</button>
+        <button class="modal-btn primary" id="enc-save" type="button" data-i18n="action.saveEncounter">Save encounter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    // String table: populate data-i18n elements from strings.js
+    (function () {
+      var els = document.querySelectorAll('[data-i18n]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+
+  <script>
+    // String table: populate data-i18n elements from strings.js
+    (function () {
+      var els = document.querySelectorAll('[data-i18n]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+
+  <script>
+    (function () {
+      var overlay = document.getElementById('encounter-modal');
+      var toast = document.getElementById('toast');
+      var toastTimer = null;
+      function showToast(msg, ms) {
+        ms = ms || 2000;
+        toast.textContent = msg;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove('show'); }, ms);
+      }
+      function openModal() { overlay.hidden = false; overlay.classList.add('show'); }
+      function closeModal() { overlay.classList.remove('show'); overlay.hidden = true; }
+      var addBtn = document.getElementById('add-encounter-btn');
+      if (addBtn) addBtn.addEventListener('click', openModal);
+      var cancelBtn = document.getElementById('enc-cancel');
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+      var saveBtn = document.getElementById('enc-save');
+      if (saveBtn) saveBtn.addEventListener('click', function () {
+        var title = document.getElementById('enc-title').value.trim();
+        if (!title) { showToast('Title is required'); return; }
+        showToast('Encounter saved');
+        closeModal();
+      });
+    })();
+  </script>
+</body>
+</html>

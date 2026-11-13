@@ -25,7 +25,7 @@
   .caption{margin-bottom:12px;font-size:11px}
   .num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--enc-tint);border:1px solid var(--enc);color:var(--enc);font-size:11px;font-weight:800;margin-right:8px;vertical-align:2px}
 
-  .device{width:393px;max-width:100%;margin:0 auto;padding:0 0 14px;border:1px solid #303034;border-radius:22px;background:var(--page);box-shadow:0 12px 36px #0008;overflow:hidden}
+  .device{width: min(393px, 100%);max-width:100%;margin:0 auto;padding:0 0 14px;border:1px solid #303034;border-radius:22px;background:var(--page);box-shadow:0 12px 36px #0008;overflow:hidden}
   .device-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled);padding:12px 14px 8px}
   .pair{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-top:4px}
 
@@ -346,7 +346,7 @@
       <div class="row">
         <div class="body">
           <div class="title-line"><span class="title">Treatment review</span></div>
-          <div class="line">02 Oct 2026</div>
+          <div class="line">2 Oct 2026</div>
           <div class="line">Dr A. Patel · St Thomas'</div>
         </div>
       </div>
@@ -375,7 +375,7 @@
       <div class="row red">
         <div class="body">
           <div class="title-line"><span class="dot" style="background:var(--red)"></span><span class="title">Treatment review</span><span class="pill red">Positive result</span></div>
-          <div class="line">02 Oct 2026</div>
+          <div class="line">2 Oct 2026</div>
           <div class="line">Dr A. Patel · St Thomas'</div>
           <div class="result pos">HIV: Positive · home test brought in</div>
         </div>
@@ -391,7 +391,7 @@
       <div class="row muted" style="border-color:var(--red)">
         <div class="body">
           <div class="title-line"><span class="dot" style="background:var(--red);opacity:.6"></span><span class="title">Initial assessment</span><span class="pill">Older visit</span></div>
-          <div class="line">04 Feb 2025 · Dr M. Okafor</div>
+          <div class="line">4 Feb 2025 · Dr M. Okafor</div>
           <div class="result pos" style="color:var(--red)">Gonorrhoea: Positive · tested at clinic</div>
         </div>
       </div>

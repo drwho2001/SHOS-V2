@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="module" src="strings.js"></script>
+<title>Healthcare · Vaginal health — card render set (1:1 with form)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#121214; --surface:#1C1C1F; --variant:#26262A; --border:#3A3A3F;
+    --primary:#F2F2F4; --secondary:#B8B8BE; --disabled:#89898C;
+    --hc:#0E8144; --hc-soft:#8FD6B4; --hc-tint:#0E814415;
+    --green:#5fd9a4; --green-tint:#5fd9a415; --red:#ff7a7e; --red-tint:#ff7a7e15; --amber:#F59E0B; --amber-tint:#F59E0B12;
+    /* ADDED 12 Nov 2026 — treatment chips use the medication blue (same value
+       as every other mockup); the green tint was used with a hardcoded
+       fallback because it was never declared. The teal/purple/pink families
+       were copied in from the encounters palette and are not used anywhere in
+       this file, so they are gone rather than left as dead declarations. */
+    --meds-blue:#5B85F5; --meds-blue-tint:#5B85F510; --meds-blue-soft:#A9C8FF;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;padding:24px 12px 48px;background:var(--page);color:var(--primary);font-family:Inter,Roboto,"Segoe UI",sans-serif}
+  .page{width:min(100%,760px);margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  h2{margin:26px 0 8px;font-size:14px;font-weight:600}
+  p{margin:0}
+  .lead,.caption{color:var(--secondary);font-size:12px;line-height:1.5}
+  .lead{margin-bottom:20px}
+  .caption{margin-bottom:12px;font-size:11px}
+  .annotation{margin-top:14px;border-left:2px solid var(--hc);padding-left:10px;font-size:12px;line-height:1.5;color:var(--secondary);font-style:italic}
+  .annotation strong{color:var(--primary);font-style:normal}
+  .device{width:min(393px,100%);margin:0 auto;background:var(--page);border:1px solid var(--border);border-radius:14px;padding:14px 14px 20px}
+  .group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--disabled);margin:0 0 8px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;position:relative}
+  .card.empty{border-style:dashed}
+  .card.urgent{border-color:var(--red);background:var(--red-tint)}
+  .name-line{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .dot.red{background:var(--red)}
+  .dot.amber{background:var(--amber)}
+  .dot.green{background:var(--green)}
+  .dot.grey{background:var(--disabled)}
+  .name{font-size:14px;font-weight:700;flex:1;min-width:0}
+  .byline{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--secondary);margin-bottom:8px;flex-wrap:wrap}
+  .byline .nowrap{white-space:nowrap}
+  .summary{font-size:12px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .summary.urgent{color:var(--red)}
+  .summary.pending{color:var(--amber)}
+  .summary.complete{color:var(--green)}
+  .summary.info{color:var(--secondary)}
+  .chip-group{margin-bottom:8px}
+  .chip-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--disabled);margin-bottom:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+  .chip.red{background:var(--red-tint);border-color:var(--red);color:var(--red)}
+  .chip.amber{background:var(--amber-tint);border-color:var(--amber);color:var(--amber)}
+  .chip.green{background:var(--green-tint);border-color:var(--green);color:var(--green)}
+  .chip.grey{background:var(--variant);border-color:var(--border);color:var(--secondary)}
+  .chip.hc{background:var(--hc-tint);border-color:var(--hc);color:var(--hc-soft)}
+  .chip.meds-blue{background:var(--meds-blue-tint);border-color:var(--meds-blue);color:var(--meds-blue-soft)}
+  .note{font-size:11px;color:var(--secondary);border-left:3px solid var(--hc);padding:7px 9px;border-radius:8px;background:var(--hc-tint);margin-top:8px;line-height:1.4}
+  .actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:4px;padding:0 12px;min-height:32px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent}
+  .btn.filled{background:var(--hc);color:#fff;border-color:var(--hc)}
+  /* ADDED 12 Nov 2026 — present in the markup's class lists, missing here. */
+  .btn-sm{flex:0 0 auto;min-height:32px;padding:6px 10px;font-size:11px;font-weight:600}
+  .btn.outline{background:transparent;color:var(--primary);border-color:var(--border)}
+  .btn:focus-visible{outline:2px solid var(--hc);outline-offset:2px}
+  @media (max-width:360px){.device{padding:10px}.card{padding:10px 12px}.actions{flex-wrap:wrap}.actions .btn{flex:1 1 auto}}
+  /* string table: ST() keys mapped via strings.js; locale en-GB */
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Healthcare · Vaginal health — card render set</h1>
+  <p class="lead">Vaginal health conditions (BV, candidiasis, trichomoniasis, PID, pregnancy) — separate from the STI list. Urgency follows clinical treatability: PID/cervicitis = same-day urgent; trichomoniasis = prompt; BV/candida = treat as indicated; pregnancy = refer antenatal. Urgency tiers need clinician sign-off before app build.</p>
+  <p class="caption" data-i18n="caption.cards.use.the.sti.grammar.dot.byline.sum">Cards use the STI grammar (dot, byline, summary, ctx-groups, advisory). Dot colour = urgency: red = urgent, amber = pending/prompt, green = complete/resolved. No partner notification for BV/candida; PID may trigger notification.</p>
+
+  <h2>States</h2>
+  <p class="caption" data-i18n="caption.urgency.tiers.pid.urgent.same.day.empiri">Urgency tiers: PID = urgent (same-day empiric), trichomoniasis = prompt, BV/candida = treat as indicated (routine), pregnancy = refer antenatal. Cards become overdue when a deadline passes without action.</p>
+
+  <section class="device">
+    <div class="group-label">Vaginal health · states</div>
+
+    <!-- Card 1 — PID (urgent) -->
+    <article class="card urgent">
+      <div class="name-line"><span class="dot red"></span><span class="name">Pelvic inflammatory disease</span><span class="chip red">Urgent</span></div>
+      <div class="byline"><span class="nowrap">Symptomatic · 2 days ago</span><span class="nowrap">Clinic referral</span></div>
+      <div class="summary urgent">URGENT · PID — same-day treatment needed</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.condition">Condition</div>
+        <div class="chips"><span class="chip red">PID</span><span class="chip grey">Cervicitis</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.treatment">Treatment</div>
+        <div class="chips"><span class="chip hc">Empiric broad-spectrum</span><span class="chip meds-blue">Ceftriaxone + Doxycycline + Metronidazole</span></div>
+      </div>
+      <div class="note">Empiric treatment started at clinic. Partner notification discussed. TOC in 2 weeks.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.details">View details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit">Edit</span>
+      </div>
+    </article>
+
+    <!-- Card 2 — Trichomoniasis (prompt) -->
+    <article class="card">
+      <div class="name-line"><span class="dot amber"></span><span class="name">Trichomoniasis</span><span class="chip amber">Prompt</span></div>
+      <div class="byline"><span class="nowrap">Swab result · 5 days ago</span><span class="nowrap">Home kit</span></div>
+      <div class="summary pending">PENDING · Treatment needed</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.condition">Condition</div>
+        <div class="chips"><span class="chip amber">Trichomoniasis</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.treatment">Treatment</div>
+        <div class="chips"><span class="chip hc">Metronidazole 400mg BD × 7d</span></div>
+      </div>
+      <div class="note">Partner notification recommended. Retest in 3 months.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.log.treatment">Log treatment</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit">Edit</span>
+      </div>
+    </article>
+
+    <!-- Card 3 — BV (routine) -->
+    <article class="card">
+      <div class="name-line"><span class="dot green"></span><span class="name">Bacterial vaginosis</span><span class="chip green">Routine</span></div>
+      <div class="byline"><span class="nowrap">Swab result · 8 days ago</span><span class="nowrap">Clinic</span></div>
+      <div class="summary complete">COMPLETE · Treated</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.condition">Condition</div>
+        <div class="chips"><span class="chip green">BV</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.treatment">Treatment</div>
+        <div class="chips"><span class="chip hc">Metronidazole 400mg BD × 5-7d</span></div>
+      </div>
+      <div class="note">No partner notification needed. Recurrence possible — advise retest if symptoms return.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.details">View details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit">Edit</span>
+      </div>
+    </article>
+
+    <!-- Card 4 — Candidiasis (routine) -->
+    <article class="card">
+      <div class="name-line"><span class="dot green"></span><span class="name">Candidiasis (thrush)</span><span class="chip green">Routine</span></div>
+      <div class="byline"><span class="nowrap">Self-diagnosed · 3 days ago</span><span class="nowrap">Home</span></div>
+      <div class="summary info">INFO · Self-care advised</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.condition">Condition</div>
+        <div class="chips"><span class="chip green">Candidiasis</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.treatment">Treatment</div>
+        <div class="chips"><span class="chip hc">Clotrimazole pessary / oral fluconazole</span></div>
+      </div>
+      <div class="note">Self-care advised. Refer to clinic if recurrent (>4 episodes/year) or atypical.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.details">View details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit">Edit</span>
+      </div>
+    </article>
+
+    <!-- Card 5 — Pregnancy (refer) -->
+    <article class="card">
+      <div class="name-line"><span class="dot amber"></span><span class="name">Pregnancy</span><span class="chip amber">Refer</span></div>
+      <div class="byline"><span class="nowrap">Positive test · 1 week ago</span><span class="nowrap">Home kit</span></div>
+      <div class="summary pending">PENDING · Antenatal referral</div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.condition">Condition</div>
+        <div class="chips"><span class="chip amber">Pregnancy</span></div>
+      </div>
+      <div class="chip-group">
+        <div class="chip-group-title" data-i18n="label.action">Action</div>
+        <div class="chips"><span class="chip hc">Refer antenatal</span><span class="chip grey">Folic acid advice</span></div>
+      </div>
+      <div class="note">Refer to antenatal services. Discuss STI screening (chlamydia, HIV, syphilis) as part of antenatal care.</div>
+      <div class="actions">
+        <span class="btn filled btn-sm" data-i18n="action.view.details">View details</span>
+        <span class="btn outline btn-sm" data-i18n="generic.edit">Edit</span>
+      </div>
+    </article>
+
+    <!-- Card 6 — Empty state -->
+    <article class="card empty">
+      <div class="name-line"><span class="dot grey"></span><span class="name">No vaginal health records</span></div>
+      <div class="byline"><span class="nowrap">Empty state</span></div>
+      <div class="summary info">INFO · No records yet</div>
+      <div class="note">Nothing here yet. Use Add to record your first vaginal health entry.</div>
+    </article>
+  </section>
+
+  <p class="annotation" data-i18n="annotation.render.note.vaginal.health.tab.is.a.sepa">Render note: vaginal health tab is a separate module under Healthcare (BACKLOG 6). Urgency tiers follow clinical treatability: PID/cervicitis = same-day urgent (empiric broad-spectrum), trichomoniasis = prompt, BV/candida = treat as indicated (routine), pregnancy = refer antenatal. Urgency tiers need clinician sign-off before app build. Vaginal swab ordering auto-suggested on female/trans-male records; available but hidden otherwise. BV/candidiasis/trichomoniasis/PID belong here; STI panel organisms stay in the STI tab.</p>
+</main>
+
+  <script type="module">
+    (function () {
+      var els = document.querySelectorAll('[data-i18n]');
+      els.forEach(function (el) {
+        var key = el.getAttribute('data-i18n');
+        if (key && typeof ST !== 'undefined') {
+          el.textContent = ST(key);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

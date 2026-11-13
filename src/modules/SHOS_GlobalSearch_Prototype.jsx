@@ -512,7 +512,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
         <div style={{ display: "flex", gap: 6, padding: "10px 16px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, paddingBottom: 10 }}>
           {[{ key: "chronological", label: tr("globalSearch.mostRecent", "Most recent") }, { key: "alphabetical", label: tr("globalSearch.aToZ", "A\u2013Z") }].map((s) => (
             <div key={s.key} onClick={() => setSortMode(s.key)} role="button" tabIndex={0} aria-pressed={sortMode === s.key} aria-label={s.label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortMode(s.key); } }}
-              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? "#FFFFFF" : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent"}}>
+              style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === s.key ? T.textPrimary : T.border}`, color: sortMode === s.key ? T.surface : T.textSecondary, background: sortMode === s.key ? T.textPrimary : "transparent"}}>
               {s.label}
             </div>
           ))}

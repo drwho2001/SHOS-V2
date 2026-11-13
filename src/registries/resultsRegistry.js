@@ -11,5 +11,5 @@ import { createSimpleRegistry } from "./simpleRegistry.js";
 export const ResultsRegistry = createSimpleRegistry({
   storageKey: "shos_results_registry",
   idPrefix: "result",
-  seedNames: ["Positive", "Negative", "Pending", "Inconclusive", "Not tested"],
+  seedNames: ["Positive", "Negative", "Pending", "Inconclusive", "Not tested", "Void"],
 });
