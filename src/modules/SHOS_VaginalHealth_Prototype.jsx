@@ -162,6 +162,8 @@ function VaginalHealthLanding({ T, records, loading, onAdd, onDelete, onEdit, on
                 </button>
               </div>
               <div style={{ ...TYPE.caption, color: T.textSecondary, marginTop: 4 }}>{r.date || t("vaginalHealth.noDate", "No date")}</div>
+              {r.treatment ? <div style={{ ...TYPE.caption, color: T.textSecondary, marginTop: 4 }}>Treatment: {r.treatment}</div> : null}
+              {r.outcome ? <div style={{ ...TYPE.caption, color: T.textSecondary, marginTop: 4 }}>Outcome: {r.outcome}</div> : null}
               {r.notes ? <div style={{ ...TYPE.caption, color: T.textSecondary, marginTop: 4, whiteSpace: "pre-wrap" }}>{r.notes}</div> : null}
               {pendingDeleteId === r.id ? (
                 <div onClick={(e) => e.stopPropagation()}>
@@ -236,6 +238,32 @@ function RecordEditor({ T, record, onChange, onDone, onRequestDelete, pendingDel
         onChange={(e) => onChange({ date: e.target.value })}
         style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}
       />
+
+      <label style={{ ...TYPE.caption, color: T.textSecondary, display: "block", marginBottom: 4 }} htmlFor="vh-treatment">
+        {t("vaginalHealth.treatment", "Treatment")}
+      </label>
+      <input
+        id="vh-treatment"
+        type="text"
+        value={record.treatment || ""}
+        onChange={(e) => onChange({ treatment: e.target.value })}
+        placeholder={t("vaginalHealth.treatmentPlaceholder", "What was prescribed or done")}
+        style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}
+      />
+
+      <label style={{ ...TYPE.caption, color: T.textSecondary, display: "block", marginBottom: 4 }} htmlFor="vh-outcome">
+        {t("vaginalHealth.outcome", "Outcome")}
+      </label>
+      <select
+        id="vh-outcome"
+        value={record.outcome || ""}
+        onChange={(e) => onChange({ outcome: e.target.value })}
+        style={{ width: "100%", padding: "10px 12px", marginBottom: 14, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}>
+        <option value="">{t("vaginalHealth.outcomeNone", "Not yet resolved")}</option>
+        <option value="resolved">{t("vaginalHealth.outcomeResolved", "Resolved")}</option>
+        <option value="recurring">{t("vaginalHealth.outcomeRecurring", "Recurring")}</option>
+        <option value="chronic">{t("vaginalHealth.outcomeChronic", "Chronic")}</option>
+      </select>
 
       <label style={{ ...TYPE.caption, color: T.textSecondary, display: "block", marginBottom: 4 }} htmlFor="vh-notes">
         {t("vaginalHealth.notes", "Notes")}
