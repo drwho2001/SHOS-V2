@@ -1456,7 +1456,7 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
         sessionStorage.removeItem("shos-sw-reloaded");
         return;
       }
-      const onControllerChange = () => { try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ } setSwUpdateAvailable(true); };
+      const onControllerChange = () => { try { const d = localStorage.getItem("shos-sw-update-dismissed"); if (d && (Date.now() - parseInt(d)) < 86400000) return; } catch { /* ignore */ } setSwUpdateAvailable(true); };
       // Delay registration so controllerchange during initial SW activation
       // doesn't immediately re-show the banner after a reload.
       const regTimer = setTimeout(() => {
@@ -1489,7 +1489,7 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
         // package.json in CI, so a hardcoded-version compare can never fire.
         const currentSha = typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev";
         if (data?.channel === "stable" && data?.buildSha && currentSha && currentSha !== "dev" && data.buildSha !== currentSha) {
-          try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ }
+          try { const d = localStorage.getItem("shos-sw-update-dismissed"); if (d && (Date.now() - parseInt(d)) < 86400000) return; } catch { /* ignore */ }
           setSwUpdateAvailable(true);
         }
       } catch {
