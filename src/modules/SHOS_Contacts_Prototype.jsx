@@ -3692,7 +3692,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         </div>
       )}
       {runningCountEnabled && filtered.length > 0 && (
-        <div style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: 16, background: "#1B1B1F", color: "#FFFFFF", padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, zIndex: 50, boxShadow: "0 2px 8px rgba(0,0,0,.2)" }}>
+        <div style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: 16, background: T.surfaceElevated, color: T.textPrimary, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, zIndex: 50, border: `1px solid ${T.border}` }}>
           {Math.min(firstVisible + 1, filtered.length)} / {filtered.length}
         </div>
       )}
