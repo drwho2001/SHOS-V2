@@ -201,6 +201,8 @@ The app uses inline styles, so spacing is currently expressed directly. The most
 - My Profile is not a primary tab. It is reached from Home or Settings.
 - Settings is reached from the gear icon on Home.
 - Global Search is available from the header and searches across modules.
+- **Healthcare sub-tabs:** Symptoms, Testing, Clinic Visits, Vaccinations, Measurements, Menstrual & Contraception (gated behind `menstrualTrackingEnabled`), Vaginal Health (also gated). Additional entry points: Episodes (Timeline), Attachments, Clinic Card.
+- **New modules (12 Nov 2026):** VaginalHealth (urgency-tiered conditions, treatment/outcome tracking), Episodes (Timeline — episode grouping for STI tests), PartnerNotification (partner identification from recent encounters). All gated behind existing navigation.
 
 ### 7.1 Header and title blocks
 
@@ -399,6 +401,9 @@ SHOS ships the same React UI to all platforms, but the surrounding shell and cap
 - Structural labels at redacted tier should also be hidden when their rows are hidden.
 - Disclosure level controls notification text only. It is separate from widget tier.
 - Anonymise mode hides identifying details across notification surfaces.
+- **Vaginal health records** are real clinical history. No seed/demo data (deliberate — invented symptoms on first run would be inappropriate). Urgency tiers are derived from condition, not stored.
+- **Pregnancy entries** support a `sensitive` flag (defaults to true for Miscarriage/Abortion/Ectopic outcomes). Sensitive entries show a "tap to reveal" placeholder. This is user-togglable.
+- **Menstrual tracking** is opt-in (gated behind `menstrualTrackingEnabled` preference), decoupled from gender. Pregnancy tab has additional gating (hidden for Male/Trans-female by default, with "Show pregnancy tracking anyway" link).
 - Screenshots and documentation must use fictional data only.
 
 ## 14. Common design mistakes and fixes
