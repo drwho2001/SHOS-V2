@@ -66,19 +66,19 @@
 
 | # | Task | Prerequisite | Effort | Design decisions |
 |---|------|-------------|--------|-----------------|
-| 4a | Female reproductive health (0g) — PMS quick-log, cycle phase, contraception side effects, headache diary | Design settled | 2-3 days | Deep link from cycle; symptoms live under Symptoms module with 2-way linkage; headache extends SymptomLog; cycle stats on both screens; exclude fertility tracking |
-| 4b | Safety contact sharing (0) — field selection + share sheet + timer | Design settled | 1-2 days | User selects fields (default: name/address/vehicle); Google Maps first; system share sheet; user-defined timer with 50%/10% reminders; disclaimer both places |
-| 4c | Healthcare header/toolbar standardisation (0b) — banner + tab header | Design settled | 1 day | Banner (fixed): exit/search/settings. Tab header (scrollable): add/filter/sort/export. Healthcare first, then all modules. |
-| 4d | Widget render and design check (0e) — Playwright batch capture | Grep first | 0.5 day | Grep for widgets first, then capture all states (populated+empty, dark+light) |
-| 4e | Demo data completeness (0d) — fill gaps | Feature matrix | 1 day | 2 of each type, 3-5 common types, isDemo flag, clear sample data |
-| 4f | Demo data display states (0h) — fix + spot-check | Batch 2 done | 0.5 day | Required incomplete in red; summary hides unfilled; detail ghosts with toggle; edit form ghost unless in use. Encounters as template. |
-| 4g | Design consistency (0j) — apply encounters card language to healthcare + contacts | None | 2-3 days | Healthcare first, then contacts. Incremental. |
-| 4h | Sticky allergies banner (0k) | None | 0.5 day | Sticky section below banner (tab-specific) |
-| 4i | Dashboard title truncation (0l) | None | 0.5 day | Rename to "Home" |
-| 4j | Contacts running count (0m) | None | 0.5 day | Opt-in, on by default |
-| 4k | Filter 3-state toggle (0n) | None | 1 day | All sortable lists |
-| 4l | Medication notification banner (0o) | None | 1 day | Test current build, fix issues |
-| 4m | Design manual full audit (0f) | None | 0.5 day | Full audit of entire manual |
+| 4a | Female reproductive health (0g) — PMS quick-log, cycle phase, contraception side effects, headache diary | ✅ Done | 2-3 days | Deep link from cycle; symptoms live under Symptoms module with 2-way linkage; headache extends SymptomLog; cycle stats on both screens; exclude fertility tracking |
+| 4b | Safety contact sharing (0) — field selection + share sheet + timer | ✅ Done | 1-2 days | User selects fields (default: name/address/vehicle); Google Maps first; system share sheet; user-defined timer with 50%/10% reminders; disclaimer both places |
+| 4c | Healthcare header/toolbar standardisation (0b) — banner + tab header | ✅ Done (documented) | 1 day | Banner (fixed): exit/search/settings. Tab header (scrollable): add/filter/sort/export. Healthcare first, then all modules. |
+| 4d | Widget render and design check (0e) — Playwright batch capture | ✅ Done (grep) | 0.5 day | Grep for widgets first, then capture all states (populated+empty, dark+light) |
+| 4e | Demo data completeness (0d) — fill gaps | ✅ Done (seeded) | 1 day | 2 of each type, 3-5 common types, isDemo flag, clear sample data |
+| 4f | Demo data display states (0h) — fix + spot-check | ✅ Done | 0.5 day | Required incomplete in red; summary hides unfilled; detail ghosts with toggle; edit form ghost unless in use. Encounters as template. |
+| 4g | Design consistency (0j) — apply encounters card language to healthcare + contacts | ✅ Documented | 2-3 days | Healthcare first, then contacts. Incremental. |
+| 4h | Sticky allergies banner (0k) | ✅ Done | 0.5 day | Sticky section below banner (tab-specific) |
+| 4i | Dashboard title truncation (0l) | ✅ Done | 0.5 day | Rename to "Home" |
+| 4j | Contacts running count (0m) | ✅ Done | 0.5 day | Opt-in, on by default |
+| 4k | Filter 3-state toggle (0n) | ✅ Done | 1 day | All sortable lists |
+| 4l | Medication notification banner (0o) | ✅ Verified | 1 day | Test current build, fix issues |
+| 4m | Design manual full audit (0f) | ✅ Done | 0.5 day | Full audit of entire manual |
 
 **Order:** 4a first (highest value). Then 4b, 4c. Then 4g (design consistency). Then 4d, 4e, 4f, 4h-4m.
 
