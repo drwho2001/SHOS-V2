@@ -3164,17 +3164,6 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   });
   const [firstVisible, setFirstVisible] = useState(0);
   const gridRef = useRef(null);
-  useEffect(() => {
-    if (!runningCountEnabled || !gridRef.current) return;
-    const cards = Array.from(gridRef.current.querySelectorAll("[data-contact-idx]"));
-    if (cards.length === 0) return;
-    const obs = new IntersectionObserver((entries) => {
-      const visible = entries.filter((e) => e.isIntersecting).map((e) => parseInt(e.target.getAttribute("data-contact-idx"), 10)).filter((n) => !isNaN(n));
-      if (visible.length) setFirstVisible(Math.min(...visible));
-    }, { root: null, threshold: 0.5 });
-    cards.forEach((c) => obs.observe(c));
-    return () => obs.disconnect();
-  }, [runningCountEnabled, filtered.length]);
   // ADDED — real ask: a duplicate checker for Contacts specifically,
   // scored across multiple fields (not just name) — see
   // contactMerge.js (capped, reversible-by-design: re-point only, no
@@ -3329,6 +3318,18 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
     });
     return sorted;
   }, [activeContacts, query, sortBy, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, effectiveAvailabilityFilter, filterAvailabilityAt, availabilityNow, anonymise, kinkNameById]);
+  useEffect(() => {
+    if (!runningCountEnabled || !gridRef.current) return;
+    const cards = Array.from(gridRef.current.querySelectorAll("[data-contact-idx]"));
+    if (cards.length === 0) return;
+    const obs = new IntersectionObserver((entries) => {
+      const visible = entries.filter((e) => e.isIntersecting).map((e) => parseInt(e.target.getAttribute("data-contact-idx"), 10)).filter((n) => !isNaN(n));
+      if (visible.length) setFirstVisible(Math.min(...visible));
+    }, { root: null, threshold: 0.5 });
+    cards.forEach((c) => obs.observe(c));
+    return () => obs.disconnect();
+  }, [runningCountEnabled, filtered.length]);
+
 
   return (
     <div>
