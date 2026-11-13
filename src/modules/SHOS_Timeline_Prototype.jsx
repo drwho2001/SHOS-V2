@@ -59,7 +59,7 @@ function buildLight() {
   // for this exact problem, rather than inventing a second answer.
   return {
     ...NEUTRAL,
-    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+    healthcare: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
     // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
     // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
     actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
@@ -74,7 +74,7 @@ function buildLight() {
 function buildDark() {
   return {
     ...NEUTRAL_DARK,
-    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    healthcare: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
     // Dark mode's resolved actionRed/actionGreen already have real
     // headroom against a near-black background — reuse as-is.
     actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
@@ -172,7 +172,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
 
   if (!open) {
     return (
-      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(true)} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.healthcareBlue, cursor: "pointer", minHeight: 44 }}>
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(true)} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.healthcare, cursor: "pointer", minHeight: 44 }}>
         <MessageSquare size={14} /> Draft a heads-up message
       </div>
     );
@@ -184,7 +184,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
       </div>
       {infectionNames.length > 0 && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => regenerate(!includeInfection)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", minHeight: 44 }}>
-          <div style={{ width: 34, height: 20, borderRadius: radius.full, background: includeInfection ? T.healthcareBlue : T.border, position: "relative", flexShrink: 0 }}>
+          <div style={{ width: 34, height: 20, borderRadius: radius.full, background: includeInfection ? T.healthcare : T.border, position: "relative", flexShrink: 0 }}>
             <div style={{ width: 16, height: 16, borderRadius: radius.full, background: "#FFFFFF", position: "absolute", top: 2, left: includeInfection ? 16 : 2, transition: reducedMotion ? "none" : "left 120ms ease" }} />
           </div>
           <span style={{ fontSize: 12, color: T.textPrimary }}>Name the specific result ({infectionNames.join(", ")})</span>
@@ -193,7 +193,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
       <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5} aria-label="Message draft"
         style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
+        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer"}}>
           <Copy size={13} /> Copy
         </button>
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(false)} style={{ fontSize: 13, color: T.textSecondary, cursor: "pointer"}}>Close</span>
@@ -301,7 +301,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {candidates.slice(0, 6).map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onChange([...linkedIds, c.id])}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer"}}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcare}`, color: T.healthcare, cursor: "pointer"}}>
               {/* FIXED 28 Sep 2026 — Anonymise mode. These are contact-name
                   suggestion chips inside an Episode, and they rendered real
                   names unconditionally: one of the seven screens the 28 Sep
@@ -353,7 +353,7 @@ function StartSheet({ onSave, onClose, T }) {
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
           <button onClick={() => canSave && onSave({ title, triggerReason, startEncounterId })}
-            style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
+            style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcare : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
             Start episode
           </button>
         </div>
@@ -570,7 +570,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
       {confirmDelete && (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={T.healthcareBlue}
+          moduleColor={T.healthcare}
           message={`Delete "${episode.title}" permanently? This only removes the episode itself — nothing it links to (Encounters, Tests, Clinic Visits) is touched. You'll have a few seconds to undo.`}
           onCancel={() => setConfirmDelete(false)}
           onConfirm={confirmDeletePermanently}
@@ -578,19 +578,19 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
       )}
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
+          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcare : T.actionGreen, display: "inline-block" }} />
           <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{episode.title}</h1>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: FONT_FAMILY }}>
           {episodeStatusLabel(episode, hasPositive, formatDate, { showResolution: true })}
         </div>
 
-        <SectionCard title="Start" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Start" T={T} accent={T.healthcare}>
           <ReadRow label="Exposure Encounter" value={encounterLabel(startEncounter)} T={T} />
           <ReadRow label="Why this started" value={episode.triggerReason} T={T} />
         </SectionCard>
 
-        <SectionCard title="At-risk encounters" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="At-risk encounters" T={T} accent={T.healthcare}>
           <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>
             Anyone logged after the start date, while this stayed open. {hasPositive && "Tap a name once you've notified them — it'll show marked below."}
           </div>
@@ -644,25 +644,25 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
           )}
         </SectionCard>
 
-        <SectionCard title="Testing" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Testing" T={T} accent={T.healthcare}>
           <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter((t) => testIsPositive(t, resultNameById)).map((t) => t.id)} onOpen={onNavigateToRecord ? (id) => { onBack?.(); onNavigateToRecord("healthcare", id, "testing"); } : undefined} />
         </SectionCard>
 
-        <SectionCard title="Treatment" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Treatment" T={T} accent={T.healthcare}>
           <LinkedItemsSection label="Clinic visits" linkedIds={episode.clinicVisitIds} onChange={(v) => update({ clinicVisitIds: v })} candidates={visitCandidates} nameFor={(id) => visitLabel(linkedVisitById[id])} T={T} />
         </SectionCard>
 
-        <SectionCard title="Symptoms" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Symptoms" T={T} accent={T.healthcare}>
           <LinkedItemsSection label="Symptom Log entries" linkedIds={episode.symptomLogIds} onChange={(v) => update({ symptomLogIds: v })} candidates={symptomCandidates} nameFor={(id) => linkedSymptomLabelById[id] || "—"} T={T} />
         </SectionCard>
 
-        <SectionCard title="Notes" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Notes" T={T} accent={T.healthcare}>
           <textarea value={episode.notes} onChange={(e) => update({ notes: e.target.value })} rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
         {isOpen ? (
-          <SectionCard title="Resolve" T={T} accent={T.healthcareBlue}>
+          <SectionCard title="Resolve" T={T} accent={T.healthcare}>
             {(() => {
               const startCoverage = getEncounterCoverage(startDate, linkedTests);
               return startCoverage.status === "uncovered" ? (
@@ -687,14 +687,14 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
               {RESOLUTION_OPTIONS.map((opt) => (
                 <button key={opt} onClick={() => resolve(opt)}
-                  style={{ padding: 12, borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: "transparent", color: T.healthcareBlue, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
+                  style={{ padding: 12, borderRadius: radius.sm, border: `1px solid ${T.healthcare}`, background: "transparent", color: T.healthcare, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
                   Mark resolved — {opt}
                 </button>
               ))}
             </div>
           </SectionCard>
         ) : (
-          <SectionCard title="Resolved" T={T} accent={T.healthcareBlue}>
+          <SectionCard title="Resolved" T={T} accent={T.healthcare}>
             <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>{episode.resolution}</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
@@ -703,7 +703,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T, onNavigateTo
                   style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
               </div>
               {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (
-                <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Save</button>
+                <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcare, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>Save</button>
               )}
             </div>
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={reopen} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.textSecondary, cursor: "pointer", minHeight: 44 }}>
@@ -774,7 +774,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
           this session — Timeline was the one left behind with the
           original bare inline icon (the exact "nearly hidden, make it
           clearer" pattern this whole standardization was fixing). */}
-      <div onClick={onAdd} role="button" tabIndex={0} aria-label={tr("timeline.addEpisode", "Add episode")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", right: 20, width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", zIndex: 20 }}>
+      <div onClick={onAdd} role="button" tabIndex={0} aria-label={tr("timeline.addEpisode", "Add episode")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", right: 20, width: 56, height: 56, borderRadius: 999, background: T.healthcare, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", zIndex: 20 }}>
         <Plus size={24} />
       </div>
       {/* ADDED 7 Oct 2026 (t096) — subtle, dismissable banner for episodes still
@@ -850,7 +850,7 @@ function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
     <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onOpen(e.id)}
       style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcare : T.actionGreen, display: "inline-block" }} />
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>{e.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>DEMO</span>}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: FONT_FAMILY }}>
@@ -870,7 +870,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
       <div onClick={isUndo ? onUndo : onRedo}
       role="button" tabIndex={0} aria-label={isUndo ? "Undo" : "Redo"} aria-live="polite"
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
-      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
       {isUndo ? "Episode deleted — tap to undo" : "Undone — tap to redo"}
     </div>

@@ -149,7 +149,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // green" default fails badly reused unmodified against the dark
   // surface (2.13:1, checked). Same resolveDarkAccent + hand-picked
   // companion every other Healthcare-tab file now uses.
-  const T = { healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
+  const T = { healthcare: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
   // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
   // Known Issues / the Notion Development log): useLoadedState instead
   // of a plain useState lazy initializer, one of the ~100 real sites
@@ -213,8 +213,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   const SummaryStat = ({ label, value, alert }) => (
     // §49b — colour-indent/backfill: tinted background + coloured border,
     // matching encounters-card-mockup.html stat tile style.
-    <div style={{ flex: 1, textAlign: "center", padding: "10px 8px", borderRadius: RADIUS.md, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}` }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: alert && value > 0 ? ACTION.red : T.healthcareBlue }}>{value}</div>
+    <div style={{ flex: 1, textAlign: "center", padding: "10px 8px", borderRadius: RADIUS.md, background: `${T.healthcare}15`, border: `1px solid ${T.healthcare}` }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: alert && value > 0 ? ACTION.red : T.healthcare }}>{value}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{label}</div>
     </div>
   );
@@ -262,8 +262,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       {/* One sticky stack: the blue title band remains visually distinct
           from the dark sub-tabs, while both stay attached during scrolling. */}
       <div ref={healthcareHeaderRef} style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden", marginTop: "calc(-1 * env(safe-area-inset-top))" }}>
-        <div style={{ position: "relative", background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
-          <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcareBlue, pointerEvents: "none" }} />
+        <div style={{ position: "relative", background: T.healthcare, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
+          <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcare, pointerEvents: "none" }} />
           <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
           {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
@@ -299,7 +299,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // is the only way to switch Healthcare's own sub-tab.
             <div key={tab.key} onClick={() => setSubTab(tab.key)} role="tab" tabIndex={0} aria-selected={subTab === tab.key} aria-label={tab.label}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(tab.key); } }}
-              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, flex: "0 0 auto", background: subTab === tab.key ? T.healthcareBlue : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, flex: "0 0 auto", background: subTab === tab.key ? T.healthcare : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcare : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {tab.label}
             </div>
           ))}
@@ -319,14 +319,14 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <div onClick={() => setShowTimeline(true)} role="button" tabIndex={0} aria-label="Episodes"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowTimeline(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
-            <Stack size={15} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.episodes", "Episodes")}</span>
+            <Stack size={15} color={T.healthcare} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.episodes", "Episodes")}</span>
           </div>
           <div onClick={() => setShowAttachments(true)} role="button" tabIndex={0} aria-label="Attachments"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAttachments(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
-            <Paperclip size={15} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.attachments", "Attachments")}</span>
+            <Paperclip size={15} color={T.healthcare} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.attachments", "Attachments")}</span>
           </div>
           {/* ADDED 20 Oct 2026 (t122) - real ask: "add calendar to healthcare
               next to attachments". It REUSES the existing Calendar screen
@@ -341,19 +341,19 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <div onClick={() => onOpenCalendar?.()} role="button" tabIndex={0} aria-label="Calendar"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCalendar?.(); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
-            <Calendar size={15} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.calendar", "Calendar")}</span>
+            <Calendar size={15} color={T.healthcare} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.calendar", "Calendar")}</span>
           </div>
           <div onClick={() => setShowClinicCard(true)} role="button" tabIndex={0} aria-label="Clinic Card"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowClinicCard(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
-            <CreditCard size={16} color={T.healthcareBlue} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>{tr("healthcare.clinicCard", "Clinic Card")}</span>
+            <CreditCard size={16} color={T.healthcare} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.clinicCard", "Clinic Card")}</span>
           </div>
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
-        <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.healthcareBlue}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
+        <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.healthcare}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
           <SummaryStat label={tr("healthcare.activeSymptoms", "Active symptoms")} value={summary.activeSymptoms} alert />
           <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
           <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />

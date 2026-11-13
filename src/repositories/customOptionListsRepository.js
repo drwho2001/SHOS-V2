@@ -208,7 +208,7 @@ export const OPTION_LIST_LABELS = {
 // consuming screen (SHOS_OptionListEditor_Prototype.jsx) maps these
 // strings to real lucide components. Colors reuse each category's own
 // natural domain color already established elsewhere in this app
-// (medsBlue for Medication-domain lists, healthcareBlue for
+// (medsBlue for Medication-domain lists, healthcare for
 // Healthcare-domain ones, encountersPink for Clinic-Visit-adjacent
 // Reason-for-visit) rather than inventing new arbitrary colors.
 export const OPTION_LIST_ICONS = {

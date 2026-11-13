@@ -177,7 +177,7 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
           <div onClick={() => setClinical((c) => !c)} role="switch" tabIndex={0} aria-checked={clinical} aria-label="Clinical version"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setClinical((c) => !c); } }}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 44, minWidth: 44, margin: "-10px 0", cursor: "pointer", flexShrink: 0 }}>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? T.healthcareBlue : T.surfaceVariant, position: "relative", pointerEvents: "none" }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? T.healthcare : T.surfaceVariant, position: "relative", pointerEvents: "none" }}>
               <div style={{ position: "absolute", top: 2, left: clinical ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
@@ -185,15 +185,15 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
       </div>
 
       {suggestedContactIds.size > 0 && (
-        <div style={{ background: `${T.healthcareBlue}12`, border: `1px solid ${T.healthcareBlue}`, borderRadius: radius.md, padding: 12, marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, marginBottom: 4 }}>
+        <div style={{ background: `${T.healthcare}12`, border: `1px solid ${T.healthcare}`, borderRadius: radius.md, padding: 12, marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcare, marginBottom: 4 }}>
             {t("partnerNotification.suggested", "Suggested partners ({count})", { count: suggestedContactIds.size })}
           </div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 8 }}>
             {t("partnerNotification.suggestedHint", "Contacts you encountered since your last negative test for this organism.")}
           </div>
           <button onClick={() => setSelectedIds((prev) => { const next = new Set(prev); suggestedContactIds.forEach((id) => next.add(id)); return next; })}
-            style={{ fontSize: 12, fontWeight: 600, color: T.healthcareBlue, background: "transparent", border: `1px solid ${T.healthcareBlue}`, borderRadius: radius.sm, padding: "6px 12px", cursor: "pointer" }}>
+            style={{ fontSize: 12, fontWeight: 600, color: T.healthcare, background: "transparent", border: `1px solid ${T.healthcare}`, borderRadius: radius.sm, padding: "6px 12px", cursor: "pointer" }}>
             {t("partnerNotification.selectAllSuggested", "Select all suggested")}
           </button>
         </div>
@@ -236,7 +236,7 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
                     someone at least as strongly as a name does. */}
                 {!anonymise && summarizeContactMethods(c) && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{summarizeContactMethods(c)}</div>}
               </div>
-              <div style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${isSelected ? T.healthcare : T.border}`, background: isSelected ? T.healthcare : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {isSelected && <Check size={14} color="#FFFFFF" weight="bold" />}
               </div>
             </div>
@@ -247,7 +247,7 @@ function ContactPickerStep({ testId, initialSelectedIds, initialClinical, onGene
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <button onClick={onCancel} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>{t("common.cancel", "Cancel")}</button>
         <button onClick={generate} disabled={selectedIds.size === 0}
-          style={{ flex: 2, padding: 12, borderRadius: 999, border: "none", background: selectedIds.size === 0 ? T.textDisabled : T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: selectedIds.size === 0 ? "default" : "pointer" }}>
+          style={{ flex: 2, padding: 12, borderRadius: 999, border: "none", background: selectedIds.size === 0 ? T.textDisabled : T.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: selectedIds.size === 0 ? "default" : "pointer" }}>
           {selectedIds.size === 0 ? t("partnerNotification.selectAtLeastOne", "Select at least one") : t("partnerNotification.generateList", "Generate list ({count})", { count: selectedIds.size })}
         </button>
       </div>
@@ -405,14 +405,14 @@ function ChecklistStep({ testId, list, onEditContacts, onDelete, onClose, T }) {
         <button onClick={onEditContacts} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>
           <Edit size={14} /> {t("partnerNotification.editContacts", "Edit contacts")}
         </button>
-        <button onClick={doExport} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={doExport} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
           <ExportIcon size={14} /> {t("partnerNotification.exportAsText", "Export as text")}
         </button>
       </div>
       {confirmDelete ? (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={T.healthcareBlue}
+          moduleColor={T.healthcare}
           margin="0"
           message={t("partnerNotification.deleteConfirm", "This permanently deletes the checklist \u2014 unlike archiving, there's no getting it back.")}
           confirmLabel={t("partnerNotification.deleteThisList", "Delete this list")}
@@ -439,7 +439,7 @@ export default function PartnerNotificationSheet({ testId, onClose, onQuickExit 
   // mode now gets the readable companion instead of a dark green on near-black.
   const T = {
     ...(darkMode ? DARK : NEUTRAL),
-    healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare,
+    healthcare: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare,
   };
   const sheetRef = useRef(null);
   useEffect(() => { sheetRef.current?.focus(); }, []);

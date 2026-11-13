@@ -87,7 +87,7 @@ function tierFor(condition, T) {
 function buildLight() {
   return {
     ...NEUTRAL,
-    healthcareBlue: ACCENTS.healthcare,
+    healthcare: ACCENTS.healthcare,
     actionRed: ACTION.red,
     actionGreen: ACTION.green,
     actionRedText: ACTION_TEXT_SAFE.red,
@@ -98,7 +98,7 @@ function buildLight() {
 function buildDark() {
   return {
     ...NEUTRAL_DARK,
-    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
+    healthcare: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
     actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
     actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
     actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
@@ -113,7 +113,7 @@ function VaginalHealthLanding({ T, records, loading, onAdd, onDelete, onEdit, on
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>{t("vaginalHealth.title", "Vaginal health")}</div>
         <button type="button" onClick={onAdd}
-          style={{ padding: "8px 14px", minHeight: 40, borderRadius: RADIUS.full, border: "none", background: T.healthcareBlue, color: ON_ACCENT, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>
+          style={{ padding: "8px 14px", minHeight: 40, borderRadius: RADIUS.full, border: "none", background: T.healthcare, color: ON_ACCENT, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>
           + {t("vaginalHealth.add", "Add")}
         </button>
       </div>
@@ -167,7 +167,7 @@ function VaginalHealthLanding({ T, records, loading, onAdd, onDelete, onEdit, on
                 <div onClick={(e) => e.stopPropagation()}>
                   <ConfirmDeleteCard
                     T={T}
-                    moduleColor={T.healthcareBlue}
+                    moduleColor={T.healthcare}
                     margin="10px 0 0"
                     message={t("vaginalHealth.deleteConfirm", "This deletes this vaginal health record permanently — unlike archiving, there's no getting it back.")}
                     confirmLabel={t("vaginalHealth.deleteConfirmAction", "Delete record")}
@@ -251,7 +251,7 @@ function RecordEditor({ T, record, onChange, onDone, onRequestDelete, pendingDel
 
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button type="button" onClick={onDone}
-          style={{ flex: 1, padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: "none", background: T.healthcareBlue, color: ON_ACCENT, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          style={{ flex: 1, padding: "10px 16px", minHeight: 44, borderRadius: RADIUS.full, border: "none", background: T.healthcare, color: ON_ACCENT, fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           {t("common.done", "Done")}
         </button>
         <button type="button" onClick={onRequestDelete}
@@ -263,7 +263,7 @@ function RecordEditor({ T, record, onChange, onDone, onRequestDelete, pendingDel
       {pendingDelete ? (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={T.healthcareBlue}
+          moduleColor={T.healthcare}
           margin="14px 0 0"
           message={t("vaginalHealth.deleteConfirm", "This deletes this vaginal health record permanently — unlike archiving, there's no getting it back.")}
           confirmLabel={t("vaginalHealth.deleteConfirmAction", "Delete record")}

@@ -46,7 +46,7 @@ import { useTranslation } from "../i18n/index.js";
 function buildLight() {
   return {
     ...NEUTRAL,
-    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
+    healthcare: ACCENTS.healthcare, actionRed: ACTION.red,
     // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-in
     // for actionRed-as-text-on-its-own-tint only (the allergy chips).
     actionRedText: ACTION_TEXT_SAFE.red,
@@ -58,7 +58,7 @@ function buildLight() {
 function buildDark() {
   return {
     ...NEUTRAL_DARK,
-    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+    healthcare: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
     // Dark mode's resolved actionRed already has real headroom — reuse.
     actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
   };
@@ -136,13 +136,13 @@ function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleC
 function SectionCard({ children, T }) {
   // §49b — colour-indent/backfill: tinted background + coloured left border,
   // matching encounters-card-mockup.html section-row style.
-  return <div style={{ background: `${T.healthcareBlue}08`, borderLeft: `4px solid ${T.healthcareBlue}`, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
+  return <div style={{ background: `${T.healthcare}08`, borderLeft: `4px solid ${T.healthcare}`, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
 }
 
 function Row({ dot, title, subtitle, alert, color, onTap, T }) {
   return (
     <div onClick={onTap} role={onTap ? "button" : undefined} tabIndex={onTap ? 0 : undefined} aria-label={onTap ? title : undefined} onKeyDown={onTap ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: onTap ? "pointer" : "default" }}>
-      <span style={{ width: 9, height: 9, borderRadius: 999, background: alert ? T.actionRed : (color || T.healthcareBlue), flexShrink: 0 }} />
+      <span style={{ width: 9, height: 9, borderRadius: 999, background: alert ? T.actionRed : (color || T.healthcare), flexShrink: 0 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: alert ? T.actionRed : T.textPrimary }}>{title}</div>
         {/* CHANGED 15 Sep 2026 — real report: a positive test result
@@ -496,7 +496,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             ["custom", tr("clinicCard.customDate", "Custom date")],
           ].map(([key, label]) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={key} onClick={() => setTimeframe(key)}
-              style={{ padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${timeframe === key ? T.healthcareBlue : T.border}`, color: timeframe === key ? T.healthcareBlue : T.textSecondary, background: timeframe === key ? `${T.healthcareBlue}15` : "transparent" }}>
+              style={{ padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${timeframe === key ? T.healthcare : T.border}`, color: timeframe === key ? T.healthcare : T.textSecondary, background: timeframe === key ? `${T.healthcare}15` : "transparent" }}>
               {label}
             </div>
           ))}
@@ -516,15 +516,15 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           calendar/next-appointment flow will also build on. */}
       <div style={{ display: "flex", gap: 6, padding: "12px 16px 0", flexWrap: "wrap" }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "testing", { date: inDaysAsStoredDate(14), title: "Scheduled TOC 2 weeks", testingFor: ["C&S (symptomatic/treatment)"] })}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcare}`, color: T.healthcare }}>
           <Plus size={12} /> {tr("clinicCard.testOfCure", "Test of cure \u00b7 2wk")}
         </div>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcare}`, color: T.healthcare }}>
           <Plus size={12} /> {tr("clinicCard.bookAppointment", "Book appointment")}
         </div>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "clinicVisits", { date: nowAsStoredDate(), reasonForVisit: ["Treatment"] })}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcare}`, color: T.healthcare }}>
           <Plus size={12} /> {tr("clinicCard.treatmentGiven", "Treatment given")}
         </div>
       </div>
@@ -563,7 +563,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             ))}
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setEditingIdentity(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-              <button onClick={saveIdentity} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save</button>
+              <button onClick={saveIdentity} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save</button>
             </div>
           </div>
         ) : (
@@ -620,7 +620,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <SectionHeader T={T}>{tr("clinicCard.allergies", "Allergies")}</SectionHeader>
       <SectionCard T={T}>
         {profile.allergies.length === 0 ? (
-          <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
+          <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcare, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
           // CHANGED 15 Sep 2026 — real report: "allergies not clickable"
           // — only the empty state opened My Profile; once real
@@ -748,7 +748,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <SectionHeader T={T}>{tr("clinicCard.emergencyInfo", "Emergency information")}</SectionHeader>
       <SectionCard T={T}>
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
-          <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
+          <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcare, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
           // CHANGED 15 Sep 2026 — real report: "emergency info not
           // clickable" — same gap and same fix as Allergies just above.
@@ -776,7 +776,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 16 }}>{pendingNav.label}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setPendingNav(null)} style={{ flex: 1, padding: 12, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>{tr("common.cancel", "Cancel")}</button>
-              <button onClick={() => { goTo(pendingNav.tab, pendingNav.subTab, pendingNav.recordId); setPendingNav(null); }} style={{ flex: 1, padding: 12, borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{tr("clinicCard.open", "Open")}</button>
+              <button onClick={() => { goTo(pendingNav.tab, pendingNav.subTab, pendingNav.recordId); setPendingNav(null); }} style={{ flex: 1, padding: 12, borderRadius: 999, border: "none", background: T.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>{tr("clinicCard.open", "Open")}</button>
             </div>
           </div>
         </div>
@@ -800,7 +800,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSection(s.key); } }}
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
                 <span style={{ fontSize: 14, color: T.textPrimary }}>{s.label}</span>
-                <div style={{ width: 40, height: 24, borderRadius: 999, background: visibility[s.key] ? T.healthcareBlue : T.border, position: "relative", flexShrink: 0 }}>
+                <div style={{ width: 40, height: 24, borderRadius: 999, background: visibility[s.key] ? T.healthcare : T.border, position: "relative", flexShrink: 0 }}>
                   <div style={{ position: "absolute", top: 2, left: visibility[s.key] ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
                 </div>
               </div>

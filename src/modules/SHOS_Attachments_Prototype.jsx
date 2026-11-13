@@ -80,7 +80,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
   const [darkMode] = useDarkModePreference();
   const T = {
     ...(darkMode ? NEUTRAL_DARK : NEUTRAL),
-    healthcareBlue: ACCENTS.healthcare,
+    healthcare: ACCENTS.healthcare,
     actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red,
   };
   const [refreshKey, setRefreshKey] = useState(0);
@@ -140,12 +140,12 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "12px 16px" }}>
         <div role="button" tabIndex={0} aria-pressed={filterType === ""} aria-label={t("attachments.showAll", "Show all attachments")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilterType(""); } }} onClick={() => setFilterType("")}
-          style={{ padding: "5px 10px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcareBlue : T.border}`, color: filterType === "" ? T.healthcareBlue : T.textSecondary, background: filterType === "" ? `${T.healthcareBlue}15` : "transparent"}}>
+          style={{ padding: "5px 10px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === "" ? T.healthcare : T.border}`, color: filterType === "" ? T.healthcare : T.textSecondary, background: filterType === "" ? `${T.healthcare}15` : "transparent"}}>
           {t("attachments.filterAll", "All")}
         </div>
         {TYPE_OPTIONS.map((t) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setFilterType(t)}
-            style={{ padding: "5px 10px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === t ? T.healthcareBlue : T.border}`, color: filterType === t ? T.healthcareBlue : T.textSecondary, background: filterType === t ? `${T.healthcareBlue}15` : "transparent"}}>
+            style={{ padding: "5px 10px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${filterType === t ? T.healthcare : T.border}`, color: filterType === t ? T.healthcare : T.textSecondary, background: filterType === t ? `${T.healthcare}15` : "transparent"}}>
             {t}
           </div>
         ))}
@@ -154,7 +154,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
       {pendingDelete && (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={T.healthcareBlue}
+          moduleColor={T.healthcare}
           message={t("attachments.removeConfirm", `Remove "${pendingDelete.title}"? It'll also disappear from its original ${pendingDelete.sourceType === "test" ? "Test" : "Clinic Visit"} record — there's no getting it back.`, { title: pendingDelete.title, kind: pendingDelete.sourceType === "test" ? "Test" : "Clinic Visit" })}
           confirmLabel={t("common.remove", "Remove")}
           onCancel={() => setPendingDelete(null)}
@@ -196,7 +196,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }) {
   const { t } = useTranslation();
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: `${T.healthcareBlue}08`, borderLeft: `4px solid ${T.healthcareBlue}`, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, padding: 12, marginBottom }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: `${T.healthcare}08`, borderLeft: `4px solid ${T.healthcare}`, borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, padding: 12, marginBottom }}>
       {isImage(a.fileDataUrl) ? (
         <img src={a.fileDataUrl} alt={a.title} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
       ) : (

@@ -120,7 +120,7 @@ export const NEUTRAL_DARK = {
 //
 // CHANGED again — the FIRST companion picked, "#5EDE9A", was tuned
 // only for one job (bright enough against the near-black surface) and
-// broke a second one: T.healthcareBlue is ALSO used everywhere as a
+// broke a second one: T.healthcare is ALSO used everywhere as a
 // SOLID FILL with white text/icons on top (every Healthcare-tab sheet
 // header, Save/Add button, and "+" FAB — a genuinely widespread
 // pattern, not a one-off). A companion that bright can't hold white

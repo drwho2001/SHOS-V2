@@ -49,7 +49,7 @@ import { useTranslation } from "../i18n/index.js";
 function buildLight() {
   return {
     ...NEUTRAL,
-    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green, actionAmber: ACTION.amber,
+    healthcare: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green, actionAmber: ACTION.amber,
   };
 }
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
@@ -60,7 +60,7 @@ function buildLight() {
 function buildDark() {
   return {
     ...NEUTRAL_DARK,
-    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"), actionAmber: resolveDarkAccent("actionAmber", ACTION.amber, "#F0B429"),
+    healthcare: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"), actionAmber: resolveDarkAccent("actionAmber", ACTION.amber, "#F0B429"),
   };
 }
 const radius = RADIUS;
@@ -102,7 +102,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
         {/* ADDED — real ask: "Now" quick-fill, device's real local date. */}
         {type === "date" && (
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer"}}>Now</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 12, fontWeight: 700, color: T.healthcare, cursor: "pointer"}}>Now</span>
         )}
       </div>
       <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
@@ -260,7 +260,7 @@ function SymptomSelect({ value, onChange, T }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer"}}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcare}`, color: T.healthcare, cursor: "pointer"}}>
               {e.name}
             </div>
           ))}
@@ -278,7 +278,7 @@ function SymptomSelect({ value, onChange, T }) {
       {didYouMean && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12 }}>
           <span style={{ color: T.textSecondary, flex: 1 }}>Did you mean "<span style={{ fontWeight: 700, color: T.textPrimary }}>{didYouMean.closest}</span>", already in the registry?</span>
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={acceptDidYouMean} style={{ color: T.healthcareBlue, fontWeight: 700, cursor: "pointer", flexShrink: 0}}>Use it</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={acceptDidYouMean} style={{ color: T.healthcare, fontWeight: 700, cursor: "pointer", flexShrink: 0}}>Use it</span>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={dismissDidYouMean} style={{ color: T.textDisabled, fontWeight: 700, cursor: "pointer", flexShrink: 0}}>No, add "{didYouMean.raw}"</span>
         </div>
       )}
@@ -333,7 +333,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visibleSuggestions.map((i) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={i.id} onClick={() => { onChange([...value, i.id]); setQuery(""); }}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer"}}>
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.healthcare}`, color: T.healthcare, cursor: "pointer"}}>
               + {i.name}
             </div>
           ))}
@@ -435,7 +435,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}
-        <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
+        <div style={{ background: T.healthcare, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? tr("symptomLog.logSymptom", "Log symptom") : tr("symptomLog.editSymptom", "Edit symptom entry")}</h1>
           {/* ADDED 26 Aug 2026 — real gap found while adding the
               banner: this sheet had no visible close control at all,
@@ -457,7 +457,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-          <button onClick={() => canSave && doSave()} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcareBlue : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
+          <button onClick={() => canSave && doSave()} style={{ width: "100%", padding: 16, borderRadius: radius.full, border: "none", background: canSave ? T.healthcare : T.textDisabled, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
             {isNew ? "Add entry" : "Save changes"}
           </button>
         </div>
@@ -501,14 +501,14 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span role="button" tabIndex={0} aria-label="Edit symptom entry" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer"}} onClick={() => { if (!entry.isDemo) onEdit(entryId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
+          <span role="button" tabIndex={0} aria-label="Edit symptom entry" style={{ fontSize: 13, fontWeight: 700, color: T.healthcare, cursor: "pointer"}} onClick={() => { if (!entry.isDemo) onEdit(entryId); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
           <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12}} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {confirmDelete && (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={T.healthcareBlue}
+          moduleColor={T.healthcare}
           message="This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry."
           onCancel={() => setConfirmDelete(false)}
           onConfirm={async () => { await triggerDelete([entry]); refresh(); onBack(); }}
@@ -523,7 +523,7 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
           {isActive ? "Active" : `Resolved ${formatDate(entry.dateResolved)}`}
         </div>
 
-        <SectionCard title="Overview" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Overview" T={T} accent={T.healthcare}>
           <ReadRow label="Symptoms" value={symptomNames} T={T} />
           <ReadRow label="Severity" value={entry.severity} T={T} alert={entry.severity === "Severe"} />
           <ReadRow label="Started" value={formatDate(entry.dateStarted)} T={T} />
@@ -531,13 +531,13 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
         </SectionCard>
 
         {(encounterNames.length > 0 || testNames.length > 0) && (
-          <SectionCard title="Related records" T={T} accent={T.healthcareBlue}>
+          <SectionCard title="Related records" T={T} accent={T.healthcare}>
             <ReadRow label="Encounters" value={encounterNames} T={T} />
             <ReadRow label="Tests" value={testNames} T={T} />
           </SectionCard>
         )}
 
-        <SectionCard title="Notes" T={T} accent={T.healthcareBlue}>
+        <SectionCard title="Notes" T={T} accent={T.healthcare}>
           <ReadRow label="Notes" value={entry.notes} T={T} />
         </SectionCard>
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
@@ -652,9 +652,9 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
         onMouseDown={() => startPress(e.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(e.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
         role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={e.title} tabIndex={0}
         onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); selectMode ? toggleSelected(e.id) : onOpen(e.id); } }}
-        style={{ background: isSelected ? `${T.healthcareBlue}10` : rowT.surface, border: `1px solid ${isSelected ? T.healthcareBlue : isActive && e.severity === "Severe" ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", marginBottom: 10, gap: 10, alignItems: "center", justifyContent: "center"}}>
+        style={{ background: isSelected ? `${T.healthcare}10` : rowT.surface, border: `1px solid ${isSelected ? T.healthcare : isActive && e.severity === "Severe" ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", marginBottom: 10, gap: 10, alignItems: "center", justifyContent: "center"}}>
         {selectMode && (
-          <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
+          <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcare : T.border}`, background: isSelected ? T.healthcare : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
             {isSelected && <Check size={13} color="#FFFFFF" />}
           </div>
         )}
@@ -703,9 +703,9 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
       <div style={{ position: "sticky", top: "calc(var(--shos-top-banner-h, 0px) + var(--shos-sticky-header-h, 0px))", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Symptom Log</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcare }}>Symptom Log</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
-        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer"}}>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcare, cursor: "pointer"}}>
           {selectMode ? "Done" : "Select"}
         </span>
       </div>
@@ -736,7 +736,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
       {confirmingBulkDelete && (
         <ConfirmDeleteCard
           T={T}
-          moduleColor={T.healthcareBlue}
+          moduleColor={T.healthcare}
           message={`Delete ${selectedIds.length} entr${selectedIds.length > 1 ? "ies" : "y"} permanently? You'll have a few seconds to undo.`}
           confirmLabel="Delete"
           onCancel={() => setConfirmingBulkDelete(false)}
@@ -778,7 +778,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
       {/* CHANGED 26 Aug 2026 — real audit finding: wrapped for
           wide-viewport centering, matching Medication's own pattern. */}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add symptom entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add symptom entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcare, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -826,7 +826,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
           message={deleteToast.mode === "undo"
             ? `${deleteToast.records.length} entr${deleteToast.records.length > 1 ? "ies" : "y"} deleted`
             : `${deleteToast.records.length} entr${deleteToast.records.length > 1 ? "ies" : "y"} restored`}
-          accentColor={T.healthcareBlue}
+          accentColor={T.healthcare}
           onAction={deleteToast.mode === "undo" ? undoDelete : redoDelete}
         />
       )}
@@ -949,7 +949,7 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-label={editUndo.toast.mode === "undo" ? "Undo edit" : "Redo edit"} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
-          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Entry updated — tap to undo" : "Undone — tap to redo"}
         </div>

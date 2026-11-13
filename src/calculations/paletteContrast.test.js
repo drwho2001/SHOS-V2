@@ -66,7 +66,7 @@ describe("module accents used as text on their own self-tint", () => {
   // The four accents that the source actually uses in this pattern, and which
   // are expected to pass unaided.
   const PASSES_ON_ITS_OWN = [
-    ["healthcare", "healthcareBlue badge/label text"],
+    ["healthcare", "healthcare badge/label text"],
     ["medication", "medsBlue badge/label text"],
     ["encounters", "encountersPink badge/label text"],
   ];

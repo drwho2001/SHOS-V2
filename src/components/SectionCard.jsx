@@ -22,7 +22,7 @@
 import { RADIUS, TYPE } from "../calculations/designTokens.js";
 
 export default function SectionCard({ title, T, children, accent }) {
-  const labelColor = accent || T.healthcareBlue;
+  const labelColor = accent || T.healthcare;
   // §49b — colour-indent/backfill: tinted background + thicker coloured
   // left border, matching encounters-card-mockup.html section-row style.
   // Falls back to the original plain card when no accent is passed.
