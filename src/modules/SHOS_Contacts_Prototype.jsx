@@ -3159,6 +3159,22 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // O(1) lookups instead of rescans.
   const encounterSummaries = useMemo(() => contactEncounterSummaries(encounters), [encounters]);
   const [showFilters, setShowFilters] = useState(false);
+  const [runningCountEnabled, setRunningCountEnabled] = useState(() => {
+    try { return localStorage.getItem("shos-contacts-running-count") !== "off"; } catch { return true; }
+  });
+  const [firstVisible, setFirstVisible] = useState(0);
+  const gridRef = useRef(null);
+  useEffect(() => {
+    if (!runningCountEnabled || !gridRef.current) return;
+    const cards = Array.from(gridRef.current.querySelectorAll("[data-contact-idx]"));
+    if (cards.length === 0) return;
+    const obs = new IntersectionObserver((entries) => {
+      const visible = entries.filter((e) => e.isIntersecting).map((e) => parseInt(e.target.getAttribute("data-contact-idx"), 10)).filter((n) => !isNaN(n));
+      if (visible.length) setFirstVisible(Math.min(...visible));
+    }, { root: null, threshold: 0.5 });
+    cards.forEach((c) => obs.observe(c));
+    return () => obs.disconnect();
+  }, [runningCountEnabled, filtered.length]);
   // ADDED — real ask: a duplicate checker for Contacts specifically,
   // scored across multiple fields (not just name) — see
   // contactMerge.js (capped, reversible-by-design: re-point only, no
@@ -3663,13 +3679,26 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
            ContactCard's own internal JSX is completely untouched,
            only how many sit per row changes. Mobile keeps the exact
            prior single-column flex list. */
-        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 10, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
-          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards} showAvailabilityOnCards={showAvailabilityOnCards}
-            activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives, availability: availabilityFilterLabel } : null}
-            selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
-            onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
+        <div ref={gridRef} style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 10, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
+          {filtered.map((c, idx) => (
+            <div key={c.id} data-contact-idx={idx} style={{ position: "relative" }}>
+              <ContactCard contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards} showAvailabilityOnCards={showAvailabilityOnCards}
+                activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives, availability: availabilityFilterLabel } : null}
+                selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
+                onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />
+            </div>
+          ))}
         </div>
       )}
+      {runningCountEnabled && filtered.length > 0 && (
+        <div style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: 16, background: "#1B1B1F", color: "#FFFFFF", padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, zIndex: 50, boxShadow: "0 2px 8px rgba(0,0,0,.2)" }}>
+          {Math.min(firstVisible + 1, filtered.length)} / {filtered.length}
+        </div>
+      )}
+
+        <button onClick={() => { const next = !runningCountEnabled; setRunningCountEnabled(next); try { localStorage.setItem("shos-contacts-running-count", next ? "on" : "off"); } catch {} }} style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: runningCountEnabled && filtered.length > 0 ? 120 : 16, background: T.surface, color: T.textSecondary, border: `1px solid ${T.border}`, padding: "6px 10px", borderRadius: 999, fontSize: 11, cursor: "pointer", zIndex: 50 }}>
+          {runningCountEnabled ? "Count on" : "Count off"}
+        </button>
 
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. CHANGED to also
           support redo, matching editUndoHelpers.js's own undo/redo
