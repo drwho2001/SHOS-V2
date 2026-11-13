@@ -445,6 +445,35 @@ function CycleSheet({ cycle, onSave, onClose, T, tr }) {
       <TextField label="Start date" value={form.startDate} onChange={set("startDate")} T={T} type="date" />
       <TextField label="End date (optional — leave blank if ongoing)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
       <SelectField label="Flow" value={form.flow} onChange={set("flow")} options={flowOptions} listName="menstrualFlow" T={T} />
+      <SelectField label="Clot size" value={form.clotSize || ""} onChange={set("clotSize")} options={["", "None", "Small", "Medium", "Large"]} T={T} />
+      <div style={{ padding: "8px 0" }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Pain level (0-10, optional)</div>
+        <input type="number" min="0" max="10" value={form.painLevel ?? ""} onChange={(e) => set("painLevel")(e.target.value ? parseInt(e.target.value) : null)} placeholder="0-10"
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+        <input type="checkbox" checked={form.spotting || false} onChange={(e) => set("spotting")(e.target.checked)} id="spotting" />
+        <label htmlFor="spotting" style={{ fontSize: 12, color: T.textSecondary }}>Spotting between periods</label>
+        {form.spotting && (
+          <input type="date" value={form.spottingDate || ""} onChange={(e) => set("spottingDate")(e.target.value)} aria-label="Spotting date"
+            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+        <input type="checkbox" checked={form.missedPeriod || false} onChange={(e) => set("missedPeriod")(e.target.checked)} id="missedPeriod" />
+        <label htmlFor="missedPeriod" style={{ fontSize: 12, color: T.textSecondary }}>Missed period</label>
+        {form.missedPeriod && (
+          <select value={form.missedReason || ""} onChange={(e) => set("missedReason")(e.target.value)}
+            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14 }}>
+            <option value="">Reason...</option>
+            <option value="stress">Stress</option>
+            <option value="illness">Illness</option>
+            <option value="medication">Medication</option>
+            <option value="travel">Travel</option>
+            <option value="other">Other</option>
+          </select>
+        )}
+      </div>
       <RelationPicker label={tr("menstrual.cycleSymptoms", "Symptoms during this period")} value={form.symptomIds} onChange={set("symptomIds")} T={T} items={symptoms} placeholder={tr("menstrual.cycleSymptomsPlaceholder", "Search symptoms")} />
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
@@ -531,6 +560,10 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
                 <FlowDrops flow={c.flow} T={T} size={13} />
               </div>
             )}
+            {c.clotSize ? <ReadRow label="Clot size" value={c.clotSize} T={T} /> : null}
+            {c.painLevel != null ? <ReadRow label="Pain level" value={`${c.painLevel}/10`} T={T} /> : null}
+            {c.spotting ? <ReadRow label="Spotting" value={c.spottingDate ? formatDate(c.spottingDate) : "Yes"} T={T} /> : null}
+            {c.missedPeriod ? <ReadRow label="Missed period" value={c.missedReason || "Yes"} T={T} /> : null}
             <ReadRow label="Symptoms" value={symptomNames} T={T} />
           </SectionCard>
           <SectionCard title="Notes" T={T}><ReadRow label="Notes" value={c.notes} T={T} /></SectionCard>
@@ -657,6 +690,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T, tr }) {
   // elsewhere in this app (e.g. Measurements' preferred-unit default).
   const setMethod = (v) => setForm((f) => ({ ...f, method: v, formulation: f.formulation || guessFormulation(v) }));
   const visits = useLoadedMemo(async () => (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [], []);
+  const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   const canSave = !!form.method && !!form.startDate;
   const [intervalUnit, setIntervalUnit] = useState("Days");
   // Real display value in whichever unit is currently selected — kept
@@ -740,6 +774,11 @@ function ContraceptionSheet({ entry, onSave, onClose, T, tr }) {
         <SelectField label="Linked clinic visit (optional)" value={form.linkedClinicVisitId || ""} onChange={set("linkedClinicVisitId")}
           options={visits.map((v) => v.id)} T={T} />
       )}
+      {form.endDate && (
+        <SelectField label="Reason stopped (optional)" value={form.reasonStopped || ""} onChange={set("reasonStopped")}
+          options={["", "switched", "side_effects", "planned_pregnancy", "no_longer_needed", "other"]} T={T} />
+      )}
+      <RelationPicker label="Side effects experienced" value={form.sideEffectIds || []} onChange={set("sideEffectIds")} T={T} items={symptoms} placeholder="Search symptoms" />
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("menstrual.notes", "Notes")}</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label={tr("menstrual.notes", "Notes")}
@@ -787,6 +826,7 @@ function ContraceptionTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAd
   // hook can't be called conditionally, so it's resolved here instead,
   // keyed off byId's own linkedClinicVisitId).
   const linkedVisit = useLoadedMemo(() => (byId?.linkedClinicVisitId ? ClinicVisitsRepository.getById(byId.linkedClinicVisitId) : null), [byId], null);
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
   const deleteUndo = useDeleteUndo(ContraceptionRepository, "contraception");
   const editUndo = useEditUndo(ContraceptionRepository, onDataChanged);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -818,6 +858,8 @@ function ContraceptionTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAd
             <ReadRow label="Formulation" value={e.formulation} T={T} />
             <ReadRow label="Started" value={formatDate(e.startDate)} T={T} />
             <ReadRow label="Ended" value={e.endDate ? formatDate(e.endDate) : "Currently active"} T={T} />
+            {e.endDate && e.reasonStopped ? <ReadRow label="Reason stopped" value={e.reasonStopped.replace(/_/g, " ")} T={T} /> : null}
+            {e.sideEffectIds && e.sideEffectIds.length > 0 ? <ReadRow label="Side effects" value={e.sideEffectIds.map((id) => symptomNameById.get(id)).filter(Boolean)} T={T} /> : null}
             <ReadRow label="Next due" value={e.nextDueDate ? formatDate(e.nextDueDate) : ""} T={T} alert={overdue} />
             {/* FIXED — real report: this used to show just the bare
                 date ("no user-identifiable name"). Matches the same
