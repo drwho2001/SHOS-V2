@@ -2,3 +2,7 @@
 build-output/
 device-t9.png
 device-t9.png
+# Secrets
+.env
+.env.local
+
