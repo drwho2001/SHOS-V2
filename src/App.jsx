@@ -1434,7 +1434,7 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
   // someone mid-form would be a worse bug than the staleness itself.
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
   const showUpdateBanner = useCallback(() => {
-    try { if (sessionStorage.getItem("shos-sw-update-dismissed")) return; } catch { /* ignore */ }
+    try { const dismissed = localStorage.getItem("shos-sw-update-dismissed"); if (dismissed && (Date.now() - parseInt(dismissed)) < 86400000) return; } catch { /* ignore */ }
     setSwUpdateAvailable(true);
   }, []);
   useEffect(() => {
@@ -1447,6 +1447,9 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
         const { Capacitor } = await import("@capacitor/core");
         if (Capacitor.isNativePlatform()) return;
       } catch { /* web: fall through */ }
+      // Dev-mode guard: never show the update banner during development.
+      // In dev, HMR + SW interplay can spuriously trigger controllerchange.
+      if (import.meta.env.DEV) return;
       if (!("serviceWorker" in navigator)) return;
       // If we just reloaded for an update, suppress the banner on this load.
       if (sessionStorage.getItem("shos-sw-reloaded") === "1") {
@@ -1473,6 +1476,8 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
         const { Capacitor } = await import("@capacitor/core");
         if (Capacitor.isNativePlatform()) return;
       } catch { /* web: fall through */ }
+      // Dev-mode guard: skip version.json check in development.
+      if (import.meta.env.DEV) return;
       try {
         const res = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: "no-store" });
         if (!res.ok) return;
