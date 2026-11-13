@@ -30,7 +30,6 @@
 // sync by hand; whatever commit actually built the release is the
 // single source of truth.
 const RELEASE_API_URL = "https://api.github.com/repos/drwho2001/SHOS-V2/releases/tags/latest";
-export const RELEASE_PAGE_URL = "https://github.com/drwho2001/SHOS-V2/releases/tag/latest";
 export const RELEASE_APK_URL = "https://github.com/drwho2001/SHOS-V2/releases/download/latest/SHOS-debug.apk";
 
 async function isNativePlatform() {

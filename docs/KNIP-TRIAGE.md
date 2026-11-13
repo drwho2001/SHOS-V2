@@ -8,42 +8,29 @@ Generated from a knip 6.45.1 scan (entry `src/main.jsx`, project `src/**/*.{js,j
 - Unused devDependencies: 3 (`@testing-library/user-event`, `axe-core`, `qrcode`)
 - Unlisted dependencies: 2 (`@babel/parser` in glossaryPropChain.js, `@vitest/coverage-v8` in vitest.config.ts)
 - Unused exports: 84
-- Duplicate exports (named + default): 29 — these are false positives; consumers use the default export via `lazy(() => import(...))`.
+- Duplicate exports (named + default): 29 — false positives; consumers use the default export via `lazy(() => import(...))`.
 
 ## False positives (do not touch)
 
 - **Settings screens** (AboutScreen … WidgetsScreen): exported both named and default; loaded via `lazy()` default import. Named export unused but harmless.
 - **Sync helpers** (cycleWidgetSync, liveSessionWidgetSync, syncAllWidgets, useReducedMotion, jargonNotes, FormTabs, HivStatusNote, JargonNote, Skeleton): same named/default pattern.
 - **Constants referenced only by guard tests**: many `*_FLAG_KEY`, `*_OPTIONS`, redacted-line helpers exist to be asserted by `*.test.js` guards; knip ignores tests, so these read as unused but are intentional invariants.
+- **Internal helpers of wired features**: `generateClinicCardPdf`, `importProfileAsContact`, `recordsToCSV`, etc. are used only inside their own module (by their wrapper exports like `exportClinicCardPdf`). Not missing features.
 
-## Genuinely unwired feature code (candidates for wiring or removal)
+## Candidate items: simple-language assessment
 
-These have zero non-test callers. Decide per item whether to wire into UI or delete.
+### A. Convenience wrapper never called — superseded
+- **applyDisclosure** (`disclosureLevel.js`) — reads stored disclosure level and resolves text against it. UI calls `resolveDisclosure(level, text)` directly. **Superseded.** Recommendation: make it the single entry point or delete.
 
-| Export | File | Likely feature |
-|---|---|---|
-| generateClinicCardPdf | storage/clinicCardPdfService.js | Clinic-card PDF export (no UI trigger) |
-| importProfileAsContact | storage/profileShareService.js | Import a shared profile as a contact |
-| recordsToCSV | storage/csvExportService.js | CSV record export |
-| getVaultError, derivePinVerifier, clearGraceWindow, hasPinProtection | storage/cryptoService.js | PIN/vault protection flows |
-| secureRemove | storage/secureStorageAdapter.js | Secure storage deletion |
-| updateRefillWidget | calculations/refillReminderSync.js | Refill widget refresh |
-| applyDisclosure | calculations/disclosureLevel.js | Disclosure-level privacy control |
-| encountersForContact, encounterCount, averageEnjoyment, highestEnjoyment, lastInteraction | calculations/encounterCalculations.js | Encounter stats/aggregates |
-| getVaccinationDoseKey | calculations/vaccinationCalculations.js | Vaccination dose keying |
-| getUpcomingBookedVisits, getSoonestBookedVisit, clinicCardRedactedLine | calculations/clinicVisitReminderSync.js | Booked-visit reminders |
-| normaliseAcknowledgement | calculations/reminderSuppression.js | Reminder acknowledgement normalisation |
-| updateCycleWidget | calculations/cycleWidgetSync.js | Cycle widget refresh |
-| updateLiveSessionWidget | calculations/liveSessionWidgetSync.js | Live-session widget refresh |
-| syncAllWidgets | calculations/syncAllWidgets.js | Bulk widget sync |
-| declaredInFile | components/glossaryPropChain.js | Glossary prop-chain diagnostic |
-| SkeletonRow | components/Skeleton.jsx | Skeleton row component |
-| TOUR_STEPS | modules/InteractiveTour.jsx | Tour step data |
+### B. Minor robustness gaps — not features, just missing cleanup/error surfacing
+- **getVaultError** (`cryptoService.js`) — returns last vault error. Never surfaced; failures handled via thrown exceptions. Wire into lock screen or remove.
+- **clearGraceWindow** (`cryptoService.js`) — clears temp grace-unlock window. Never called; windows only overwritten. Call on PIN change/disable.
+- **hasPinProtection** (`cryptoService.js`) — checks whether PIN is set. UI tracks PIN via settings flag instead. Use as single source of truth.
+- **secureRemove** (`secureStorageAdapter.js`) — deletes a secure-storage key. Never called; vault data never explicitly purged. Call on data reset.
+- **RELEASE_PAGE_URL / RELEASE_APK_URL** (`updateCheckService.js`) — convenience links. Never shown. Wire into About screen or remove.
 
-## Other unused exports (likely dead / internal)
+### C. Superseded aggregate constant
+- **CUMMER_OPTIONS** (`contactRepository.js`) — combined list; superseded by split `CUMMER_FREQUENCY_OPTIONS` / `CUMMER_VOLUME_OPTIONS` / `CUMMER_STYLE_OPTIONS`. Delete.
 
-EXPORT_INCLUDE_RECENT_CONTACTS_KEY, setExportIncludeRecentContacts, CONTACT_REQUIRED_FIELD_GROUPS, supportsTarget, detectDuplicateCandidates, FONT_FAMILY_MONO, EXPOSURE_WINDOWS_DAYS, unclearedInfectionsForTest, U_U_EXPLANATION, REMINDER_KINDS, ACK_SCOPES, lastTestRedactedLine, SETTING_LABELS, ALLOWED_AT_REDACTED, REDACTED_COPY, elementBridgeField, elementVisible, EXPANSION_FLAG_KEY, KINK_ROLE_STYLE, KINK_DETAIL_PACKS, PEP_ADDED_FLAG, CUMMER_OPTIONS, SAMPLE_TYPE_MIGRATION_FLAG, CVD_SAFE_PALETTE, DEFAULT_NOTIFICATION_ITEM, DEFAULT_NOTIFICATION_LIST, SETTING_OPTIONS, DEFAULT_VAGINAL_HEALTH_ENTRY, RELEASE_PAGE_URL, getVaultError (dup), recordsToCSV (dup).
-
-## Recommendation
-
-Do not auto-delete. Review each Category-"unwired feature" item: either wire it into the UI (if the feature is intended) or remove it plus its tests. Keep guard-test-only constants. Keep `capacitor-widget-bridge` only if widgets are in use (they are Android-native; verify before removing).
+### D. Intentional / leave alone
+- Registry/repository constants (KINK_ROLE_STYLE, KINK_DETAIL_PACKS, EXPANSION_FLAG_KEY, PEP_ADDED_FLAG, SAMPLE_TYPE_MIGRATION_FLAG, CVD_SAFE_PALETTE, DEFAULT_NOTIFICATION_*, SETTING_OPTIONS, DEFAULT_VAGINAL_HEALTH_ENTRY, TOUR_STEPS, SkeletonRow, etc.) — used via string keys and guard tests. Not bugs.

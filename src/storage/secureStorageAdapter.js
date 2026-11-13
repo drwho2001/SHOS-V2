@@ -41,18 +41,6 @@ export async function secureSet(key, value) {
   }
 }
 
-export async function secureRemove(key) {
-  try {
-    await SecureStorage.remove(PREFIX + key);
-  } catch {
-    try {
-      localStorage.removeItem(PREFIX + key);
-    } catch {
-      // Silently no-op
-    }
-  }
-}
-
 // Synchronous cache for readVaultMeta (used by many sync callers).
 // Call initSecureCache() at startup to populate.
 export function getCachedVaultMeta() {

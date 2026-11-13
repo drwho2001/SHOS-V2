@@ -121,7 +121,6 @@ export const CHASTITY_OPTIONS = ["N/A", "Uncaged", "Caged"];
 export const CUMMER_FREQUENCY_OPTIONS = ["Doesn't", "Premature", "Takes ages", "Only once", "Multiple loads"];
 export const CUMMER_VOLUME_OPTIONS = ["Small", "Average", "Big load"];
 export const CUMMER_STYLE_OPTIONS = ["Squirter", "Dribbler"];
-export const CUMMER_OPTIONS = ["Doesn't", "Premature", "Takes ages", "Only once", "Multiple loads", "Small", "Average", "Big load", "Squirter", "Dribbler"];
 
 // New this round: known PrEP/DoxyPEP status, and the day/time rule
 // builder for non-availability (and its inverse, availability) windows.
@@ -1016,3 +1015,4 @@ export const ContactRepository = {
     nextContactNumber = null;
   },
 };
+

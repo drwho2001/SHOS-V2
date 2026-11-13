@@ -368,10 +368,6 @@ export function setVaultError(err) {
     for (const resolve of waiters) resolve(false);
   }
 }
-export function getVaultError() {
-  return lastVaultError;
-}
-
 function isUnlocked() {
   return activeDataKey !== null;
 }
@@ -631,20 +627,8 @@ async function refreshGraceWindow(rawDek, graceMinutes) {
   writeVaultMeta(meta);
 }
 
-export function clearGraceWindow() {
-  const meta = readVaultMeta();
-  if (meta?.tempGrace) {
-    meta.tempGrace = null;
-    writeVaultMeta(meta);
-  }
-}
-
 export function isVaultUnlocked() {
   return isUnlocked();
-}
-
-export function hasPinProtection() {
-  return !!readVaultMeta()?.pin;
 }
 
 // --- Enabling/disabling/changing PIN protection — every path here
