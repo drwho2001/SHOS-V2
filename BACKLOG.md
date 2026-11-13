@@ -100,15 +100,15 @@ Status: idea captured - needs design discussion before implementation.
 ## DESIGN DECISIONS (13 Nov 2026) - agreed with owner
 
 ### 0g. Female reproductive health
-- PMS quick-log: Deep link from cycle entry (inline, not separate screen)
-- Headache/symptoms: Live under Symptoms module, deep-linked/embeddable in other screens. 2-way linkage: symptom <-> cycle entry.
-- Cycle stats: Both - menstrual screen header + home widget
+- PMS quick-log: Deep link from cycle entry (inline, not separate screen) [Q7:A]
+- Headache/symptoms: Live under Symptoms module, deep-linked/embeddable in other screens. 2-way linkage: symptom <-> cycle entry. Headache is NOT female-specific — it lives in Symptoms module, reachable from other modules. [Q8: A but Symptoms-owned]
+- Cycle stats: Both - menstrual screen header + home widget [Q9:C]
 - Fertile window: EXCLUDE (medical liability, dedicated apps exist)
 - Contraception side effects: Link to SymptomLog (sideEffectIds), not standalone
 - Contraception reason stopped: Add field (switched, side effects, planned pregnancy, no longer needed, other)
 - PMS symptoms: Mood, bloating, headache, breast tenderness, fatigue, irritability, cravings, sleep, acne, joint pain
 - Period details: Clot size (None/Small/Medium/Large), pain level (0-10), spotting, missed period flag
-- Headache diary: Extend SymptomLog with optional headacheDetail sub-record (type, duration, severity, triggers[], aura, medicationTaken, medicationEffective). Not a dedicated module.
+- Headache diary: Extend SymptomLog with optional headacheDetail sub-record (type, duration, severity, triggers[], aura, medicationTaken, medicationEffective). Lives in Symptoms module, not female health. [Q8]
 - Pregnancy: Gestational weeks + trimester (calculated). Link to contraception at conception. Lower priority.
 - Vaginal health: Treatment field, outcome field (resolved/recurring/chronic), recurrenceCount (derived), link to Testing.
 - Cycle prediction: Show average + variability + next predicted. No complex algorithms. Surface existing data.
@@ -116,40 +116,40 @@ Status: idea captured - needs design discussion before implementation.
 - What NOT to build: Fertility tracking, pregnancy week-by-week content, hormone trending (already in measurements), medication reminders (already in medication), period prediction algorithms.
 
 ### 0. Safety contact sharing
-- Fields: User selects via checkboxes. Default: name, address, vehicle. Optional: photo, phone.
-- Live location: Google Maps first. System share sheet for static message.
+- Fields: User selects via checkboxes. Default: name, address, vehicle. Optional: photo, phone. [Q10:A]
+- Live location: Google Maps first. System share sheet for static message. [Q11:A]
 - Message template: "I'm meeting [name] at [location] around [time]. If you don't hear from me by [time+Xh], here's their info: [details]"
 - Timer: User decides X hours. In-app reminders at 50% and 10% time remaining.
-- Disclaimer: Both - tooltip on button + footer in shared message.
+- Disclaimer: Both - tooltip on button + footer in shared message. [Q12:C]
 - Delivery: System share sheet. No server-side storage. No auto-share.
 - Scope: Contact detail only for v1. Encounter-flow integration deferred.
 
 ### 0b. Healthcare header/toolbar standardisation
 - Banner (module-wide, fixed): Exit/back (top-left), Search (top-right), Settings (overflow). Max 3 icons.
 - Tab header (per-tab, scrollable): Add, Filter, Sort, Export. Max 2 icons + overflow.
-- Apply to: Healthcare first, then all modules.
+- Apply to: All modules at once. [Q13:B]
 - Banner: Fixed. Tab header: scrolls with content.
 - Document in: DESIGN-MANUAL.md.
 
 ### 0d. Demo data completeness
-- Quantities: 2 of each type, 3-5 common types.
+- Quantities: 2 of each type, 3-5 common types. [Q14:A]
 - Marking: isDemo flag. Clearly identifiable.
 - Clear sample data: Must remove all demo data.
 - Edge cases: Empty states, overflow text, long names, special characters.
 
 ### 0e. Widget render and design check
 - First step: Grep src/ for widget components.
-- States: All (populated + empty, dark + light).
+- States: All (populated + empty, dark + light, loading, error). [Q15:B]
 - Method: Playwright batch capture + visual inspection.
 
 ### 0f. Design manual currency check
-- Scope: Cards, home, modules, add forms. Targeted, not full rewrite.
+- Scope: Full audit of entire manual. [Q16:B]
 - Method: Automated (grep tokens vs manual) then manual review then automated verification.
 
 ### 0h. Three essential data display states
-- Unfilled fields: Required incomplete in red. Summary card hides unfilled. Detail view ghosts with toggle button to show/hide incomplete data. Edit/add form: ghost unless in use to hide.
+- Unfilled fields: Required incomplete in red. Summary card hides unfilled. Detail view ghosts with toggle button to show/hide incomplete data. Edit/add form: ghost unless in use to hide. [Q17:A + red for required incomplete]
 - Empty state: "No X yet" + add CTA (consistent across modules). CTA = Call To Action.
-- Scope: Start with 3 representative modules (Contacts, Encounters, Medication), then apply pattern to rest.
+- Scope: Start with encounters as template, use to update design manual, then apply to rest. [Q18:encounters as template]
 - Note: 8a/8c/8e/10 already fixed in code. This is now a consistency check.
 
 ### 0c. "A new version is ready" banner
@@ -162,13 +162,31 @@ Status: idea captured - needs design discussion before implementation.
 - PMS quick-log: Add "Log PMS symptom" button on cycle entry. Pre-fills cycle day + phase. Creates SymptomLog entry with cycleDay + cyclePhase fields.
 - Symptom <-> Cycle linkage: 2-way. SymptomLog gets optional cycleDay/cyclePhase. Cycle view shows linked symptoms. Symptom view shows cycle phase.
 - Contraception side effects: sideEffectIds -> SymptomsRegistry. Correlate by date range.
-- Headache diary: Extend SymptomLog with optional headacheDetail sub-record (type, duration, severity, triggers[], aura, medicationTaken, medicationEffective). Not a dedicated module.
+- Headache diary: Extend SymptomLog with optional headacheDetail sub-record (type, duration, severity, triggers[], aura, medicationTaken, medicationEffective). Lives in Symptoms module, not female health.
 - Cycle stats UI: Average cycle length, variability, next predicted date. Prominent on menstrual screen, compact widget on home.
 - PMS pattern recognition: "Headaches on days 24-27 in 3 of last 4 cycles" - calculated from existing data.
 - Contraception reason stopped: Enum (switched, side effects, planned pregnancy, no longer needed, other).
 - Period details: clotSize (None/Small/Medium/Large), painLevel (0-10), spotting (boolean + date), missedPeriod (flag + reason).
 - Vaginal health: treatment field, outcome field (resolved/recurring/chronic), recurrenceCount (derived), link to Testing.
 - Pregnancy: gestationalWeeks (calculated), trimester (derived), link to contraception at conception.
+
+### 0j. Design consistency (apply encounters style to healthcare + contacts)
+- Healthcare first, then contacts (incremental). [Q1:A]
+
+### 0k. Sticky allergies banner
+- Sticky section below banner (tab-specific). [Q2:B]
+
+### 0l. Dashboard title truncation
+- Rename to "Home". [Q3:B]
+
+### 0m. Contacts running count
+- Opt-in, on by default. [Q4:C]
+
+### 0n. Filter 3-state toggle
+- Apply to all sortable lists (contacts, encounters, medications, testing). [Q5:B]
+
+### 0o. Medication notification banner
+- Test current build, fix issues found. [Q6:A]
 
 ---
 
@@ -759,6 +777,145 @@ accessibility exceptions, i18n structure.
 4. Verify mockup standards from items 14-16 are documented
 5. Update stale sections, add missing sections
 6. Do NOT rewrite sections that are still accurate
+
+---
+
+## 0j. Design consistency: apply encounters card language to healthcare and contacts (IDEA - not started)
+Requested: encounters module has modern card design (chips, subheadings, icons, colouring, colour-indent). Healthcare (testing) and contacts are still chunky cards with little data and no colour. Need to apply the same design language.
+
+### What needs changing
+- Healthcare (testing): apply colour-indent, chip groups, summary lines, section rows. Currently blocky/bulky cards.
+- Contacts: apply same colour-indent, chip groups, summary lines. Currently chunky cards with no colour.
+- Both should match encounters card grammar: chips, subheadings, icons, colouring.
+
+### Challenge (standard)
+1. Incremental, not full redesign - apply existing patterns.
+2. Healthcare and contacts use their own module colours (healthcare green, contacts amber).
+3. Large change touching many files. Verify smoke tests after.
+4. Module by module: healthcare first (most complex), then contacts.
+
+### Scope
+In: Apply encounters card design language to healthcare and contacts modules.
+Out: Redesigning the card grammar itself (already standardised in items 14-16).
+
+### Plan
+1. Identify encounters patterns to port (section rows, chips, summary lines, colour-indent, advisory)
+2. Apply to healthcare module (testing, clinic visits, vaccinations, etc.)
+3. Apply to contacts module
+4. Verify smoke tests + vitest + eslint
+5. Visual audit pass on both modules
+
+Status: idea captured - needs design discussion before implementation.
+
+---
+
+## 0k. Sticky allergies banner (IDEA - not started)
+Requested: allergies should stick at the top of the relevant screen. If module-wide concept, module banner. If tab-specific, only on that tab.
+
+### Challenge (standard)
+1. Is allergies module-wide or tab-specific? (Likely module-wide in healthcare)
+2. Should it be a sticky header below the module banner?
+3. Should it show count + severity?
+4. Should it be dismissible?
+
+### Scope
+In: Make allergies sticky at top of relevant screen.
+Out: Redesigning the allergy display.
+
+Status: idea captured - needs design discussion before implementation.
+
+---
+
+## 0l. Dashboard title truncation (IDEA - not started)
+Requested: "X's dashboard" title is cut off. Options: go to two lines, or change to "Home" or "Your home".
+
+### Challenge (standard)
+1. Two lines: may push content down, inconsistent with other screens.
+2. "Home" or "Your home": simpler, but loses personalisation.
+3. Could use responsive font size (smaller on narrow screens).
+4. Could truncate with ellipsis and show full on tap.
+
+### Scope
+In: Fix dashboard title display. Choose one approach.
+Out: Redesigning the home screen.
+
+### Plan
+1. Decide on approach (two lines vs rename vs responsive font)
+2. Implement
+3. Verify on narrow screens (360px)
+
+Status: idea captured - needs design discussion before implementation.
+
+---
+
+## 0m. Contacts running count (IDEA - not started)
+Requested: option to show running tally of contacts (1 at top, x at bottom, increasing as you scroll down). Like a scroll progress indicator for list length.
+
+### Challenge (standard)
+1. Is this useful or just visual noise? (Could be useful for large contact lists)
+2. Should it be opt-in (setting) or always on?
+3. Performance: updating count on every scroll event could be janky.
+4. Should it show total count or visible count?
+
+### Scope
+In: Add optional running count to contacts list.
+Out: Complex scroll tracking or virtualisation.
+
+### Plan
+1. Decide: opt-in setting or always on
+2. Implement using IntersectionObserver or scroll event (throttled)
+3. Test performance on large lists
+
+Status: idea captured - needs design discussion before implementation.
+
+---
+
+## 0n. Filter 3-state toggle (IDEA - not started)
+Requested: filters should have 3 states/clicks: off, on (normal sort), on inverted sort. Combine newest/oldest into one control with arrows or text changing.
+
+### Challenge (standard)
+1. Current state: separate "newest" and "oldest" buttons? Or toggle?
+2. 3-state toggle: off -> ascending -> descending -> off (cyclic)
+3. Visual feedback: arrow direction changes (up/down) or text changes
+4. Should this apply to all sortable lists (contacts, encounters, medications)?
+5. Accessibility: screen reader needs to announce state
+
+### Scope
+In: Implement 3-state sort toggle on contacts and encounters lists.
+Out: Applying to all modules (start with 2, expand if well-received).
+
+### Plan
+1. Design the toggle UI (arrow icon + state text)
+2. Implement cyclic state machine (off -> asc -> desc -> off)
+3. Apply to contacts and encounters lists
+4. Verify accessibility (aria-label updates per state)
+
+Status: idea captured - needs design discussion before implementation.
+
+---
+
+## 0o. Medication notification banner (IDEA - not started)
+Requested: check if out-of-app notification banner for medication reminders works properly. "Take medication" notifications should appear when app is backgrounded or closed.
+
+### Challenge (standard)
+1. Uses Capacitor Local Notifications (already in dependencies)
+2. Need to verify: notification fires at correct time, shows correct content, tap opens correct screen
+3. Need to verify: works when app is backgrounded, closed, after reboot
+4. Need to verify: respects user's notification preferences (enable/disable)
+5. May need to check Android notification channels and permissions
+
+### Scope
+In: Verify and fix medication reminder notifications.
+Out: Adding new notification types.
+
+### Plan
+1. Check existing notification code (medicationReminderSync.js, refillReminderSync.js)
+2. Test on device: schedule reminder, background app, verify notification
+3. Test tap-to-open navigation
+4. Test permission handling (denied, granted, revoked)
+5. Fix any issues found
+
+Status: idea captured - needs design discussion before implementation.
 
 ---
 

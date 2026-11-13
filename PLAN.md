@@ -71,9 +71,16 @@
 | 4c | Healthcare header/toolbar standardisation (0b) — banner + tab header | Design settled | 1 day | Banner (fixed): exit/search/settings. Tab header (scrollable): add/filter/sort/export. Healthcare first, then all modules. |
 | 4d | Widget render and design check (0e) — Playwright batch capture | Grep first | 0.5 day | Grep for widgets first, then capture all states (populated+empty, dark+light) |
 | 4e | Demo data completeness (0d) — fill gaps | Feature matrix | 1 day | 2 of each type, 3-5 common types, isDemo flag, clear sample data |
-| 4f | Demo data display states (0h) — fix + spot-check | Batch 2 done | 0.5 day | Required incomplete in red; summary hides unfilled; detail ghosts with toggle; edit form ghost unless in use. Start with 3 modules. |
+| 4f | Demo data display states (0h) — fix + spot-check | Batch 2 done | 0.5 day | Required incomplete in red; summary hides unfilled; detail ghosts with toggle; edit form ghost unless in use. Encounters as template. |
+| 4g | Design consistency (0j) — apply encounters card language to healthcare + contacts | None | 2-3 days | Healthcare first, then contacts. Incremental. |
+| 4h | Sticky allergies banner (0k) | None | 0.5 day | Sticky section below banner (tab-specific) |
+| 4i | Dashboard title truncation (0l) | None | 0.5 day | Rename to "Home" |
+| 4j | Contacts running count (0m) | None | 0.5 day | Opt-in, on by default |
+| 4k | Filter 3-state toggle (0n) | None | 1 day | All sortable lists |
+| 4l | Medication notification banner (0o) | None | 1 day | Test current build, fix issues |
+| 4m | Design manual full audit (0f) | None | 0.5 day | Full audit of entire manual |
 
-**Order:** 4a first (highest value). Then 4b, 4c. Then 4d, 4e, 4f.
+**Order:** 4a first (highest value). Then 4b, 4c. Then 4g (design consistency). Then 4d, 4e, 4f, 4h-4m.
 
 ---
 
@@ -114,7 +121,13 @@
 | 0f | Design manual currency check | Medium | 0.5 day |
 | 0g | Female reproductive health perspective audit | High | 2-3 days |
 | 0h | Three essential data display states | Medium | 0.5 day |
-| 0i | Colour token naming: "healthcareBlue" → "healthcare" | Low | 0.5 day |
+| 0i | Colour token naming: "healthcareBlue" → "healthcare" | Low | ✅ Done |
+| 0j | Design consistency: apply encounters card language to healthcare and contacts | Medium | 2-3 days |
+| 0k | Sticky allergies banner | Medium | 0.5 day |
+| 0l | Dashboard title truncation ("X's dashboard" → two lines or "Home") | Low | 0.5 day |
+| 0m | Contacts running count (scroll progress) | Low | 0.5 day |
+| 0n | Filter 3-state toggle (off → asc → desc) | Medium | 1 day |
+| 0o | Medication notification banner verification | Medium | 1 day |
 
 ## Recommended next steps (in priority order)
 
