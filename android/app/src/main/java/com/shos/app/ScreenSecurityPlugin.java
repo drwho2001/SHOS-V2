@@ -52,4 +52,3 @@ public class ScreenSecurityPlugin extends Plugin {
     return sp.getBoolean(KEY_ALLOW, false);
   }
 }
-"
