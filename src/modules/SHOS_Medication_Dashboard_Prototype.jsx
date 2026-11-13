@@ -2528,7 +2528,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
 
         {/* Allergies remain sourced from My Profile, but this home-screen
             summary opens its editor directly so it is not a dead-end warning. */}
-        <div style={{ margin: "12px 16px", }}>
+        <div style={{ margin: "12px 16px", position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 5, background: T.bg, paddingBottom: 4 }}>
           <button
             type="button"
             onClick={() => setShowMyProfile(true)}
