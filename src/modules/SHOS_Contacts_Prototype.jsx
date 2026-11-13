@@ -3541,8 +3541,6 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       <div role="group" aria-label="Sort contacts" tabIndex={0} style={{ display: "flex", gap: 8, padding: "0 16px 14px", overflowX: "auto" }}>
         {[
           { key: "name", label: "A–Z" },
-          { key: "newest", label: "Newest" },
-          { key: "oldest", label: "Oldest" },
           { key: "lastEncounter", label: "Last encounter" },
           { key: "incomplete", label: "Incomplete" },
         ].map((opt) => (
@@ -3551,6 +3549,16 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
             {opt.label}
           </div>
         ))}
+        {/* 3-state date sort toggle: off → newest → oldest → off */}
+        <div onClick={() => {
+          if (sortBy === "newest") setSortBy("oldest");
+          else if (sortBy === "oldest") setSortBy("name");
+          else setSortBy("newest");
+        }} role="button" tabIndex={0} aria-pressed={sortBy === "newest" || sortBy === "oldest"} aria-label={sortBy === "newest" ? "Sort by date newest first" : sortBy === "oldest" ? "Sort by date oldest first" : "Sort by date"}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (sortBy === "newest") setSortBy("oldest"); else if (sortBy === "oldest") setSortBy("name"); else setSortBy("newest"); } }}
+          style={{ padding: "6px 12px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", border: `1px solid ${sortBy === "newest" || sortBy === "oldest" ? T.contactsTeal : T.border}`, color: sortBy === "newest" || sortBy === "oldest" ? T.contactsTealText : T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
+          {sortBy === "newest" ? "↓ Newest" : sortBy === "oldest" ? "↑ Oldest" : "Date"}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
