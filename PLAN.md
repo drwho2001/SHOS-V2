@@ -13,7 +13,7 @@
   sessions 11-13 Nov). Needs committing.
 - **Tests:** vitest 2063 passed / 1 skipped / 0 failed. eslint 0 errors, 2
   pre-existing warnings. Smoke tests 0 FAIL on 10 files.
-- **Open findings:** 8a, 8c, 8e, 10 (minor). Finding 4 (~30 stray hexes).
+- **Open findings:** Finding 4 (~30 stray hexes, Batch 3b) and dead-exports cleanup (Batch 1c) only. All other findings resolved.
   Challenge pass: 13px untokenised (516 sites), dead exports, contactMerge.js.
 
 ---
@@ -98,16 +98,12 @@
 
 ## Open findings (not yet fixed)
 
-| Finding | Description | Priority | Batch |
-|---------|-------------|----------|-------|
-| 4 | ~30 stray hexes, goldText pair vs ACTION.gold | Medium | 3b |
-| 8a | Encounter card dead space (empty group labels) | Minor | 2a |
-| 8c | Empty SectionCards on contact detail | Minor | 2b |
-| 8e | Medication FAB overlap | Minor | 2c |
-| 10 | Stat card affordance inconsistency | Minor | 2d |
-| Challenge | 13px untokenised (516 sites) | Medium | 3a |
-| Challenge | Dead exports (zero refs) | Low | 1c |
-| Challenge | contactMerge.js (wire or delete) | Low | 5b |
+| Finding | Description | Priority | Status |
+|---------|-------------|----------|--------|
+| 4 | ~30 stray hexes, goldText pair vs ACTION.gold | Medium | Open (Batch 3b — targeted) |
+| Challenge | Dead exports (zero refs) | Low | Open (Batch 1c) |
+
+All other findings (8a, 8c, 8e, 10, 13px tokenisation, contactMerge.js) are resolved.
 
 ## Ideas (need design discussion before implementation)
 
