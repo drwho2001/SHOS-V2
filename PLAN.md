@@ -13,7 +13,7 @@
   sessions 11-13 Nov). Needs committing.
 - **Tests:** vitest 2063 passed / 1 skipped / 0 failed. eslint 0 errors, 2
   pre-existing warnings. Smoke tests 0 FAIL on 10 files.
-- **Open findings:** Finding 4 (~30 stray hexes, Batch 3b) and dead-exports cleanup (Batch 1c) only. All other findings resolved.
+- **Open findings:** Dead-exports cleanup (Batch 1c) only. All other findings resolved.
   Challenge pass: 13px untokenised (516 sites), dead exports, contactMerge.js.
 
 ---
@@ -100,7 +100,7 @@
 
 | Finding | Description | Priority | Status |
 |---------|-------------|----------|--------|
-| 4 | ~30 stray hexes, goldText pair vs ACTION.gold | Medium | Open (Batch 3b — targeted) |
+| 4 | ~30 stray hexes, goldText pair vs ACTION.gold | Medium | ✅ Done (goldText → ACTION.gold across 4 modules) |
 | Challenge | Dead exports (zero refs) | Low | Open (Batch 1c) |
 
 All other findings (8a, 8c, 8e, 10, 13px tokenisation, contactMerge.js) are resolved.
