@@ -2553,7 +2553,7 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.waitForTimeout(250);
     // Acknowledge the intentionally-incomplete record so the save button enables
     // (name alone doesn't satisfy age/city/role/position requirements).
-    const ackSwitch = page.getByText("Acknowledge incomplete").locator("..").getByRole("switch");
+    const ackSwitch = page.getByText("Acknowledge incomplete").locator("..").locator("..").getByRole("switch");
     if (await ackSwitch.count()) await ackSwitch.first().click({ timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(500);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
