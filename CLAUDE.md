@@ -648,3 +648,7 @@ be executed.
 - NextDoseWidgetProvider: redacted branch now shows timer (ring+countdown), no medication names. renderRing extracted to helper. colour() method restored.
 - medicationReminderSync: redacted line now arg fix (Date.now() via now variable).
 
+
+## Smoke test fix
+- Added data-testid='add-contact-fab' to Contacts FAB; smoke-test flow 1 now targets it directly instead of .first() which resolved to the disabled form submit button.
+

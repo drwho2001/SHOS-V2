@@ -2547,10 +2547,7 @@ async function testSampleDataDisclosureAndClear(browser) {
     // by role - a text search for "Contacts" silently matches nothing.
     const nav = page.getByRole("navigation", { name: "Main navigation" });
     await nav.getByRole("button", { name: "Contacts", exact: true }).first().click({ timeout: 5000 });
-    await page.waitForTimeout(1200);
-    // The "+" FAB and the sheet's submit are BOTH labelled "Add contact"
-    // (`isNew ? "Add contact" : "Save changes"`), so first-then-last.
-    await page.getByRole("button", { name: /add contact/i }).first().click({ timeout: 5000 });
+    await page.locator('[data-testid="add-contact-fab"]').click({ timeout: 5000 });
     await page.waitForTimeout(1000);
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
     await page.waitForTimeout(250);

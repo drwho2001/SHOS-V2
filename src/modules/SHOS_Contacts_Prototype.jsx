@@ -3814,7 +3814,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           A star on a scrolled-past card could paint over the fixed Add
           button. Explicit zIndex here, well above any in-card value. */}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none", zIndex: 20 }}>
-        <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add contact" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer", minHeight: 44, pointerEvents: "auto" }}>
+        <div data-testid="add-contact-fab" onClick={onAdd} role="button" tabIndex={0} aria-label="Add contact" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer", minHeight: 44, pointerEvents: "auto" }}>
           <Plus size={24} color={T.fabIcon} />
         </div>
       </div>
