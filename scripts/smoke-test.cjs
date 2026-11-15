@@ -2550,11 +2550,12 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.locator('[data-testid="add-contact-fab"]').click({ timeout: 5000 });
     await page.waitForTimeout(1000);
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
-    await page.waitForTimeout(250);
-    // Acknowledge the intentionally-incomplete record so the save button enables
-    // (name alone doesn't satisfy age/city/role/position requirements).
-    const ackToggle = page.locator('text=Acknowledge incomplete').locator('xpath=ancestor::div[1]').locator('[role="switch"]');
-    if (await ackToggle.count()) await ackToggle.first().click({ force: true, timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    // Acknowledge the intentionally-incomplete record via JS (toggle didn't register via Playwright clicks).
+    await page.evaluate(() => {
+      const switches = document.querySelectorAll('[role="switch"]');
+      if (switches.length > 0) switches[0].click();
+    });
     await page.waitForTimeout(500);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
     // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(1500). Saving writes to
