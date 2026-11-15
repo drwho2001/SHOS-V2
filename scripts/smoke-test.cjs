@@ -2552,9 +2552,9 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
     await page.waitForTimeout(250);
     // Fill the remaining required fields so the save button enables.
-    await page.getByLabel("Age", { exact: false }).first().fill("30");
+    await page.getByLabel("Age, required", { exact: true }).first().fill("30");
     await page.waitForTimeout(100);
-    const cityInput = page.getByLabel("City", { exact: false }).first();
+    const cityInput = page.getByLabel("City, required", { exact: true }).first();
     if (await cityInput.count()) { await cityInput.fill("London"); await page.waitForTimeout(200); }
     // Select "Unknown / not discussed" for role and position.
     const unknownChips = page.getByText("Unknown / not discussed", { exact: true });
