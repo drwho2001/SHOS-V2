@@ -2551,18 +2551,10 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.waitForTimeout(1000);
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
     await page.waitForTimeout(250);
-    // Fill the remaining required fields so the save button enables.
-    await page.getByLabel("Age, required", { exact: true }).first().fill("30");
-    await page.waitForTimeout(100);
-    const cityInput = page.getByLabel("City, required", { exact: true }).first();
-    await cityInput.scrollIntoViewIfNeeded();
-    await cityInput.fill("London");
-    await page.waitForTimeout(300);
-    // Select "Unknown / not discussed" for role and position.
-    const unknownChips = page.getByText("Unknown / not discussed", { exact: true });
-    const chipCount = await unknownChips.count();
-    if (chipCount >= 1) await unknownChips.nth(0).click({ timeout: 5000 }).catch(() => {});
-    if (chipCount >= 2) await unknownChips.nth(1).click({ timeout: 5000 }).catch(() => {});
+    // Acknowledge the intentionally-incomplete record so the save button enables
+    // (name alone doesn't satisfy age/city/role/position requirements).
+    const ackToggle = page.locator('text=Acknowledge incomplete').locator('xpath=ancestor::div[1]').locator('[role="switch"]');
+    if (await ackToggle.count()) await ackToggle.first().click({ force: true, timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(500);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
     // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(1500). Saving writes to
