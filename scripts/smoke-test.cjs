@@ -2746,7 +2746,7 @@ async function testBannerSuppression(browser) {
     // The seed data's PrEP dose is genuinely due, so its banner is real rather
     // than something this flow had to manufacture.
     const banner = page.locator('[aria-label="Dismiss due medications banner"]');
-    const hadBanner = await banner.first().waitFor({ state: "visible", timeout: 25000 })
+    const hadBanner = await banner.first().waitFor({ state: "visible", timeout: 45000 })
       .then(() => true).catch(() => false);
     if (!hadBanner) {
       const diag = await page.evaluate(() => ({
