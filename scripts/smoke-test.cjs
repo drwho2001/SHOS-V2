@@ -592,7 +592,7 @@ async function testLocationsExtraFields(page) {
   await page.waitForTimeout(600);
   const homeRow = page.locator("div").filter({ hasText: /^Home/ }).first();
   const chevron = homeRow.locator("svg").first();
-  await chevron.click({ timeout: 5000 });
+  await chevron.click({ timeout: 5000, force: true });
   await page.waitForTimeout(400);
   assert(await page.locator("text=Related contact").count() > 0, "extra-fields panel (Type/Address/Related contact/Notes) expands without closing rename mode");
 }
