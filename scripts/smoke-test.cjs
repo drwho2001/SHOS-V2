@@ -590,10 +590,9 @@ async function testLocationsExtraFields(page) {
   await page.waitForTimeout(600);
   await page.locator("text=Locations").click({ timeout: 5000 });
   await page.waitForTimeout(600);
-  const homeRow = page.locator("div").filter({ hasText: /^Home/ }).first();
-  const chevron = homeRow.locator("svg").first();
+  const chevron = page.locator('[title="Details"]').first();
   await chevron.click({ timeout: 5000, force: true });
-  await page.waitForTimeout(400);
+  await page.locator("text=Related contact").first().waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
   assert(await page.locator("text=Related contact").count() > 0, "extra-fields panel (Type/Address/Related contact/Notes) expands without closing rename mode");
 }
 
