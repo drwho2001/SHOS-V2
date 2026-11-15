@@ -2474,3 +2474,45 @@ link.
 - **Issue/observation:** Backup & Export → Export backup to a folder… → shos-backup-2026-11-04.json (438 kB, 592 records). Force-stop + relaunch + Settings → Backup & Export → Restore from backup → select the backup file → app restores all data (contacts, encounters, medications, timestamps).
 - **Status:** Verified - not actioned.
 
+### 141. Onboarding flow unverified on device (design/UX)
+- **Source:** Device audit (14 Nov 2026) — screen coverage tracker
+- **Issue:** Onboarding/welcome flow, PIN-creation flow, and first-run seeding UI were never exercised this pass (dev profile already complete). Unverified visually. Quick tour also crashed in an earlier session and was not re-tested.
+- **Expected:** dedicated pass with cleared app data: exercise onboarding end-to-end (welcome, PIN creation, first-run seeding, quick tour) and fix any defects found.
+- **Status:** Backlogged - not actioned.
+
+### 142. Encounter landing live search not exercised
+- **Source:** Device audit (14 Nov 2026) — screen coverage tracker
+- **Issue:** The search box is present on the Encounter landing screen but its live-search behaviour was never exercised during the audit pass.
+- **Expected:** exercise live search and fix any defects (filtering, empty state, performance).
+- **Status:** Backlogged - not actioned.
+
+### 143. "Log all daily meds" button not clicked (verified in source only)
+- **Source:** Device audit (14 Nov 2026) — screen coverage tracker
+- **Issue:** The "Log all daily meds" wiring was verified statically in source (disabled when nothing due) but never clicked on device to avoid data mutation.
+- **Expected:** exercise on a test device and confirm correct behaviour.
+- **Status:** Backlogged - not actioned.
+
+### 144. Share My Profile end-to-end device verification (navigator.share path)
+- **Source:** Device audit (14 Nov 2026) — pre-release checklist
+- **Issue:** The tap chain guard passes (myProfileShareWiringGuard.test.js, 6 tests) but the real navigator.share → Capacitor Share → browser download path has not been confirmed on a real device.
+- **Expected:** open My Profile → Share on a real device and confirm the native share sheet appears and the exported file lands correctly.
+- **Status:** Backlogged - not actioned.
+
+### 145. SafetyShareSheet native share sheet + GPS permission device pass
+- **Source:** Device audit (14 Nov 2026) — pre-release checklist
+- **Issue:** The SafetyShareSheet (shareText chain, geolocation pin) was verified by guard tests (safetyShareGuard.test.js, 13 tests) but the native share sheet and GPS permission behaviour need one real-device pass.
+- **Expected:** exercise on a real device: native share sheet opens, GPS permission prompt works, timestamped pin is embedded in the message.
+- **Status:** Backlogged - not actioned.
+
+### 146. Vaccination home-screen widget blank at full privacy tier
+- **Source:** Device audit follow-up (15 Nov 2026)
+- **Issue:** The Vaccination widget sync pushes full data correctly (vaccineName, doseCount, nextDueRelative) but the widget renders blank when set to the full privacy tier on a real device. At redacted tier it shows "Vaccination - dose logged" as expected.
+- **Expected:** investigate the Java provider's full branch / layout rendering; likely a stale widget cache or view-recycling issue. Removing and re-adding the widget may resolve.
+- **Status:** Backlogged - not actioned.
+
+### 147. Settings: add search option (previously requested)
+- **Source:** User request (15 Nov 2026)
+- **Issue:** Settings has no search/filter option despite a previous request. With 57+ rows across 16 sub-screens, finding a specific setting is difficult.
+- **Expected:** add a search/filter input to the Settings screen that filters settings rows by label (and optionally by sub-screen), matching the search pattern used elsewhere in the app.
+- **Status:** Backlogged - not actioned.
+
