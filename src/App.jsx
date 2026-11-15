@@ -1218,6 +1218,10 @@ export default function App() {
     // function is ever actually called (never during the initial
     // render itself).
     checkDueMeds();
+    // ADDED — T2 fix: re-trigger widget sync now that the vault is unlocked,
+    // so widgets refresh after PIN unlock (not just on Home mount, which
+    // fires before the vault is open and produces stale data).
+    syncAllWidgets();
   };
   // CHANGED — Phase 4 (Sep 2026): this used to call
   // PrivacySettingsRepository.shouldRelock() directly — impossible now
