@@ -643,3 +643,8 @@ be executed.
 - Glassmorphism (94-100): Encounter card language applied.
 - BACKLOG/AUDITS reconciled; no remaining backlogged items.
 
+
+## Session 15 Nov 2026 (cont.) - next-dose widget redacted tier fix
+- NextDoseWidgetProvider: redacted branch now shows timer (ring+countdown), no medication names. renderRing extracted to helper. colour() method restored.
+- medicationReminderSync: redacted line now arg fix (Date.now() via now variable).
+
