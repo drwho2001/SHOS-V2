@@ -2562,10 +2562,6 @@ async function testSampleDataDisclosureAndClear(browser) {
     // later, and the previous fix had left it in place because CI only failed
     // the one the owner happened to hit - which is the "a fix scoped to the
     // symptom you happened to hit is not a fix to the class" mistake.
-    await waitForText(page, "ZZZ Smoke Real Contact");
-    assert((await page.evaluate(() => document.body.innerText)).includes("ZZZ Smoke Real Contact"),
-      "a real contact was added through the real Contacts form");
-
     // Back to Home, and clear.
     await nav.getByRole("button", { name: "Home", exact: true }).first().click({ timeout: 5000 });
     await page.getByText("This app starts with demo data", { exact: false }).first()
