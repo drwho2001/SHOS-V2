@@ -631,3 +631,15 @@ be executed.
   answer is `pool list` or the code itself.
 - **"did we already try this?"** — `session-bridge.mjs backlog`, which records
   decisions and dead ends, or `git log`.
+
+## Session 15 Nov 2026 - design/feature pass
+- Settings: added search input (BACKLOG 147, partial filter).
+- Encounters: PrEP coverage warning made prominent (INFERRED - not confirmed).
+- Next-dose widget: fixed 20773d countdown; redacted tier now shows timer.
+- Vaccination widget: render wrapped in try/catch with unavailable fallback.
+- Contacts: per-card numbering, removed floating count pill.
+- Refill banner: added 'Mark collected' button.
+- Maps: summarizePlaceName includes house number.
+- Glassmorphism (94-100): Encounter card language applied.
+- BACKLOG/AUDITS reconciled; no remaining backlogged items.
+
