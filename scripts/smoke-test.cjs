@@ -3581,6 +3581,7 @@ async function testAddContactCrud(page) {
   const sheet = page.getByRole("dialog", { name: "Add contact" });
   await sheet.waitFor({ state: "visible", timeout: 8000 });
   await page.getByLabel("Full name").fill("Smoke Test Contact");
+  await page.getByRole("dialog", { name: "Add contact" }).getByRole("switch").first().click({ force: true });
   await page.getByRole("button", { name: "Add contact", exact: true }).last().click({ timeout: 5000 });
   await sheet.waitFor({ state: "detached", timeout: 8000 });
   await page.getByText("Smoke Test Contact").waitFor({ state: "visible", timeout: 8000 });
