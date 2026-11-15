@@ -506,6 +506,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   const [darkMode] = useDarkModePreference();
   const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
   const dialogRef = useRef(null);
+  const [settingsQuery, setSettingsQuery] = useState("");
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
   // Preload every sub-screen chunk the moment the Settings menu mounts, so
@@ -702,8 +703,10 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
     );
   };
 
+  const sq = settingsQuery.trim().toLowerCase();
+  const matches = (label) => !sq || label.toLowerCase().includes(sq);
+
   return (
-    // ADDED — real accessibility gap found via a region-landmark audit:
     // SettingsScreen renders as a direct sibling of App.jsx's own
     // <main> (not nested inside it), so nothing here — the main menu's
     // own content, and all ~20 sub-screens below, which are DOM
@@ -749,11 +752,19 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer", padding: 11, boxSizing: "content-box", marginTop: -11, marginRight: -11, marginBottom: -11, marginLeft: -11}} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Settings</h1>
       </div>
-
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Profile</div>
-      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
-        <SettingsRow icon={User} label="My Profile" onClick={() => onNavigateToMyProfile()} />
+      <div style={{ padding: "8px 16px 0" }}>
+        <input value={settingsQuery} onChange={(e) => setSettingsQuery(e.target.value)} placeholder="Search settings" aria-label="Search settings"
+          style={{ width: "100%", padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44 }} />
       </div>
+
+      {matches("My Profile") && (
+        <>
+          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Profile</div>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
+            <SettingsRow icon={User} label="My Profile" onClick={() => onNavigateToMyProfile()} />
+          </div>
+        </>
+      )}
 
       {/* REGROUPED 9 Sep 2026 — real ask: the 5 original sections
           ("Data"/"Advanced"/"Design"/"Insights") had grown into a
@@ -798,37 +809,26 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
           <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : "#FFF4CE", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 12 }}>{status}</div>
         )}
 
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Security &amp; Privacy</div>
-      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
-        {/* CHANGED 19 Aug 2026 — real fix: Privacy was already real
-            (onClick worked), but had been left sitting visually under
-            "Not built yet" below since that entry was first added —
-            moved up to where it actually belongs. */}
-        <SettingsRow icon={Shield} label="Privacy" onClick={() => setShowPrivacy(true)} />
-        {/* MOVED 9 Sep 2026 from Data — real ask: what leaves the
-            device (third-party network calls) is a privacy question,
-            not a backup one; sat oddly at the bottom of the export
-            list before. */}
-        <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />
-        {/* ADDED 22 Sep 2026 — Home-screen widgets with per-widget privacy */}
-        <SettingsRow icon={Monitor} label="Widgets" onClick={() => setShowWidgets(true)} />
-      </div>
+      {(matches("Privacy") || matches("Data & network") || matches("Widgets")) && (
+        <>
+          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Security &amp; Privacy</div>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+            {matches("Privacy") && <SettingsRow icon={Shield} label="Privacy" onClick={() => setShowPrivacy(true)} />}
+            {matches("Data & network") && <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />}
+            {matches("Widgets") && <SettingsRow icon={Monitor} label="Widgets" onClick={() => setShowWidgets(true)} />}
+          </div>
+        </>
+      )}
 
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>General</div>
-      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
-        {/* ADDED — real ask: audited grouping — cross-cutting behavioural
-            preferences (Contacts inactive threshold, Healthcare tracking
-            toggles) get a real, findable home instead of living under
-            Colour scheme. */}
-        <SettingsRow icon={SlidersHorizontal} label="Preferences" onClick={() => setShowPreferences(true)} />
-        {/* ADDED — real ask: unified notifications management, one
-            place to turn each real reminder type on/off. */}
-        <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />
-        {/* REMOVED 16 Sep 2026 — real ask: audit whether global-Settings
-            items would do better in each module's own settings. Units
-            moved into Measurements' own gear-icon settings sheet — see
-            MeasurementPreferencesSheet's own comment. */}
-      </div>
+      {(matches("Preferences") || matches("Notifications")) && (
+        <>
+          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>General</div>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+            {matches("Preferences") && <SettingsRow icon={SlidersHorizontal} label="Preferences" onClick={() => setShowPreferences(true)} />}
+            {matches("Notifications") && <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />}
+          </div>
+        </>
+      )}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Appearance</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
