@@ -33,7 +33,7 @@ function bodyOfNavigateToRecord() {
 describe("navigating to a record must close the overlays above it", () => {
   it("closes the Settings overlay and resets its sub-screen", () => {
     const body = bodyOfNavigateToRecord();
-    expect(body).toMatch(/setShowSettings\(false\)/);
+    expect(body).toMatch(/setSettingsScreen\(null\)/);
     // Also clears the sub-screen, so a later Settings open doesn't reappear
     // on whatever sub-screen the user last drilled into.
     expect(body).toMatch(/setSettingsInitialScreen\(null\)/);

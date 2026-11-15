@@ -106,6 +106,27 @@ function downloadInBrowser(filename, contents, mimeType) {
 // somewhere. Falls back to a normal browser download wherever the
 // native plugins aren't available.
 export async function exportTextFile(filename, contents, mimeType = "text/plain") {
+  const blob = new Blob([contents], { type: mimeType });
+
+  // 1) Modern WebView / browser: navigator.share is the standard API
+  //    and works on Android WebView without needing Capacitor plugins.
+  if (typeof navigator !== "undefined" && navigator.share) {
+    try {
+      const url = URL.createObjectURL(blob);
+      await navigator.share({
+        title: filename,
+        text: `SHOS shared profile — ${filename}`,
+        url,
+      });
+      URL.revokeObjectURL(url);
+      return;
+    } catch (navErr) {
+      // User cancelled or share failed — fall through to native plugin
+      console.warn("[fileExportHelper] navigator.share failed, trying native Capacitor Share:", navErr);
+    }
+  }
+
+  // 2) Native Capacitor: write file for real, then hand to Android Share sheet
   const { Filesystem, Directory, Encoding, Share } = await getPlugins();
   if (!Filesystem || !Share) {
     downloadInBrowser(filename, contents, mimeType);
@@ -118,21 +139,6 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
       directory: Directory.Cache,
       encoding: Encoding.UTF8,
     });
-    // ADDED — real device bug: on some phones (reported on a Redmi/MIUI
-    // device) the Share sheet's own app list has no "Save to Files" /
-    // download-style target at all, only send-to-app options — so a
-    // real copy never reliably ends up saved anywhere. Belt-and-braces
-    // fix: ALSO write a second copy straight into the public Documents
-    // folder (Directory.Documents — Android's own docs confirm this is
-    // visible/accessible from other apps, e.g. a file manager, and an
-    // app can always create its own files there even on Android 11+
-    // scoped storage, no special permission needed for that case).
-    // There's no distinct "Downloads" directory in this Capacitor
-    // plugin version, so Documents is the closest public equivalent.
-    // Best-effort only: older Android versions (10 without the legacy-
-    // storage manifest flag this app doesn't set) may reject the write
-    // — that's fine, it just silently skips the extra copy and the
-    // Share sheet above remains the one guaranteed path.
     try {
       await Filesystem.writeFile({
         path: filename,
@@ -142,7 +148,7 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
         recursive: true,
       });
     } catch (docErr) {
-      console.warn("[fileExportHelper] Could not save an extra copy to the public Documents folder (Share sheet copy above is unaffected):", docErr);
+      console.warn("[fileExportHelper] Could not save an extra copy to the public Documents folder:", docErr);
     }
     await Share.share({ url: written.uri, dialogTitle: filename });
   } catch (err) {
@@ -219,11 +225,66 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
   if (!folder) return { ok: false, reason: "cancelled" };
   try {
     await ScopedStoragePlugin.writeFile({ folder, path: filename, data: contents, encoding: "utf8", mimeType });
+    // Remember this folder so the next export doesn't re-prompt.
+    try {
+      const { AppPreferencesRepository } = await import("../repositories/appPreferencesRepository");
+      const prefs = await AppPreferencesRepository.getPreferences();
+      await AppPreferencesRepository.update({ lastExportFolder: folder });
+    } catch (prefErr) {
+      console.warn("[fileExportHelper] Could not persist last export folder:", prefErr);
+    }
     return { ok: true, path: `${folder.name || "chosen folder"}/${filename}` };
   } catch (err) {
     console.error("[fileExportHelper] Writing into the chosen folder failed:", err);
     return { ok: false, reason: "error", error: err };
   }
+}
+
+// ADDED 14 Nov 2026 — BACKLOG 57: Share for safety fell back to a silent
+// clipboard copy because the audit device's WebView doesn't expose
+// navigator.share. This is the TEXT-shaped sibling of exportTextFile()
+// above: share the string through the Web Share API where it exists, then
+// through Capacitor's native Share plugin (which is what actually opens
+// the Android share sheet with Messages/WhatsApp/Snapchat as targets),
+// and only then to the clipboard — as an explicit, confirmed fallback
+// rather than a silent one.
+//
+// Returns a human-readable outcome string for the caller's status line,
+// or throws when the user actively cancelled (AbortError from
+// navigator.share, or the native plugin's cancel rejection) — falling
+// back to the clipboard after someone backed out of the share sheet
+// would share the message with a clipboard they never asked to fill.
+//
+// This deliberately does NOT route through exportTextFile(): that writes
+// a file to Documents first, and a safety share must not leave a copy of
+// the message on the device's shared storage as a side effect of sending.
+export async function shareText(title, text) {
+  if (typeof navigator !== "undefined" && navigator.share) {
+    try {
+      await navigator.share({ title, text });
+      return "Shared.";
+    } catch (err) {
+      if (err && err.name === "AbortError") throw err;
+      console.warn("[fileExportHelper] navigator.share failed, trying native Capacitor Share:", err);
+    }
+  }
+  const { Share } = await getPlugins();
+  if (Share) {
+    try {
+      await Share.share({ title, text, dialogTitle: title });
+      return "Shared.";
+    } catch (err) {
+      // Capacitor's Android Share rejects with a cancelled-shaped error
+      // when the user backs out of the sheet; treat that the same as the
+      // Web Share API's AbortError — a cancel is a cancel, not a failure
+      // to fall through from.
+      const msg = String(err?.message || err || "");
+      if (/cancel/i.test(msg)) throw err;
+      console.warn("[fileExportHelper] Native Share failed, falling back to clipboard:", err);
+    }
+  }
+  await navigator.clipboard.writeText(text);
+  return "Copied to clipboard — no share sheet was available on this device. Paste it into your message app.";
 }
 
 // ADDED — real ask: an editable save location for the automatic

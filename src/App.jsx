@@ -20,7 +20,7 @@ import { setScreenshotsAllowed } from "./storage/screenSecurityService";
 // this file's own new cold-boot gate (replacing shouldRelock() there —
 // shouldRelock() still runs fine for the resume-from-background relock
 // check further down, since the vault is already unlocked by then).
-import { bootUnlock, unlockWithPin, unlockWithBiometric, isDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString, setVaultError } from "./storage/cryptoService";
+import { bootUnlock, unlockWithPin, unlockWithBiometric, isDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString, setVaultError, hasPinSlot } from "./storage/cryptoService";
 // ADDED — Phase 4 (Sep 2026): real, pre-existing bug found while
 // verifying this boot gate live — these three used to be self-invoking
 // IIFEs at module load, which ran (and tried to storage.save()) BEFORE
@@ -39,15 +39,16 @@ import { AppPreferencesRepository } from "./repositories/appPreferencesRepositor
 // just from a background listener. medicationReminderSync.js is a
 // small, dependency-light pure-logic module — negligible bundle cost
 // for a feature visible on every screen, every day.
-import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze } from "./calculations/medicationReminderSync";
+import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze, syncMedicationReminders } from "./calculations/medicationReminderSync";
+import { syncDoxyPepAlert } from "./calculations/doxyPepSync";
 // ADDED — real ask: "Build the Testing/Refill/Clinic-visit reminder
 // parity" — same static-import reasoning as medicationReminderSync
 // above: these are now also called directly from in-app due-state
 // banner buttons, not just background listeners.
-import { getRefillDueMedications, getRefillAwaitingCollection, handleUndoRefillRequest, handleMarkRefillRequested, handleCancelRefill, handleSnoozeRefill } from "./calculations/refillReminderSync";
-import { getTestingDueState, handleSnoozeTesting } from "./calculations/testingReminderSync";
-import { getVaccinationDueState, handleSnoozeVaccination } from "./calculations/vaccinationReminderSync";
-import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/clinicVisitReminderSync";
+import { getRefillDueMedications, getRefillAwaitingCollection, handleUndoRefillRequest, handleMarkRefillRequested, handleMarkRefillCollected, handleCancelRefill, handleSnoozeRefill, syncRefillReminder } from "./calculations/refillReminderSync";
+import { getTestingDueState, handleSnoozeTesting, syncTestingReminder } from "./calculations/testingReminderSync";
+import { getVaccinationDueState, handleSnoozeVaccination, syncVaccinationReminders } from "./calculations/vaccinationReminderSync";
+import { getClinicVisitDueState, handleSnoozeClinicVisit, syncClinicVisitReminders } from "./calculations/clinicVisitReminderSync";
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
@@ -106,6 +107,7 @@ const EncountersModule = lazy(() => import("./modules/SHOS_Encounters_Prototype"
 const MedicationDashboard = lazy(() => import("./modules/SHOS_Medication_Dashboard_Prototype"));
 const HealthcareScreen = lazy(() => import("./modules/SHOS_Healthcare_Prototype"));
 const SettingsScreen = lazy(() => import("./modules/SHOS_Settings_Prototype"));
+const MyProfileModule = lazy(() => import("./modules/SHOS_MyProfile_Prototype"));
 const GlobalSearchScreen = lazy(() => import("./modules/SHOS_GlobalSearch_Prototype"));
 
 // CHANGED 18 Aug 2026 — real persistent bottom nav, replacing the old
@@ -1162,10 +1164,27 @@ export default function App() {
           console.warn("[App] setScreenshotsAllowed on boot failed:", err)
         );
       }
-      setAppLockEnabled(settings.appLockEnabled);
+      // FIXED 14 Nov 2026 — BACKLOG 112 (device audit: "App Lock toggle ON
+      // but no PIN prompt on relaunch"). A stored appLockEnabled=true is
+      // only honest if the vault actually has a PIN slot behind it: without
+      // one, bootUnlock() already took its no-slot branch and opened the
+      // app with no prompt, while Settings showed App Lock ON. The slot can
+      // be missing on state that predates the restore-path demote (an old
+      // build flipped the flag without creating the slot; a backup restored
+      // before that fix). Reconciled here at boot — demoted in this
+      // session's state AND persisted, so the Privacy screen shows App Lock
+      // off until a PIN is set and the toggle re-enabled deliberately. A
+      // vault that does have its slot is untouched.
+      let effectiveAppLockEnabled = settings.appLockEnabled;
+      if (effectiveAppLockEnabled && !hasPinSlot()) {
+        console.warn("[App] appLockEnabled was ON with no vault PIN slot — demoting to OFF (protection without enforcement). Set a PIN and re-enable in Settings → Privacy.");
+        effectiveAppLockEnabled = false;
+        await PrivacySettingsRepository.update({ appLockEnabled: false, biometricUnlockEnabled: false });
+      }
+      setAppLockEnabled(effectiveAppLockEnabled);
       setTabOrder(prefs.tabOrder);
       setShowOnboarding(!prefs.hasCompletedOnboarding);
-      setShowAppLockPrompt(!settings.appLockEnabled && !settings.appLockPromptDismissed);
+      setShowAppLockPrompt(!effectiveAppLockEnabled && !settings.appLockPromptDismissed);
       // ADDED — Phase 4: one-time, idempotent registry/option-list
       // migrations that used to run as module-load-time side effects —
       // see each one's own file for why that broke once storage.save()
@@ -1285,17 +1304,23 @@ export default function App() {
   // shape as pendingOpenRecordId/onConsumedRecordOpen.
   const [clinicCardReturnTab, setClinicCardReturnTab] = useState(null);
   const markClinicCardReturn = () => setClinicCardReturnTab(active);
-  const [showSettings, setShowSettings] = useState(false);
+  // settingsScreen: null = not showing, "settings" = Settings screen,
+  // "myprofile" = My Profile screen. Settings and My Profile are now
+  // separate screens (not overlays) so they get their own scroll,
+  // back button, and recents/overview masking — fixing overlay close
+  // not resetting background scroll (BACKLOG 54) and sticky save bar
+  // overlapping tab controls (BACKLOG 53).
+  const [settingsScreen, setSettingsScreen] = useState(null);
   // ADDED 26 Aug 2026 — real ask: compact calendar entry point on
   // Home, landing directly on Settings' Calendar screen rather than
   // just the main Settings menu.
   const [settingsInitialScreen, setSettingsInitialScreen] = useState(null);
-  const openSettingsToCalendar = () => { setSettingsInitialScreen("calendar"); setShowSettings(true); };
-  const openSettingsToPrivacy = () => { setSettingsInitialScreen("privacy"); setShowSettings(true); };
+  const openSettingsToCalendar = () => { setSettingsInitialScreen("calendar"); setSettingsScreen("settings"); };
+  const openSettingsToPrivacy = () => { setSettingsInitialScreen("privacy"); setSettingsScreen("settings"); };
   // ADDED 2 Oct 2026 - the U=U note's "U=U" link opens the Glossary entry that
   // carries the sourced citations. Same shape as openSettingsToPrivacy above, so
   // the note can reach the evidence from any module without owning navigation.
-  const openSettingsToGlossary = () => { setSettingsInitialScreen("glossary"); setShowSettings(true); };
+  const openSettingsToGlossary = () => { setSettingsInitialScreen("glossary"); setSettingsScreen("settings"); };
   const [showSearch, setShowSearch] = useState(false);
   // ADDED 28 Sep 2026 (Phase 2b) — real ask: coming back from a search
   // result. `navigateToRecord` closes the search overlay and opens the
@@ -1334,7 +1359,7 @@ export default function App() {
   const [pendingTourOffer, setPendingTourOffer] = useState(false);
   const finishTour = async () => {
     setShowTour(false);
-    setShowSettings(false);
+    setSettingsScreen(null);
     setSettingsInitialScreen(null);
     selectTab("home");
     await AppPreferencesRepository.update({ hasCompletedTour: true });
@@ -1608,6 +1633,17 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
     if (!isVaultUnlocked()) return;
     const due = (await getDailyMedsState()).due;
     setDueMeds(due);
+    // Schedule native notifications for due/upcoming meds — runs on every
+    // checkDueMeds() pass (mount, visibilitychange, 60s poll) so reminders
+    // are scheduled even when Home doesn't mount (user was on another tab
+    // when the app was closed). Home's own mount effect also calls these
+    // — duplicate calls are harmless since fixed-id scheduling replaces.
+    await syncMedicationReminders();
+    await syncRefillReminder();
+    await syncTestingReminder();
+    await syncVaccinationReminders();
+    await syncClinicVisitReminders();
+    await syncDoxyPepAlert();
     // ADDED — real ask: Refill/Testing/Clinic-visit parity. Same single
     // chokepoint (mount, visibilitychange, 60s poll, and every real
     // notification delivery all already call this one function) rather
@@ -2109,7 +2145,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     if (handleOverlayBack()) return true;
     const action = decideBackAction({
       moduleHandled: !!(moduleBackHandlerRef.current && moduleBackHandlerRef.current()),
-      showSettings,
+      settingsScreen,
       showSearch,
       // t038: the "Import backup" modal is a full-screen dialog at zIndex 998
       // that was not in this chain, so back fell through to HOME — switching tab
@@ -2121,7 +2157,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       active,
     });
     if (action === BACK_ACTION.MODULE) return true;
-    if (action === BACK_ACTION.SETTINGS) { setShowSettings(false); return true; }
+    if (action === BACK_ACTION.SETTINGS) { setSettingsScreen(null); return true; }
     if (action === BACK_ACTION.SEARCH) { setShowSearch(false); return true; }
     if (action === BACK_ACTION.IMPORT_DIALOG) { setShowImportModeDialog(false); return true; }
     // Real report fix (15 Sep 2026) — see clinicCardReturnTab's own
@@ -2162,7 +2198,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     })();
     return () => { listenerHandle?.remove(); };
     // goBackOneLevel deliberately omitted — every real state its own
-    // logic reads (showSettings/showSearch/active) is already listed
+    // logic reads (settingsScreen/showSearch/active) is already listed
     // here, so this effect already re-registers the listener with a
     // fresh closure whenever any of them change.
     //
@@ -2176,7 +2212,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // and exactly the kind of thing that breaks the moment a second
     // write lands in a different tick. Both are listed now.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSettings, showSearch, active, clinicCardReturnTab, searchReturn]);
+  }, [settingsScreen, showSearch, active, clinicCardReturnTab, searchReturn]);
 
   // ADDED — real ask: actually re-lock when the app comes back from
   // the background (screen timeout, switching away and back), not
@@ -2390,10 +2426,10 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     };
     // Same reasoning as the hardware back-button effect above:
     // goBackOneLevel deliberately omitted, its real inputs
-    // (showSettings/showSearch/active/clinicCardReturnTab/
+    // (settingsScreen/showSearch/active/clinicCardReturnTab/
     // searchReturn) already listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSettings, showSearch, active, clinicCardReturnTab, searchReturn]);
+  }, [settingsScreen, showSearch, active, clinicCardReturnTab, searchReturn]);
   const fileInputRef = useRef(null);
   // ADDED 1 Sep 2026 — real ask: long-press Home to relock, see the
   // appLockEnabled state comment above for the full reasoning. Same
@@ -2466,7 +2502,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // vault first when App Lock is on, then leave: native exitApp on Capacitor,
   // about:blank on web (no third-party request, reversible with Back).
   const handleQuickExit = useCallback(async () => {
-    setShowSettings(false);
+    setSettingsScreen(null);
     setShowSearch(false);
     selectTab("home");
     let native = false;
@@ -2704,7 +2740,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     //
     // `onClose` in CalendarScreen still runs and is still needed - it closes
     // the Calendar sub-screen itself, which this does not touch.
-    setShowSettings(false);
+    setSettingsScreen(null);
     setSettingsInitialScreen(null);
     setShowSearch(false);
     navigateTo(tabKey, subTab, buildSearchReturn(searchReturn?.query, searchReturn?.sortMode));
@@ -3038,19 +3074,34 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
                       ? `${refillAwaiting[0].name} — refill requested, not collected yet`
                       : `${refillAwaiting.length} refills requested, not collected yet`}
                   </div>
-                  <button
-                    onClick={async () => {
-                      const r = await handleUndoRefillRequest(refillAwaiting.map((m) => m.id));
-                      showNotifToast(r.medications.length === 1
-                        ? `Reopened ${r.medications[0]} — it will remind you again`
-                        : `Reopened ${r.medications.length} refills`);
-                      checkDueMeds();
-                    }}
-                    aria-label="Undo: these refills were not ordered after all"
-                    style={{ background: "none", border: "none", padding: 0, marginTop: 3, color: "#FFFFFF", textDecoration: "underline", fontSize: 11, cursor: "pointer" }}
-                  >
-                    I didn&apos;t order these
-                  </button>
+                  <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                    <button
+                      onClick={async () => {
+                        const r = await handleMarkRefillCollected(refillAwaiting.map((m) => m.id));
+                        showNotifToast(r.medications.length === 1
+                          ? `Marked ${r.medications[0]} as collected`
+                          : `Marked ${r.medications.length} refills as collected`);
+                        checkDueMeds();
+                      }}
+                      aria-label="Mark refill as collected"
+                      style={{ background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.45)", color: "#FFFFFF", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Mark collected
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const r = await handleUndoRefillRequest(refillAwaiting.map((m) => m.id));
+                        showNotifToast(r.medications.length === 1
+                          ? `Reopened ${r.medications[0]} — it will remind you again`
+                          : `Reopened ${r.medications.length} refills`);
+                        checkDueMeds();
+                      }}
+                      aria-label="Undo: these refills were not ordered after all"
+                      style={{ background: "none", border: "none", padding: "3px 0", color: "#FFFFFF", textDecoration: "underline", fontSize: 11, cursor: "pointer" }}
+                    >
+                      I didn&apos;t order these
+                    </button>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -3213,7 +3264,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               text-link pattern already used for AppLockScreen's own
               "Back to PIN entry" link) distinguishes it as the tappable
               action without needing a new colour. */}
-          <button onClick={() => setShowSettings(true)} aria-label="Export backup" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Backup</button>
+          <button onClick={() => setSettingsScreen("settings")} aria-label="Export backup" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Backup</button>
           <button onClick={() => { sessionStorage.setItem("shos-sw-reloaded", "1"); window.location.reload(); }} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Refresh</button>
           <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px", pointerEvents: "auto" }}>Download APK</a>
           <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={() => { try { sessionStorage.setItem("shos-sw-update-dismissed", "1"); } catch { /* ignore */ } setSwUpdateAvailable(false); }} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); try { sessionStorage.setItem("shos-sw-update-dismissed", "1"); } catch { /* ignore */ } setSwUpdateAvailable(false); } }} />
@@ -3240,14 +3291,14 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           matches the `<div>` it replaces. */}
       <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setSettingsScreen("settings")} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
           <Suspense fallback={<SkeletonList T={{ surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }} reducedMotion={reducedMotion} rows={6} />}>
             <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
-              onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler}
+              onOpenSettings={() => setSettingsScreen("settings")} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler}
               onQuickExit={handleQuickExit}
               markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)}
               openClinicCardOnDeepLink={pendingOpenClinicCard} onConsumedClinicCardDeepLink={() => setPendingOpenClinicCard(false)} />
@@ -3425,7 +3476,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       {shouldOfferSearchReturn({
         searchReturn,
         showSearch,
-        showSettings,
+        settingsScreen: settingsScreen !== null,
         showTour,
         showAppLockPrompt,
         showImportModeDialog,
@@ -3482,25 +3533,36 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         </div>
       )}
 
-      {/* Lazy overlays suspend on first open until their chunk loads — without this
-          boundary that first open throws React #426 straight to the ErrorBoundary
-          (found live 24 Sep 2026: opening Settings crashed the app). */}
+      {/* Settings and My Profile are now separate screens (not overlays),
+          so they get their own scroll, back button, and recents masking.
+          Rendered as full-screen replacements for the active tab content.
+          Lazy-loaded with Suspense so first-open chunk fetch doesn't
+          throw React #426 (found live 24 Sep 2026). */}
       <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY, fontSize: 13 }}>Loading...</div>}>
-      {showSettings && (
-        <SettingsScreen onClose={() => { setShowSettings(false); setSettingsInitialScreen(null); }} onExport={exportBackup} onImportClick={handleImportClick} status={status} onNavigateToRecord={navigateToRecord} initialScreen={settingsInitialScreen} registerModuleBackHandler={registerModuleBackHandler} onStartTour={() => {
-          // Real reason to force Home here rather than trusting whatever
-          // tab was active before Settings opened: the tour's own
-          // search-icon/settings-icon steps only exist in the DOM while
-          // Home is mounted (see App.jsx's own `active === "home"`
-          // render gate) — TourOverlay already skips a missing target
-          // gracefully, but landing on Home first means a replay from
-          // Guide always shows the full tour, not a degraded one.
-          // selectTab for the same Phase 2b reason as everywhere else: this is
-          // a tab switch, so it clears the search-return context.
-          selectTab("home"); setShowSettings(false); setSettingsInitialScreen(null); setShowTour(true);
-        }} />
+      {settingsScreen === "settings" && (
+        <SettingsScreen
+          isScreen
+          onClose={() => { setSettingsScreen(null); setSettingsInitialScreen(null); }}
+          onExport={exportBackup}
+          onImportClick={handleImportClick}
+          status={status}
+          onNavigateToRecord={navigateToRecord}
+          initialScreen={settingsInitialScreen}
+          registerModuleBackHandler={registerModuleBackHandler}
+          onStartTour={() => {
+            selectTab("home"); setSettingsScreen(null); setSettingsInitialScreen(null); setShowTour(true);
+          }}
+          onNavigateToMyProfile={() => { setSettingsScreen("myprofile"); setSettingsInitialScreen(null); }}
+        />
       )}
-      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} onOpenSettings={() => { selectTab("home"); setShowSettings(true); setSettingsInitialScreen(null); }} onCloseSettings={() => { setShowSettings(false); setSettingsInitialScreen(null); }} darkMode={darkMode} />}
+      {settingsScreen === "myprofile" && (
+        <MyProfileModule
+          onClose={() => { setSettingsScreen(null); }}
+          registerModuleBackHandler={registerModuleBackHandler}
+          onOpenGlossary={() => { setSettingsScreen("settings"); setSettingsInitialScreen("glossary"); }}
+        />
+      )}
+      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} onOpenSettings={() => { selectTab("home"); setSettingsScreen("settings"); setSettingsInitialScreen(null); }} onCloseSettings={() => { setSettingsScreen(null); setSettingsInitialScreen(null); }} darkMode={darkMode} />}
       {showSearch && (
         // initialQuery/initialSortMode are the Phase 2b back-navigation
         // restore. They are read as useState initialisers, which is only
@@ -3523,7 +3585,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         <AppLockPrompt
           onDismiss={() => { setShowAppLockPrompt(false); if (pendingTourOffer) { setPendingTourOffer(false); setShowTour(true); } }}
           onDismissForever={async () => { await PrivacySettingsRepository.update({ appLockPromptDismissed: true }); setShowAppLockPrompt(false); if (pendingTourOffer) { setPendingTourOffer(false); setShowTour(true); } }}
-          onOpenSettings={() => { setShowAppLockPrompt(false); setPendingTourOffer(false); setShowSettings(true); }}
+          onOpenSettings={() => { setShowAppLockPrompt(false); setPendingTourOffer(false); setSettingsScreen("settings"); }}
         />
       )}
       {showImportModeDialog && (

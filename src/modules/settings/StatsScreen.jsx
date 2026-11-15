@@ -170,7 +170,7 @@ export function StatsScreen({ onClose }) {
   const maxClinicVisits = Math.max(1, ...clinicVisitMonths.map((b) => b.count));
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label={t("stats.title", "Stats")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("stats.title", "Stats")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(100px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: darkMode ? DARK.bg : NEUTRAL.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stats</h1>
@@ -190,7 +190,7 @@ export function StatsScreen({ onClose }) {
           <option value="month">By month</option>
         </select>
         <button onClick={() => setShowDetailedStats(!showDetailedStats)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-          {showDetailedStats ? "Hide detailed stats" : "Show detailed stats (XXX)"}
+          {showDetailedStats ? "Hide detailed stats" : "Show detailed stats"}
         </button>
         <button onClick={() => setShowCustomize(!showCustomize)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           {showCustomize ? "Done customizing" : "Customize"}
@@ -206,7 +206,7 @@ export function StatsScreen({ onClose }) {
         </div>
       )}
         <button onClick={() => {
-          const rows = ["Metric,Value", "Total encounters," + filteredEncounters.filter(e => !e.isArchived).length, "Unique partners," + new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size, "Loads," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads||0),0), "Fists," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists||0),0)];
+          const rows = ["Metric,Value", "Total encounters," + filteredEncounters.filter(e => !e.isArchived).length, "Unique partners," + new Set(filteredEncounters.filter(e => !e.isArchived).flatMap(e => e.attendeeIds || [])).size, "Loads," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.loads||0),0), "Fists," + filteredEncounters.filter(e => !e.isArchived).reduce((s,e) => s + (e.fists||0),0)];
           const blob = new Blob([rows.join("\n")], { type: "text/csv" });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a"); a.href = url; a.download = "shos-stats.csv"; a.click(); URL.revokeObjectURL(url);
@@ -222,7 +222,7 @@ export function StatsScreen({ onClose }) {
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", gap: 16, flexWrap: "wrap" }}>
             <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Total encounters</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{filteredEncounters.filter(e => !e.isArchived).length}</div></div>
-            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(filteredEncounters.filter(e => !e.isArchived).map(e => e.contactId).filter(Boolean)).size}</div></div>
+            <div><div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Unique partners</div><div style={{ fontSize: 18, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{new Set(filteredEncounters.filter(e => !e.isArchived).flatMap(e => e.attendeeIds || [])).size}</div></div>
             <div style={{ flexBasis: "100%" }}>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>{groupBy === "location" ? "Top locations" : groupBy === "month" ? "By month" : "Top partners"}</div>
               {(() => {
@@ -230,9 +230,9 @@ export function StatsScreen({ onClose }) {
                 filteredEncounters.filter(e => !e.isArchived).forEach(e => {
                   let key = null;
                   if (groupBy === "location") key = e.locationId;
-                  else if (groupBy === "partner") key = e.contactId;
+                  else if (groupBy === "partner") key = (e.attendeeIds || [])[0];
                   else if (groupBy === "month") key = e.date ? e.date.slice(0,7) : null;
-                  else key = e.contactId;
+                  else key = (e.attendeeIds || [])[0];
                   if (key) counts[key] = (counts[key] || 0) + 1;
                 });
                 const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);

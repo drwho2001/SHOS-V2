@@ -122,6 +122,12 @@ import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 // not any UI — the sheet below is Contacts' own, self-contained, same
 // pattern as every other module this session.
 import { importProfileShareFromFile, importProfileShareFromText } from "../storage/profileShareService";
+// ADDED 14 Nov 2026 — BACKLOG 57: Share for safety routes through the same
+// native-capable share chain as every other export (Web Share API →
+// Capacitor's native Android Share sheet → explicit clipboard fallback),
+// instead of its old navigator.share-or-clipboard-only path that silently
+// copied on the audit device.
+import { shareText } from "../storage/fileExportHelper";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -358,40 +364,94 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
   const { t: trFn } = useTranslation();
   const t = tr || trFn;
   useEscapeToClose(onClose);
+  // FIXED 14 Nov 2026 — BACKLOG 58: this sheet only handled Escape, so the
+  // Android hardware back button/gesture did nothing while it was open
+  // (only the chevron worked). Registers on the app's overlay back stack —
+  // the same one-line pattern the duplicates sheet below already uses —
+  // so back closes the top-most sheet first.
+  useOverlayBackHandler(() => { onClose(); return true; });
   const [fields, setFields] = useState({ name: true, address: true, vehicle: true, photo: false, phone: false });
   const [includeLiveLocation, setIncludeLiveLocation] = useState(false);
+  // BACKLOG 61: the ticked location is captured ONCE when the box is
+  // ticked, as a Google Maps pin embedded in the message — the old
+  // behaviour opened Google Maps on the SENDER's device after sharing,
+  // so the recipient never received any location. A live-updating link
+  // would need Google Maps' own app flow, which a WebView cannot trigger;
+  // a timestamped pin is the honest shareable equivalent (the audit's
+  // own suggested fallback), labelled with the moment it was taken.
+  const [locationPin, setLocationPin] = useState(null); // null | {url, asOf} | {unavailable, reason}
   const [status, setStatus] = useState(null);
+  // BACKLOG 62: the message is now one editable field. `editedMessage`
+  // stays null until the user actually types — so field toggles keep
+  // regenerating the draft — and Reset returns to the generated text.
+  const [editedMessage, setEditedMessage] = useState(null);
   const sheetRef = useRef(null);
   useEffect(() => { sheetRef.current?.focus(); }, []);
 
   const toggle = (k) => setFields((f) => ({ ...f, [k]: !f[k] }));
 
+  // BACKLOG 61 effect: capture the pin when the box is ticked (and only
+  // then — never poll, never capture silently on open). A failure keeps
+  // an explicit "unavailable" marker rather than quietly omitting the
+  // line, so what the UI promised matches what the message says.
+  useEffect(() => {
+    if (!includeLiveLocation || locationPin) return undefined;
+    let cancelled = false;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationPin({ unavailable: true, reason: "location not supported on this device" });
+      return undefined;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        const { latitude, longitude } = pos.coords;
+        setLocationPin({ url: `https://maps.google.com/?q=${latitude},${longitude}`, asOf: new Date().toLocaleTimeString() });
+      },
+      (err) => {
+        if (cancelled) return;
+        const reason = err?.code === 1 ? "permission denied" : "couldn't get a GPS fix";
+        setLocationPin({ unavailable: true, reason });
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+    return () => { cancelled = true; };
+  }, [includeLiveLocation, locationPin]);
+
   const buildMessage = () => {
-    const lines = [];
     const name = contact?.name || contact?.nickname || "Contact";
+    const lines = [];
     if (fields.name) lines.push(`Name: ${name}`);
-    if (fields.phone && contact?.phone) lines.push(`Phone: ${contact.phone}`);
-    if (fields.address && contact?.address) lines.push(`Address: ${contact.address}`);
-    if (fields.vehicle && contact?.vehicle) lines.push(`Vehicle: ${contact.vehicle}`);
-    const msg = `I'm meeting ${name} around ${new Date().toLocaleString()}. If you don't hear from me within a few hours, here's their info:\n${lines.join("\n")}\n\nSharing is not a safety guarantee.`;
-    return msg;
+    // BACKLOG 59: a ticked field with no data used to render NO line, so
+    // the shared message was narrower than the ticked UI implied. Every
+    // ticked field now produces a line — "not provided" when there's
+    // nothing on the record — so what is ticked is exactly what is sent.
+    if (fields.phone) lines.push(`Phone: ${contact?.phone || "not provided"}`);
+    if (fields.address) lines.push(`Address: ${contact?.address || "not provided"}`);
+    if (fields.vehicle) lines.push(`Vehicle: ${contact?.vehicle || "not provided"}`);
+    // BACKLOG 60: fields.photo was never read — ticking it changed
+    // nothing. A text message cannot attach the photo itself, so the
+    // honest line states what photo information exists on the record.
+    if (fields.photo) lines.push(`Photo: ${contact?.profilePicture ? "they have a profile photo on their SHOS record" : "no photo on file"}`);
+    if (includeLiveLocation) lines.push(locationPin && !locationPin.unavailable ? `My location (as of ${locationPin.asOf}): ${locationPin.url}` : `My location: unavailable (${locationPin?.reason || "no fix yet"}).`);
+    return `I'm meeting ${name} around ${new Date().toLocaleString()}. If you don't hear from me within a few hours, here's their info:\n${lines.join("\n")}\n\nSharing is not a safety guarantee.`;
   };
 
+  const generatedMessage = buildMessage();
+  // null = untouched draft follows the generated text; anything the user
+  // typed wins until Reset.
+  const message = editedMessage ?? generatedMessage;
+
   const doShare = async () => {
-    const msg = buildMessage();
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "Safety share", text: msg });
-        setStatus({ ok: true, msg: "Shared." });
-      } else {
-        await navigator.clipboard.writeText(msg);
-        setStatus({ ok: true, msg: "Copied to clipboard (share sheet unavailable)." });
-      }
+      const outcome = await shareText("Safety share", message);
+      setStatus({ ok: true, msg: outcome });
     } catch (e) {
-      setStatus({ ok: false, msg: "Share cancelled or failed." });
-    }
-    if (includeLiveLocation) {
-      try { window.open("https://www.google.com/maps", "_blank"); } catch {}
+      // A deliberate cancel (backed out of the share sheet) is not an
+      // error — say so plainly rather than the scary old "failed".
+      const cancelled = e?.name === "AbortError" || /cancel/i.test(String(e?.message || e || ""));
+      setStatus(cancelled
+        ? { ok: true, msg: "Share cancelled — nothing was sent." }
+        : { ok: false, msg: "Share failed — you can copy the message from the box below." });
     }
   };
 
@@ -412,21 +472,51 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
             { key: "photo", label: "Profile photo note" },
           ].map((opt) => (
             <div key={opt.key} onClick={() => toggle(opt.key)} role="button" tabIndex={0} aria-pressed={fields[opt.key]} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt.key); } }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", cursor: "pointer", minHeight: 44 }}>
-              <input type="checkbox" checked={fields[opt.key]} onChange={() => toggle(opt.key)} style={{ width: 18, height: 18 }} />
+              <input type="checkbox" checked={fields[opt.key]} onChange={() => toggle(opt.key)} onClick={(e) => e.stopPropagation()} style={{ width: 18, height: 18 }} />
               <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{opt.label}</span>
             </div>
           ))}
         </SectionCard>
         <SectionCard T={T}>
-          <div onClick={() => setIncludeLiveLocation((v) => !v)} role="button" tabIndex={0} aria-pressed={includeLiveLocation} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIncludeLiveLocation((v) => !v); } }} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", minHeight: 44 }}>
-            <input type="checkbox" checked={includeLiveLocation} onChange={() => setIncludeLiveLocation((v) => !v)} style={{ width: 18, height: 18 }} />
-            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Include live location (opens Google Maps)</span>
+          {/* BACKLOG 61: relabelled — the old "(opens Google Maps)" told the
+              truth about the wrong thing: it opened Maps on the SENDER's
+              phone, after the message was already gone. What it does now is
+              put a pin INTO the message. Toggling off clears the captured
+              pin so a later re-tick captures a fresh one, never resends a
+              stale position with an old timestamp. */}
+          <div onClick={() => { setIncludeLiveLocation((v) => !v); setLocationPin(null); }} role="button" tabIndex={0} aria-pressed={includeLiveLocation} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIncludeLiveLocation((v) => !v); setLocationPin(null); } }} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", minHeight: 44 }}>
+            <input type="checkbox" checked={includeLiveLocation} onChange={() => { setIncludeLiveLocation((v) => !v); setLocationPin(null); }} onClick={(e) => e.stopPropagation()} style={{ width: 18, height: 18 }} />
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Include my current location (adds a map pin to the message)</span>
           </div>
+          {includeLiveLocation && (
+            <div style={{ fontSize: 11, color: locationPin && !locationPin.unavailable ? T.textSecondary : T.actionRedText, marginTop: 4 }}>
+              {locationPin
+                ? (locationPin.unavailable ? `Location unavailable: ${locationPin.reason}. The message will say so.` : `Pin captured at ${locationPin.asOf} — shown in the message below before you send.`)
+                : "Getting your location…"}
+            </div>
+          )}
         </SectionCard>
+        {/* BACKLOG 62: one editable message instead of a read-only preview
+            of generated parts. Prefilled from the ticked fields; manual
+            edits are kept verbatim (field toggles then DON'T apply until
+            Reset, and the sheet says so, rather than silently mixing the
+            user's words with regenerated lines). */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: T.textSecondary }}>Message to send (editable):</div>
+            {editedMessage !== null && editedMessage !== generatedMessage && (
+              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditedMessage(null); } }} onClick={() => setEditedMessage(null)} style={{ fontSize: 12, fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>Reset</span>
+            )}
+          </div>
+          <textarea value={message} onChange={(e) => setEditedMessage(e.target.value)} rows={8} aria-label="Message to send"
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box", resize: "vertical", whiteSpace: "pre-wrap" }} />
+          {editedMessage !== null && editedMessage !== generatedMessage && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 4 }}>You've edited this message — unticking a field won't change it until you press Reset.</div>
+          )}
+        </div>
         <div style={{ fontSize: 11, color: T.textSecondary, fontStyle: "italic" }}>Sharing is not a safety guarantee. Shared data leaves this device via your chosen app.</div>
         <button onClick={doShare} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: T.contactsTeal, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>Share</button>
         {status && <div style={{ fontSize: 12, color: status.ok ? T.actionGreenText : T.actionRedText }}>{status.msg}</div>}
-        <div style={{ fontSize: 11, color: T.textDisabled, whiteSpace: "pre-wrap", background: T.surface, padding: 8, borderRadius: 6 }}>{buildMessage()}</div>
       </div>
     </div>
   );
@@ -555,13 +645,16 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
-          {visibleSuggestions.map((o) => (
-            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(o); setFeedback(""); }} role="button" tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(o); setFeedback(""); } }}
-              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer"}}>
-              {o}
-            </div>
-          ))}
+          {visibleSuggestions.map((o) => {
+            const active = value === o;
+            return (
+              <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(o); setFeedback(""); }} role="button" tabIndex={0} aria-pressed={active}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(o); setFeedback(""); } }}
+                style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 12, border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTeal : T.textSecondary, cursor: "pointer"}}>
+                {o}
+              </div>
+            );
+          })}
         </div>
       )}
       <input value={value ?? ""} onChange={(e) => { onChange(e.target.value); setFeedback(""); }}
@@ -1313,7 +1406,7 @@ function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T, requiredMi
           style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${requiredMissing ? T.actionRed : T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChangeApprox(!ageIsApprox)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", minHeight: 44 }}>
           <ToggleSwitch T={T} value={ageIsApprox} onChange={onChangeApprox} />
-          <span style={{ fontSize: 12, color: T.textSecondary }}>{tr("contacts.approximate", "Approximate")}</span>
+          <span style={{ fontSize: 12, color: ageIsApprox ? T.contactsTeal : T.textSecondary }}>{ageIsApprox ? tr("contacts.approximateOn", "Approximate (on)") : tr("contacts.approximate", "Approximate")}</span>
         </div>
       </div>
     </div>
@@ -2727,7 +2820,12 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
       )}
 
       <div style={{ padding: "0 16px 100px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 2 }}>
+          {/* FIXED — BACKLOG 52/80: contact detail header now shows the profile
+              photo, matching the list card. Hidden when anonymised. */}
+          {contact.profilePicture && !anonymise && (
+            <img src={contact.profilePicture} alt="" style={{ width: 56, height: 56, borderRadius: radius.full, objectFit: "cover", flexShrink: 0 }} />
+          )}
           <span style={{ width: 14, height: 14, borderRadius: radius.full, background: T.contactsTeal, display: "inline-block" }} />
           {/* CHANGED — real accessibility gap found via a full axe scan
               (page-has-heading-one): the profile detail view is its
@@ -3159,10 +3257,6 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // O(1) lookups instead of rescans.
   const encounterSummaries = useMemo(() => contactEncounterSummaries(encounters), [encounters]);
   const [showFilters, setShowFilters] = useState(false);
-  const [runningCountEnabled, setRunningCountEnabled] = useState(() => {
-    try { return localStorage.getItem("shos-contacts-running-count") !== "off"; } catch { return true; }
-  });
-  const [firstVisible, setFirstVisible] = useState(0);
   const gridRef = useRef(null);
   // ADDED — real ask: a duplicate checker for Contacts specifically,
   // scored across multiple fields (not just name) — see
@@ -3318,17 +3412,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
     });
     return sorted;
   }, [activeContacts, query, sortBy, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, effectiveAvailabilityFilter, filterAvailabilityAt, availabilityNow, anonymise, kinkNameById]);
-  useEffect(() => {
-    if (!runningCountEnabled || !gridRef.current) return;
-    const cards = Array.from(gridRef.current.querySelectorAll("[data-contact-idx]"));
-    if (cards.length === 0) return;
-    const obs = new IntersectionObserver((entries) => {
-      const visible = entries.filter((e) => e.isIntersecting).map((e) => parseInt(e.target.getAttribute("data-contact-idx"), 10)).filter((n) => !isNaN(n));
-      if (visible.length) setFirstVisible(Math.min(...visible));
-    }, { root: null, threshold: 0.5 });
-    cards.forEach((c) => obs.observe(c));
-    return () => obs.disconnect();
-  }, [runningCountEnabled, filtered.length]);
+  // (running-count observer removed — count is now per-card + total at top)
 
 
   return (
@@ -3687,19 +3771,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives, availability: availabilityFilterLabel } : null}
                 selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
                 onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />
+              <div aria-hidden="true" style={{ position: "absolute", bottom: 8, right: 10, fontSize: 10, fontWeight: 600, color: T.textSecondary, background: T.surfaceElevated, padding: "1px 6px", borderRadius: 999, border: `1px solid ${T.border}`, zIndex: 2 }}>{idx + 1}</div>
             </div>
           ))}
         </div>
       )}
-      {runningCountEnabled && filtered.length > 0 && (
-        <div style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: 16, background: T.surfaceElevated, color: T.textPrimary, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, zIndex: 50, border: `1px solid ${T.border}` }}>
-          {Math.min(firstVisible + 1, filtered.length)} / {filtered.length}
-        </div>
-      )}
-
-        <button onClick={() => { const next = !runningCountEnabled; setRunningCountEnabled(next); try { localStorage.setItem("shos-contacts-running-count", next ? "on" : "off"); } catch {} }} style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: runningCountEnabled && filtered.length > 0 ? 120 : 16, background: T.surface, color: T.textSecondary, border: `1px solid ${T.border}`, padding: "6px 10px", borderRadius: 999, fontSize: 11, cursor: "pointer", zIndex: 50 }}>
-          {runningCountEnabled ? "Count on" : "Count off"}
-        </button>
+      {/* Floating running-count pill + toggle removed — count now shown per-card
+          (numbered) and as a total at the top, so it no longer overlaps the FAB. */}
 
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. CHANGED to also
           support redo, matching editUndoHelpers.js's own undo/redo

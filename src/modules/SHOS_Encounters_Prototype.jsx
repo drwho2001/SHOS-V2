@@ -619,7 +619,6 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         {derivedChips.map((chip) => (
           <div key={chip.label} style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12` }}>
               {chip.label}
-            {chip.label}
           </div>
         ))}
       </div>
@@ -627,12 +626,20 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           reasoning as Contacts/My Profile: the on-screen keyboard covers
           whatever's below the input the moment you tap in. */}
       {visibleSuggestions.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "nowrap", gap: 5, marginBottom: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "thin", padding: "2px 0" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "thin", padding: "2px 0" }}>
+          {/* BACKLOG 66 (14 Nov 2026 audit): the usage count in parens read
+              as part of the label ("+ Rimming (52)") with no explanation of
+              what the number was. One caption above the row answers it for
+              every chip at once — per-chip title attributes would say the
+              same thing ten times and are unreadable on a phone anyway. */}
+          <div style={{ flexBasis: "100%", fontSize: 10, color: T.textDisabled, marginBottom: 2 }}>
+            Suggestions — most used first; the number is how many past encounters used it.
+          </div>
           {visibleSuggestions.map((e) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer", flexShrink: 0 }}>
               + {e.name}
-              {(usage.get(e.id) || 0) > 0 && <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.7 }}>{usage.get(e.id)}</span>}
+              {(usage.get(e.id) || 0) > 0 && <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.7 }}>({usage.get(e.id)})</span>}
             </div>
           ))}
         </div>
@@ -1099,7 +1106,11 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   // name; multi shows initials, matching the mockup's P/K/A/J pattern.
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
-  const attendeePillStyle = { padding: "2px 8px", borderRadius: "999px", background: "#e0a166", border: "1px solid #e0a166", color: "#fff", fontSize: attendeeNames.length === 1 ? 10 : 9, fontWeight: 700, whiteSpace: "nowrap" };
+  // CHANGED — real audit finding: the solid amber fill put white text on a
+  // light amber ground (~2:1), so attendee names were genuinely hard to
+  // read. Matches the mockup's intended treatment and every other chip in
+  // this card: a translucent amber tint + amber border + white text.
+  const attendeePillStyle = { padding: "2px 8px", borderRadius: "999px", background: "rgba(224, 161, 102, 0.15)", border: "1px solid #e0a166", color: "#fff", fontSize: attendeeNames.length === 1 ? 10 : 9, fontWeight: 700, whiteSpace: "nowrap" };
   const attendeeChips = shown.map((name, i) => (
     <span key={i} style={attendeePillStyle}>{attendeeNames.length === 1 ? name : name[0]}</span>
   ));
@@ -1971,25 +1982,35 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
                 // navigation now exists (see App.jsx's navigateToRecord).
                 // CHANGED — attendee walk is now two-column tiles, not a
                 // single long list.
-                <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label="Open linked contact" onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("contacts", id); } } : undefined}
-                  style={{ padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, fontSize: TYPE.control.fontSize, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)} role={onNavigateToRecord ? "button" : undefined} tabIndex={onNavigateToRecord ? 0 : undefined} aria-label={`Open linked contact: ${anonymise ? ANONYMISED : contactName(contacts, id)}`} onKeyDown={onNavigateToRecord ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord("contacts", id); } } : undefined}
+                  style={{ padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, fontSize: TYPE.control.fontSize, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                    {(anonymise ? ANONYMISED : contactName(contacts, id)).split(" ").map((p) => p[0]).filter(Boolean).join("").slice(0, 2).toUpperCase()}
+                  </div>
                   {anonymise ? ANONYMISED : contactName(contacts, id)}
                 </div>
               ))}
             </div>}
         </SectionCard>
 
-        <SectionCard title={tr("encounters.practices", "Practices")} T={T}>
-          <ReadRow label="My role" value={encounter.myRole} T={T} />
-          <ReadRow label="My position" value={encounter.myPosition} T={T} />
-          <ReadRow label="Where did I cum?" value={encounter.whereICame} T={T} />
-          <ReadRow label="Where did my partner cum?" value={encounter.whereHeCame} T={T} />
-        </SectionCard>
+        {/* FIXED — BACKLOG 69: hide empty optional sections so they don't
+            add noise to the summary-card rhythm. Each section below renders
+            only when it has real content. */}
+        {(encounter.myRole || encounter.myPosition || encounter.whereICame || encounter.whereHeCame) && (
+          <SectionCard title={tr("encounters.practices", "Practices")} T={T}>
+            <ReadRow label="My role" value={encounter.myRole} T={T} />
+            <ReadRow label="My position" value={encounter.myPosition} T={T} />
+            <ReadRow label="Where did I cum?" value={encounter.whereICame} T={T} />
+            <ReadRow label="Where did my partner cum?" value={encounter.whereHeCame} T={T} />
+          </SectionCard>
+        )}
 
-        <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>
-          <ReadRow label="Kinks involved" value={resolveKinkSelections(encounter.kinksInvolved)} T={T} />
-          <ReadRow label="Chems/alcohol used" value={resolveNames(chemNameById, encounter.chemsAlcoholUsed)} T={T} />
-        </SectionCard>
+        {(encounter.kinksInvolved?.length || encounter.chemsAlcoholUsed?.length) && (
+          <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>
+            <ReadRow label="Kinks involved" value={resolveKinkSelections(encounter.kinksInvolved)} T={T} />
+            <ReadRow label="Chems/alcohol used" value={resolveNames(chemNameById, encounter.chemsAlcoholUsed)} T={T} />
+          </SectionCard>
+        )}
 
         <SectionCard title={tr("encounters.protectionMedication", "Protection & medication context")} T={T}>
           {(() => {
@@ -2013,13 +2034,17 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           )}
         </SectionCard>
 
-        <SectionCard title={tr("encounters.health", "Health")} T={T}>
-          <ReadRow label="Symptoms noted" value={resolveNames(symptomNameById, encounter.symptomsNoted)} T={T} />
-        </SectionCard>
+        {(encounter.symptomsNoted?.length) && (
+          <SectionCard title={tr("encounters.health", "Health")} T={T}>
+            <ReadRow label="Symptoms noted" value={resolveNames(symptomNameById, encounter.symptomsNoted)} T={T} />
+          </SectionCard>
+        )}
 
-        <SectionCard title={tr("encounters.location", "Location")} T={T}>
-          <ReadRow label="Location" value={locationName} T={T} />
-        </SectionCard>
+        {locationName && (
+          <SectionCard title={tr("encounters.location", "Location")} T={T}>
+            <ReadRow label="Location" value={locationName} T={T} />
+          </SectionCard>
+        )}
 
         <SectionCard title={tr("encounters.notes", "Notes")} T={T}>
           <div style={{ fontSize: 14, color: encounter.notes ? T.textPrimary : T.textDisabled, fontStyle: encounter.notes ? "normal" : "italic" }}>

@@ -105,6 +105,52 @@
 
 All other findings (8a, 8c, 8e, 10, 13px tokenisation, contactMerge.js) are resolved.
 
+## Device audit progress (14 Nov 2026) - IN PROGRESS
+
+Device: Redmi 13C, `com.shos.app` 0.2.0 (buildSha 921d19d). Audit only - no
+app code changed. Screenshots/UI dumps in the session temp dir, not committed.
+
+| Area | Status |
+|------|--------|
+| Home, Contacts (+Select), Contact detail, Encounter list, Encounter detail (top) | Done |
+| Medication, Healthcare, Clinic Card (overlay, top to bottom) | Done |
+| Healthcare sub-tabs design review (Vaccinations/Clinic Visits/Measurements/Testing vs Encounter reference) | Done |
+| Medication sub-tabs design review (Registry/Log/Inventory vs Encounter reference) | Done |
+| My Profile design review vs Encounter reference | Done |
+| Add contact form - all 3 tabs, exercised fields/toggles, saved, verified, deleted | Done |
+| Share for safety sheet (defaults, field ticks, preview, share fallback, back/checkbox behaviour) | Done |
+| Encounters list, Add encounter (3 tabs exercised, saved, verified, deleted) | Done |
+| Stats/Insights (filters, chart, metrics, insight box) | Done |
+| Calendar (week toggle, month nav, date tap, filter chips) | Done |
+| Settings overlay: My Profile, Backup & Export, Privacy, Widgets, Preferences, Notifications, Colour scheme, Manage lists, Resources, Glossary | Done |
+| Settings overlay structure | Partial |
+| Episodes, Calendar, Stats/Insights | Done |
+| Settings sub-screens | Done |
+| Other create flows (encounter, medication, test, symptom, clinic visit, retest, vaccination) | Done |
+
+New findings recorded as BACKLOG.md items 51-103 (pronouns combine/create,
+contact detail photo missing, fixed save bar overlapping bottom tab controls,
+overlay background isolation + stale scroll, chip state not exposed, Approximate
+toggle feedback; Share for safety: no native share sheet, hardware back leaves
+the sheet open, empty fields silently dropped, dead photo control, live location
+never shared, read-only uneditable message, checkbox square double-toggles;
+Encounters: tab bar/system nav overlay lower controls, protection rows overflow
+and clip options, counts glued to labels, duplicated protection label, attendee
+chip without accessible name/photo, empty sections rendered, native ISO date
+control, plainer form vs summary-card design; Stats: "(XXX)" placeholder count,
+insight box clipped by nav bar, unique partners 0; Calendar: filter chips too
+dark; Settings: My Profile no photo, Widgets 8th widget clipped, Resources
+duplicates + bottom clipping, Privacy Anonymise mode missing toggle, kinks
+toggle gated; Create flows: Vaccinations no delete/archive in Select mode,
+Symptoms list-only no detail view; Design review vs Encounter reference:
+Healthcare sub-tabs flat opaque surfaces not frosted glassmorphism (94),
+Clinic Visits FAB overlaps bottom card (95), Measurements solid opaque header
+breaks glassmorphism + flat search bar/tight spacing (96/97), Medication
+Registry right-edge clipping + FAB overlap (98), Log/Inventory FAB overlap
+(99), Inventory harsh dividers + flat list surface (100), My Profile bottom
+section clipped + left-edge artifact (101/102), module accent token consistency
+confirmed working (103)).
+
 ## Ideas (need design discussion before implementation)
 
 | # | Title | Priority | Effort |
@@ -124,6 +170,39 @@ All other findings (8a, 8c, 8e, 10, 13px tokenisation, contactMerge.js) are reso
 | 0m | Contacts running count (scroll progress) | Low | 0.5 day |
 | 0n | Filter 3-state toggle (off → asc → desc) | Medium | 1 day |
 | 0o | Medication notification banner verification | Medium | 1 day |
+| 0p | Contacts: combine / create new pronouns (BACKLOG 51) | Medium | 0.5 day |
+| 0q | Contact detail: show profile picture (BACKLOG 52) | Medium | 0.5 day |
+| 0r | Add contact: fixed save bar overlaps bottom controls (BACKLOG 53) | High | 0.5 day |
+| 0s | Overlays: isolate background a11y + reset scroll (BACKLOG 54) | Medium | 1 day |
+| 0t | Chips: expose selected state to accessibility (BACKLOG 55) | Medium | 1 day |
+| 0u | Share for safety: native share targets, e.g. Messages/WhatsApp/Snapchat (BACKLOG 57) | High | 1 day |
+| 0v | Share for safety: one editable combined message before sharing (BACKLOG 62) | Medium | 0.5 day |
+| 0w | Share for safety: real live-location link or embedded map (BACKLOG 61) | High | 1-2 days |
+| 0x | Share for safety: empty-field handling + working photo note (BACKLOG 59/60) | Medium | 0.5 day |
+| 0y | Checkbox rows: make the box itself toggle exactly once (BACKLOG 63) | High | 0.5 day |
+| 0z | Overlays: Android back closes the top sheet (BACKLOG 58) | Medium | 0.5 day |
+| 0aa | Add encounter: pad content above tab bar/system nav (BACKLOG 64) | High | 0.5 day |
+| 0ab | Add encounter: wrap/scroll option rows, separate usage counts (BACKLOG 65/66) | Medium | 0.5 day |
+| 0ac | Encounter detail: attendee accessible name/avatar; hide empty sections (BACKLOG 68/69) | Medium | 0.5 day |
+| 0ad | Encounter form: custom styled date/time + card styling (BACKLOG 70/71) | Medium | 1 day |
+| 0ae | Fix protection context duplicate label (BACKLOG 67) | Medium | 0.5 day |
+| 0af | Calendar filter chips contrast too dark (BACKLOG 75) | Medium | 0.5 day |
+| 0ag | Stats: fix "(XXX)" placeholder count (BACKLOG 76) | Low | 0.25 day |
+| 0ah | Stats: pad insight box above system nav (BACKLOG 77) | Medium | 0.25 day |
+| 0ai | Stats: unique partners should reflect linked contacts (BACKLOG 78) | Medium | 0.5 day |
+| 0aj | Settings: Widgets 8th widget clipped by nav bar (BACKLOG 81) | Medium | 0.25 day |
+| 0ak | Settings: Resources duplicate entries + bottom clipping (BACKLOG 82) | Medium | 0.5 day |
+| 0al | Settings: Privacy Anonymise mode missing toggle (BACKLOG 83) | Medium | 0.5 day |
+| 0am | Settings: Privacy kinks toggle gated on missing Anonymise toggle (BACKLOG 84) | Medium | 0.25 day |
+| 0an | Vaccinations: add delete/archive in Select mode (BACKLOG 85) | Medium | 0.5 day |
+| 0ao | Symptom entries: add detail view drill-down (BACKLOG 86) | Medium | 0.5 day |
+| 0ap | Healthcare sub-tabs: frosted glassmorphism + glow borders (BACKLOG 94) | Medium | 1 day |
+| 0aq | Healthcare Clinic Visits: pad content above FAB (BACKLOG 95) | Medium | 0.25 day |
+| 0ar | Healthcare Measurements: frosted header + search bar + spacing (BACKLOG 96/97) | Medium | 0.5 day |
+| 0as | Medication Registry: right-edge padding + FAB clearance (BACKLOG 98) | Medium | 0.25 day |
+| 0at | Medication Log/Inventory: pad content above FAB (BACKLOG 99) | Medium | 0.25 day |
+| 0au | Medication Inventory: replace divider lines with frosted cards (BACKLOG 100) | Medium | 0.5 day |
+| 0av | My Profile: pad bottom above INTO / LIMITS + remove left-edge artifact (BACKLOG 101/102) | Medium | 0.25 day |
 
 ## Recommended next steps (in priority order)
 

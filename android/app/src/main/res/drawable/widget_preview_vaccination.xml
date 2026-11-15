@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 14 Nov 2026 - picker preview for the vaccination widget, so the
+     picker shows a card of its own rather than the shared placeholder. Same
+     card/line/glyph structure as widget_preview_next_dose; the glyph is a
+     shield with a check, the mark the Vaccinations module itself uses. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="80dp"
+    android:viewportWidth="120"
+    android:viewportHeight="80">
+    <path
+        android:fillColor="#10312F"
+        android:pathData="M0,8 Q0,0 8,0 H112 Q120,0 120,8 V72 Q120,80 112,80 H8 Q0,80 0,72 Z" />
+    <path
+        android:fillColor="#4FD1C5"
+        android:pathData="M10,14 H16 Q18,14 18,16 V64 Q18,66 16,66 H10 Q8,66 8,64 V16 Q8,14 10,14 Z" />
+    <path
+        android:fillColor="#EAF6F5"
+        android:fillAlpha="0.92"
+        android:pathData="M14,20 H40 Q42,20 42,22 Q42,24 40,24 H14 Q12,24 12,22 Q12,20 14,20 Z" />
+    <path
+        android:fillColor="#EAF6F5"
+        android:fillAlpha="0.5"
+        android:pathData="M14,31 H30 Q32,31 32,33 Q32,35 30,35 H14 Q12,35 12,33 Q12,31 14,31 Z" />
+    <path
+        android:fillColor="#4FD1C5"
+        android:pathData="M60,16 L72,21 V33 Q72,44 60,50 Q48,44 48,33 V21 Z" />
+    <path
+        android:strokeColor="#10312F"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M54,33 L58,37 L66,27" />
+</vector>

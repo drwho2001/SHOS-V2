@@ -169,29 +169,17 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // fitter's log line - the thing this repo measures truncation with - would
         // have reported a fit that never happened.
 
-        if (redactedText != null && !redactedText.isEmpty()) {
+        boolean isRedacted = (redactedText != null && !redactedText.isEmpty());
+
+        if (isRedacted) {
             views.setTextViewText(R.id.widget_med_name, redactedText);
+            // Redacted tier hides the medication NAME and the absolute wall-clock
+            // time, but the countdown (ring + live countdown) is allowed — it
+            // discloses elapsed time, not a routine. See ALLOWED_AT_REDACTED.
             views.setViewVisibility(R.id.widget_next_dose, View.GONE);
-            // ADDED 17 Oct 2026 - the RING and its countdown are hidden at the
-            // Redacted tier, for the same reason DoxyPEPWidgetProvider hides its
-            // own: a countdown to a dose time is the user's own schedule, and
-            // ALLOWED_AT_REDACTED for nextDose is category+state only. A visible
-            // view is disclosed data whether or not any text sits beside it.
-            views.setViewVisibility(R.id.widget_ring, View.GONE);
-            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
-            views.setViewVisibility(R.id.widget_countdown, View.GONE);
-            // NO fit() call, and that is the change rather than an omission. This
-            // view carries autoSizeTextType, so the Redacted line is shrunk by the
-            // framework to the same 12sp floor as the Full-tier medication name.
-            //
-            // The old comment here claimed the Redacted tier "rendered strictly
-            // worse than the unrestricted one" because it passed six arguments and
-            // so got maxLines=1 against a layout declaring 2. That defect is real
-            // and is fixed - but it is fixed by autosize removing the argument list
-            // entirely, not by correcting the sixth argument. Correcting it would
-            // have left a dead call in place.
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-            return;
+        } else {
+            if (!isRedacted) views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+            views.setTextViewText(R.id.widget_med_name, medName);
         }
 
 // ADDED 17 Oct 2026 - every field is written EXPLICITLY in every branch, not just
@@ -211,9 +199,9 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // bug, which is why it survived this long.
         //
         // The rule: setting GONE in any branch obliges you to set VISIBLE in the
-        // others. Every branch now pins every view it owns.
-        views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
-        views.setTextViewText(R.id.widget_med_name, medName);
+        // others. Every branch now pins every view it owns. (At redacted tier,
+        // next_dose stays GONE — see the redacted branch above; the ring branches
+        // below still pin ring/countdown/ring_label visibility.)
 
         // The wall-clock time with NO "Next dose: " prefix. That prefix measured as
         // roughly a third of the field's width and is exactly what pushed the whole
@@ -263,7 +251,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
             views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_urgent));
             views.setTextViewText(R.id.widget_next_dose, "Due now");
-            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+            if (!isRedacted) views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         } else if (target > 0 && remaining > 0) {
             // Ring: how much of a nominal dosing day is left. The horizon is a
             // NAMED CONSTANT rather than a stored interval, because the widget
@@ -298,7 +286,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             String dueClock = clockOf(target);
             views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_text_muted));
             views.setTextViewText(R.id.widget_next_dose, dueClock);
-            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+            if (!isRedacted) views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         } else if (target > 0) {
             // OVERDUE. The ring is FULL rather than hidden or empty: the dose is
             // now past, and a depleted ring would read as "nothing pending" - the
@@ -318,7 +306,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
             views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_urgent));
             views.setTextViewText(R.id.widget_next_dose, "Overdue");
-            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+            if (!isRedacted) views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         } else {
             // No dose scheduled at all: there is no countdown to depict, so both the
             // ring and its centre are hidden. An empty ring beside a medication name
@@ -327,7 +315,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
             views.setViewVisibility(R.id.widget_ring_label, View.GONE);
             views.setTextViewText(R.id.widget_next_dose, nextDoseTime);
-            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+            if (!isRedacted) views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         }
 
         // CHANGED 4 Oct 2026 - this provider had NO click intent at all, so the

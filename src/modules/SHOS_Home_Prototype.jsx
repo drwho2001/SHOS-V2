@@ -40,7 +40,7 @@ import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAc
 // actionGreenColor/homeColor just after the darkMode hook.
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { unclearedPriorityInfectionsForEncounter } from "../calculations/exposureWindows";
-import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } from "../calculations/dateInputHelpers";
+import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
 // ADDED — real ask: a "status at a glance" visual layer, the biggest
 // opportunity surfaced by comparing SHOS against similar apps (Natural
 // Cycles' day-status colour, XtrkR's adherence rings) — trading a
@@ -57,7 +57,7 @@ import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } fr
 import { getTestingFrequencyStats, getOverallAdherence, getOverallContainerAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
 import { isCompletedTestRecord, isRoutineRetestEligible, suggestedRoutineRetestDate, ROUTINE_RETEST_PANEL } from "../calculations/testingCalculations";
 import { ResultsRegistry } from "../registries/resultsRegistry";
-import { computeAdherence } from "../calculations/medicationCalculations";
+import { computeAdherence, isDoseLockedOut, latestLogOfType } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { countSampleData, clearSampleData, listSampleData } from "../repositories/clearSampleData";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
@@ -69,7 +69,7 @@ import {
   TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
-  BellIcon as Bell, XIcon as X, SignOutIcon as SignOut, InfoIcon,
+  BellIcon as Bell, XIcon as X, SignOutIcon as SignOut, InfoIcon, ListChecksIcon as ListChecks,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -79,6 +79,7 @@ import { KinkRegistry } from "../registries/kinkRegistry";
 import { sessionTally } from "../calculations/sessionTally";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
+import { findDoxyPepMedication } from "../calculations/doxyPepCalculations";
 import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { MyProfileRepository } from "../repositories/myProfileRepository";
@@ -319,6 +320,22 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   }, []);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
+  // Flash message shown after a quick-action dose log, auto-clears after 4s.
+  const [doseFlash, setDoseFlash] = useState(null); // { meds: string[], count: number }
+  // Pre-computed DoxyPEP/PrEP medications for quick-action buttons.
+  const [doxyMed, setDoxyMed] = useState(null);
+  const [prepMed, setPrepMed] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const allMeds = await MedicationRepository.getAll();
+      if (!cancelled) {
+        setDoxyMed(findDoxyPepMedication(allMeds));
+        setPrepMed((allMeds || []).find((m) => !m.isArchived && m.name.toLowerCase().includes("prep")));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   // ADDED 15 Sep 2026 — real report: back-navigation-to-Clinic-Card fix,
   // see App.jsx's own clinicCardReturnTab comment for the full picture.
   // This mount-once effect is the "reopen" half — App.jsx tells this
@@ -331,6 +348,40 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // BACKLOG 137b: medication quick actions — log doses directly from Home.
+  const logMedicationDose = async (med) => {
+    if (!med) return false;
+    const entry = await LogRepository.create({ medicationId: med.id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
+    syncDoxyPepAlert();
+    syncMedicationReminders();
+    syncRefillReminder();
+    setDoseFlash({ meds: [med.name], count: 1 });
+    setTimeout(() => setDoseFlash(null), 4000);
+    return true;
+  };
+  const logAllDueDailyMeds = async () => {
+    const allMeds = await MedicationRepository.getAll();
+    const dailyMeds = (allMeds || []).filter((m) => !m.isArchived && m.usagePattern === "daily");
+    const due = [];
+    for (const m of dailyMeds) {
+      const logs = await LogRepository.getForMedication(m.id);
+      const lastDose = latestLogOfType({ logs: logs || [] }, "dose");
+      if (!lastDose || !isDoseLockedOut(m, lastDose.date)) due.push(m);
+    }
+    if (due.length === 0) {
+      setDoseFlash({ meds: [], count: 0, message: "All daily meds logged" });
+      setTimeout(() => setDoseFlash(null), 3000);
+      return;
+    }
+    const timestamp = nowAsStoredDateTime();
+    for (const m of due) await LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp });
+    syncDoxyPepAlert();
+    syncMedicationReminders();
+    syncRefillReminder();
+    setDoseFlash({ meds: due.map((m) => m.name), count: due.length });
+    setTimeout(() => setDoseFlash(null), 4000);
+  };
 
   // The active Session is a local-only, user-controlled live view. It is
   // intentionally shown only while active; closed sessions remain in the
@@ -1269,6 +1320,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           </div>
         ) : null;
         const cardStyle = { display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 16, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "24px 20px" };
+
         return (
           <>
             <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.statusAtAGlance", "Status at a glance")}</div>
@@ -1458,7 +1510,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         {/* MOVED 5 Nov 2026 — owner-set order: "log medication, new
             contact, new encounter, new session". Medication is the
             most frequent daily write, so it leads. */}
-        <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} size="compact" />
+        <QuickAddButton icon={Pill} label="Log dose" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} size="compact" />
+        {/* BACKLOG 137b: medication quick actions — log doses directly from Home without opening the Medication Dashboard. */}
+        {doxyMed && (
+          <QuickAddButton icon={Syringe} label="Take DoxyPEP now" color={medsBlue} onClick={() => logMedicationDose(doxyMed)} size="compact" />
+        )}
+        {prepMed && (
+          <QuickAddButton icon={Pill} label="Take PrEP now" color={medsBlue} onClick={() => logMedicationDose(prepMed)} size="compact" />
+        )}
+        <QuickAddButton icon={ListChecks} label="Log all due routine meds" color={medsBlue} onClick={logAllDueDailyMeds} size="compact" />
         <QuickAddButton icon={Users} label="New contact" color={contactsColor} onClick={() => onQuickAdd("contacts")} size="compact" />
         {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
             the earlier Flame decision above: back to the same Pulse/

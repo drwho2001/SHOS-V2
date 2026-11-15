@@ -272,10 +272,10 @@ vi.setConfig({ testTimeout: SCAN_TIMEOUT_MS });
 // from one that needs 2s and fails under load.
 
 describe("redacting the payload is not the same as redacting the screen", () => {
-  it("discovered the seven data widgets, or the inventory below is meaningless", () => {
+  it("discovered the eight data widgets, or the inventory below is meaningless", () => {
     // NON-VACUITY. If this filter ever matched nothing, every test after it
     // would pass on an empty set and report a fully-wired privacy system.
-    expect(dataProviders.length, "no data-rendering providers discovered").toBe(7);
+    expect(dataProviders.length, "no data-rendering providers discovered").toBe(8);
   });
 
   it("DoxyPEP, the widget that was lying, is wired", () => {
@@ -786,7 +786,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
       }
     }
 
-    // And the keys must be DISTINCT, because all seven providers share ONE
+    // And the keys must be DISTINCT, because all eight providers share ONE
     // SharedPreferences file: a shared key name means each provider silently
     // overwrites the previous one's line. Asserting the key exists - which the
     // tests above do - says nothing about whether two providers collided.

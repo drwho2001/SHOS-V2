@@ -609,6 +609,20 @@ export function setGraceMinutesPref(minutes) {
   writeVaultMeta(meta);
 }
 
+// ADDED 14 Nov 2026 — BACKLOG 112 (device audit): lets the backup-restore
+// path check whether the vault actually HAS a PIN slot before honouring a
+// restored `appLockEnabled: true`. A backup cannot carry PIN material that
+// works on another device (the verifier proves a PIN, it unwraps nothing),
+// so a restored "App Lock on" with no slot here is exactly the state the
+// owner's audit found: the toggle reads ON, bootUnlock() takes its
+// "no pin slot" branch, and the app opens with no prompt at all. The
+// restore path now demotes the flag instead of advertising protection it
+// doesn't have — the honest fail-safe, with the Privacy screen showing
+// App Lock off until a PIN is set and the toggle re-enabled.
+export function hasPinSlot() {
+  return !!readVaultMeta()?.pin;
+}
+
 // Re-wraps the given raw Data Key bytes under the device protector as
 // a fresh, renewed-expiry temporary slot. Takes the raw bytes as a
 // real parameter (never a remembered/implicit module-level value,

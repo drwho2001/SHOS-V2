@@ -60,6 +60,7 @@ export const DATA_WIDGETS = [
   "doxyPepWindow",
   "cycle",
   "clinicCard",
+  "vaccination",
   "liveSession",
 ];
 
@@ -90,6 +91,7 @@ export const DEFAULT_TIERS = {
   doxyPepWindow: "redacted",
   cycle: "redacted",
   clinicCard: "redacted",
+  vaccination: "redacted",
   // Privacy-by-default after audit: live sexual-activity tallies are identifying.
   // Full is an explicit per-widget opt-in.
   liveSession: "redacted",
@@ -124,6 +126,7 @@ export const ALLOWED_AT_REDACTED = {
   doxyPepWindow: ["category", "state", "countdownAt"],
   cycle: ["category", "state"],
   clinicCard: ["category", "count"],
+  vaccination: ["category", "count", "nextDueRelative"],
   // Redacted confirms only that a live session exists; sexual-activity counts
   // and participant/kink details are identifying and never survive here.
   liveSession: ["category", "state"],
@@ -137,6 +140,7 @@ export const REDACTED_COPY = {
   doxyPepWindow: "DoxyPEP",
   cycle: "Tracking",
   clinicCard: "Clinic card",
+  vaccination: "Vaccination",
   liveSession: "Live session",
 };
 

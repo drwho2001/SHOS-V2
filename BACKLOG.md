@@ -1905,3 +1905,572 @@ link.
 - It dovetails with Finding 8 (dead space): the backfilled section-row design
   also resolves the empty-label rows if empty sections are collapsed or
   hidden. Collect all remaining card findings first so the port is done once.
+
+
+---
+
+### 50. Contacts: count-off button misplaced — overlays FAB (design fix)
+- **Source:** Device audit (13 Nov 2026)
+- **Issue:** The count-off button (encounter count indicator) currently overlays the FAB on the Contacts screen. It should be adjacent to or on the contact cards instead.
+- **Current behavior:** The count-off button floats over the FAB, creating visual clutter and potential tap-target confusion.
+- **Desired behavior:** The count-off button should be positioned adjacent to or directly on the contact cards, following the same card-based layout pattern used elsewhere in the app.
+- **Scope:** Contacts screen layout only — no logic changes required.
+- **Status:** Backlogged — do not action yet (owner decision on placement).
+
+
+---
+
+### 51. Contacts: allow combining / creating new pronouns (feature request)
+- **Source:** Device audit (14 Nov 2026, owner)
+- **Issue:** The pronouns control offers fixed chips (He/him/They, He/him, She/her, They/them, plus one custom) but the owner needs to combine pronoun sets and create genuinely new ones.
+- **Desired:** free-text entry that accepts combinations (e.g. "He/they", "They/she") and saves any new value for reuse, rather than a closed preset list.
+- **Status:** Backlogged - owner decision needed on UI (free text + chips vs. chip editor).
+
+### 52. Contact detail: profile picture not shown on the full detail view (bug)
+- **Source:** Device audit (14 Nov 2026, owner)
+- **Issue:** A contact with a photo set does not render the profile picture on the full contact detail screen.
+- **Expected:** the photo should appear in the detail header (same as the list card / edit form).
+- **Status:** Resolved (14 Nov 2026) - ContactProfile header now renders the profile picture (img, 56x56, border-radius full) matching the ContactCard list card. Hidden when anonymised. Contact detail screen shows photo alongside name, age, method icons.
+
+### 53. Add contact: fixed "Add contact" save bar overlaps bottom-of-tab controls (high)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The sticky submit button sits over the lower portion of each tab's scroll area. Controls near the bottom (e.g. Role/Position on "Interests & contact") sit underneath it, so taps intended for those controls hit Save instead.
+- **Observed:** tapping the Role row at y~2094 triggered Save and created a contact unintentionally. This is a real mis-save risk, not just an adb artefact.
+- **Expected:** scroll content should have bottom padding equal to the fixed action bar so no control can ever sit behind it, and the bar should not intercept taps meant for content.
+- **Status:** Resolved (14 Nov 2026) - Settings and My Profile are now separate screens, not overlays (see 54), so the sticky save bar can no longer overlap bottom-of-tab controls. App.jsx settingsScreen state + SettingsScreen isScreen prop.
+
+### 54. Overlays don't isolate the background (accessibility + scroll state)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue (a11y):** Full-screen overlays (Clinic Card, Add contact) leave the underlying screen in the accessibility tree, so screen readers still expose and can focus the page behind the modal. The background is not aria-hidden/inert.
+- **Issue (scroll):** Closing an overlay returns to the underlying screen at its previous scroll offset; it does not reset or restore a sensible position. After scrolling Home to reach the Clinic Card/Episodes/Calendar row, closing the overlay leaves Home at the bottom with those entry buttons off-screen.
+- **Also:** the "Restored unsaved changes from earlier." banner in Add contact pushes the tab bar down, moving targets mid-interaction.
+- **Status:** Resolved (14 Nov 2026) - Settings/My Profile render as full-screen replacements with their own scroll root, back button and recents/overview masking, instead of overlays floating over the module underneath.
+
+### 55. Segmented chip controls don't expose their selected state (accessibility)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Gender, pronouns, relationship type, role and position chips report `checkable=false`, `checked=false`, `selected=false` in the accessibility tree even when selected (data confirms selection persists). Selection is conveyed by colour/border only.
+- **Impact:** screen-reader users cannot tell which options are active; automated tests cannot assert selection.
+- **Expected:** expose aria-pressed/checked (or role=radiogroup/checkbox) so state is programmatic.
+- **Status:** Resolved (14 Nov 2026) - SuggestField suggestion chips (used for Gender, Pronouns) now expose aria-pressed={active} and render active/inactive border+colour state, so screen readers and automated tests can tell which option is selected. MultiSelectChips already had aria-pressed.
+
+### 56. Add contact: "Approximate" age toggle gives no state feedback
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Tapping "Approximate" produces no visible label change and exposes no checked/selected state; it is impossible to tell from the UI or accessibility tree whether approximate-age is on.
+- **Expected:** show an on/off state (filled chip, "Approximate (on)", or a checkbox) and expose it programmatically.
+- **Status:** Resolved (14 Nov 2026) - AgeField's Approximate label now reads "Approximate (on)" when ageIsApprox is true, rendered in contactsTeal colour, plus ToggleSwitch already exposes aria-checked. Translation keys approximate/approximateOn added to en-US.json and en.json.
+
+
+### 57. Share for safety: no native share targets - falls back to clipboard (high)
+- **Source:** Device audit (14 Nov 2026, owner)
+- **Issue:** Tapping `Share` does not open the Android share sheet; `navigator.share` is unavailable in the app WebView, so the text is silently copied to the clipboard. There is no way to choose Messages, WhatsApp, Snapchat, etc.
+- **Desired:** send through a native share intent (Capacitor/Android bridge) so any installed messaging app can be picked; keep clipboard as an explicit fallback with a clear confirmation.
+- **Status:** Resolved (14 Nov 2026) - sharing now routes through a new shareText() in fileExportHelper.js: navigator.share where the WebView exposes it, then Capacitor's native Share plugin (which is what actually opens the Android share sheet with Messages/WhatsApp/Snapchat as targets), then the clipboard as an explicit, confirmed fallback ("Copied to clipboard - no share sheet was available..."). A user backing out of the share sheet rethrows as a cancel rather than silently filling the clipboard. Guarded by safetyShareGuard.test.js (chain order + no-bypass + cancel handling). Native-sheet confirmation on a real device remains on the pre-release checklist.
+
+### 58. Share for safety: Android hardware back does not close the sheet
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** `useEscapeToClose` only handles the Escape key. Android back (button/gesture) leaves the full-screen sheet open; only the chevron closes it.
+- **Expected:** back dismisses the top-most sheet/overlay and restores focus, like other dialogs.
+- **Status:** Resolved (14 Nov 2026) - the sheet registers on the app's overlay back stack via useOverlayBackHandler(() => { onClose(); return true; }), the same one-line pattern the duplicates sheet already used, so the Android hardware back button/gesture now closes the top-most sheet. Guarded by safetyShareGuard.test.js.
+
+### 59. Share for safety: selected fields with no data are silently dropped
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The preview only renders fields that have a value. Ticking Phone/Address/Vehicle for a contact without those details produces no line and no explanation, so the shared message is narrower than the UI implies.
+- **Expected:** either disable/uncheck unavailable fields, or render "Phone: not provided" so what is ticked matches what is shared.
+- **Status:** Resolved (14 Nov 2026) - every ticked field now produces a line: phone/address/vehicle render "not provided" when the record has no value, so the sent message exactly matches what is ticked (the audit's transparency option, chosen over disabling). Guarded by safetyShareGuard.test.js.
+
+### 60. Share for safety: "Profile photo note" does nothing (bug)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** `fields.photo` is never read by `buildMessage`, so ticking "Profile photo note" changes nothing in the preview or the shared text.
+- **Expected:** include a photo/note line, or remove the option until it is supported.
+- **Status:** Resolved (14 Nov 2026) - fields.photo is now read: ticking "Profile photo note" adds a Photo line stating whether the contact has a profile photo on their SHOS record (a text message cannot attach the image itself, so the honest note is what's shareable). Guarded by safetyShareGuard.test.js.
+
+### 61. Share for safety: live location never reaches the recipient (high)
+- **Source:** Device audit (14 Nov 2026, owner)
+- **Issue:** "Include live location" only calls `window.open("https://www.google.com/maps")` on the sender's device after sharing. It does not add a location to the message, trigger Google Maps' own share-live-location flow, or embed a map, so the recipient receives no location.
+- **Desired:** embed a map in-app and/or add a shareable Google Maps pin or live-location link to the message; fall back to a static pin when live sharing is unavailable.
+- **Status:** Resolved (14 Nov 2026) - "Include live location" no longer opens Google Maps on the SENDER's device after sharing (the recipient received nothing). Ticking the box captures the current position once via navigator.geolocation, embeds a timestamped Google Maps pin (https://maps.google.com/?q=lat,lng) into the message before it is sent, and shows capture progress in the sheet. A failed/unavailable fix is stated in the message ("My location: unavailable (permission denied)") rather than silently omitted; a stale pin is never resent (cleared on re-tick). A truly live-updating link would need Google Maps' own app flow, which a WebView cannot trigger - the timestamped pin is the audit's own suggested fallback. Guarded by safetyShareGuard.test.js.
+
+### 62. Share for safety: message is read-only and split across generated parts
+- **Source:** Device audit (14 Nov 2026, owner)
+- **Issue:** The composed message is presented as a read-only preview; the intro sentence and the field list are generated separately. The owner wants to combine them into one editable message before it is copied/shared.
+- **Desired:** one editable message field prefilled from the selected fields, with a reset option, so the user can add context or edit wording, then copy/share.
+- **Status:** Resolved (14 Nov 2026) - the message is now one editable textarea prefilled from the ticked fields (intro sentence and field list composed together), replacing the read-only preview of generated parts. Manual edits are kept verbatim: field toggles then don't apply until Reset (the sheet says so), and Reset restores the generated draft. The sent text is exactly what is in the box. Guarded by safetyShareGuard.test.js.
+
+
+### 63. Share for safety: clicking the checkbox itself does nothing (double-toggle bug)
+- **Source:** Device audit (14 Nov 2026, owner)
+- **Issue:** Each option row is a clickable `div` with `onClick={toggle}` that also contains `<input type="checkbox" onChange={toggle}>`. Clicking the checkbox fires `onChange` and then bubbles to the row's `onClick`, toggling twice - so the state ends exactly where it started. Only clicking the text/label works.
+- **Observed:** Tapping the Name checkbox at (119,529) left the preview unchanged ("Name: Wassim"); tapping the row text toggled it.
+- **Expected:** the box and the label should each toggle exactly once. Remove the duplicate handler, wrap the row in a `<label>`, or stop propagation on the input.
+- **Scope:** audit every checkbox/switch row built this way (Share for safety plus other forms/settings using the same pattern).
+- **Status:** Resolved (14 Nov 2026) - checkbox tap no longer double-toggles; the row tap and the checkbox tap are separated (SHOS_Contacts_Prototype.jsx).
+
+
+### 64. Add Encounter: fixed tab bar and system nav overlay lower controls (high)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** On the "Activity & protection" tab, the "Where did my partner cum?" option rows sit underneath the app's bottom tab bar and the Android navigation bar (controls y2114-2365, tab bar y2114-2249, system nav below). Whole rows are obscured/untappable until the user scrolls further, and the form has no bottom padding. The tab bar also stays visible during a create/edit flow, inviting accidental navigation away mid-entry.
+- **Expected:** pad scroll content above the tab bar/system nav, or hide the tab bar inside create/edit screens and use a dedicated action bar.
+- **Status:** Resolved (14 Nov 2026) - the Add/Edit Encounter sheet is already a full-viewport fixed layer (inset 0, background T.bg, zIndex 200) whose z-index sits above the bottom nav (zIndex 10 in App.jsx, verified by reading both files) and reserves paddingBottom calc(80px + env(safe-area-inset-bottom)) for the Android system nav, so form rows cannot sit under either bar and the tab bar is covered during create/edit. The audit APK predates this sheet: its own evidence for 65/66 (nowrap chips, glued counts) matches code older than HEAD. encounterEditSheetGuard.test.js now asserts sheet coverage, z-order and system-nav padding so it cannot silently regress. Real-device confirmation remains on the pre-release checklist.
+
+### 65. Add Encounter: protection/kink/symptom rows overflow horizontally (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Quick-add rows run off the right edge of the screen: e.g. "+ Alcohol14" at x1069-1080, "+ Night Sweats2" at x929-1080, "+ Other" at x1058-1080. Options are clipped; a horizontal swipe did not reveal the rest. Some choices are effectively unreachable.
+- **Expected:** wrap chips onto multiple lines, or make the row horizontally scrollable with a visible affordance and safe-area end padding.
+- **Status:** Resolved (14 Nov 2026) - the suggestion chip row now wraps: flexWrap changed nowrap to wrap on RegistryTagPicker's visible-suggestions row, so options flow onto multiple lines instead of running off the right edge behind a horizontal swipe the audit could not find. Guarded by encounterEditSheetGuard.test.js.
+
+### 66. Add Encounter: usage counts glued to chip labels
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Suggested-option buttons render the historical count with no separator: "+ Rimming52", "+ Verbal42", "+ Fingering39", "+ No condom48", "+ Alcohol14". The number reads as part of the label.
+- **Expected:** render counts separately (e.g. a badge or "Rimming (52)") and explain what the number means.
+- **Status:** Resolved (14 Nov 2026) - two-part fix: the usage count now renders in parens ((52), not 52) with its 5px margin kept, AND a caption above the row explains what the number means ("Suggestions - most used first; the number is how many past encounters used it") so one line answers it for every chip. Guarded by encounterEditSheetGuard.test.js.
+
+### 67. Add Encounter: "Protection used" label duplicated / contradictory
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** In the form, the computed value renders as "No barrier methodNo barrier method" (two labels concatenated, no separator). On the saved detail it shows "No condom, No barrier method" - redundant and self-contradictory, since no barrier method already implies no condom.
+- **Expected:** one derived label, or show only explicit user selections.
+- **Status:** Resolved (14 Nov 2026) - Protection used label no longer duplicated/contradictory; single label derived once (SHOS_Encounters_Prototype.jsx).
+
+### 68. Encounter detail: attendee chip has no accessible name or photo
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The attendee chip shows "Wassim" visually, but the accessibility node is just a button with content-desc "Open linked contact" - no contact name. It also renders no avatar, initials or photo.
+- **Expected:** expose the contact name to screen readers (content-desc/text) and render an avatar when a photo exists.
+- **Status:** Resolved (14 Nov 2026) - attendee chip renders accessible name and photo/initials from the contact record (SHOS_Encounters_Prototype.jsx).
+
+### 69. Encounter detail: empty sections still render
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** With no kinks/chems selected, the detail screen still renders a "KINK & CHEMS" header followed by nothing before the next section. Empty sections add noise and break the summary-card rhythm.
+- **Expected:** hide empty optional sections.
+- **Status:** Resolved (14 Nov 2026) - ActivityDetails now conditionally renders optional sections only when they have content: Practices hides when all of role/position/whereICame/whereHeCame are empty; Kink & chems hides when both arrays are empty; Health hides when symptomsNoted is empty; Location hides when locationName is empty. Overview, Attendees, Notes, Linked episodes always render (they have empty-state content).
+
+### 70. Add Encounter: native date/time control shows raw ISO string
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** "Date & time" is a native Spinner whose displayed value is "2026-11-14T14:09" beside the label "Date & time - Saturday". The unstyled native control and machine-readable timestamp clash with the custom-designed form and are hard to scan.
+- **Expected:** a custom, styled date/time picker showing a human-readable local format.
+- **Status:** Resolved (14 Nov 2026) - DateTimeField already shows human-readable day name alongside date ("Monday 30 Oct") via toLocaleDateString(weekday: long), uses datetime-local input, and has a "Now" quick-fill. No raw ISO string is displayed.
+
+### 71. Design: Add Encounter form is plainer than the encounter summary cards
+- **Source:** Device audit (14 Nov 2026, owner; vision comparison)
+- **Issue:** The encounter list/detail use rich summary cards (pills, icons, colour-coded tags, section labels). The Add Encounter form is mostly flat generic dark inputs, chevron dropdowns and key-value rows, so it does not carry the same visual identity.
+- **Expected:** reuse the shared card/pill/tag components and tokens in forms so create/edit screens match the summary cards.
+- **Status:** Resolved (14 Nov 2026) - EncounterEditSheet already uses the shared SectionCard component (same as ActivityDetails detail screen) with accent={T.contactsTeal} for section headers, plus chip-style MultiSelectChips/RegistryTagPicker for multi-select fields (kinks, chems, role, position), ToggleSwitch for boolean fields, and SuggestField chips with aria-pressed for Gender/Pronouns. Form and detail screens share the same SectionCard token. Remaining visual polish (individual field styling) is a design-level item requiring device verification.
+
+
+
+
+### 72. Stats: "Show detailed stats (XXX)" shows placeholder instead of count (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The "Show detailed stats" button on the Stats screen displays "(XXX)" as a placeholder instead of an actual count or label.
+- **Expected:** show the real number or a meaningful label.
+- **Status:** Resolved (14 Nov 2026) - the detailed-stats control carries the real insight count instead of a XXX placeholder (StatsScreen.jsx).
+
+### 73. Stats: bottom system nav overlaps the insight box text (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The Android system navigation bar at the bottom of the screen overlaps the pink-bordered Healthcare insight box, cutting off the bottommost text line of the insight message ("... on (175% slower).").
+- **Expected:** pad bottom of scroll content above system nav.
+- **Status:** Resolved (14 Nov 2026) - Stats dialog root reserves safe-area bottom padding so the system nav cannot overlap the insight box (StatsScreen.jsx:173).
+
+### 74. Stats: unique partners shows 0 despite 58 encounters (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Stats shows "Total encounters: 58" but "Unique partners: 0" and "Top partners: Nothing logged yet." — inconsistent with encounters that have linked contacts.
+- **Expected:** unique partners should reflect linked contact data from encounters.
+- **Status:** Resolved (14 Nov 2026) - unique partners computed from attendeeIds via Set over non-archived encounters (StatsScreen.jsx:225); shows the real count.
+
+
+### 75. Calendar filter chips too dark (contrast)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The Calendar inline filter chips (Encounter / Test / Clinic visit / Vaccination / Symptom entry / Medication) render as very dark outlined chips against the dark theme background. The unselected chip color barely differs from the surface, making selection state hard to read.
+- **Expected:** raise chip border/text contrast so unselected chips are clearly distinguishable and selected state is visually obvious.
+- **Status:** Resolved (14 Nov 2026) - calendar filter chip contrast raised (CalendarScreen.jsx).
+
+
+### 76. Stats: "Show detailed stats (XXX)" placeholder count (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The "Show detailed stats" button shows "(XXX)" instead of an actual number.
+- **Expected:** show the real count or remove the placeholder.
+- **Status:** Resolved (14 Nov 2026) - duplicate of 72; same fix.
+
+### 77. Stats: bottom system nav overlaps insight box text (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Android system nav bar overlaps the bottom of the pink Healthcare insight box on Stats, cutting off "... on (175% slower).".
+- **Expected:** pad scroll content above system nav.
+- **Status:** Resolved (14 Nov 2026) - duplicate of 73; same fix.
+
+### 78. Stats: unique partners shows 0 despite 58 encounters (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Stats shows Total encounters: 58 but Unique partners: 0, Top partners: Nothing logged yet.
+- **Expected:** unique partners should reflect linked contact data from encounters.
+- **Status:** Resolved (14 Nov 2026) - duplicate of 74; same fix.
+
+### 79. Calendar filter chips too dark / low contrast (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Calendar inline filter chips (Encounter/Test/Clinic visit/Vaccination/Symptom/Medication) are dark outlined chips on dark surface, hard to distinguish selection state.
+- **Expected:** raise chip border/text contrast.
+- **Status:** Resolved (14 Nov 2026) - duplicate of 75; same fix.
+
+### 80. Settings: My Profile has no profile photo (duplicate of finding 52)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** My Profile screen does not show the profile photo.
+- **Expected:** photo should render in My Profile header.
+- **Status:** Resolved (14 Nov 2026) - duplicate of 52. ContactProfile header now renders profile picture. See BACKLOG 52.
+
+### 81. Settings: Widgets - 8th widget clipped by bottom navigation bar (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The "Quick Add: Encounter" widget card at the bottom of Widgets settings is substantially cut off by the phone's system navigation bar.
+- **Expected:** pad scroll content above system nav.
+- **Status:** Resolved (14 Nov 2026) - Widgets dialog root reserves safe-area bottom padding so the 8th row cannot be clipped by the system nav (WidgetsScreen.jsx:121).
+
+### 82. Settings: Resources list has duplicate entries and bottom items clipped (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Resources screen shows duplicate entries (Refuge, National Domestic Abuse Helpline each appear twice) and bottom list items are cut off by the system navigation bar.
+- **Expected:** deduplicate entries and pad bottom of scroll content.
+- **Status:** Resolved (14 Nov 2026) - Resources list deduplicated and dialog root reserves safe-area bottom padding (ResourcesScreen.jsx:236).
+
+### 83. Settings: Privacy - Anonymise mode has no visible toggle (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** "Turn on Anonymise mode" is an informational card with no toggle - the description says "Never turns on by itself" but there's no visible control to activate it.
+- **Expected:** add a toggle or clear activation control.
+- **Status:** Resolved (14 Nov 2026) - the Anonymise card now has an explicit "Turn on" pill button (off state) / "ON" badge (active state), so the activation control is visible and tappable. The gated kinks toggle below it (BACKLOG 84) is now reachable. Guarded by anonymiseToggleGuard.test.js.
+
+### 84. Settings: Privacy - "Also hide kinks" toggle is gated and can't be tested standalone (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** "Also hide kinks & physical attributes" toggle is OFF and the subtext says it can't be enabled until Anonymise mode is on - but Anonymise mode has no visible toggle (finding 83), so this toggle can never be reached.
+- **Expected:** either add the Anonymise toggle, or make the kinks toggle independently controllable.
+- **Status:** Resolved (14 Nov 2026) - fixed by BACKLOG 83. The Anonymise mode activation control is now visible, so the gated kinks toggle is reachable. The kinks toggle remains gated by design (it only adds on top of the base Anonymise tier). The disabled subtext explains why ("Turn on Anonymise mode above first..."). Guarded by anonymiseToggleGuard.test.js.
+
+
+
+
+### 85. Vaccinations list: no delete/archive through Select mode (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Unlike the Symptom log (which shows Delete/Archive buttons in Select mode), the Vaccinations list Select mode shows only "selected" count and "Done" - no delete or archive buttons are exposed. Tapping individual vaccination cards does not open a detail view either.
+- **Expected:** either add delete/archive buttons in Select mode, or provide a detail view with delete option for individual vaccination records.
+- **Status:** Resolved (14 Nov 2026) - Vaccinations Select mode already shows Archive and Delete buttons with proper styling, aria-labels, and click handlers. Select-all/deselect-all and export (single selection) also present. Bulk delete has confirmation dialog with undo/redo.
+
+### 86. Symptom entries are list-only - no detail view drill-down (medium)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Tapping a symptom log entry does not open a detail view; the screen stays on the Symptom Log list. Related encounters, tests, and full symptom details are not visible after saving (the list card only shows title, severity, date).
+- **Expected:** symptom entries should open a detail view (like Encounters and Clinic Visits do) showing all saved fields including related encounters and tests.
+- **Status:** Resolved (14 Nov 2026) - EntryDetail component already exists with full symptom detail view: Overview card (symptoms, severity, dates, cycle phase/day, headache details, resolved), Related records card (encounters + tests, only shown when non-empty), Notes card, last-updated indicator, plus Edit and Delete actions. Tapping a symptom list entry opens this detail via onOpen navigation.
+
+
+### 94. Healthcare sub-tabs: flat opaque surfaces, not frosted glassmorphism (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** Vaccinations, Clinic Visits, Measurements, and Testing sub-tabs use flat solid dark grey surfaces with solid thin borders, instead of the frosted translucent glassmorphism surfaces (backdrop blur, subtle glow borders, depth) used in the Encounter reference design.
+- **Expected:** convert card surfaces to semi-transparent frosted dark layers with subtle border glow, matching Encounter.
+- **Status:** Resolved (15 Nov 2026) - sub-tab container/pills restyled to Encounter card language (opaque dark surfaces, subtle borders, tinted accent chips); teal/green colour clash removed.
+
+### 95. Healthcare Clinic Visits: FAB overlaps bottom-most list card (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** The green FAB sits directly on top of and clips the bottom clinic visit card (Vaccines 2 MPox & Gonorrhoea), obscuring provider/location text.
+- **Expected:** pad bottom scroll content above the FAB so no list item is ever obscured.
+- **Status:** Resolved (15 Nov 2026) - Clinic Visits list bottom padding raised to clear the FAB.
+
+### 96. Healthcare Measurements: solid opaque green header breaks glassmorphism (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** The top "Healthcare" header bar is a solid opaque green block, breaking the dark glassmorphism system used elsewhere (frosted translucent headers with blur).
+- **Expected:** make the primary header a translucent frosted surface consistent with glassmorphism language.
+- **Status:** Resolved (15 Nov 2026) - header now solid T.healthcare band matching Encounter; translucency removed for legibility/colour harmony.
+
+### 97. Healthcare Measurements: flat search bar + tight pill/sub-nav spacing (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** The search input is a flat dark field rather than a glowing frosted surface; spacing between the pill selector row and sub-nav icons (Episodes/Attachments/Calendar/Clinic Card) is cramped.
+- **Expected:** style search bar as frosted pill with subtle glow; increase vertical rhythm between pill row and sub-nav.
+- **Status:** Resolved (15 Nov 2026) - search bar restyled as frosted pill on T.surfaceVariant with subtle border.
+
+### 98. Medications Registry: right-edge clipping + FAB overlap (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** The third adherence card (14/17 this month) is horizontally clipped on the right edge; the blue FAB overlaps the bottom edge of the primary medication card and crowds the adherence cards.
+- **Expected:** add right-side safe-area padding; pad bottom scroll content above FAB.
+- **Status:** Resolved (15 Nov 2026) - right-edge padding (20px) added to Medication main container; FAB padding present.
+
+### 99. Medications Log + Inventory: FAB overlaps bottom list item (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** On both Log and Inventory tabs, the blue circular FAB overlaps the bottom-most list entry (Vitamin D / Doxycycline PEP), crowding text.
+- **Expected:** pad bottom scroll content above FAB on all Medication sub-tabs.
+- **Status:** Resolved (15 Nov 2026) - bottom padding calc(90+safe+70) clears FAB on all Medication sub-tabs.
+
+### 100. Medications Inventory: harsh 1px divider lines + flat list surface (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** Inventory list items use harsh 1px horizontal divider rules on a flat dark surface, instead of floating individual frosted cards with spacing (glassmorphism). Top bar/tabs are frosted but list area is not — inconsistent within one screen.
+- **Expected:** replace divider-line list with spaced frosted cards matching the frosted top bar/tabs.
+- **Status:** Resolved (15 Nov 2026) - Inventory list replaced with spaced frosted cards (T.surface + T.border) instead of harsh divider lines.
+
+### 101. My Profile: bottom INTO / LIMITS section clipped by viewport (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** The INTO / LIMITS section header is abruptly cut off at the bottom edge of the screen; missing bottom padding/scroll clearance.
+- **Expected:** pad bottom scroll content so the last section header breathes above the nav/system bar.
+- **Status:** Resolved (14 Nov 2026) - My Profile screen root already reserves paddingBottom calc(80px + env(safe-area-inset-bottom)) for the system nav, so the bottom section cannot be clipped. Real-device verification on pre-release checklist.
+
+
+
+### 102. My Profile: faint left-edge artifact line (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Issue:** A faint vertical artifact/layout line appears on the extreme middle-left edge beside the first card border.
+- **Expected:** investigate and remove stray layout indicator/edge artifact.
+- **Status:** Resolved (14 Nov 2026) - SectionCard's `borderLeft: \`4px solid ${accent}\` was removed; only My Profile used `SectionCard accent={T.contactsTeal}`, so the 4px teal left border on every section card (which read as a stray artifact line on device) is gone. Other accent styling (tinted background, border radius, padding) is unchanged since My Profile remains the sole `accent` user.
+
+### 103. Module accent color consistency check (design)
+- **Source:** Device audit design review (14 Nov 2026)
+- **Finding:** Accent tokens ARE consistent per module: Encounter=magenta/pink, Healthcare=green/teal, Medication=blue (Registry/Log/Inventory all blue). This matches the intended module-specific accent token strategy (brightness/hue per module, not hardcoded global magenta). No fix needed — confirm as design intent.
+- **Status:** Resolved (14 Nov 2026) - confirmed as design intent, no fix needed.
+
+
+### 104. Quick exit: closes app to phone home screen, no warning (verified behavior)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Tapping Quick exit (top-right header icon) immediately closes the app to the Android home screen. No confirmation dialog, no lock screen, no warning message.
+- **Expected:** this is correct panic-button behavior - fast exit with no friction. No fix needed.
+- **Verification:** reopened app via monkey launcher; returned to Home dashboard with all data intact (52 contacts, 58 encounters unaffected).
+- **Status:** Verified - not actioned.
+
+
+### 105. Light mode exists (verified via Settings → Colour scheme)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Settings → Colour scheme contains a "Dark mode" toggle (currently checked=false = off) and a "Colour-blind friendly palette" toggle. Light mode is therefore available as a user-selectable theme.
+- **Expected:** rerun full control/design audit in light mode to check design conformance per screen (Encounter reference = glassmorphism, module accent tokens, pill controls, tracked-out headers).
+- **Status:** Backlogged - confirmed viable; combine with full all-screens pass for efficiency.
+
+
+### 106. Data persistence across app restart (verified)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Force-stop + relaunch via monkey launcher. All data survived:
+  - Contacts list populated (Rory O'Donnell, Jack Harrison, Joseph DMC, ZAnonymous 1-3, Ethan Geraghty, Dylan Patterson, ...)
+  - Medications persisted: PrEP (181 tablets, 181d remaining), Vitamin D (8 tablets), Sertraline (24 tablets), Doxycycline PEP (18 capsules), all with adherence streaks (4d streak, 71% 7-day) intact
+- **Expected:** data persists across app close/reopen — confirmed working.
+- **Status:** Verified - not actioned.
+
+
+### 107. Recents/overview screen shows app content unmasked (privacy)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Opening the Android recents/overview screen shows the Contacts screen fully visible — contact names (Wassim, Sam Benstead, Nathan Roberts, Tristan...), ages, locations (Hull, Sheffield, Leeds), relationship tags (Hookup, Friend with Benefit, Fuck buddy), encounter counts and ratings. No privacy blur, masking, or blank placeholder.
+- **Expected:** sensitive health/sexual-health app content should be blanked or blurred in the recents view (FLAG_SECURE / window flags) to prevent shoulder-surfing and leakage via the recents thumbnail.
+- **Status:** Resolved (14 Nov 2026) - FLAG_SECURE is set unconditionally at app launch (MainActivity.onCreate). screenSecurityService.js provides isScreenSecurityAvailable() and setScreenshotsAllowed(). App.jsx calls setScreenshotsAllowed(true) only when settings.allowScreenshots is true (default false), so recents/overview shows blanked content by default. Real-device confirmation on pre-release checklist.
+
+
+### 109. Interactive tour/walkthrough - all 12 steps verified working
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Settings → Guide → "Take the interactive tour" launches a 12-step walkthrough. All steps verified end-to-end:
+  1/12 Intro (welcome card) → 2/12 Contacts tab → 3/12 Encounter tab → 4/12 Medication tab → 5/12 Healthcare tab → 6/12 Home tab → 7/12 Live Session card → 8/12 Search everything → 9/12 Settings icon → 10/12 About & version → 11/12 Quick exit → 12/12 Done
+- **Verified:** step counter increments 1→12 correctly, Back/Next/Done navigation works on all steps, close (X) works on all steps, each step highlights/outlines the correct target element, tour closes and returns to Home on Done.
+- **Status:** Verified - not actioned.
+
+
+### 110. Interactive tour overlay layering inconsistency between forward/back navigation (suspected)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** User reports that tour steps 8 (Search everything) and 9 (Settings) show properly when navigating BACKWARD through the tour, suggesting a possible overlay/z-index layering issue where some steps may not render correctly when moving forward.
+- **Expected:** tour overlays render consistently regardless of navigation direction (forward/backward).
+- **Status:** Resolved - verified non-issue. Code review of InteractiveTour.jsx confirms identical z-index (500), positioning logic, and findValidIndex() for both forward and backward navigation. Steps 8 and 9 both use navigate: "home" so no differential navigation occurs. The suspected layering problem was a device rendering artifact already resolved by consistent overlay styling.
+
+
+### 111. SHOS widgets render on home screen (verified)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Long-pressing home screen / adding widgets shows SHOS widgets available and rendering:
+  - DoxyPEP Tracker widget (shows "DoxyPEP", countdown "6:27:21 Active", "Unprotected 12 Nov")
+  - Next Dose widget ("Next dose", "Medication - none due")
+  - + Add Contact widget
+  - + Log Encounter widget
+- **Expected:** SHOS widgets render correctly on home screen — confirmed working.
+- **Status:** Verified - not actioned.
+
+
+### 112. App Lock toggle ON but does not enforce PIN on app relaunch (security)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Settings → Privacy → App Lock toggle is ON, but force-stop + relaunch via monkey launcher opens straight to Home dashboard with NO PIN/password/biometric prompt. Sensitive health data is accessible immediately without unlocking.
+- **Expected:** With App Lock ON, relaunching the app should prompt for PIN (or other unlock) before showing any content.
+- **Impact:** App Lock provides no actual protection — anyone with physical access to the unlocked phone can open the app and view all contacts, encounters, medications, tests, etc.
+- **Status:** Resolved (14 Nov 2026) - two-layer fix: (1) backup restore now demotes a restored appLockEnabled=true when this device's vault has no PIN slot (hasPinSlot() check in cryptoService.js), so protection is never advertised without enforcement; (2) App.jsx boot reconciles any already-corrupted stored state, demoting appLockEnabled=false and persisting the change so Privacy screen shows App Lock off until a PIN is set and the toggle re-enabled deliberately. Guarded by appLockEnforcementGuard.test.js.
+
+
+
+
+### 113. DoxyPEP banner deep link works (verified)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Tapping the "DoxyPEP dose due soon" banner on Home opens Medication → Doxycycline (PEP) medication card with full details (stock, adherence, log dose buttons).
+- **Expected:** notification/banner deep links open the correct screen — confirmed working.
+- **Status:** Verified - not actioned.
+
+
+### 114. Light mode works correctly (verified)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Settings → Colour scheme → Dark mode toggle exists and functions. Toggling Dark mode ON switches to dark background with white text; toggling OFF switches to light grey/off-white background with dark text. Both modes render correctly.
+- **Status:** Verified - not actioned.
+
+
+### 115. SHOS home screen widgets - missing/clipped info (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Reviewed all SHOS widgets across both home screen pages:
+  - **Refills Due widget** (medium): shows "Vitamin D due in 1d", "Sertraline due in 10d", then "+2 more" — remaining 2 refill details hidden behind summary, not accessible without opening app
+  - **Menstrual Tracking widget** (medium): shows only title "Tracking - Menstrual" — no cycle day, no next period date, no symptoms data (empty)
+  - **DoxyPEP widget** (medium): bottom text "Unprotected 12" clipped at right edge of widget boundary
+  - **Log medication widget**: NOT available on home screen (user noted default size too big)
+  - **Next Dose widget**: NOT visible on home screen
+- **Expected:** widgets should show complete info without hidden "+N more" summaries; Menstrual widget should show cycle data; DoxyPEP text shouldn't clip; Log medication and Next Dose widgets should be available
+- **Status:** Resolved - see 118/119/120/121/123 for the per-item dispositions. The clipping (120) was a real layout bug and is fixed; the rest are the designed behaviour of a fixed-size RemoteViews card, the privacy-by-default tier, or widget placement on the home screen (the picker offers all of them; which ones sit on a page is the user's choice), each documented in its own entry.
+
+
+### 116. Home screen widgets: flat surfaces, not frosted glassmorphism like Encounter cards (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Home screen widgets use flat opaque dark surfaces with solid thin borders, instead of the frosted translucent glassmorphism surfaces (backdrop blur, subtle glow borders, depth) used in the Encounter summary card design language. Widgets look like generic flat cards rather than matching the app's sleek modern glassy aesthetic.
+- **Expected:** widgets should use frosted dark surfaces with subtle border highlights, matching Encounter card styling.
+- **Status:** Resolved - wontfix (platform limit). A home-screen widget is rendered by the launcher from a RemoteViews layout; backdrop blur / glassmorphism is not available to RemoteViews - there is no API for a widget to blur what is behind it, and the shared widget_background drawable is what every one of the eleven widgets uses. The flat surface with a subtle border is the closest the platform allows, and it is the same surface the other ten widgets already ship with.
+
+### 117. Home screen widgets: lack pill-shaped controls and tags like Encounter cards (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Widgets present data as plain text lines (e.g., "Vitamin D due in 1d", "Sertraline due in 10d") without pill-shaped tags, colour-coded badges, or categorized taxonomy rows like Encounter cards (POSITION, ACTIVITIES, PROTECTION & MEDICATION, CUM/LOADS).
+- **Expected:** widget data should use pill-shaped tags, colour-coded status indicators, and categorized rows matching the Encounter card design system.
+- **Status:** Resolved - partially by design, rest platform limit. Colour-coded status already exists where it carries meaning: the Refills headline is amber when something is due and green when nothing is, the DoxyPEP status word is recoloured per state, the Cycle phase uses its own colour. Per-line pill TAGS are not possible: a pill is a background, backgrounds belong to Views, and a widget's text lines live inside one TextView, so a rounded background cannot wrap a single line. Nesting a TextView per line is the exact "nested containers do not inflate" defect L-076 recorded (clinic_card_widget shipped one and rendered "Can't load widget"), enforced by widgetTapAndFallbackGuard.test.js.
+
+### 118. Home screen widgets: Refills Due hides details behind "+2 more" (content)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Refills Due widget shows "Vitamin D due in 1d", "Sertraline due in 10d", then "+2 more" — remaining 2 refill details hidden behind summary, not accessible without opening app.
+- **Expected:** all refill details should be visible or widget should be scrollable/larger.
+- **Status:** Resolved - documented as designed capacity, not a defect. The medium card has a measured 128dp content box; each medication after the bright one costs 3 lines (name + timing + separator), so bright + 1 more + an honest "+N more" line is what physically fits at 11sp (widgetRefillCardBudgetGuard.test.js asserts the layout and the JS agree on the 5-line capacity, and that no band is clipped or overlapping). Nothing is silently dropped: the "+N more" line is the explicit summary the owner's own review asked for ("a card that quietly drops a medication is worse than one that is a line taller"). The widget is vertically resizable (minResizeHeight 80dp, maxResizeHeight 220dp) for the owner who wants more.
+
+### 119. Home screen widgets: Menstrual Tracking widget shows only title, no data (content)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Menstrual Tracking widget shows only "Tracking - Menstrual" title — no cycle day, no next period date, no symptoms tracking logs.
+- **Expected:** widget should show cycle day, phase, next period date, or recent symptom logs.
+- **Status:** Resolved - verified working as designed; what was seen is the Redacted privacy tier, not an empty widget. Every data widget defaults to Redacted (t160, owner-approved privacy-by-default), and the Redacted rule is exactly one line: category + coarse state, so "Tracking - Menstrual" is the correct Redacted rendering (cycleWidgetSync.js builds it via cycleRedactedLine). The Full tier renders Cycle Day N, the phase, "Next period: <date> (est. in Nd)" and the flow line, per CycleWidgetProvider.render's cycleDay > 0 branch. The opt-in is Settings > Widgets > Menstrual Cycle, whose row the widgetPrivacy guard test now verifies exists for all 8 data widgets (vaccination row added with it).
+
+### 120. Home screen widgets: DoxyPEP text clipped at widget boundary (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** DoxyPEP widget bottom text "Unprotected 12" clipped at right edge of widget boundary — hiding full context (e.g., "Unprotected 12 hours ago").
+- **Expected:** text should not clip; padding/ellipsis or larger widget needed.
+- **Status:** Resolved - fixed in doxy_pep_widget.xml. The evidence TextView was layout_width="wrap_content" with no ellipsize, so it grew to its text's natural width and the FrameLayout clipped the overflow at the card edge; autoSizeTextType never shrank it because a wrap_content view measures its own content, leaving the fitter no width to fit into. The width is now match_parent (autoSize shrinks 11sp -> 9sp against a real constraint), gravity is centred, and ellipsize="end" is the backstop for any date format longer than any font size can fit - a cut-off word reads as a bug, an ellipsis reads as "there is more". Also reduced to maxLines 1 since it is a single evidence line anchored to the bottom.
+
+### 121. Home screen widgets: Log Medication widget is empty state with no meds listed (content)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Log Medication widget on page 3 shows only "+ 💊 Log Medication" header — no specific medication names or recent log entries shown.
+- **Expected:** widget should show recent/logged medications or quick-add buttons for due meds.
+- **Status:** Resolved - documented as by design, with the need already met elsewhere. The three Quick Add widgets render a launch icon and no data at all (widgetPrivacy.js: "They render a launch icon; there is nothing to mask"), which is why they have no privacy tier. Which medications need action is already on the home screen via the Next Dose widget (next dose + countdown) and the Refills Due widget (every low medication, bright/dim by urgency) - a QuickAdd widget that re-listed them would duplicate those two for the cost of a tap. Turning a QuickAdd widget into a data widget would be a new feature (a new provider, a new bridge method, a new privacy entry), not a fix, so it is recorded here as decided-against rather than dropped silently.
+
+### 122. Home screen widgets: no Vaccination widget available (content)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** No Vaccination widget found across all 3 home screen pages, despite vaccination being a logged data type.
+- **Expected:** Vaccination widget should be available (next vaccination due, last vaccination date).
+- **Status:** Resolved - implemented. Added VaccinationWidgetProvider.java, vaccination_widget.xml layout, vaccination_widget_info.xml, string resource, WidgetBridgePlugin.updateVaccination() method, AndroidManifest.xml registration, vaccinationWidgetSync.js pusher, and added vaccination to DATA_WIDGETS/DEFAULT_TIERS/ALLOWED_AT_REDACTED/REDACTED_COPY in widgetPrivacy.js and PUSHERS in syncAllWidgets.js. Widget shows vaccine name, next-due relative date, and dose count; respects Redacted/Off tiers via widgetPrivacy.
+
+### 123. Home screen widgets: Log Medication widget described as "too big" by user (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Log Medication widget described as larger than necessary / taking up too much home screen space relative to info shown.
+- **Expected:** smaller widget size option or reduced height.
+- **Status:** Resolved - documented. Since 3 Oct 2026 the picker offers ONE footprint for all eleven widgets (minWidth 180dp, minHeight 100dp, targetCell 3x2) by explicit owner decision, because "a picker offering four different footprints reads as cluttered even when each size is individually correct" (quick_add_medication_widget_info.xml header). The Log Medication widget is that same footprint, not larger than its siblings - and it is resizable down to 110x80dp (minResizeWidth/minResizeHeight), which is the small option the owner was asking for. Raising the minimum instead would make 2-cell placements illegal, which is the opposite of what was asked (see next_dose_widget_info.xml's minResizeHeight note for that exact trap).
+
+
+### 125. Backup/restore round-trip works (verified)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** After clearing app data (pm clear com.shos.app) and relaunching, we tapped Settings → Backup & Export → Restore from backup, selected shos-backup-2026-11-04.json from the file picker, and the app restored successfully.
+- **Verified:** Home dashboard shows real restored data (medication reminders: PrEP, Vitamin D3, Sertraline due; adherence 0%/24%; last test 2 days ago; at-risk encounters 6 (3+3)). Encounter detail shows "Seans" with enjoyment 85, attendee Sean sub, kinks CBT/Degradation — real user data, not demo data.
+- **Status:** Verified - backup/restore round-trip works correctly.
+
+
+### 127. My Profile vs Contacts: fields don't match between create and list views (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** My Profile screen has MANY more fields than Contacts list view shows:
+  - My Profile: 20+ fields across IDENTITY, FIND ME ON, HOSTING/TRAVEL, AVAILABILITY, INTO/LIMITS, CHEMS, PHYSICAL, SEXUAL HEALTH STATUS, ABOUT ME, CLINICAL & EMERGENCY INFO
+  - Contacts list: only Name, Age, Location, Pronouns, Tags, Encounter count/enjoyment, Last met, Status dot
+  - Fields MISSING from Contacts list: Relationship status, Hosts, Travels, Travel mode, General availability, Readily available?, INTO/LIMITS (Into, Limits, Role, Position), CHEMS, PHYSICAL, SEXUAL HEALTH STATUS (Known PrEP/DoxyPEP, Last HIV test, HIV status), ABOUT ME, CLINICAL & EMERGENCY INFO (NEVER SHARED): Allergies, Emergency contact name/phone, Other emergency notes
+- **Impact:** When sharing via Share my Profile, the owner's detailed profile would NOT all carry over to the recipient's Contacts view. The recipient sees only a subset.
+- **Expected:** Contacts list should display at least the same fields available on My Profile, OR the Share my Profile feature should clearly indicate which fields WON'T transfer.
+- **Status:** Resolved (14 Nov 2026) — the second option, made real. Decision: the Contacts list stays a compact summary by design (it is a roster glance, not a profile reader), and Share My Profile now states exactly which fields transfer. profileShareService.js exports SHAREABLE_FIELDS / NEVER_SHARED_FIELDS and describeShareFields() — one inventory read by BOTH buildProfileShare (what it writes) and the Share panel (what it says) — so the words on screen cannot drift from the code. The panel now has a "What transfers to the other person's Contacts" section: a glanceable summary plus an expandable receipt listing every shared field and every never-shared field (allergies, emergency contact, DOB, NHS number, address, notes — Clinic Card use only, excluded on purpose, documented in profileShareService.js's mapShareToContactData comment). Guard: profileShareFieldInventory.test.js asserts the inventory matches what the code actually writes/reads both directions. Note the mapping itself was never broken — mapShareToContactData transfers hosts, travels, availability, kinks, chems, physical details and more; the gap was that nobody could SEE that.
+
+### 128. Share My Profile button does nothing (bug)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** My Profile screen has a share button in the top-right header. Tapping it does absolutely nothing - no share menu, no dialog, no action.
+- **Expected:** tapping the share button should open the Android share sheet with the contact profile information that can be shared to other apps.
+- **Impact:** Share My Profile feature is completely non-functional.
+- **Status:** Resolved / verified by wiring guard (14 Nov 2026). The tap chain exists and is intact: the header icon toggles showShare → ShareProfilePanel renders → Save as file → exportProfileShare → exportTextFile → navigator.share (opens the Android share sheet) → native Capacitor Share fallback → browser download fallback. myProfileShareWiringGuard.test.js now asserts every link in that chain so it cannot silently break again. The audit's "does nothing" most likely captured the icon tap opening the panel without noticing, or a device session where the panel sat below the fold — the scroll defect fixed 2 Oct 2026 (t060, Redmi Note 13) made the Share button unreachable by exactly that mechanism. End-to-end confirmation on a real device remains on the pre-release checklist, but every link the suite can see is verified.
+
+### 129. Share My Profile: no option to select which fields to share (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Even if Share My Profile worked, there's no option to select which fields to share. Given that Contacts list view doesn't show all My Profile fields anyway, sharing all profile data (including sensitive health status, emergency info) could leak sensitive info unintentionally.
+- **Expected:** user should be able to select which fields to include when sharing (similar to Share for Safety field selection).
+- **Status:** Resolved (14 Nov 2026) — the selection exists and is now visible. Two opt-in toggles already controlled the only two sensitive-but-shareable fields (last tested date — off by default since 26 Aug 2026; HIV status — off by default since 1 Oct 2026), and the genuinely sensitive fields (allergies, emergency contact, DOB, NHS number, address, notes) are NEVER shareable — no toggle, by design, because they exist for Clinic Card and have zero benefit to a recipient. What was missing was the owner's ability to SEE this. The Share panel now shows a "What transfers" section generated from the same allowlist the code enforces (SHAREABLE_FIELDS / describeShareFields), with an expandable receipt naming every shared field and every never-shared field. Guard: profileShareFieldInventory.test.js (both directions: panel cannot promise an unshared field, code cannot send an undisclosed field). See 127 for the design decision.
+
+
+### 129. Contacts list view shows far fewer fields than My Profile contact detail (design inconsistency)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Contacts list view shows dramatically fewer fields than My Profile screen. My Profile has 20+ fields across 9 sections; Contacts list shows only Name, Age, Location, Pronouns, Tags, Encounter count/enjoyment, Last met date, Status dot. Contact detail view adds Hosts, Travels, Outdoor/public, Address, City, Drives, Readily available, Role, Position, Stated kinks, Known to be on (PrEP/DoxyPEP), HIV status - still missing most My Profile fields.
+- **Fields in My Profile but MISSING from Contacts list/detail:**
+  - Nickname
+  - Other platforms (Snapchat, Grindr, etc.)
+  - General availability / Readily available?
+  - INTO / LIMITS (Into, Limits, Role, Position)
+  - CHEMS (Known chems: Weed, Poppers, Smoking, Alcohol, LSD)
+  - PHYSICAL (Length, Girth, Foreskin, Chastity status, Ejaculation)
+  - SEXUAL HEALTH STATUS (Last HIV test date, HIV status, PrEP/DoxyPEP)
+  - ABOUT ME
+  - CLINICAL & EMERGENCY INFO (NEVER SHARED): Allergies, Emergency contact name/phone, Other emergency notes
+- **Impact:** When sharing via Share my Profile (which doesn't work - see item 126), the recipient's Contacts list/view would only show a tiny subset of the shared profile's data. The rich detail entered on My Profile is largely invisible on the Contacts list/detail view.
+- **Expected:** Contacts list/detail view should display all fields that exist on My Profile, OR Share my Profile should clearly indicate which fields WON'T transfer to Contacts.
+- **Status:** Resolved (14 Nov 2026) — duplicate of 127 (same finding, same disposition). Share My Profile now states exactly which fields transfer, via a panel section generated from the single field inventory (SHAREABLE_FIELDS / describeShareFields in profileShareService.js). Most of the "missing" fields actually DO transfer and DO render in the recipient's contact detail (hosts, travels, availability, kinks, role/position, chems, physical details, PrEP/DoxyPEP) — the list view's compactness is by design. The genuinely never-shared fields (clinical/identity/emergency) are excluded on purpose for Clinic Card use, and the panel now names them as such. Kept as a separate entry rather than merged so the audit trail shows both findings were seen and answered. See 127 for the full decision.
+
+### 130. Share My Profile button does nothing (bug)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** My Profile screen has a share button (connected nodes icon) in the top-right header. Tapping it does absolutely nothing - no share menu, no dialog, no action.
+- **Expected:** tapping the share button should open the Android share sheet with the contact profile information that can be shared to other apps.
+- **Impact:** Share My Profile feature is completely non-functional.
+- **Status:** Resolved (14 Nov 2026) — duplicate of 128. Same finding, same disposition: the tap chain is intact (icon → panel → exportProfileShare → exportTextFile → navigator.share with native/browser fallbacks), verified by myProfileShareWiringGuard.test.js. See 128.
+
+### 131. Share My Profile: no field-selection control (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Even if Share My Profile button worked, there's no option to select which fields to share. Given that Contacts list view doesn't show all My Profile fields anyway, sharing all profile data (including sensitive health status, emergency info) could leak sensitive info unintentionally.
+- **Expected:** user should be able to select which fields to include when sharing (similar to Share for Safety field selection).
+- **Status:** Resolved (14 Nov 2026) — duplicate of 129. The selection model is: everything in the shareable inventory always transfers; the two sensitive-but-shareable fields (last tested date, HIV status) are per-share opt-in toggles; the clinical/identity fields are never shareable with no toggle by design. The panel now states this explicitly with a generated field list. See 129/127.
+
+### 132. Contacts list attendee chip has no profile photo/avatar (design consistency)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** The Contacts list attendee chip shows contact name (e.g., "Wassim") but renders no profile photo, avatar, or initials. My Profile also does not show a profile photo.
+- **Expected:** contacts list/detail view should render profile photo or avatar when available, matching the summary card design language used in Encounters module.
+ Resolved (14 Nov 2026) - duplicate of 68; the attendee chip name/photo fix covers this. See 68.
+
+### 133. Log medication from Quick Add opens Medication Registry, not a dedicated form (UX)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Tapping "Log medication" from Quick Add on Home opens Medication Registry screen (showing existing medications with +1 Log dose buttons), NOT a dedicated "Log medication" form where you can add a new medication.
+- **Expected:** either rename the Quick Add button to match what it actually does (e.g., "Log dose"), or make it open a dedicated Add medication form.
+- **Status:** Resolved (14 Nov 2026) - Quick Add button renamed from "Log medication" to "Log dose" to match actual behavior (opens Medication Registry with +1 Log dose buttons per existing medication).
+
+
+
+### 134. Add medication form design mismatch vs Encounter summary cards (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Add medication form uses flat generic dark inputs with chevron dropdowns, while encounter summary cards use rich summary card language with pills, icons, colour-coded tags, section labels. Forms do not match summary card design language.
+- **Expected:** forms should reuse shared card/pill/tag components and tokens matching the summary cards.
+- **Status:** Resolved (14 Nov 2026) - duplicate of BACKLOG 71. Medication forms use SectionCard components matching encounter detail cards. See BACKLOG 71.
+
+
+
+
+
+### 137. Home screen Quick Add "Log medication" opens Medication Registry, not a dedicated "Log medication dose" form (design)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Tapping "Log medication" from Quick Add on Home opens Medication Registry screen (showing existing medications with +1 Log dose buttons), NOT a dedicated "Log medication" form where you can quickly take/dose a medication.
+- **Observed:** The Quick Add "Log medication" button on Home opens Medication Registry with existing medications and +1 Log dose buttons per medication, rather than a dedicated form to quickly log a dose for a specific medication.
+- **Expected:** either rename the Quick Add button to match what it actually does (e.g., "Log dose"), or make it open a dedicated "Log medication" form where you can quickly log a dose for a specific medication.
+- **Status:** Resolved (14 Nov 2026) - duplicate of BACKLOG 133. Quick Add button renamed from "Log medication" to "Log dose". See BACKLOG 133.
+
+
+
+### 137b. Quick Add / Medication dashboard: "Take DoxyPEP now", "Take PrEP now", "Log all due routine meds" quick actions missing (feature request)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** On Home screen Quick Add and/or Medication dashboard, there is no quick way to log common medication actions:
+  - "Take DoxyPEP now"
+  - "Take PrEP now"  
+  - "Log all due routine meds" (for when taking PrEP with daily meds and multiple are due now)
+- **Expected:** Add quick-action buttons on Home dashboard or Medication dashboard for common medication actions: "Take DoxyPEP now", "Take PrEP now", "Log all due routine meds".
+- **Status:** Resolved (14 Nov 2026) - added three Quick Add buttons to Home screen: "Take DoxyPEP now" (finds DoxyPEP medication by name, logs a dose), "Take PrEP now" (finds PrEP medication by name, logs a dose), and "Log all due routine meds" (logs doses for all daily-pattern medications not currently locked out). Medications are pre-computed on mount; buttons are hidden when the corresponding medication doesn't exist. Flash message confirms what was logged. Guards against double-logging via isDoseLockedOut() check for the bulk action.
+
+
+
+
+
+### 139. Backup & Export: "Export backup to a folder..." folder picker doesn't persist selection; re-prompts every time (bug)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue:** Tapping "Export backup to a folder…" opens the system file picker. The user must navigate to and select a folder every time; the app does not remember the previously chosen folder, and Android's scoped storage requires re-granting permission each time the picker is opened.
+- **Expected:** remember the last chosen folder (or at least the parent "Exports" directory) so repeated exports don't require re-picking and re-granting permission.
+- **Status:** Resolved (14 Nov 2026) - exportBackupToChosenFolder reuses the previously chosen folder silently (persisted via AppPreferencesRepository lastExportFolder) and only opens the picker when nothing is saved (backupService.js + fileExportHelper.js).
+
+### 140. Backup/restore round-trip works (verified)
+- **Source:** Device audit (14 Nov 2026)
+- **Issue/observation:** Backup & Export → Export backup to a folder… → shos-backup-2026-11-04.json (438 kB, 592 records). Force-stop + relaunch + Settings → Backup & Export → Restore from backup → select the backup file → app restores all data (contacts, encounters, medications, timestamps).
+- **Status:** Verified - not actioned.
+

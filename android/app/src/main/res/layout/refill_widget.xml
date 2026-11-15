@@ -90,7 +90,14 @@
         android:breakStrategy="simple" />
 
     <!-- Everything else: the medications that are not due yet, dim, and a
-         last line saying how many are not shown. -->
+         last line saying how many are not shown.
+
+         maxLines is 3, matching the JS's line count (2 due + 3 later = 5
+         lines, and the widget_refill_due band contributes 2 of them).
+         The card's content box is 128dp and the later-meds band starts at
+         75dp: 3 lines of 11sp is 40dp, bringing the total to 115dp - well
+         inside the 128dp budget. widgetRefillCardBudgetGuard.test.js checks
+         this against the declared layout sizes. -->
     <TextView
         android:id="@+id/widget_next_refill"
         android:layout_width="match_parent"
@@ -100,6 +107,6 @@
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-         android:maxLines="3"
+        android:maxLines="3"
         android:breakStrategy="simple" />
 </FrameLayout>

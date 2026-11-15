@@ -34,6 +34,97 @@ import { exportTextFile } from "./fileExportHelper.js";
 const SCHEMA_VERSION = 1;
 const SHARE_TYPE = "shos_profile_share";
 
+// ── Field-transfer inventory (BACKLOG 127/129/131) ──────────────────────
+//
+// WHY THIS EXISTS. The owner's audit found a gap between what the My Profile
+// screen shows and what a recipient's Contacts list renders after a share:
+// the My Profile screen has 20+ fields across nine sections; the Contacts list
+// shows a compact summary (Name, Age, Location, Pronouns, Tags, encounter
+// count, last met, status) and the detail view adds a few more. The audit
+// asked, correctly, "which fields actually transfer?" and the honest answer
+// was: whatever mapShareToContactData maps, and that list was a hand-typed
+// allowlist with no machine-readable counterpart — so a future field added
+// to the profile would silently not appear in a shared contact, the same
+// silent-drop bug class caught twice earlier this project (travelMode,
+// foreskinDetail).
+//
+// This is the single owner of the answer. buildProfileShare reads it to know
+// what to WRITE, mapShareToContactData reads it to know what to READ, and
+// the Share panel renders it so the owner sees, before anything leaves the
+// device, exactly what will and will not arrive on the other side. The two
+// toggles (lastTestedDate, hivStatus) remain opt-in and are NOT in this list
+// — they are decided by the owner at share time, so they live in the options
+// object, not here.
+//
+// NEVER_SHARED is listed separately because it is a different kind of
+// exclusion: these fields exist on the profile for Clinic Card use and have
+// zero benefit to a hookup partner. They are not "off by default", they are
+// "never, on purpose", and the distinction matters for the wording the panel
+// shows.
+export const SHAREABLE_FIELDS = [
+  "displayName",
+  "nickname",
+  "pronouns",
+  "recon",
+  "age",
+  "ageIsApprox",
+  "city",
+  "phone",
+  "snapchat",
+  "fabguys",
+  "fabswingers",
+  "contactableVia",
+  "hosts",
+  "travels",
+  "travelMode",
+  "availability",
+  "nonAvailabilityRules",
+  "readilyAvailable",
+  "statedKinks",
+  "limits",
+  "knownChems",
+  "bdsmRole",
+  "sexualPosition",
+  "length",
+  "thickness",
+  "foreskin",
+  "foreskinDetail",
+  "chastityStatus",
+  "cummer",
+  "knownPrepDoxy",
+  "profilePicture",
+];
+
+// Deliberately NOT in SHAREABLE_FIELDS, ever — no toggle, no option.
+// These exist on DEFAULT_PROFILE purely for Clinic Card and are clinical /
+// personal-safety / identity data with real downside if it ever reached a
+// shared profile and zero benefit to the recipient.
+export const NEVER_SHARED_FIELDS = [
+  "aboutMeNotes",
+  "allergies",
+  "emergencyContactName",
+  "emergencyContactPhone",
+  "emergencyNotes",
+  "dateOfBirth",
+  "clinicNumber",
+  "address",
+  "nhsNumber",
+  "updatedAt",
+];
+
+// Returns { shared: [...], neverShared: [...], optIn: [...] } for the
+// current share options, so the UI can render a single, honest summary
+// instead of a hand-written sentence that drifts from the allowlist.
+export function describeShareFields(options = {}) {
+  const optIn = [];
+  if (options.includeLastTestedDate) optIn.push("lastTestedDate");
+  // hivStatusDate is the payload key hivStatusSharePayload actually emits
+  // (hivStatusCalculations.js) — named here as it arrives on the wire, not
+  // as the profile field it came from, so the receipt matches the file.
+  if (options.includeHivStatus) optIn.push("hivStatus", "hivStatusDate");
+  return { shared: [...SHAREABLE_FIELDS], neverShared: [...NEVER_SHARED_FIELDS], optIn };
+}
+
 // FIXED 1 Oct 2026 - this was duplicated byte-identically from
 // SHOS_MyProfile_Prototype.jsx and shared the same defect: it returned the most
 // recent test of ANY kind. Exported to a person you are disclosing to, a

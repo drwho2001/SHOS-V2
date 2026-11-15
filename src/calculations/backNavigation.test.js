@@ -17,7 +17,11 @@ import { decideBackAction, shouldOfferSearchReturn, buildSearchReturn, BACK_ACTI
 /** A back press from an ordinary screen, with everything else switched off. */
 const base = {
   moduleHandled: false,
-  showSettings: false,
+  // CHANGED 14 Nov 2026 - Settings/My Profile became separate SCREENS, not
+  // overlays (BACKLOG 53/54), so the state is now settingsScreen:
+  // null | "settings" | "myprofile". decideBackAction only tests truthiness,
+  // so a string passes and null means closed.
+  settingsScreen: null,
   showSearch: false,
   hasClinicCardReturn: false,
   hasSearchReturn: false,
@@ -48,7 +52,7 @@ describe("decideBackAction", () => {
     // handler is the more local decision, and Settings/Search sit above <main>.
     expect(decideBackAction({ ...base, moduleHandled: true, showImportDialog: true }))
       .toBe(BACK_ACTION.MODULE);
-    expect(decideBackAction({ ...base, showSettings: true, showImportDialog: true }))
+    expect(decideBackAction({ ...base, settingsScreen: "settings", showImportDialog: true }))
       .toBe(BACK_ACTION.SETTINGS);
     expect(decideBackAction({ ...base, showSearch: true, showImportDialog: true }))
       .toBe(BACK_ACTION.SEARCH);
@@ -77,7 +81,7 @@ describe("decideBackAction", () => {
       decideBackAction({
         ...base,
         moduleHandled: true,
-        showSettings: true,
+        settingsScreen: "settings",
         showSearch: true,
         hasClinicCardReturn: true,
         hasSearchReturn: true,
@@ -87,7 +91,7 @@ describe("decideBackAction", () => {
 
   it("closes the Settings overlay before touching anything underneath it", () => {
     expect(
-      decideBackAction({ ...base, showSettings: true, hasSearchReturn: true })
+      decideBackAction({ ...base, settingsScreen: "settings", hasSearchReturn: true })
     ).toBe(BACK_ACTION.SETTINGS);
   });
 
@@ -128,7 +132,7 @@ describe("shouldOfferSearchReturn", () => {
   const overlaysOff = {
     searchReturn: { query: "gonorrhoea", sortMode: "chronological" },
     showSearch: false,
-    showSettings: false,
+    settingsScreen: null,
     showTour: false,
     showAppLockPrompt: false,
     showImportModeDialog: false,
@@ -152,7 +156,8 @@ describe("shouldOfferSearchReturn", () => {
     // they are on is worse than not offering it.
     for (const key of [
       "showSearch",
-      "showSettings",
+      // truthy string state since Settings/My Profile became screens (53/54)
+      "settingsScreen",
       "showTour",
       "showAppLockPrompt",
       "showImportModeDialog",

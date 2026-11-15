@@ -93,14 +93,15 @@ public class WidgetBootReceiver extends BroadcastReceiver {
         blank(manager, new ComponentName(context, CycleWidgetProvider.class), R.layout.cycle_widget);
         blank(manager, new ComponentName(context, ClinicCardWidgetProvider.class), R.layout.clinic_card_widget);
         blank(manager, new ComponentName(context, LiveSessionWidgetProvider.class), R.layout.live_session_widget);
+        blank(manager, new ComponentName(context, VaccinationWidgetProvider.class), R.layout.vaccination_widget);
     }
 
     /**
-     * Blanks ONE data widget, leaving the other six untouched.
+     * Blanks ONE data widget, leaving the other seven untouched.
      *
      * Exists because "Off" is per widget, not global. The owner can reasonably
      * want their medication countdown on the home screen and no clinic card at
-     * all, and blanking all seven because one is off would be a privacy control
+     * all, and blanking all eight because one is off would be a privacy control
      * that destroys the settings around it.
      *
      * The widget tier is decided in JS by sendWidgetUpdate, which sends nothing

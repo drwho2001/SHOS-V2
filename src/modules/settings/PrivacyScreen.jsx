@@ -464,9 +464,23 @@ useEffect(() => {
           style={{ padding: 18, borderRadius: RADIUS.md, background: settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.surface : NEUTRAL.surface), border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.border : NEUTRAL.border)}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />}
-            <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), flex: 1 }}>
               {settings.anonymiseModeActive ? t("privacy.anonymiseOn", "Anonymise mode is ON") : t("privacy.anonymiseTurnOn", "Turn on Anonymise mode")}
             </span>
+            {/* FIXED 14 Nov 2026 — BACKLOG 83 (device audit: "no visible
+                toggle"). The card itself was always the activation control
+                (onClick=activate below), but nothing about it read as
+                tappable: on the audit device it looked like a plain
+                informational card, so Anonymise mode was unreachable and
+                the gated kinks toggle below (BACKLOG 84) was unreachable
+                with it. The affordance is now explicit — a pill button
+                when off, a solid ON badge when active — so the control
+                and its state are visible without tapping blind. */}
+            {settings.anonymiseModeActive ? (
+              <span style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 999, background: ACCENTS.home, color: "#FFFFFF", fontSize: 12, fontWeight: 700 }}>ON</span>
+            ) : (
+              <span style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 999, background: ACCENTS.home, color: "#FFFFFF", fontSize: 13, fontWeight: 700 }}>Turn on</span>
+            )}
           </div>
           <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginTop: 6 }}>
             {/* CHANGED 28 Sep 2026 — scope copy, after the security review

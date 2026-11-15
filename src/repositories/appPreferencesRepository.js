@@ -99,6 +99,11 @@ export const DEFAULT_APP_PREFERENCES = {
   // so this stays null there regardless — the UI only offers the
   // picker where it can actually be honoured.
   autoExportFolder: null,
+  // ADDED — real ask: remember the last folder chosen for any manual
+  // export (Settings > Backup & Export > "Export backup to a folder…"),
+  // so repeated exports don't force re-picking and re-granting Android
+  // scoped-storage permission every time. {id, name} or null.
+  lastExportFolder: null,
   // ADDED — real ask: per-pair dismiss for the Contacts duplicate
   // checker (findContactDuplicateCandidates in fuzzyMatch.js) — a pair
   // that's genuinely two different people shouldn't keep reappearing in

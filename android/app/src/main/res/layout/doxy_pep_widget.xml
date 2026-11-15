@@ -162,12 +162,25 @@
          it at the Redacted tier.
 
          It is anchored to the BOTTOM, so the two-line "no window" status can
-         never grow down into it. -->
+         never grow down into it.
+
+         FIXED 14 Nov 2026 - "Unprotected 12 Nov" clipped at the right edge on
+         the device. The cause was layout_width="wrap_content": the view grew to
+         its text's natural width, the FrameLayout has no scroll, and the card
+         cut the month off. autoSizeTextType never shrank it because a
+         wrap_content view measures its own content - there was no width for the
+         fitter to fit INTO.
+
+         The width is now match_parent, which gives autoSize a real constraint
+         (it shrinks 11sp -> 9sp before anything clips), and ellipsize="end" is
+         the backstop for a date format longer than any font size can fit: a
+         cut-off word reads as a bug, an ellipsis reads as "there is more". -->
     <TextView
         android:id="@+id/widget_doxy_evidence"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
         android:text=""
         android:textSize="11sp"
         android:autoSizeTextType="uniform"
@@ -175,6 +188,7 @@
         android:autoSizeMinTextSize="9sp"
         android:autoSizeStepGranularity="1sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="2"
+        android:maxLines="1"
+        android:ellipsize="end"
         android:breakStrategy="simple" />
 </FrameLayout>

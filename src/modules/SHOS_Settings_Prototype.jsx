@@ -24,7 +24,6 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS } from "../storage/backupService";
 import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
-const MyProfileModule = lazy(() => import("./SHOS_MyProfile_Prototype"));
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { SkeletonList } from "../components/Skeleton";
 import { useTranslation } from "../i18n/index.js";
@@ -502,7 +501,7 @@ function EncryptedExportSheet({ onClose }) {
 // ADDED — real ask: a human-readable size for the storage-usage
 // indicator below. Kept local — the only place this app currently
 // needs to print a byte count.
-function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour }) {
+function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour, onNavigateToMyProfile }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare;
@@ -520,15 +519,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     ["DeveloperTools", "ManageLists", "Resources", "Privacy", "Preferences", "Notifications", "NotificationHistory", "ErrorLog", "AutomaticBackups", "BackupExport", "DataNetwork", "Widgets", "Glossary", "Guide", "Design", "Stats", "Calendar", "Trash", "About", "Share"].forEach(warm);
   }, []);
 
-  const [showMyProfile, setShowMyProfile] = useState(false);
-  // ADDED 16 Sep 2026 — real ask: Backup & Data had 7 separate rows
-  // (Export backup/to a folder/Selective/CSV/Encrypted/Restore/
-  // Automatic backups) directly on the main Settings list — "other
-  // apps don't have export options this separated." Consolidated
-  // behind one row into its own sub-screen, same pattern already used
-  // for every other multi-control settings area (Privacy, Preferences,
-  // Notifications, etc.) — no functionality removed, just one entry
-  // point instead of seven.
   const [showBackupExport, setShowBackupExport] = useState(false);
   const [showSelectiveExport, setShowSelectiveExport] = useState(false);
   const [showCSVExport, setShowCSVExport] = useState(false);
@@ -659,9 +649,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     // they can be open "on top of" this screen (its own rows open
     // them), so a back press has to close the topmost one first.
     if (showBackupExport) { setShowBackupExport(false); return true; }
-    if (showMyProfile) { setShowMyProfile(false); return true; }
     return false; // nothing open on top — let App.jsx's own fallback close all of Settings
-  }, [showCalendar, showAbout, showShare, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets]);
+  }, [showCalendar, showAbout, showShare, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showWidgets]);
 
   // Escape mirrors the back button exactly, including the fall-through: if a
   // sub-screen is open it steps back one level, and only if nothing is open on
@@ -763,7 +752,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Profile</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
-        <SettingsRow icon={User} label="My Profile" onClick={() => setShowMyProfile(true)} />
+        <SettingsRow icon={User} label="My Profile" onClick={() => onNavigateToMyProfile()} />
       </div>
 
       {/* REGROUPED 9 Sep 2026 — real ask: the 5 original sections
@@ -888,17 +877,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={ShareNetwork} label="Share SHOS" onClick={() => setShowShare(true)} />
       </div>
 
-      {showMyProfile && (
-        // REDIAGNOSED 2 Oct 2026 (real device) - see the identical note on the copy
-        // in SHOS_Home_Prototype.jsx. This wrapper was briefly given overflowY
-        // and bottom padding on a wrong theory, then reverted. MyProfileModule's
-        // own root already provides both; the real defect is its display:flex.
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
-          <Suspense fallback={<SkeletonList T={{ surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }} rows={6} />}>
-    <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={() => setShowGlossary(true)} />
-    </Suspense>
-        </div>
-      )}
       {showBackupExport && (
         <BackupExportScreen
           onClose={() => setShowBackupExport(false)}

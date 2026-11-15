@@ -26,7 +26,7 @@
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { FormTabs } from "../components/FormTabs";
-import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
+import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair, CaretDown as ChevronDown } from "@phosphor-icons/react";
 
 // Same real-platform-logo lookup as Contacts' own copy (self-contained
 // per this app's convention — duplicated, not imported). Grindr has no
@@ -50,7 +50,7 @@ import { MeasurementRepository } from "../repositories/measurementRepository";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import {
-  buildProfileShare, exportProfileShare,
+  buildProfileShare, exportProfileShare, describeShareFields,
 } from "../storage/profileShareService";
 // Reusing Contacts' own option constants for fields that must line up
 // with Contact's real values (Hosts/Travels/Availability/etc.) — same
@@ -1595,6 +1595,9 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
   // ADDED 1 Oct 2026 - off by default, and the default is what the app already
   // did (not shared at all), so nobody's existing exports change shape.
   const [includeHivStatus, setIncludeHivStatus] = useState(false);
+  // ADDED 14 Nov 2026 — the field-transfer list starts collapsed; the
+  // summary line is the glanceable answer, the expansion is the receipt.
+  const [shareListOpen, setShareListOpen] = useState(false);
 
   const shareOptions = {
     includeLastTestedDate,
@@ -1602,6 +1605,63 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
     resolvedHivStatus,
     hivStatusInformedDate,
   };
+
+  // ADDED 14 Nov 2026 — the panel's wording is DERIVED from the same
+  // allowlist the service enforces, not retyped beside it. This is the
+  // third time this project has paid for a second copy of one truth
+  // (getAutoLastHivTestedDate, hivStatusSharePayload, and now this), so the
+  // copy literally cannot claim a field is shared when the code excludes
+  // it, or vice versa. Human-readable labels map the internal field names;
+  // a name missing from the map renders as-is rather than vanishing.
+  const FIELD_LABELS = {
+    displayName: "Display name",
+    nickname: "Nickname",
+    pronouns: "Pronouns",
+    recon: "Recon",
+    age: "Age (and whether it's approximate)",
+    city: "City",
+    phone: "Phone",
+    snapchat: "Snapchat",
+    fabguys: "Fabguys",
+    fabswingers: "Fabswingers",
+    contactableVia: "Contactable via",
+    hosts: "Hosts",
+    travels: "Travels",
+    travelMode: "Travel mode",
+    availability: "Availability",
+    nonAvailabilityRules: "Availability rules",
+    readilyAvailable: "Readily available",
+    statedKinks: "Stated kinks",
+    limits: "Limits",
+    knownChems: "Known chems",
+    bdsmRole: "BDSM role",
+    sexualPosition: "Sexual position",
+    length: "Length",
+    thickness: "Thickness",
+    foreskin: "Foreskin",
+    foreskinDetail: "Foreskin detail",
+    chastityStatus: "Chastity status",
+    cummer: "Cummer",
+    knownPrepDoxy: "Known PrEP/DoxyPEP",
+    profilePicture: "Profile photo",
+    lastTestedDate: "Last tested date",
+    hivStatus: "HIV status",
+    hivStatusDate: "HIV status informed date",
+    aboutMeNotes: "About me notes",
+    allergies: "Allergies",
+    emergencyContactName: "Emergency contact name",
+    emergencyContactPhone: "Emergency contact phone",
+    emergencyNotes: "Emergency notes",
+    dateOfBirth: "Date of birth",
+    clinicNumber: "Clinic number",
+    address: "Address",
+    nhsNumber: "NHS number",
+  };
+  const { shared, neverShared, optIn } = describeShareFields(shareOptions);
+  const label = (f) => FIELD_LABELS[f] || f;
+  const sharedCopy = shared.map(label).join(", ") + (optIn.length ? `, ${optIn.map(label).join(", ")}` : "");
+  const neverSharedCopy = neverShared.map(label).join(", ");
+  const optInCopy = optIn.length ? optIn.map(label).join(" and ") : "";
 
   const doExportFile = async () => {
     try {
@@ -1676,6 +1736,33 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
               : "Off — this is the most sensitive thing SHOS holds about you, so it is never added unless you ask. Whoever imports this will simply see “Not recorded”, the same as if you had never said."}
           </div>
         </div>
+      </div>
+      {/* ADDED 14 Nov 2026 — BACKLOG 127/129/131: the panel now states
+          exactly which fields transfer, generated from the SAME allowlist
+          buildProfileShare writes and mapShareToContactData reads, so the
+          words on screen cannot drift from the code the way a hand-written
+          sentence could. The list is expandable rather than always-open
+          because 30 field names on one screen is noise; the summary line
+          is the glanceable answer and the expansion is the receipt. */}
+      <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.sm, padding: 12, marginBottom: 10 }}>
+        <div role="button" tabIndex={0} aria-label={shareListOpen ? "Hide field list" : "Show full field list"}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShareListOpen((v) => !v); } }}
+          onClick={() => setShareListOpen((v) => !v)}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
+          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>What transfers to the other person's Contacts</div>
+          <ChevronDown size={14} color={T.textSecondary} style={{ transform: shareListOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+        </div>
+        <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 6, lineHeight: 1.5 }}>
+          Everything you can see in IDENTITY, FIND ME ON, HOSTING/TRAVEL, AVAILABILITY, INTO/LIMITS, CHEMS and PHYSICAL — plus your photo{optInCopy ? `, and ${optInCopy}` : ""}.
+        </div>
+        {shareListOpen && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 11, color: T.textSecondary, fontWeight: 600, marginBottom: 4 }}>Shared:</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, lineHeight: 1.6 }}>{sharedCopy}</div>
+            <div style={{ fontSize: 11, color: T.textSecondary, fontWeight: 600, marginTop: 10, marginBottom: 4 }}>Never shared, on purpose (Clinic Card use only):</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, lineHeight: 1.6 }}>{neverSharedCopy}</div>
+          </div>
+        )}
       </div>
       <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginBottom: 8 }}>
         Sharing sends only what's above — never relationship notes or how-we-met info, since those don't exist on this record.

@@ -102,7 +102,7 @@ describe("widget tiers resolve, and fail in the safe direction", () => {
     for (const key of NO_DATA_WIDGETS) {
       expect(DATA_WIDGETS, `${key} must not be treated as a data widget`).not.toContain(key);
     }
-    expect(DATA_WIDGETS.length + NO_DATA_WIDGETS.length).toBe(10);
+    expect(DATA_WIDGETS.length + NO_DATA_WIDGETS.length).toBe(11);
   });
 
   it("resolveAllTiers covers every data widget and nothing else", () => {

@@ -51,6 +51,7 @@ import { updateDoxyPEPWidget } from "./doxyPepSync";
 // create and never on edit or delete.
 import { updateCycleWidget } from "./cycleWidgetSync";
 import { updateLiveSessionWidget } from "./liveSessionWidgetSync";
+import { updateVaccinationWidget } from "./vaccinationWidgetSync";
 
 // Each entry is independent. One failing or absent bridge must not stop the rest
 // from being pushed - that is the same "one early return starves everything after
@@ -63,6 +64,7 @@ const PUSHERS = [
   ["doxyPepWindow", updateDoxyPEPWidget],
   ["cycle", updateCycleWidget],
   ["liveSession", updateLiveSessionWidget],
+  ["vaccination", updateVaccinationWidget],
 ];
 
 // SERIALISED, deliberately. Two rapid saves can both trigger a sync, and both

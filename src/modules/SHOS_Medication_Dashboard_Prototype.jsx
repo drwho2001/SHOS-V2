@@ -1121,7 +1121,7 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
         const s = computeStock(m);
         const requested = !!m.refillRequestedAt;
         return (
-          <div key={m.id} style={{ padding: "12px 0", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
+          <div key={m.id} style={{ padding: "10px 16px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                 <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue, flexShrink: 0 }} />
@@ -2430,7 +2430,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
 
   return (
-    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, paddingBottom: "calc(90px + env(safe-area-inset-bottom) + 70px)", transition: reducedMotion ? "none" : "background 200ms ease" }}>
+    <div style={{ fontFamily: FONT_FAMILY, background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", width: "100%", minWidth: 0, paddingBottom: "calc(90px + env(safe-area-inset-bottom) + 70px)", paddingRight: 20, transition: reducedMotion ? "none" : "background 200ms ease" }}>
       {/* CHANGED — real ask: "Medications module is the only one
           designed like a phone screen — not full width on laptop."
           Was a fixed 390px regardless of viewport; now genuinely

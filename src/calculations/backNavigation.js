@@ -42,7 +42,7 @@ export const BACK_ACTION = {
  * @param {object} state
  * @param {boolean} state.moduleHandled  the active module's own back handler
  *   already consumed this press.
- * @param {boolean} state.showSettings   the Settings overlay is open.
+ * @param {boolean} state.settingsScreen   the Settings screen is open (null | "settings" | "myprofile").
  * @param {boolean} state.showSearch     the Global Search overlay is open.
  * @param {boolean} state.hasClinicCardReturn  a record opened from Clinic Card
  *   is on screen with its return tab still recorded.
@@ -54,7 +54,7 @@ export const BACK_ACTION = {
 export function decideBackAction(state) {
   const {
     moduleHandled,
-    showSettings,
+    settingsScreen,
     showSearch,
     hasClinicCardReturn,
   hasSearchReturn,
@@ -71,7 +71,7 @@ export function decideBackAction(state) {
   //    mutually exclusive in the UI, so the order between them is not
   //    load-bearing. They sit above <main>, so they must close before
   //    anything underneath them is touched.
-  if (showSettings) return BACK_ACTION.SETTINGS;
+  if (settingsScreen) return BACK_ACTION.SETTINGS;
   if (showSearch) return BACK_ACTION.SEARCH;
   // The import modal is the last App-level overlay opened and it sits at
   // zIndex 998 over everything, so it must close before any tab change
@@ -119,7 +119,7 @@ export function decideBackAction(state) {
  * @param {object|null} state.searchReturn  the recorded search-return
  *   context ({ query, sortMode }), or null when there is nothing to return to.
  * @param {boolean} state.showSearch
- * @param {boolean} state.showSettings
+ * @param {boolean} state.settingsScreen   the Settings screen is open.
  * @param {boolean} state.showTour
  * @param {boolean} state.showAppLockPrompt
  * @param {boolean} state.showImportModeDialog
@@ -130,7 +130,7 @@ export function shouldOfferSearchReturn(state) {
   const {
     searchReturn,
     showSearch,
-    showSettings,
+    settingsScreen,
     showTour,
     showAppLockPrompt,
     showImportModeDialog,
@@ -139,7 +139,7 @@ export function shouldOfferSearchReturn(state) {
 
   if (!searchReturn) return false;
   if (showSearch) return false;
-  if (showSettings) return false;
+  if (settingsScreen) return false;
   if (showTour) return false;
   if (showAppLockPrompt) return false;
   if (showImportModeDialog) return false;

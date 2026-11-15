@@ -71,6 +71,11 @@ import { CustomOptionListsRepository } from "../repositories/customOptionListsRe
 // default. Fixed by adding it here, same pattern as every other
 // repository.
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository.js";
+// ADDED 14 Nov 2026 — BACKLOG 112 (device audit): the restore path needs to
+// know whether this device's vault actually has a PIN slot before honouring
+// a restored `appLockEnabled: true` — see the demote logic at the
+// privacySettings branch of the restore loop below.
+import { hasPinSlot, hasBiometricSlot } from "./cryptoService.js";
 // ADDED 1 Sep 2026, same session both were built — wired into backup
 // immediately this time, per this file's own repeated past lesson
 // (Testing/Privacy Settings both got missed for a full session before
@@ -511,7 +516,32 @@ export async function restoreBackup(parsedBackup) {
   if (customGroups && typeof customGroups === "object" && !Array.isArray(customGroups)) await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object" && !Array.isArray(customOptionLists)) await CustomOptionListsRepository.replaceAll(customOptionLists);
   if (customOptionListsArchived && typeof customOptionListsArchived === "object" && !Array.isArray(customOptionListsArchived)) await CustomOptionListsRepository.replaceAllArchived(customOptionListsArchived);
-  if (privacySettings && typeof privacySettings === "object" && !Array.isArray(privacySettings)) await PrivacySettingsRepository.update(privacySettings);
+  if (privacySettings && typeof privacySettings === "object" && !Array.isArray(privacySettings)) {
+    // FIXED 14 Nov 2026 — BACKLOG 112 (device audit: "App Lock toggle ON
+    // but no PIN prompt on relaunch"). An ENCRYPTED backup legitimately
+    // carries `appLockEnabled: true` and `biometricUnlockEnabled: true`,
+    // but it cannot carry the credentials themselves (the PIN is a
+    // verifier — it proves a PIN, it unwraps nothing on this device; the
+    // biometric slot is device-enrolled and doesn't travel either). A
+    // naive update() here left the toggle ON while this device's vault
+    // had no pin/biometric slot, so bootUnlock() took its "no slot →
+    // device unlock" branch and the app opened with no prompt at all —
+    // protection advertised but not enforced, the exact state the audit
+    // found. The honest fail-safe: demote the flags when the slot they
+    // depend on doesn't exist HERE, so the Privacy screen shows App Lock
+    // off until the user sets a PIN and re-enables it deliberately. A
+    // device whose vault does have the slot (its own PIN was set before
+    // the restore) is completely unaffected — nothing is demoted.
+    let restoredPrivacy = privacySettings;
+    if (restoredPrivacy.appLockEnabled && !hasPinSlot()) {
+      console.warn("[backupService] Restored backup has App Lock ON but this device's vault has no PIN slot — demoting to OFF so protection is never advertised without enforcement. Set a PIN and re-enable in Settings → Privacy.");
+      restoredPrivacy = { ...restoredPrivacy, appLockEnabled: false, biometricUnlockEnabled: false };
+    } else if (restoredPrivacy.biometricUnlockEnabled && !hasBiometricSlot()) {
+      console.warn("[backupService] Restored backup has biometric unlock ON but no biometric slot exists on this device — demoting to OFF.");
+      restoredPrivacy = { ...restoredPrivacy, biometricUnlockEnabled: false };
+    }
+    await PrivacySettingsRepository.update(restoredPrivacy);
+  }
   if (resources && typeof resources === "object" && !Array.isArray(resources)) await ResourcesRepository.replaceAll(resources);
   if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
@@ -783,12 +813,22 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
 export async function exportBackupToChosenFolder(includeKeys = null, dateRange = null) {
   const backup = await buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
-  // ADDED — real ask: same round-trip verification as exportBackup()
-  // above, before this one's own write.
   const verification = verifyBackupJson(backup, json);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
-  const result = await exportTextFileToChosenFolder(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
+  const filename = `shos-backup-${dateStamp}${suffix}.json`;
+
+  // If a folder was previously chosen (manual export or auto-export),
+  // reuse it silently instead of re-prompting for the folder picker.
+  const { lastExportFolder } = await AppPreferencesRepository.getPreferences();
+  if (lastExportFolder) {
+    const ok = await writeTextFileToFolder(lastExportFolder, filename, json, "application/json");
+    if (ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+    return { ok, totalRecords: verification.totalRecords, path: `${lastExportFolder.name || "chosen folder"}/${filename}` };
+  }
+
+  // No saved folder — open the picker and remember the choice for next time.
+  const result = await exportTextFileToChosenFolder(filename, json, "application/json");
   if (result.ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ...result, totalRecords: verification.totalRecords };
 }

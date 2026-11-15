@@ -24,7 +24,7 @@ const providers = fs
   // not a widget.
   //
   // Excluded by name rather than by "is it abstract", because the honest
-  // statement is that this glob answers "which files are the ten widgets" and the
+  // statement is that this glob answers "which files are the eleven widgets" and the
   // base class is not one. Loosening the assertion counts instead would trade a
   // real failure for a passing test.
   .filter((f) => f !== "ResizingWidgetProvider.java");
@@ -32,8 +32,8 @@ const dataProviders = providers.filter((f) => !f.startsWith("QuickAdd"));
 
 describe("widget taps reach the app (device bug: every tap landed on the dashboard)", () => {
   it("found the providers - otherwise every check below is vacuous", () => {
-    expect(providers.length, "no widget providers discovered").toBe(10);
-    expect(dataProviders.length, "no data-bearing providers discovered").toBe(7);
+    expect(providers.length, "no widget providers discovered").toBe(11);
+    expect(dataProviders.length, "no data-bearing providers discovered").toBe(8);
   });
 
   it("every provider sets FLAG_ACTIVITY_SINGLE_TOP", () => {
@@ -89,7 +89,7 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
     // without ever invoking the provider, so no Java could be responsible.
     //
     // Every cause that could be checked statically was checked and eliminated
-    // first - all ten layouts and all ten widget_info.xml files resolve every
+    // first - all eleven layouts and all eleven widget_info.xml files resolve every
     // resource reference, all ten root elements are identical, both preview
     // vectors are structurally identical, and there are no drawable-night
     // variants at all. What remained was the one structural difference between
@@ -97,7 +97,7 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
     // layout containing a nested ViewGroup, and the only one containing a bare
     // View divider. Flattening it fixed the widget.
     //
-    // Scoped over ALL ten layouts rather than the one that was broken. That is
+    // Scoped over ALL eleven layouts rather than the one that was broken. That is
     // the whole point: the previous checks here listed a handful of filenames by
     // hand, and a layout added later was never inspected by any of them.
     const layouts = new Set(["widget_unavailable"]);

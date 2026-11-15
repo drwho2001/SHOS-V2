@@ -348,7 +348,7 @@ export async function updateRefillWidget() {
           // The SAME epoch the payload carries, not the Date: one type for one
           // value, so the line and the widget can never disagree about which
           // instant they are describing.
-          nextDoseRedactedLine(countdownAt, state.upcoming.length));
+          nextDoseRedactedLine(countdownAt, Date.now(), state.due.length + state.upcoming.length));
       }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was

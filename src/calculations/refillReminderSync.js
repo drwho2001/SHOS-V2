@@ -337,6 +337,23 @@ export async function getRefillAwaitingCollection() {
 // "I didn't order this" and "I cancelled this" are the same statement about the
 // same item, and leaving one behind would make it vanish again for a reason the
 // user cannot see.
+export async function handleMarkRefillCollected(ids = null) {
+  // ADDED — in-app "Mark collected": logs a refill for each awaiting
+  // medication (using its default refill quantity, or one container) and
+  // clears the requested/cancelled flags, so the awaiting banner retires.
+  // Logging the refill is what updates stock; this just makes it one tap.
+  const awaiting = (await getRefillAwaitingCollection()).filter((m) => !ids || ids.includes(m.id));
+  const names = awaiting.map((m) => m.name);
+  for (const m of awaiting) {
+    const delta = (m.defaultRefillQuantity && m.defaultRefillQuantity > 0)
+      ? m.defaultRefillQuantity
+      : (m.unitsPerContainer && m.unitsPerContainer > 0 ? m.unitsPerContainer : 1);
+    await LogRepository.create({ medicationId: m.id, type: "refill", delta, date: new Date().toISOString() });
+    await MedicationRepository.update(m.id, { refillRequestedAt: null, refillCancelledAt: null });
+  }
+  return { medications: names };
+}
+
 export async function handleUndoRefillRequest(ids = null) {
   const meds = (await getRefillAwaitingCollection()).filter((m) => !ids || ids.includes(m.id));
   const names = meds.map((m) => m.name);

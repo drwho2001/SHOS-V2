@@ -154,7 +154,10 @@ describe("the back chain consults the decision rather than re-implementing it", 
     // correct only by accident of React batching — and `searchReturn` would
     // have joined it. A stale closure here means back silently doing the
     // wrong thing, which no behavioural unit test can see.
-    const effectDeps = APP.match(/\}, \[showSettings, showSearch, active[^\]]*\]\);/g) || [];
+    // settingsScreen replaced showSettings when Settings/My Profile became
+    // separate screens (BACKLOG 53/54): the state is now
+    // null | "settings" | "myprofile", and the dep list leads with it.
+    const effectDeps = APP.match(/\}, \[settingsScreen, showSearch, active[^\]]*\]\);/g) || [];
     expect(effectDeps.length, "expected both back effects to declare the same dep list").toBe(2);
     for (const deps of effectDeps) {
       expect(deps).toMatch(/clinicCardReturnTab/);

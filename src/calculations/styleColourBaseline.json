@@ -1,12 +1,12 @@
 {
   "_readme": "Ratchet baseline for styleColourGuard.test.js. 'hex' counts raw hex/rgba colour literals in JSX style object values; 'accent' counts raw ACCENTS.* / ACTION.* reads used directly as style values. The guard fails when a count rises or a new file appears. When a legitimate new use is added, update this file in the same commit and say why. See docs/DESIGN-AUDIT.md section 8, 'Tests worth adding'.",
   "totals": {
-    "hex": 316,
-    "accent": 93
+    "hex": 320,
+    "accent": 95
   },
   "files": {
     "App.jsx": {
-      "hex": 74,
+      "hex": 76,
       "accent": 25
     },
     "components/ConfirmDeleteCard.jsx": {
@@ -62,8 +62,8 @@
       "accent": 0
     },
     "modules/settings/PrivacyScreen.jsx": {
-      "hex": 11,
-      "accent": 19
+      "hex": 13,
+      "accent": 21
     },
     "modules/settings/ResourcesScreen.jsx": {
       "hex": 2,

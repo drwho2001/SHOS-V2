@@ -70,6 +70,11 @@ export function WidgetsScreen({ onClose }) {
 
     },
     {
+      key: "vaccination",
+      label: t("widgets.vaccination", "Vaccination"),
+      description: t("widgets.vaccinationDesc", "Shows last vaccine, next due date and dose count"),
+    },
+    {
       key: "liveSession",
       label: t("widgets.liveSession", "Live Session"),
       description: t("widgets.liveSessionDesc", "Shows the active session tally you choose"),
@@ -113,7 +118,7 @@ export function WidgetsScreen({ onClose }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label={t("widgets.title", "Widgets")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
+    <div ref={dialogRef} role="dialog" aria-label={t("widgets.title", "Widgets")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(100px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}><div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.bg, pointerEvents: "none" }} />
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label={t("common.back", "Back")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{t("widgets.title", "Widgets")}</h1>

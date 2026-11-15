@@ -261,7 +261,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           the notch. */}
       {/* One sticky stack: the blue title band remains visually distinct
           from the dark sub-tabs, while both stay attached during scrolling. */}
-      <div ref={healthcareHeaderRef} style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden", marginTop: "calc(-1 * env(safe-area-inset-top))" }}>
+      <div ref={healthcareHeaderRef} style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, marginTop: "calc(-1 * env(safe-area-inset-top))" }}>
         <div style={{ position: "relative", background: T.healthcare, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
           <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcare, pointerEvents: "none" }} />
           <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -269,7 +269,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
           </div>
         </div>
-        <div style={{ background: T.bg, padding: "8px 16px 8px" }}>
+        <div style={{ padding: "8px 16px 8px" }}>
           {/* CHANGED 5 Nov 2026 — real ask: "healthcare tabs (testing
               symptoms etc) are a bit too big/wide". They were a
               three-column grid, so every pill stretched to a third of
@@ -299,14 +299,14 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // is the only way to switch Healthcare's own sub-tab.
             <div key={tab.key} onClick={() => setSubTab(tab.key)} role="tab" tabIndex={0} aria-selected={subTab === tab.key} aria-label={tab.label}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(tab.key); } }}
-              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, flex: "0 0 auto", background: subTab === tab.key ? T.healthcare : T.surface, color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcare : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, flex: "0 0 auto", background: subTab === tab.key ? T.healthcare : "transparent", color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcare : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {tab.label}
             </div>
           ))}
           </div>
         </div>
       </div>
-      <div style={{ padding: "14px 16px 0", background: T.bg }}>
+      <div style={{ padding: "14px 16px 0" }}>
         {/* CHANGED — real fix: moved to its own row below the sub-tab
             pills, instead of squeezed alongside them in one row —
             same entry points (Timeline/Attachments/Clinic Card),
@@ -353,7 +353,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
-        <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.healthcare}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
+        <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
           <SummaryStat label={tr("healthcare.activeSymptoms", "Active symptoms")} value={summary.activeSymptoms} alert />
           <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
           <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />

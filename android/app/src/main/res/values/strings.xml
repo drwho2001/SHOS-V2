@@ -38,4 +38,6 @@
     <string name="receiver_label_quick_add_encounter">Quick Add: Encounter</string>
     <string name="receiver_label_quick_add_medication">Quick Add: Medication</string>
     <string name="receiver_label_clinic_card">Next appointment</string>
+    <string name="receiver_label_vaccination">Next vaccination</string>
+    <string name="widget_desc_vaccination">Your last vaccine and when the next one is due</string>
 </resources>

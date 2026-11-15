@@ -149,8 +149,10 @@ export function summarizePlaceName(place) {
   const addr = place.address || {};
   const namedPlace = place.name || addr.amenity || addr.leisure || addr.shop || addr.tourism || addr.building;
   if (namedPlace) return namedPlace;
+  const houseNumber = addr.house_number;
   const road = addr.road || addr.pedestrian;
   const area = addr.suburb || addr.neighbourhood || addr.city || addr.town;
-  if (road && area) return `${road}, ${area}`;
-  return road || area || place.display_name;
+  const street = houseNumber && road ? `${houseNumber} ${road}` : (road || houseNumber);
+  if (street && area) return `${street}, ${area}`;
+  return street || area || place.display_name;
 }

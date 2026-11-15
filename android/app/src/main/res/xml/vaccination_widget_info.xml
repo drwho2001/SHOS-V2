@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 14 Nov 2026 - Next vaccination widget. Same footprint as the other
+     ten (3x2 target cells, 180x100dp minimum), because the picker offers one
+     size for all of them by design; maxResizeHeight 220dp gives the card room
+     for the vaccine name, the next-due line and the dose count. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="Next vaccination"
+    android:description="@string/widget_desc_vaccination"
+    android:minWidth="180dp"
+    android:minHeight="100dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="80dp"
+    android:maxResizeWidth="180dp"
+    android:maxResizeHeight="220dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/vaccination_widget"
+    android:previewLayout="@layout/vaccination_widget"
+    android:previewImage="@drawable/widget_preview_vaccination"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />

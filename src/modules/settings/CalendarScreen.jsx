@@ -532,8 +532,8 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
               // theme — nearly invisible against DARK.bg, unlike the
               // active chip (module accent, already theme-agnostic).
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={key} onClick={() => toggleModule(key)}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? calendarModuleAccent(key) : (darkMode ? DARK.border : NEUTRAL.border)}`, color: active ? calendarModuleAccent(key) : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), background: active ? `${calendarModuleAccent(key)}15` : "transparent" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? calendarModuleAccent(key) : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }} />
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? calendarModuleAccent(key) : (darkMode ? DARK.textSecondary : NEUTRAL.border)}`, color: active ? calendarModuleAccent(key) : (darkMode ? DARK.textSecondary : NEUTRAL.textDisabled), background: active ? `${calendarModuleAccent(key)}15` : (darkMode ? `${DARK.surfaceVariant}` : "transparent") }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? calendarModuleAccent(key) : (darkMode ? DARK.textSecondary : NEUTRAL.textDisabled) }} />
                 {TRASH_MODULE_LABELS[key]}
               </div>
             );

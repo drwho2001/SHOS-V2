@@ -13,6 +13,7 @@ import com.shos.app.widget.NextDoseWidgetProvider;
 import com.shos.app.widget.RefillWidgetProvider;
 import com.shos.app.widget.TestWidgetProvider;
 import com.shos.app.widget.LiveSessionWidgetProvider;
+import com.shos.app.widget.VaccinationWidgetProvider;
 import com.shos.app.widget.WidgetBootReceiver;
 
 /**
@@ -300,6 +301,23 @@ public class WidgetBridgePlugin extends Plugin {
       // from a previous update cannot survive a tier change back to full.
       opt(call, "redactedText")
     );
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void updateVaccination(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), VaccinationWidgetProvider.class, R.layout.vaccination_widget);
+            call.resolve();
+            return;
+        }
+        VaccinationWidgetProvider.updateVaccination(
+                getContext(),
+                opt(call, "vaccineName"),
+                opt(call, "nextDueRelative"),
+                call.getInt("doseCount", 0),
+                opt(call, "redactedText")
+        );
         call.resolve();
     }
 
