@@ -2555,7 +2555,9 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.getByLabel("Age, required", { exact: true }).first().fill("30");
     await page.waitForTimeout(100);
     const cityInput = page.getByLabel("City, required", { exact: true }).first();
-    if (await cityInput.count()) { await cityInput.fill("London"); await page.waitForTimeout(200); }
+    await cityInput.scrollIntoViewIfNeeded();
+    await cityInput.fill("London");
+    await page.waitForTimeout(300);
     // Select "Unknown / not discussed" for role and position.
     const unknownChips = page.getByText("Unknown / not discussed", { exact: true });
     const chipCount = await unknownChips.count();
