@@ -1,8 +1,42 @@
 # Build artifacts
 build-output/
-device-t9.png
-device-t9.png
+dist/
+*.apk
+*.log
+
+# Dependencies
+node_modules/
+
+# Android build
+android/build/
+android/.gradle/
+android/app/build/
+.gradle/
+
+# IDE / editor
+.vscode/
+.idea/
+
 # Secrets
 .env
 .env.local
 
+# Device captures / screenshots (noise)
+screen*.png
+live_*.png
+v_*.png
+device_*.png
+*.png.bak
+
+# Audit / tooling noise
+.audit-shots/
+.audit-shots-*/
+opencode.json.backup-*
+preview.log
+strings.js
+
+# Misc
+.DS_Store
+Thumbs.db
+" path">
+C:\Users\kanem\SHOS-V2\.gitignore
