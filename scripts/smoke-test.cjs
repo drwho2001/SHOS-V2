@@ -2553,10 +2553,17 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.waitForTimeout(500);
     // Acknowledge the intentionally-incomplete record via native click.
     await page.evaluate(() => {
-      const el = document.querySelector('[role="switch"]');
-      if (el) { el.click(); el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); }
+      const labels = [...document.querySelectorAll('*')].filter(el => el.textContent && el.textContent.includes('Acknowledge incomplete'));
+      for (const label of labels) {
+        let node = label.parentElement;
+        for (let i = 0; i < 6 && node; i++) {
+          const sw = node.querySelector('[role="switch"]');
+          if (sw) { sw.click(); return; }
+          node = node.parentElement;
+        }
+      }
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
     // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(1500). Saving writes to
     // an async repository and the list re-reads it asynchronously, so this was
