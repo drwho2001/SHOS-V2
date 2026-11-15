@@ -61,7 +61,7 @@ function daysAgo(n, hour = 9, minute = 30) {
 let seedLogs = [
   // PrEP (seed_med_9001)
   { id: "seed_log_9001", isDemo: true, medicationId: "seed_med_9001", type: "refill", delta: 30, date: daysAgo(8, 9), voided: false },
-  { id: "seed_log_9002", isDemo: true, medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(1, 8), voided: false },
+  { id: "seed_log_9002", isDemo: true, medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(3, 8), voided: false },
   { id: "seed_log_9003", isDemo: true, medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(2, 8), voided: false },
   { id: "seed_log_9004", isDemo: true, medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(3, 8), voided: false },
   { id: "seed_log_9005", isDemo: true, medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(4, 8), voided: false },
