@@ -307,6 +307,7 @@ export async function updateRefillWidget() {
         // Date; the consumer wants epoch millis. So the conversion happens HERE,
         // once, and everything downstream - the payload AND the Redacted line -
         // reads the same number.
+        const now = Date.now();
         const countdownAt = nextUnlock ? nextUnlock.getTime() : 0;
         await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", {
           // CHANGED - was `medName: ""`, hardcoded, which is why no setting could
@@ -348,7 +349,7 @@ export async function updateRefillWidget() {
           // The SAME epoch the payload carries, not the Date: one type for one
           // value, so the line and the widget can never disagree about which
           // instant they are describing.
-          nextDoseRedactedLine(countdownAt, Date.now(), state.due.length + state.upcoming.length));
+          nextDoseRedactedLine(countdownAt, now, state.due.length + state.upcoming.length));
       }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was

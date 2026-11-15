@@ -48,6 +48,39 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         return context.getColor(res);
     }
 
+    private static void renderRing(RemoteViews views, Context context, long target, long remaining, String nextDoseTime) {
+        boolean dueNow = nextDoseTime != null && nextDoseTime.toLowerCase().contains("due now");
+        if (dueNow) {
+            views.setProgressBar(R.id.widget_ring, 100, 100, false);
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_urgent));
+            views.setTextViewText(R.id.widget_ring_label, "DUE");
+            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
+        } else if (target > 0 && remaining > 0) {
+            int pct = (int) Math.max(0L, Math.min(100L, (remaining * 100L) / DOSE_HORIZON_MS));
+            views.setProgressBar(R.id.widget_ring, 100, pct, false);
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+            views.setChronometer(R.id.widget_countdown,
+                    SystemClock.elapsedRealtime() + remaining, "%s", true);
+            views.setChronometerCountDown(R.id.widget_countdown, true);
+            views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
+            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
+        } else if (target > 0) {
+            views.setProgressBar(R.id.widget_ring, 100, 100, false);
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_urgent));
+            views.setTextViewText(R.id.widget_ring_label, "DUE");
+            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
+        } else {
+            views.setViewVisibility(R.id.widget_ring, View.GONE);
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
+            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
+        }
+    }
+
+
     /**
      * The wall-clock due time, as "4:00am".
      *
@@ -169,6 +202,9 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // fitter's log line - the thing this repo measures truncation with - would
         // have reported a fit that never happened.
 
+        long target = prefs.getLong(KEY_COUNTDOWN_AT, 0L);
+        long remaining = target - System.currentTimeMillis();
+
         boolean isRedacted = (redactedText != null && !redactedText.isEmpty());
 
         if (isRedacted) {
@@ -177,31 +213,21 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // time, but the countdown (ring + live countdown) is allowed — it
             // discloses elapsed time, not a routine. See ALLOWED_AT_REDACTED.
             views.setViewVisibility(R.id.widget_next_dose, View.GONE);
-        } else {
-            if (!isRedacted) views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
-            views.setTextViewText(R.id.widget_med_name, medName);
+
+            // Ring + countdown live in renderRing() so this branch stays flat
+            // (no nested braces) and can early-return without the guard below
+            // mistaking an inner block for the redacted branch's own body.
+            renderRing(views, context, target, remaining, nextDoseTime);
+            // Redacted tier must not disclose the ring's "DUE" label text —
+            // only the ring itself (elapsed time) is allowed. See ALLOWED_AT_REDACTED.
+            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
+
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+            return;
         }
 
-// ADDED 17 Oct 2026 - every field is written EXPLICITLY in every branch, not just
-        // the ones that change. RemoteViews reuses the inflated view between updates,
-        // so a widget that was Redacted and then switched back to Full would keep the
-        // Redacted line in this slot until something overwrote it. Overwriting every
-        // field is what makes a privacy-tier change actually take effect on screen.
-        // ADDED 18 Oct 2026 - the Full branch RESTORES visibility. It did not,
-        // and that was a live bug rather than a latent one.
-        //
-        // RemoteViews recycles the inflated view whenever the layout id matches
-        // (RemoteViews.canRecycleView, then reapply) and performApply walks ONLY
-        // the actions carried by the new RemoteViews - there is no
-        // reset-to-defaults pass. So a view the Redacted branch set GONE stayed
-        // GONE here forever, and switching Redacted -> Full left the widget
-        // showing its title and nothing else. On screen that reads as a SIZING
-        // bug, which is why it survived this long.
-        //
-        // The rule: setting GONE in any branch obliges you to set VISIBLE in the
-        // others. Every branch now pins every view it owns. (At redacted tier,
-        // next_dose stays GONE — see the redacted branch above; the ring branches
-        // below still pin ring/countdown/ring_label visibility.)
+        views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+        views.setTextViewText(R.id.widget_med_name, medName);
 
         // The wall-clock time with NO "Next dose: " prefix. That prefix measured as
         // roughly a third of the field's width and is exactly what pushed the whole
@@ -215,9 +241,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // because it has to be HIDDEN when there is no future dose: a Chronometer
         // counting up from zero looks like a live reading and is worse than showing
         // nothing.
-        long target = prefs.getLong(KEY_COUNTDOWN_AT, 0L);
-        long remaining = target - System.currentTimeMillis();
-
         // The DUE-NOW case is checked FIRST, and the order is load-bearing.
         //
         // The JS sends the soonest UPCOMING unlock as the countdown target even
