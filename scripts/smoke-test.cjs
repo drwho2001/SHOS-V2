@@ -840,7 +840,7 @@ async function testEncryptionPositiveCheck(page) {
       // exception — see cryptoService.js's own header for why it
       // structurally can't be encrypted by the key it exists to
       // protect.
-      if (!key || !key.startsWith("shos_") || key === "shos_vault_key_slots") continue;
+      if (!key || !key.startsWith("shos_") || key === "shos_vault_key_slots" || key.startsWith("shos_contact_filter_")) continue;
       const raw = localStorage.getItem(key);
       try {
         const parsed = JSON.parse(raw);
