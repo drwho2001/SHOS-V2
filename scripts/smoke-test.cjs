@@ -3581,11 +3581,9 @@ async function testAddContactCrud(page) {
   const sheet = page.getByRole("dialog", { name: "Add contact" });
   await sheet.waitFor({ state: "visible", timeout: 8000 });
   await page.getByLabel("Full name").fill("Smoke Test Contact");
-  await page.evaluate(() => {
-    const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => d.getAttribute("aria-label") === "Add contact");
-    const sw = dialog && dialog.querySelector('[role="switch"]');
-    if (sw) sw.click();
-  });
+  const sw = page.getByRole("dialog", { name: "Add contact" }).getByRole("switch").first();
+  await sw.focus();
+  await page.keyboard.press("Space");
   await page.waitForTimeout(800);
   await page.getByRole("dialog", { name: "Add contact" }).getByRole("button", { name: "Add contact", exact: true }).click({ timeout: 5000 });
   await sheet.waitFor({ state: "detached", timeout: 8000 });
