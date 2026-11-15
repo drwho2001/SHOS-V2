@@ -2551,6 +2551,11 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.waitForTimeout(1000);
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
     await page.waitForTimeout(250);
+    // Acknowledge the intentionally-incomplete record so the save button enables
+    // (name alone doesn't satisfy age/city/role/position requirements).
+    const ackSwitch = page.getByRole("switch").first();
+    if (await ackSwitch.count()) await ackSwitch.click({ timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(250);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
     // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(1500). Saving writes to
     // an async repository and the list re-reads it asynchronously, so this was
