@@ -3582,7 +3582,9 @@ async function testAddContactCrud(page) {
   await sheet.waitFor({ state: "visible", timeout: 8000 });
   await page.getByLabel("Full name").fill("Smoke Test Contact");
   await page.getByRole("dialog", { name: "Add contact" }).getByRole("switch").first().click({ force: true });
-  await page.getByRole("button", { name: "Add contact", exact: true }).last().click({ timeout: 5000 });
+  await page.getByRole("dialog", { name: "Add contact" }).getByRole("button", { name: "Add contact", exact: true }).waitFor({ state: "visible", timeout: 5000 });
+  await page.waitForTimeout(300);
+  await page.getByRole("dialog", { name: "Add contact" }).getByRole("button", { name: "Add contact", exact: true }).click({ timeout: 5000 });
   await sheet.waitFor({ state: "detached", timeout: 8000 });
   await page.getByText("Smoke Test Contact").waitFor({ state: "visible", timeout: 8000 });
   console.log("  ok - contact created");
