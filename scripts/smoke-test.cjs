@@ -2874,7 +2874,7 @@ async function testSampleDataClearInDeveloperTools(browser) {
     await page.waitForTimeout(1000);
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ DevTools Real Contact");
     await page.waitForTimeout(250);
-    await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
+    await page.locator('[data-testid="add-contact-fab"]').click({ timeout: 5000 });
     // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(1500). The SAME shape as
     // the flake already fixed in this file twice, and this is the third
     // instance: the same flow adds a contact here AND after the clear, and the
