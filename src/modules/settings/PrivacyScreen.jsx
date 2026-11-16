@@ -856,7 +856,7 @@ useEffect(() => {
               </div>
             </div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
-              Off by default — SHOS blocks screenshots, screen recording, and casting on every screen, and hides its own content from the recent-apps switcher. Turning this on is a real, deliberate trade for convenience (e.g. capturing a result to show a clinician) — it takes effect immediately, everywhere in the app, until you turn it back off.
+              On by default — SHOS blocks screenshots, screen recording, and casting on every screen, and hides its own content from the recent-apps switcher, but lets you capture deliberately (e.g. a result to show a clinician). Turning this off re-enables the block everywhere in the app, immediately, until you turn it back on.
             </div>
             {screenshotsToggleError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 8 }}>{screenshotsToggleError}</div>}
           </div>

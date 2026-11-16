@@ -2243,7 +2243,29 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // way (no lock decision to make while the lock/boot screen is
     // already showing; no lastActiveAt worth persisting before a real
     // session has even started).
+    // FIXED 16 Nov 2026 — real defect found live on device: entering the
+    // correct PIN unlocked the app (Home rendered), then dismissing the
+    // keyboard fired a stray appStateChange isActive:true — MIUI emits a
+    // resume transition for IME/focus churn, not just real backgrounding —
+    // and checkRelock(), which relocks on ANY isActive event whenever the
+    // grace window is off, instantly relocked the app the moment it was
+    // unlocked. The result on screen: unlock visibly succeeded and was
+    // replaced by a fresh lock screen within a second, field cleared, no
+    // error — indistinguishable from "the PIN didn't work". Fix: the
+    // resume branch only relocks after THIS listener actually observed an
+    // isActive:false while the vault was unlocked — the same "backgrounded
+    // for real" gate recordBackgrounded() below already applies.
+    // Backgrounding while LOCKED deliberately doesn't set the flag (the
+    // lock screen was already up; there was nothing to protect), so the
+    // unlock interaction itself and any IME churn around it can never trip
+    // a relock, while a genuine backgrounding of an unlocked app still
+    // relocks exactly per shouldRelock()'s grace-window logic. The
+    // cold-boot lock decision never goes through this listener — see the
+    // mount check's own comment.
+    let backgroundedWhileUnlocked = false;
     const checkRelock = async () => {
+      if (!backgroundedWhileUnlocked) return;
+      backgroundedWhileUnlocked = false;
       if (!isVaultUnlocked()) return;
       if (await PrivacySettingsRepository.shouldRelock()) setLocked(true);
     };
@@ -2256,6 +2278,11 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // effect just below, on every `active` change.
     const recordBackgrounded = () => {
       if (!isVaultUnlocked()) return;
+      // Same fix as checkRelock() above: only a backgrounding of an
+      // UNLOCKED app counts as one, arming the next resume's relock
+      // check. Without this the flag and the preference write could
+      // disagree about what counts as "backgrounded for real".
+      backgroundedWhileUnlocked = true;
       AppPreferencesRepository.update({ lastActiveAt: new Date().toISOString() });
     };
     let listenerHandle = null;
