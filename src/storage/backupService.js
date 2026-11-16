@@ -818,16 +818,11 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
   const suffix = includeKeys ? "-selective" : "";
   const filename = `shos-backup-${dateStamp}${suffix}.json`;
 
-  // If a folder was previously chosen (manual export or auto-export),
-  // reuse it silently instead of re-prompting for the folder picker.
-  const { lastExportFolder } = await AppPreferencesRepository.getPreferences();
-  if (lastExportFolder) {
-    const ok = await writeTextFileToFolder(lastExportFolder, filename, json, "application/json");
-    if (ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
-    return { ok, totalRecords: verification.totalRecords, path: `${lastExportFolder.name || "chosen folder"}/${filename}` };
-  }
-
-  // No saved folder — open the picker and remember the choice for next time.
+  // A manual "Export backup to a folder" always re-prompts the folder picker,
+  // so the user can change where it goes each time. The silently-reused saved
+  // folder is the auto-export path's job (runAutoExportIfDue reads the separate
+  // autoExportFolder pref) — a one-time manual pick shouldn't pin every later
+  // export to the same folder with no way out.
   const result = await exportTextFileToChosenFolder(filename, json, "application/json");
   if (result.ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ...result, totalRecords: verification.totalRecords };
