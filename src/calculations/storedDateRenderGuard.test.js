@@ -96,6 +96,16 @@ const REVIEWED_CORRECT = [
       "the stored wall-clock month. The reason is written down at the site. Triaged as a possible " +
       "label/key mismatch, read, and dismissed - the two are deliberately in the same frame.",
   },
+  {
+    match: /(?:date|now)\.toLocaleString\(\)/,
+    used: 0,
+    reason:
+      "safetyShareFields formats two genuine LOCAL values: `now` is a live new Date() (a real " +
+      "instant, the moment of sharing) and `date` is built from a datetime-local input's individual " +
+      "fields (the wall-clock deadline the user typed). Both are already in the device's own frame; " +
+      "adding timeZone UTC here would shift the check-in deadline and mislead the recipient. No " +
+      "stored record field is involved, so this is not the fake-UTC-at-rest case the guard exists for.",
+  },
 ];
 
 // Every non-test file in the folder, discovered rather than hardcoded - the
