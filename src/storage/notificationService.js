@@ -103,6 +103,11 @@ export const NOTIFICATION_IDS = {
   // exactly the kind of date this app's other reminders alert on. See
   // vaccinationReminderSync.js.
   vaccinationReminder: 9007,
+  // ADDED 16 Nov 2026 — one-shot safety check-in reminder. Set explicitly in
+  // the Safety Share sheet at the deadline typed by the user, so one active
+  // check-in at a time is enough: rescheduling under this fixed id replaces
+  // any earlier one from a previous share.
+  safetyShareCheckIn: 9008,
 };
 
 // ADDED 26 Aug 2026 — real ask: custom medication reminder

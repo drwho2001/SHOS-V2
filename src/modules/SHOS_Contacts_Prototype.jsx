@@ -128,6 +128,12 @@ import { importProfileShareFromFile, importProfileShareFromText } from "../stora
 // instead of its old navigator.share-or-clipboard-only path that silently
 // copied on the audit device.
 import { shareText } from "../storage/fileExportHelper";
+// ADDED 16 Nov 2026 — real ask: a Google Maps LIVE link (started in the Maps
+// app, pasted here) and a check-in deadline that tells the recipient to call
+// / check that link if we don't report back. Both the message text and the
+// two validators are pure so the guard tests can assert them directly.
+import { isMapsLiveLink, parseDeadline, buildSafetyShareMessage } from "../calculations/safetyShareFields";
+import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -380,6 +386,15 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
   // a timestamped pin is the honest shareable equivalent (the audit's
   // own suggested fallback), labelled with the moment it was taken.
   const [locationPin, setLocationPin] = useState(null); // null | {url, asOf} | {unavailable, reason}
+  // ADDED 16 Nov 2026 — two independent, off-by-default extras. A static pin
+  // (above) says where you WERE; a Maps live link says where you ARE, but only
+  // if you actually start sharing in the Maps app and paste the link back.
+  // The check-in deadline is the moment the recipient is told to act if we
+  // haven't reported in — and the moment our own local reminder fires.
+  const [includeLiveLink, setIncludeLiveLink] = useState(false);
+  const [mapsLiveLink, setMapsLiveLink] = useState("");
+  const [useCheckInDeadline, setUseCheckInDeadline] = useState(false);
+  const [checkInDeadline, setCheckInDeadline] = useState("");
   const [status, setStatus] = useState(null);
   // BACKLOG 62: the message is now one editable field. `editedMessage`
   // stays null until the user actually types — so field toggles keep
@@ -387,8 +402,16 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
   const [editedMessage, setEditedMessage] = useState(null);
   const sheetRef = useRef(null);
   useEffect(() => { sheetRef.current?.focus(); }, []);
+  // Closing the sheet without sharing (or sharing and then backing out)
+  // must never leave a pending check-in reminder behind. The fixed id means
+  // a later share just replaces it anyway, but the user can close this sheet
+  // for good — no dangling "call them" notification hours later.
+  useEffect(() => () => { cancelNotification(NOTIFICATION_IDS.safetyShareCheckIn).catch(() => {}); }, []);
 
   const toggle = (k) => setFields((f) => ({ ...f, [k]: !f[k] }));
+
+  const deadlineDate = useCheckInDeadline ? parseDeadline(checkInDeadline) : null;
+  const liveLinkValid = includeLiveLink && isMapsLiveLink(mapsLiveLink);
 
   // BACKLOG 61 effect: capture the pin when the box is ticked (and only
   // then — never poll, never capture silently on open). A failure keeps
@@ -417,24 +440,18 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
     return () => { cancelled = true; };
   }, [includeLiveLocation, locationPin]);
 
-  const buildMessage = () => {
-    const name = contact?.name || contact?.nickname || "Contact";
-    const lines = [];
-    if (fields.name) lines.push(`Name: ${name}`);
-    // BACKLOG 59: a ticked field with no data used to render NO line, so
-    // the shared message was narrower than the ticked UI implied. Every
-    // ticked field now produces a line — "not provided" when there's
-    // nothing on the record — so what is ticked is exactly what is sent.
-    if (fields.phone) lines.push(`Phone: ${contact?.phone || "not provided"}`);
-    if (fields.address) lines.push(`Address: ${contact?.address || "not provided"}`);
-    if (fields.vehicle) lines.push(`Vehicle: ${contact?.vehicle || "not provided"}`);
-    // BACKLOG 60: fields.photo was never read — ticking it changed
-    // nothing. A text message cannot attach the photo itself, so the
-    // honest line states what photo information exists on the record.
-    if (fields.photo) lines.push(`Photo: ${contact?.profilePicture ? "they have a profile photo on their SHOS record" : "no photo on file"}`);
-    if (includeLiveLocation) lines.push(locationPin && !locationPin.unavailable ? `My location (as of ${locationPin.asOf}): ${locationPin.url}` : `My location: unavailable (${locationPin?.reason || "no fix yet"}).`);
-    return `I'm meeting ${name} around ${new Date().toLocaleString()}. If you don't hear from me within a few hours, here's their info:\n${lines.join("\n")}\n\nSharing is not a safety guarantee.`;
-  };
+  // Single source of truth for the text that leaves the device — the old
+  // inline copy of these rules silently ignored ticked fields (BACKLOG 59/60)
+  // and would have ignored the two new options too. Pure helper, tested
+  // directly; this component only decides WHICH options are on.
+  const buildMessage = () => buildSafetyShareMessage({
+    contact,
+    fields,
+    includeCurrentLocation: includeLiveLocation,
+    locationPin,
+    mapsLiveLink: includeLiveLink ? mapsLiveLink : "",
+    checkInDeadline: deadlineDate ? checkInDeadline : "",
+  });
 
   const generatedMessage = buildMessage();
   // null = untouched draft follows the generated text; anything the user
@@ -444,7 +461,27 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
   const doShare = async () => {
     try {
       const outcome = await shareText("Safety share", message);
-      setStatus({ ok: true, msg: outcome });
+      // Only a REAL send (or explicit clipboard copy) arms the reminder. The
+      // check-in deadline is in the message either way, so the recipient
+      // still knows when to act even if notifications are unavailable.
+      if (deadlineDate) {
+        const scheduled = await scheduleNotification({
+          id: NOTIFICATION_IDS.safetyShareCheckIn,
+          title: "Safety check-in due",
+          body: "Let your safety contact know you're okay before they start worrying.",
+          at: deadlineDate,
+          smallIcon: moduleSmallIconName("home"),
+          kind: "safety-checkin",
+          // A one-shot reminder the user just set by hand in this sheet is
+          // deliberately not swallowed by quiet hours / pause: a
+          // check-in that fires late is no check-in at all. Documented in
+          // CLAUDE.md; every OTHER reminder still respects the global gates.
+          bypassGlobalGates: true,
+        });
+        setStatus({ ok: true, msg: `${outcome} ${scheduled ? `Check-in reminder set for ${deadlineDate.toLocaleString()}.` : "Check-in reminder could not be scheduled — the deadline is written in the message."}` });
+      } else {
+        setStatus({ ok: true, msg: outcome });
+      }
     } catch (e) {
       // A deliberate cancel (backed out of the share sheet) is not an
       // error — say so plainly rather than the scary old "failed".
@@ -493,6 +530,64 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
               {locationPin
                 ? (locationPin.unavailable ? `Location unavailable: ${locationPin.reason}. The message will say so.` : `Pin captured at ${locationPin.asOf} — shown in the message below before you send.`)
                 : "Getting your location…"}
+            </div>
+          )}
+        </SectionCard>
+        {/* ADDED 16 Nov 2026 — a static pin says where you WERE. This option
+            carries a link the user created themselves in Google Maps' own
+            Live location sharing, so the recipient sees where you ARE —
+            including after you've left the house. A WebView cannot mint
+            such a link, so the button hands off to Maps and the link is
+            pasted back. Never silently accept a non-Google URL. */}
+        <SectionCard T={T}>
+          <div onClick={() => setIncludeLiveLink((v) => !v)} role="button" tabIndex={0} aria-pressed={includeLiveLink} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIncludeLiveLink((v) => !v); } }} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", minHeight: 44 }}>
+            <input type="checkbox" checked={includeLiveLink} onChange={() => setIncludeLiveLink((v) => !v)} onClick={(e) => e.stopPropagation()} style={{ width: 18, height: 18 }} />
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Add a Google Maps live location link</span>
+          </div>
+          {includeLiveLink && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: T.textSecondary }}>
+                In Google Maps, start Live location sharing with your safety contact, copy the link it gives you, then paste it below. The link stops working when you stop sharing in Maps.
+              </div>
+              <button onClick={() => {
+                const url = "https://www.google.com/maps/";
+                try {
+                  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+                    window.Capacitor.Plugins.Browser.open({ url });
+                    return;
+                  }
+                } catch (e) { /* fall through to the web fallback */ }
+                window.open(url, "_blank");
+              }} style={{ padding: "10px 14px", borderRadius: 999, border: `1px solid ${T.contactsTeal}`, background: "transparent", color: T.contactsTeal, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>Open Google Maps</button>
+              <input type="url" value={mapsLiveLink} onChange={(e) => setMapsLiveLink(e.target.value)} placeholder="Paste the Google Maps link here" aria-label="Google Maps live location link"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+              {mapsLiveLink.trim() && !isMapsLiveLink(mapsLiveLink) && (
+                <div style={{ fontSize: 11, color: T.actionRedText }}>That doesn't look like a Google Maps link. Nothing was added to the message.</div>
+              )}
+              {liveLinkValid && <div style={{ fontSize: 11, color: T.actionGreenText }}>Link will be included in the message.</div>}
+            </div>
+          )}
+        </SectionCard>
+        {/* ADDED 16 Nov 2026 — the deadline the recipient is told to act on.
+            It is NOT just a note in the text: a successful share also sets
+            one local notification at that time ("tell your contact you're
+            okay"), so the instruction in the message has a matching nudge
+            for the sender. Off by default, typed by the user, never
+            scheduled on a cancelled share. */}
+        <SectionCard T={T}>
+          <div onClick={() => setUseCheckInDeadline((v) => !v)} role="button" tabIndex={0} aria-pressed={useCheckInDeadline} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setUseCheckInDeadline((v) => !v); } }} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", minHeight: 44 }}>
+            <input type="checkbox" checked={useCheckInDeadline} onChange={() => setUseCheckInDeadline((v) => !v)} onClick={(e) => e.stopPropagation()} style={{ width: 18, height: 18 }} />
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>Set a check-in deadline</span>
+          </div>
+          {useCheckInDeadline && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: T.textSecondary }}>
+                "If you don't hear from me by this time, call me{includeLiveLink ? " and check my live location" : ""}." goes into the message, and SHOS reminds you at that time to tell your contact you're okay.
+              </div>
+              <input type="datetime-local" value={checkInDeadline} onChange={(e) => setCheckInDeadline(e.target.value)} aria-label="Check-in deadline"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
+              {checkInDeadline && !deadlineDate && <div style={{ fontSize: 11, color: T.actionRedText }}>Choose a valid future date and time — a past deadline can't be shared or reminded.</div>}
+              {deadlineDate && <div style={{ fontSize: 11, color: T.actionGreenText }}>Deadline and reminder: {deadlineDate.toLocaleString()}.</div>}
             </div>
           )}
         </SectionCard>

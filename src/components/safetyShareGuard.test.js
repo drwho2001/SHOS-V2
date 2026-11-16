@@ -35,6 +35,14 @@ const HELPER = fs.readFileSync(
   path.join(process.cwd(), "src/storage/fileExportHelper.js"),
   "utf8",
 );
+// 16 Nov 2026 — message construction and the two new option validators now
+// live in a pure module. Behaviour tests belong next to that module; THIS
+// file's job is to prove the sheet still reaches them (a rule nobody calls
+// is a rule that silently regressed).
+const FIELDS = fs.readFileSync(
+  path.join(process.cwd(), "src/calculations/safetyShareFields.js"),
+  "utf8",
+);
 
 // The SafetyShareSheet component's source, isolated from the rest of the
 // (very large) Contacts module so guards can't be satisfied by unrelated
@@ -89,15 +97,19 @@ describe("BACKLOG 58 — hardware back closes the sheet", () => {
 
 describe("BACKLOG 59 — ticked-but-empty fields are not silently dropped", () => {
   it("phone/address/vehicle render a 'not provided' line when the record is empty", () => {
-    expect(SHEET_SRC).toMatch(/`Phone: \$\{contact\?\.phone \|\| "not provided"\}`/);
-    expect(SHEET_SRC).toMatch(/`Address: \$\{contact\?\.address \|\| "not provided"\}`/);
-    expect(SHEET_SRC).toMatch(/`Vehicle: \$\{contact\?\.vehicle \|\| "not provided"\}`/);
+    expect(FIELDS).toMatch(/`Phone: \$\{contact\?\.phone \|\| "not provided"\}`/);
+    expect(FIELDS).toMatch(/`Address: \$\{contact\?\.address \|\| "not provided"\}`/);
+    expect(FIELDS).toMatch(/`Vehicle: \$\{contact\?\.vehicle \|\| "not provided"\}`/);
   });
 });
 
 describe("BACKLOG 60 — the profile photo note actually does something", () => {
   it("fields.photo produces a Photo line reflecting what's on record", () => {
-    expect(SHEET_SRC).toMatch(/fields\.photo\) lines\.push\(`Photo: \$\{/);
+    expect(FIELDS).toMatch(/fields\?\.photo\) lines\.push\(`Photo: \$\{/);
+  });
+  it("the sheet builds the sent message through the shared pure helper", () => {
+    expect(SHEET_SRC).toMatch(/buildSafetyShareMessage\(\{/);
+    expect(SHEET_SRC).not.toMatch(/const lines = \[\]/);
   });
 });
 
@@ -108,7 +120,7 @@ describe("BACKLOG 61 — the location tick reaches the recipient", () => {
 
   it("the captured pin goes INTO the message as a shareable maps link", () => {
     expect(SHEET_SRC).toMatch(/https:\/\/maps\.google\.com\/\?q=\$\{latitude\},\$\{longitude\}/);
-    expect(SHEET_SRC).toMatch(/My location \(as of \$\{locationPin\.asOf\}\): \$\{locationPin\.url\}/);
+    expect(FIELDS).toMatch(/My location \(as of \$\{locationPin\.asOf\}\): \$\{locationPin\.url\}/);
   });
 
   it("the old sender-side window.open of Google Maps is gone", () => {
@@ -116,7 +128,43 @@ describe("BACKLOG 61 — the location tick reaches the recipient", () => {
   });
 
   it("an unavailable fix is stated in the message, not silently omitted", () => {
-    expect(SHEET_SRC).toMatch(/My location: unavailable/);
+    expect(FIELDS).toMatch(/My location: unavailable/);
+  });
+});
+
+describe("16 Nov 2026 — Google Maps live link is a guided handoff, not a fake link", () => {
+  it("the sheet opens Maps for the user to start live sharing, then accepts a pasted link", () => {
+    expect(SHEET_SRC).toMatch(/Open Google Maps/);
+    expect(SHEET_SRC).toMatch(/Browser\.open\(\{ url \}\)/);
+    expect(SHEET_SRC).toMatch(/Paste the Google Maps link here/);
+  });
+
+  it("only a Google Maps URL is accepted into the message", () => {
+    expect(FIELDS).toMatch(/export function isMapsLiveLink\(/);
+    expect(FIELDS).toMatch(/MAPS_SHORT_HOSTS/);
+    expect(SHEET_SRC).toMatch(/isMapsLiveLink\(mapsLiveLink\)/);
+    expect(SHEET_SRC).toMatch(/mapsLiveLink: includeLiveLink \? mapsLiveLink : ""/);
+  });
+});
+
+describe("16 Nov 2026 — check-in deadline arms a real reminder only after sharing", () => {
+  it("the deadline is typed, validated and written into the message", () => {
+    expect(SHEET_SRC).toMatch(/type="datetime-local"/);
+    expect(SHEET_SRC).toMatch(/parseDeadline\(checkInDeadline\)/);
+    expect(FIELDS).toMatch(/Check-in deadline: \$\{deadlineText\}/);
+    expect(FIELDS).toMatch(/please call me\$\{liveLink \? " and check my shared live location" : ""\}/);
+  });
+
+  it("a reminder is scheduled only on a successful share, with its own fixed id and kind", () => {
+    expect(SHEET_SRC).toMatch(/id: NOTIFICATION_IDS\.safetyShareCheckIn/);
+    expect(SHEET_SRC).toMatch(/kind: "safety-checkin"/);
+    expect(SHEET_SRC).toMatch(/bypassGlobalGates: true/);
+    // The schedule call must come AFTER a successful shareText, never before.
+    expect(SHEET_SRC.indexOf("await shareText(")).toBeLessThan(SHEET_SRC.indexOf("await scheduleNotification("));
+  });
+
+  it("closing the sheet cancels a pending reminder", () => {
+    expect(SHEET_SRC).toMatch(/cancelNotification\(NOTIFICATION_IDS\.safetyShareCheckIn\)/);
   });
 });
 

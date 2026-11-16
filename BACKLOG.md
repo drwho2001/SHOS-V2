@@ -2478,7 +2478,7 @@ link.
 - **Source:** Device audit (14 Nov 2026) — screen coverage tracker
 - **Issue:** Onboarding/welcome flow, PIN-creation flow, and first-run seeding UI were never exercised this pass (dev profile already complete). Unverified visually. Quick tour also crashed in an earlier session and was not re-tested.
 - **Expected:** dedicated pass with cleared app data: exercise onboarding end-to-end (welcome, PIN creation, first-run seeding, quick tour) and fix any defects found.
-- **Status:** Backlogged - not actioned.
+- **Status:** Verified on device (16 Nov 2026) — 5 onboarding slides, buttons clear of the nav bar; quick tour step 1/12 → Contacts spotlight → Back returned to Home, no crash. PIN setup + App Lock flows verified separately.
 
 ### 142. Encounter landing live search not exercised
 - **Source:** Device audit (14 Nov 2026) — screen coverage tracker
@@ -2496,23 +2496,35 @@ link.
 - **Source:** Device audit (14 Nov 2026) — pre-release checklist
 - **Issue:** The tap chain guard passes (myProfileShareWiringGuard.test.js, 6 tests) but the real navigator.share → Capacitor Share → browser download path has not been confirmed on a real device.
 - **Expected:** open My Profile → Share on a real device and confirm the native share sheet appears and the exported file lands correctly.
-- **Status:** Backlogged - not actioned.
+- **Status:** Verified on device (16 Nov 2026) — My Profile share opens the field-selection sheet with 31/31 selected, last-tested/HIV opt-ins off by default, sensitive clinical fields explicitly excluded, and "Copy as text" returns to My Profile. Native target-app selection itself not exercised (no messaging account on the test device); the three-tier shareText chain remains guard-tested.
 
 ### 145. SafetyShareSheet native share sheet + GPS permission device pass
 - **Source:** Device audit (14 Nov 2026) — pre-release checklist
 - **Issue:** The SafetyShareSheet (shareText chain, geolocation pin) was verified by guard tests (safetyShareGuard.test.js, 13 tests) but the native share sheet and GPS permission behaviour need one real-device pass.
 - **Expected:** exercise on a real device: native share sheet opens, GPS permission prompt works, timestamped pin is embedded in the message.
-- **Status:** Backlogged - not actioned.
+- **Status:** Verified on device (16 Nov 2026) — ticking "Include my current location" captured a fix and embedded "My location (as of 17:23:45): https://maps.google.com/?q=53.7464…" in the editable message. Message was NOT sent to an external target. Native share sheet target selection not exercised (no messaging account on the test device).
 
 ### 146. Vaccination home-screen widget blank at full privacy tier
 - **Source:** Device audit follow-up (15 Nov 2026)
 - **Issue:** The Vaccination widget sync pushes full data correctly (vaccineName, doseCount, nextDueRelative) but the widget renders blank when set to the full privacy tier on a real device. At redacted tier it shows "Vaccination - dose logged" as expected.
 - **Expected:** investigate the Java provider's full branch / layout rendering; likely a stale widget cache or view-recycling issue. Removing and re-adding the widget may resolve.
-- **Status:** Backlogged - not actioned.
+- **Status:** Partially verified (16 Nov 2026) — the widget picker preview renders correctly ("Vaccination / No vaccinations logged", label "Next vaccination", description intact) with no clipping or skew. The blank-at-full-tier defect on an ACTUAL placed home-screen widget with logged vaccinations remains to be reproduced; keep this open until that exact case is checked.
 
 ### 147. Settings: add search option (previously requested)
 - **Source:** User request (15 Nov 2026)
 - **Issue:** Settings has no search/filter option despite a previous request. With 57+ rows across 16 sub-screens, finding a specific setting is difficult.
 - **Expected:** add a search/filter input to the Settings screen that filters settings rows by label (and optionally by sub-screen), matching the search pattern used elsewhere in the app.
-- **Status:** Backlogged - not actioned.
+- **Status:** Done and verified on device (16 Nov 2026) — "Search settings" filters to the right result ("privacy" → Privacy, "guide" → Guide) with the result row tappable.
+
+### 148. Safety Share: Google Maps live location link (guided handoff)
+- **Source:** User request (16 Nov 2026)
+- **Issue:** A captured pin says where the sender WAS. If they share from home and then go out, the recipient needs a Google Maps LIVE link instead. A WebView cannot mint one — Maps creates it inside its own app.
+- **Expected:** opt-in option in Share for Safety that opens Google Maps, lets the user copy the live link, and pastes it back; only Google's own hosts accepted; link clearly labelled as sender-started and as stopping when sharing stops.
+- **Status:** Implemented (16 Nov 2026) — pure validators/message builder + 10 decision tests, 5 wiring guards, CLAUDE.md updated. Device verification pending on the next installed build.
+
+### 149. Safety Share: check-in deadline with reminder
+- **Source:** User request (16 Nov 2026)
+- **Issue:** "If you don't hear from me by X, call/track my location" was not expressible in a safety share, and the sender had no nudge to check in before the recipient worries.
+- **Expected:** opt-in typed datetime-local deadline; instruction and deadline in the shared message; one local notification at that time only after a successful share; nothing scheduled on cancel/close or for a past deadline.
+- **Status:** Implemented (16 Nov 2026) — fixed notification id 9008, `kind: "safety-checkin"`, guard + decision tests green. Device verification pending on the next installed build.
 

@@ -1008,3 +1008,15 @@ Recorded as BACKLOG 140 (verified - not actioned).
 Export backup to a folder… opens the system file picker. The app does not remember the previously chosen folder; each export requires re-selecting the folder and re-granting Android scoped-storage permission.
 Recorded as BACKLOG 139.
 
+### 16 Nov 2026 — device verification pass (release v20261116-fix-pass)
+Redmi Note 13 / sapphiren, release build, 1080×2400, screenshot scale 1.2×. All CI gates green on commit 2d2ba84; tag v20261116-fix-pass pushed.
+
+App Lock: cold start shows the gate; wrong PIN rejected with "Incorrect PIN."; correct PIN unlocks AND STAYS unlocked. The earlier "correct PIN appears to fail" was a REAL defect — dismissing the keyboard fired a stray `appStateChange isActive:true` and `checkRelock()` relocked instantly with grace off. Fixed by requiring an actual observed backgrounding before a resume can relock (commit a611e4c). Verified after rebuild with cap sync (a stale-assets build initially masked the fix). Real Home-key backgrounding still relocks with grace off; enabling the 10-minute grace window correctly reopens straight to the previous screen. "Allow screenshots" is on by default and its copy now says so.
+
+Other device checks: Settings search filters correctly; Guide → interactive tour spotlights Contacts and Back returns to step 1 with Home rendered; My Profile share shows field selection with sensitive fields excluded and Copy as text works; Share for Safety GPS captures and embeds a timestamped Maps pin; the vaccination widget picker preview renders without clipping or skew; bottom nav renders correctly in every screenshot. Privacy screen copy and all App Lock states were visually confirmed.
+
+Not exercised on device (no account/target app): native share target selection, biometric unlock (no fingerprint emulation), an actual placed vaccination widget at full tier with real vaccination records (widget picker preview only), Encounter landing live search, "Log all daily meds" click. These remain honestly open in BACKLOG.md.
+
+### 16 Nov 2026 — Safety Share live location + check-in deadline (user request)
+User asked for a Google Maps live-location option and a "if you don't hear from me by X" instruction with a follow-up reminder. Design confirmed with the user: guided handoff to Maps + paste the link (a WebView cannot create a live link), local SHOS notification at a deadline typed in the sheet. Implemented in `src/calculations/safetyShareFields.js` (pure link/deadline validation + message text) and `src/modules/SHOS_Contacts_Prototype.jsx` (opt-in UI, Maps handoff, one-shot notification 9008). 29 focused tests green, lint clean. Device verification pending on the next APK. Recorded as BACKLOG 148–149.
+
