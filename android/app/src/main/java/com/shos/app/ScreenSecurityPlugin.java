@@ -9,7 +9,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 // ADDED - real ask: an "allow screenshots" toggle in Settings > Privacy,
-// default OFF (screenshots/recording blocked), on top of this app's own
+// default ON (screenshots/recording allowed), on top of this app's own
 // existing always-on FLAG_SECURE default (see MainActivity's own
 // onCreate). FLAG_SECURE can be added/cleared on the real Window at any
 // time - not just at onCreate - so toggling this setting takes effect
@@ -49,6 +49,6 @@ public class ScreenSecurityPlugin extends Plugin {
 
   public static boolean isAllowed(android.content.Context ctx) {
     SharedPreferences sp = ctx.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE);
-    return sp.getBoolean(KEY_ALLOW, false);
+    return sp.getBoolean(KEY_ALLOW, true);
   }
 }

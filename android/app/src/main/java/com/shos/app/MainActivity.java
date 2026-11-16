@@ -31,7 +31,7 @@ public class MainActivity extends BridgeActivity {
   // screen). Set before super.onCreate() so it applies to the very
   // first frame drawn, not just frames after some later point.
   // CHANGED — real ask: an "allow screenshots" toggle in Settings >
-  // Privacy (default off, matching this exact starting flag). The
+  // Privacy (default on, matching this exact starting flag). The
   // toggle's own real effect happens later, at runtime, via
   // ScreenSecurityPlugin — registered here, before super.onCreate() per
   // Capacitor's own plugin-registration contract, so it's available the
@@ -56,8 +56,8 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(WidgetBridgePlugin.class);
     super.onCreate(savedInstanceState);
 
-    // FLAG_SECURE is always applied at launch (real ask: privacy by default),
-    // then cleared if the user has previously saved "allow screenshots" ON.
+    // FLAG_SECURE is always applied at launch, then cleared if the user has
+    // previously saved "allow screenshots" ON (default ON on fresh install).
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     if (ScreenSecurityPlugin.isAllowed(this)) {
       getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
