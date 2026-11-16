@@ -2897,7 +2897,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // and sit flush below the banner card when one is, with no gap and
     // no double counted inset. <main> below keeps env+content so Home
     // (which has no header of its own) still clears the status bar.
-    <div style={{ minHeight: "100vh", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column", "--shos-top-banner-h": `${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px` }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column", "--shos-top-banner-h": `${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px` }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
 
       {/* ADDED 3 Sep 2026 — real ask: "clear notification awareness"
@@ -3293,7 +3293,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           is active, so it's the correct, single place for the
           landmark — no layout change, `<main>`'s own default display
           matches the `<div>` it replaces. */}
-      <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
+      <main style={{ flex: 1, overflowY: "auto", paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "env(safe-area-inset-bottom)" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setSettingsScreen("settings")} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
@@ -3339,7 +3339,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           missing a landmark). role="navigation"+aria-label closes the
           landmark gap; each tab below gets tabIndex/onKeyDown/
           aria-current to actually be operable, not just labeled. */}
-      <div role="navigation" aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(7px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: FONT_FAMILY }}>
+      <div role="navigation" aria-label="Main navigation" style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(7px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: FONT_FAMILY, flexShrink: 0 }}>
         {getOrderedTabs(tabOrder).map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";

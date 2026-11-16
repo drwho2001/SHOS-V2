@@ -88,7 +88,12 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
   // accurately) makes the same real clamp possible vertically too.
   const cardRef = useRef(null);
   const [cardHeight, setCardHeight] = useState(160);
-  const prevNavigateRef = useRef(null);
+  // Initialised to "home" because the tour always starts on the Home tab
+  // (App.jsx selects "home" before showing it) — this prevents the first
+  // "home" step from triggering a redundant navigation/remount, and ensures
+  // backward navigation from a "contacts" (etc.) step to a "home" step
+  // actually switches the tab back to Home instead of staying put.
+  const prevNavigateRef = useRef("home");
 
   const step = index >= 0 && index < steps.length ? steps[index] : null;
 
@@ -151,7 +156,13 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
   // above) so this effect depends ONLY on `step`.
   useEffect(() => {
     if (!step) return;
-    if (step.navigate && step.navigate !== "home" && step.navigate !== "settings" && onNavigateRef.current) {
+    // CHANGED — real bug: "home" steps were skipped entirely, so navigating
+    // BACKWARD through the tour (e.g. from "tab-contacts" to "welcome")
+    // never switched the tab back to Home — the spotlight stayed on the
+    // previous tab's content while the card talked about Home. Now we
+    // navigate whenever the tab actually changes (guarded by prevNav so
+    // consecutive same-tab steps don't trigger redundant remounts).
+    if (step.navigate && step.navigate !== "settings" && step.navigate !== prevNavigateRef.current && onNavigateRef.current) {
       onNavigateRef.current(step.navigate);
     }
     if (step.navigate === "settings" && onOpenSettingsRef.current) {
