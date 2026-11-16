@@ -17,7 +17,7 @@
 // the three export sheets, and the lazy wiring. Behavior unchanged.
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback } from "react";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../calculations/designTokens";
-import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor, ShareNetworkIcon as ShareNetwork } from "@phosphor-icons/react";
+import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor, ShareNetworkIcon as ShareNetwork, MagnifyingGlassIcon as SearchIcon } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
@@ -501,6 +501,34 @@ function EncryptedExportSheet({ onClose }) {
 // ADDED — real ask: a human-readable size for the storage-usage
 // indicator below. Kept local — the only place this app currently
 // needs to print a byte count.
+// ADDED 16 Nov 2026 — the Settings search index. The search box used to
+// filter only the top-level row labels, so a query like "screenshot" —
+// which names no row — matched nothing and the box looked broken. A real
+// settings search has to match the WORDS people actually use for a setting
+// and then take them to it, so each entry carries a keyword list plus the
+// screen it opens. `openSettingsSearchTarget` below is the single place
+// that maps an index key onto the corresponding show* state.
+const SETTINGS_SEARCH_INDEX = [
+  { label: "Privacy", screen: "privacy", keywords: ["privacy", "screenshot", "screenshots", "screen recording", "screen record", "flag secure", "anonymise", "anonymize", "app lock", "pin", "decoy", "delete data", "data retention", "panic", "lock"] },
+  { label: "Data & network", screen: "datanetwork", keywords: ["data", "network", "sync", "cloud", "encryption", "encrypted", "end to end", "e2e", "location", "gps", "maps", "nominatim", "github"] },
+  { label: "Backup & Export", screen: "backup", keywords: ["backup", "export", "restore", "import", "csv", "encrypted backup", "automatic backup", "auto backup"] },
+  { label: "Widgets", screen: "widgets", keywords: ["widget", "widgets", "home screen", "next dose", "refill", "medication widget", "vaccination widget"] },
+  { label: "Preferences", screen: "preferences", keywords: ["preferences", "theme", "dark mode", "light mode", "language", "units", "haptics", "inactive", "tracking", "contacts inactive"] },
+  { label: "Notifications", screen: "notifications", keywords: ["notification", "notifications", "reminder", "reminders", "alarm", "sound", "vibrate", "due meds", "testing reminder", "clinic reminder"] },
+  { label: "Colour scheme", screen: "design", keywords: ["colour", "color", "scheme", "theme", "font", "appearance", "dark"] },
+  { label: "Manage lists", screen: "managelists", keywords: ["manage lists", "registry", "registries", "locations", "lists", "options", "kink", "protection", "symptoms", "organism", "results"] },
+  { label: "Resources", screen: "resources", keywords: ["resources", "links", "refuge", "clinic", "directory", "website", "phone"] },
+  { label: "Glossary", screen: "glossary", keywords: ["glossary", "jargon", "terms", "definitions", "u=u", "clinical evidence"] },
+  { label: "Guide", screen: "guide", keywords: ["guide", "tour", "help", "tutorial", "walkthrough", "onboarding"] },
+  { label: "Stats", screen: "stats", keywords: ["stats", "statistics", "usage", "counts", "insights"] },
+  { label: "Calendar", screen: "calendar", keywords: ["calendar", "schedule", "appointments", "events"] },
+  { label: "Trash", screen: "trash", keywords: ["trash", "deleted", "archive", "restore", "recently deleted"] },
+  { label: "Developer tools", screen: "devtools", keywords: ["developer", "dev tools", "debug", "clear demo data", "reset", "sample data", "storage"] },
+  { label: "About", screen: "about", keywords: ["about", "version", "build", "credits"] },
+  { label: "Share SHOS", screen: "share", keywords: ["share", "invite", "recommend", "word of mouth"] },
+  { label: "My Profile", screen: "myprofile", keywords: ["my profile", "profile", "identity", "share my profile", "last tested", "hiv status", "full name"] },
+];
+
 function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour, onNavigateToMyProfile }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
@@ -611,6 +639,30 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   // ADDED 22 Sep 2026 — Home-screen widgets privacy settings
   const [showWidgets, setShowWidgets] = useState(false);
 
+  // ADDED 16 Nov 2026 — the search index's single navigation entry point.
+  // One place maps a SETTINGS_SEARCH_INDEX key onto the matching show*
+  // state, so a search result tap and the equivalent row tap cannot drift.
+  const openSettingsSearchTarget = (screen) => {
+    setShowPrivacy(screen === "privacy");
+    setShowDataNetwork(screen === "datanetwork");
+    setShowBackupExport(screen === "backup");
+    setShowWidgets(screen === "widgets");
+    setShowPreferences(screen === "preferences");
+    setShowNotifications(screen === "notifications");
+    setShowDesign(screen === "design");
+    setShowManageLists(screen === "managelists");
+    setShowResources(screen === "resources");
+    setShowGlossary(screen === "glossary");
+    setShowGuide(screen === "guide");
+    setShowStats(screen === "stats");
+    setShowCalendar(screen === "calendar");
+    setShowTrash(screen === "trash");
+    setShowDevTools(screen === "devtools");
+    setShowAbout(screen === "about");
+    setShowShare(screen === "share");
+    if (screen === "myprofile") onNavigateToMyProfile?.();
+  };
+
   // CHANGED 28 Sep 2026 — extracted from the back-handler effect below so the
   // hardware/UI back button and the Escape key can share ONE definition. They
   // must not drift: a user who learns "Escape goes back one level" and then
@@ -706,6 +758,17 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   const sq = settingsQuery.trim().toLowerCase();
   const matches = (label) => !sq || label.toLowerCase().includes(sq);
 
+  // ADDED 16 Nov 2026 — settings search: match keywords AND labels so a
+  // query like "screenshot" (which names no row) still lands the user on
+  // Privacy's "Allow screenshots" toggle. searchResults is empty when sq
+  // is empty (matches("") returns true but the sq guard below short-circuits).
+  const searchResults = sq
+    ? SETTINGS_SEARCH_INDEX.filter((e) =>
+        e.keywords.some((k) => k.includes(sq)) ||
+        e.label.toLowerCase().includes(sq)
+      )
+    : [];
+
   return (
     // SettingsScreen renders as a direct sibling of App.jsx's own
     // <main> (not nested inside it), so nothing here — the main menu's
@@ -757,14 +820,22 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
           style={{ width: "100%", padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44 }} />
       </div>
 
-      {matches("My Profile") && (
-        <>
-          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Profile</div>
-          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
-            <SettingsRow icon={User} label="My Profile" onClick={() => onNavigateToMyProfile()} />
-          </div>
-        </>
+      {sq && (
+        <div style={{ padding: "0 16px 8px" }}>
+          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "8px 0 6px" }}>Search results</div>
+          {searchResults.length === 0 ? (
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "8px 4px 16px" }}>No settings match “{settingsQuery}”.</div>
+          ) : (
+            <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
+              {searchResults.map((r) => (
+                <SettingsRow key={r.screen} icon={SearchIcon} label={r.label} onClick={() => { openSettingsSearchTarget(r.screen); setSettingsQuery(""); }} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
+
+      {!sq && (<>
 
       {/* REGROUPED 9 Sep 2026 — real ask: the 5 original sections
           ("Data"/"Advanced"/"Design"/"Insights") had grown into a
@@ -789,6 +860,10 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
       // the Units screen. A stale count inside a comment that exists
       // specifically to document a row-by-row audit is exactly the drift
       // that makes the next reader distrust the whole audit. */}
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Profile</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
+        <SettingsRow icon={User} label="My Profile" onClick={() => onNavigateToMyProfile()} />
+      </div>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Backup &amp; Data</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 16 Sep 2026 — real ask: the 7 export/restore/backup
@@ -876,6 +951,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
         <SettingsRow icon={Info} label="About" onClick={() => setShowAbout(true)} dataTour="settings-about" />
         <SettingsRow icon={ShareNetwork} label="Share SHOS" onClick={() => setShowShare(true)} />
       </div>
+      </>)}
 
       {showBackupExport && (
         <BackupExportScreen
