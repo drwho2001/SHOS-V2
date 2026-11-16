@@ -54,6 +54,18 @@
          is a single-line override of a browser default, not a new
          stylesheet convention. -->
     <style>html, body { margin: 0; padding: 0; }</style>
+    <!-- ADDED 16 Nov 2026 — real device finding (horizontal-skew + nav-bar
+         drift). Under viewport-fit=cover the WebView owns document-level
+         scrolling, and its built-in overscroll lets the whole page pan
+         sideways at screen edges and rubber-band vertically — and Android
+         WebView composites `position: fixed` elements with that overscroll
+         offset, so the bottom nav bar visibly skewed/moved with both. App.jsx
+         now owns scrolling inside <main> (root is height:100vh +
+         overflow:hidden, nav is a flex child), and these two properties kill
+         the WebView-level overscroll for good: overflow-x hidden clips any
+         stray wider-than-viewport content, overscroll-behavior none
+         suppresses the edge-bounce/pan that shifted everything. -->
+    <style>html, body { overflow-x: hidden; overscroll-behavior: none; }</style>
   </head>
   <body>
     <div id="root"></div>
