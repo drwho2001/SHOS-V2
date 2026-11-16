@@ -2520,11 +2520,11 @@ link.
 - **Source:** User request (16 Nov 2026)
 - **Issue:** A captured pin says where the sender WAS. If they share from home and then go out, the recipient needs a Google Maps LIVE link instead. A WebView cannot mint one — Maps creates it inside its own app.
 - **Expected:** opt-in option in Share for Safety that opens Google Maps, lets the user copy the live link, and pastes it back; only Google's own hosts accepted; link clearly labelled as sender-started and as stopping when sharing stops.
-- **Status:** Implemented (16 Nov 2026) — pure validators/message builder + 10 decision tests, 5 wiring guards, CLAUDE.md updated. Device verification pending on the next installed build.
+- **Status:** Implemented and device-UI verified (16 Nov 2026) — pure validators/message builder + 10 decision tests, 5 wiring guards, CLAUDE.md updated. On device: option renders off by default, Maps handoff opens Google Maps, pasted `maps.app.goo.gl/...` validates green. Actual send/native target selection not exercised (no messaging account on the test device).
 
 ### 149. Safety Share: check-in deadline with reminder
 - **Source:** User request (16 Nov 2026)
 - **Issue:** "If you don't hear from me by X, call/track my location" was not expressible in a safety share, and the sender had no nudge to check in before the recipient worries.
 - **Expected:** opt-in typed datetime-local deadline; instruction and deadline in the shared message; one local notification at that time only after a successful share; nothing scheduled on cancel/close or for a past deadline.
-- **Status:** Implemented (16 Nov 2026) — fixed notification id 9008, `kind: "safety-checkin"`, guard + decision tests green. Device verification pending on the next installed build.
+- **Status:** Implemented and device-UI verified (16 Nov 2026) — fixed notification id 9008, `kind: "safety-checkin"`, guard + decision tests green. On device: option renders off by default and reveals the typed datetime picker with the "if you don't hear from me by this time, call me" explanation. Notification firing not device-tested (would require an actual external share).
 
