@@ -804,7 +804,7 @@ function OnboardingScreen({ onFinish }) {
   const isDesktopWidth = useIsDesktopWidth();
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: FONT_FAMILY }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: FONT_FAMILY }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center", ...(isDesktopWidth ? { maxWidth: 560, margin: "0 auto" } : {}) }}>
         {/* CHANGED — real ask: use the actual app icon here too, not
             the hand-drawn PulseLogo SVG — same real image
