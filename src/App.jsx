@@ -1361,8 +1361,14 @@ export default function App() {
   // time, same as this app's own established pattern of gating locked/
   // onboarding/AppLockScreen mutually exclusively.
   const [pendingTourOffer, setPendingTourOffer] = useState(false);
+  // ADDED 16 Nov 2026 — the current tour step is published by TourOverlay so
+  // Home can render a clearly-labelled DEMO session card for the live-session
+  // spotlight. A real session card only exists while a session is active,
+  // which on a fresh install is never — the old step spotlighted empty space.
+  const [tourStep, setTourStep] = useState(null);
   const finishTour = async () => {
     setShowTour(false);
+    setTourStep(null);
     setSettingsScreen(null);
     setSettingsInitialScreen(null);
     selectTab("home");
@@ -3322,7 +3328,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           matches the `<div>` it replaces. */}
       <main style={{ flex: 1, overflowY: "auto", paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "env(safe-area-inset-bottom)" }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setSettingsScreen("settings")} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
+          <HomeScreen demoSession={tourStep?.demoSession === true} onQuickAdd={handleQuickAdd} onOpenSettings={() => setSettingsScreen("settings")} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} onQuickExit={handleQuickExit}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
           <Suspense fallback={<SkeletonList T={{ surfaceVariant: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }} reducedMotion={reducedMotion} rows={6} />}>
@@ -3572,6 +3578,11 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY, fontSize: 13 }}>Loading...</div>}>
       {settingsScreen === "settings" && (
         <SettingsScreen
+          // ADDED 16 Nov 2026 — the tour opens several DIFFERENT settings
+          // sub-screens in one session. SettingsScreen reads `initialScreen`
+          // only in its useState initialisers, so without this key the second
+          // and third steps would stay on whichever sub-screen opened first.
+          key={settingsInitialScreen || "settings"}
           isScreen
           onClose={() => { setSettingsScreen(null); setSettingsInitialScreen(null); }}
           onExport={exportBackup}
@@ -3593,7 +3604,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           onOpenGlossary={() => { setSettingsScreen("settings"); setSettingsInitialScreen("glossary"); }}
         />
       )}
-      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} onOpenSettings={() => { selectTab("home"); setSettingsScreen("settings"); setSettingsInitialScreen(null); }} onCloseSettings={() => { setSettingsScreen(null); setSettingsInitialScreen(null); }} darkMode={darkMode} />}
+      {showTour && <TourOverlay onDone={finishTour} onNavigate={selectTab} onStepChange={setTourStep} onOpenSettings={(screen) => { selectTab("home"); setSettingsScreen("settings"); setSettingsInitialScreen(screen || null); }} onCloseSettings={() => { setSettingsScreen(null); setSettingsInitialScreen(null); }} darkMode={darkMode} />}
       {showSearch && (
         // initialQuery/initialSortMode are the Phase 2b back-navigation
         // restore. They are read as useState initialisers, which is only

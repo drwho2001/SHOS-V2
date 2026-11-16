@@ -846,7 +846,7 @@ useEffect(() => {
             see screenSecurityService.js's own header for why there's
             nothing for it to control on the web/PWA build. */}
         {screenshotsToggleAvailable && (
-          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
+          <div data-tour="screenshots-toggle" style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.allowScreenshots", "Allow screenshots")}</span>
               <div onClick={toggleScreenshots} role="switch" tabIndex={0} aria-checked={settings.allowScreenshots} aria-label="Allow screenshots"

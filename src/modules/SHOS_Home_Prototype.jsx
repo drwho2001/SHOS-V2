@@ -171,7 +171,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
 // Glossary screens needed the same check for #93 — relocating
 // already-working code, no behavior change here.
 
-function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, onQuickExit, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
+function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, onQuickExit, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, demoSession }) {
   const { t: tr } = useTranslation();
   const isDesktopWidth = useIsDesktopWidth();
   const reducedMotion = useReducedMotion();
@@ -1155,6 +1155,22 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onNavigateToRecord("activity"); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onNavigateToRecord("activity"); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${encountersColor}`, color: encountersColor, textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 800, cursor: "pointer" }}>Open log</div>
             <div role="button" tabIndex={0} onClick={async (e) => { e.stopPropagation(); if (confirm("Cancel this session? Any encounters already logged will be kept but unlinked.")) { await SessionRepository.delete(activeSession.id); if (typeof window !== "undefined") window.dispatchEvent(new Event("shos-session-changed")); } }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); } }} style={{ padding: "9px 12px", borderRadius: RADIUS.sm, border: `1px solid ${actionRedColor}`, color: actionRedColor, textAlign: "center", fontSize: TYPE.control.fontSize, fontWeight: 800, cursor: "pointer" }}>Cancel</div>
           </div>
+        </div>
+      )}
+
+      {/* ADDED 16 Nov 2026 — the tour's Live session step has to point at
+          SOMETHING on a fresh install: the real card above only exists while
+          a session is active, so the old spotlight landed on empty space.
+          App passes demoSession only for that one tour step; this card is a
+          clearly-labelled PREVIEW, creates no session, holds no real data,
+          and is never shown when a real session is active. It carries the
+          same data-tour anchor so the existing spotlight code finds it. */}
+      {!activeSession && demoSession && (
+        <div data-tour="live-session" aria-label="Example live session card" style={{ marginBottom: 20, padding: 14, borderRadius: RADIUS.md, border: `1px dashed ${encountersColor}`, background: darkMode ? DARK.surface : NEUTRAL.surface }}>
+          <div style={{ color: encountersColor, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Example only · Live session</div>
+          <div style={{ marginTop: 3, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 17, fontWeight: 800 }}>Demo session</div>
+          <div style={{ marginTop: 4, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontSize: 12 }}>0 activities · 0 people · 0 kinks</div>
+          <div style={{ marginTop: 8, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontSize: 11 }}>A preview for the guide — a real session card appears here when one is running.</div>
         </div>
       )}
 

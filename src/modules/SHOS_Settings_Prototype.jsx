@@ -579,7 +579,11 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   // cross-cutting behavioural preferences (Contacts inactive threshold,
   // Healthcare tracking toggles), pulled out of Colour scheme where
   // they'd drifted. See PreferencesScreen's own comment.
-  const [showPreferences, setShowPreferences] = useState(false);
+  // FIXED 16 Nov 2026 — the interactive tour opens this sub-screen directly
+  // from its "Cycles & contraception" step. SettingsScreen reads
+  // initialScreen ONLY in its useState initialisers, so without this the
+  // tour's second settings step stayed on the first one (found on device).
+  const [showPreferences, setShowPreferences] = useState(initialScreen === "preferences");
   // ADDED — real ask: unified notifications management, one place to
   // turn each real reminder type on/off rather than each one being
   // invisible/buried in its own module.
@@ -633,7 +637,9 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   // missing basic flagged in the final audit — with multiple APK
   // builds now flowing through GitHub Actions, there was no way to
   // confirm which build is actually installed.
-  const [showAbout, setShowAbout] = useState(false);
+  // Same tour fix as showPreferences above: the About step opens this screen
+  // directly rather than landing on the Settings root.
+  const [showAbout, setShowAbout] = useState(initialScreen === "about");
   // ADDED 29 Oct 2026 — in-app share card (QR codes + link), mirrors public/share.html.
   const [showShare, setShowShare] = useState(false);
   // ADDED 22 Sep 2026 — Home-screen widgets privacy settings

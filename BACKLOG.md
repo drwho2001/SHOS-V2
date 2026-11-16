@@ -2528,3 +2528,9 @@ link.
 - **Expected:** opt-in typed datetime-local deadline; instruction and deadline in the shared message; one local notification at that time only after a successful share; nothing scheduled on cancel/close or for a past deadline.
 - **Status:** Implemented and device-UI verified (16 Nov 2026) — fixed notification id 9008, `kind: "safety-checkin"`, guard + decision tests green. On device: option renders off by default and reveals the typed datetime picker with the "if you don't hear from me by this time, call me" explanation. Notification firing not device-tested (would require an actual external share).
 
+### 150. Interactive tour: empty live-session spotlight, missing settings steps, inaccurate About copy
+- **Source:** Device audit + user request (16 Nov 2026)
+- **Issue:** The Live session step spotlighted empty space on a fresh install (card exists only while a session is active); the tour never explained the Allow screenshots or cycle/contraception toggles; the About step claimed privacy info lived there, which it does not.
+- **Expected:** labelled demo session card for that step, two new settings steps with real `data-tour` anchors and sub-screens, honest About copy, spotlight ring and bubble not overlapping.
+- **Status:** Implemented — 14-step tour walked on device; screenshots step verified with a clean teal outline and no overlap. Device re-check pending after fixing the cycles sub-screen navigation and the demo card's delayed spotlight re-measure (adb dropped mid-verification). `tourContentGuard.test.js` (9 tests) green.
+

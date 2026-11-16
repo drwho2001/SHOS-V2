@@ -39,10 +39,19 @@ export const TOUR_STEPS = [
   { id: "tab-medication", navigate: "medication", target: "tab-medication", title: "Medication", body: "PrEP, DoxyPEP, hormones, contraception — doses, stock, adherence, and refill reminders." },
   { id: "tab-healthcare", navigate: "healthcare", target: "tab-healthcare", title: "Healthcare", body: "Testing, clinic visits, symptoms, vaccinations — plus Menstrual, Contraception & Pregnancy tracking, once turned on in Settings." },
   { id: "tab-home", navigate: "home", target: "tab-home", title: "Home", body: "Your dashboard — what's due, recent activity, quick-add shortcuts. Always the centre tab." },
-  { id: "live-session", navigate: "home", target: "live-session", title: "Live session", body: "When a session is running, this card counts it down and shows who's there. Tap to open the full session." },
+  // FIXED 16 Nov 2026 — a live session card only exists while a session is
+  // ACTIVE, so on a fresh install the old step showed a bubble pointing at
+  // nothing. The tour now asks App/Home for a clearly-labelled DEMO card for
+  // this one step (see demoSession below); no real session is created.
+  { id: "live-session", navigate: "home", target: "live-session", demoSession: true, title: "Live session", body: "The card shown here is an example — when a session really is running, it counts down and shows who's there. Tap it to open the full session." },
   { id: "search-icon", navigate: "home", target: "search-icon", title: "Search everything", body: "One search box across contacts, encounters, tests, symptoms — everything, in one place." },
   { id: "settings-icon", navigate: "home", target: "settings-icon", title: "Settings", body: "Backups, App Lock & privacy, preferences, and colour customisation all live here — including a full written Guide to every section, if you want more detail than this tour." },
-  { id: "settings-about", target: "settings-about", navigate: "settings", title: "About & version", body: "Version, build, install link, and privacy info live here. The Guide tab next to it is the full written manual." },
+  // ADDED 16 Nov 2026 — two real settings the written Guide covered but the
+  // tour never pointed at. Both are opt-in/off by default, so the tour now
+  // says WHERE to switch them on rather than pretending they are already on.
+  { id: "screenshots-toggle", navigate: "settings", settingsScreen: "privacy", target: "screenshots-toggle", title: "Allow screenshots", body: "On by default. Find it in Settings → Security & Privacy → Privacy — turn it off to block screenshots, recording and casting again." },
+  { id: "cycle-toggle", navigate: "settings", settingsScreen: "preferences", target: "cycle-toggle", title: "Cycles & contraception", body: "Off by default. Turn on Menstrual & contraception tracking in Settings → General → Preferences to add Cycle/Contraception/Pregnancy under Healthcare." },
+  { id: "settings-about", target: "settings-about", navigate: "settings", settingsScreen: "about", title: "About & version", body: "Version, build, and install link live here. The Guide tab next to it is the full written manual." },
   { id: "quick-exit", navigate: "home", target: "quick-exit", title: "Quick exit", body: "The discreet control that leaves the app immediately — and locks the vault first if App Lock is on. Use it when you need to get off the screen fast." },
   { id: "closing", navigate: "home", target: null, title: "That's it!", body: "Replay this tour anytime from Settings → Guide → \"Take the interactive tour\"." },
 ];
@@ -61,7 +70,7 @@ function findValidIndex(steps, fromIndex, direction) {
   return direction > 0 ? steps.length : -1;
 }
 
-export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, onOpenSettings, onCloseSettings, darkMode }) {
+export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, onOpenSettings, onCloseSettings, onStepChange, darkMode }) {
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const [index, setIndex] = useState(() => {
@@ -110,9 +119,11 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
   const onNavigateRef = useRef(onNavigate);
   const onOpenSettingsRef = useRef(onOpenSettings);
   const onCloseSettingsRef = useRef(onCloseSettings);
+  const onStepChangeRef = useRef(onStepChange);
   onNavigateRef.current = onNavigate;
   onOpenSettingsRef.current = onOpenSettings;
   onCloseSettingsRef.current = onCloseSettings;
+  onStepChangeRef.current = onStepChange;
 
   useLayoutEffect(() => {
     if (cardRef.current) setCardHeight(cardRef.current.getBoundingClientRect().height);
@@ -156,6 +167,12 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
   // above) so this effect depends ONLY on `step`.
   useEffect(() => {
     if (!step) return;
+    // 16 Nov 2026 — let App know which step is showing so Home can render a
+    // clearly-labelled DEMO session card for the live-session spotlight:
+    // a real card only exists while a session is active, and a fresh install
+    // has none. The ref keeps this effect dependent on `step` only (see the
+    // infinite-loop note above) — onStepChange is an App arrow function.
+    onStepChangeRef.current?.(step);
     // CHANGED — real bug: "home" steps were skipped entirely, so navigating
     // BACKWARD through the tour (e.g. from "tab-contacts" to "welcome")
     // never switched the tab back to Home — the spotlight stayed on the
@@ -165,8 +182,19 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
     if (step.navigate && step.navigate !== "settings" && step.navigate !== prevNavigateRef.current && onNavigateRef.current) {
       onNavigateRef.current(step.navigate);
     }
+    if (step.demoSession) {
+      // The demo card is inserted by App in response to onStepChange above,
+      // i.e. one render AFTER this effect first measures the target. Without
+      // a second measurement the step dims the whole screen with nothing
+      // outlined (confirmed on device). Same shape as the settings delay.
+      setTimeout(() => recalc(), 300);
+    }
     if (step.navigate === "settings" && onOpenSettingsRef.current) {
-      onOpenSettingsRef.current();
+      // Each settings step names the sub-screen it explains; App opens that
+      // screen directly. One navigation call per step (even when two
+      // consecutive steps are both "settings") is deliberate — they are
+      // DIFFERENT sub-screens, so the spotlight has to move with them.
+      onOpenSettingsRef.current(step.settingsScreen);
       // Settings is lazy-loaded; wait for it to render before measuring.
       setTimeout(() => recalc(), 600);
     }
