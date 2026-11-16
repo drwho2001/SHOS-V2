@@ -174,6 +174,18 @@ export async function buildProfileShare(options = {}) {
       shareableData[field] = anonymise && anonymised.has(field) ? "" : profile[field];
     }
   });
+  // Opt-in fields are NOT in SHAREABLE_FIELDS — they're decided by the owner
+  // at share time and are deliberately excluded unless toggled on.
+  if (includeLastTestedDate) {
+    shareableData.lastTestedDate = await getAutoLastHivTestedDate();
+  }
+  if (includeHivStatus) {
+    const payload = hivStatusSharePayload(resolvedHivStatus, hivStatusInformedDate);
+    if (payload) {
+      shareableData.hivStatus = payload.hivStatus;
+      shareableData.hivStatusDate = payload.hivStatusDate;
+    }
+  }
   return {
     type: SHARE_TYPE,
     schemaVersion: SCHEMA_VERSION,
