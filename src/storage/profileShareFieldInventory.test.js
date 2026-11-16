@@ -54,9 +54,25 @@ expect(buildBlock.length, "could not locate buildProfileShare's shareableData bl
 
 // Fields it WRITES: `name: profile.name` or the spread forms. Spread lines
 // for the two opt-ins are checked separately, not counted as always-shared.
-const written = new Set(
-  [...buildBlock.matchAll(/^\s{4}(\w+):\s*(?:profile|await|{})/gm)].map((m) => m[1]),
-);
+  // Fields buildProfileShare WRITES. It may write them as object-literal
+  // assignments (`name: profile.name`) or via a dynamic loop over
+  // SHAREABLE_FIELDS (`shareableData[field] = ...`) — both write every
+  // inventory field, so detect both forms.
+  const writtenFromLiterals = new Set(
+    [...buildBlock.matchAll(/^\s{4}(\w+):\s*(?:profile|await|{})/gm)].map(
+      (m) => m[1],
+    ),
+  );
+  const writtenFromLoop =
+    buildBlock.includes("shareableData[field]") &&
+    buildBlock.includes("SHAREABLE_FIELDS.forEach")
+      ? new Set(SHAREABLE_FIELDS)
+      : new Set(
+          [...buildBlock.matchAll(/shareableData\[(\w+)\]/gm)].map(
+            (m) => m[1],
+          ),
+        );
+  const written = new Set([...writtenFromLiterals, ...writtenFromLoop]);
 
 // Fields mapShareToContactData READS from the parsed share.
 const mapBlock = clean.match(/export function mapShareToContactData[\s\S]*?\n {2}\};/)?.[0] ?? "";
