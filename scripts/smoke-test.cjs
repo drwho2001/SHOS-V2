@@ -1074,6 +1074,12 @@ async function testTabReorder(page) {
   assert(await page.locator("text=Tab order needs a reload").isVisible(), "moving a tab shows the real \"reload to apply\" prompt");
 
     await page.reload({ waitUntil: "networkidle" });
+    // FIXED 16 Nov 2026 - the old selector matched the bottom nav by its
+    // inline `position: fixed` style. The nav is a flex child of a
+    // container-level scroll layout now (no position: fixed), so that
+    // selector silently returned null and the live-order assertions failed
+    // against a perfectly correct app. Target the nav's stable
+    // role/aria-label instead - immune to future CSS/layout changes.
     // FIXED 27 Sep 2026 - this used a fixed 800ms wait, then read the nav
     // once. A reload re-boots the app and unlocks the vault asynchronously,
     // so on a slow machine the nav is still in its previous order when it's
@@ -1082,7 +1088,7 @@ async function testTabReorder(page) {
     // Healthcare really is first.
     await page.waitForFunction(
       () => {
-        const nav = document.querySelector('div[style*="justify-content: space-around"][style*="position: fixed"]');
+        const nav = document.querySelector('[role="navigation"][aria-label="Main navigation"]');
         if (!nav || !nav.children.length) return false;
         return (nav.children[0].getAttribute("aria-label") || nav.children[0].textContent.trim()) === "Healthcare";
       },
@@ -1093,7 +1099,7 @@ async function testTabReorder(page) {
     await dismissTransientBanners(page);
 
     const navLabels = await page.evaluate(() => {
-      const nav = document.querySelector('div[style*="justify-content: space-around"][style*="position: fixed"]');
+      const nav = document.querySelector('[role="navigation"][aria-label="Main navigation"]');
       return nav ? Array.from(nav.children).map((el) => el.getAttribute("aria-label") || el.textContent.trim()) : [];
     });
   assert(navLabels[0] === "Healthcare", "Healthcare, moved to the front, actually renders first in the real, live bottom nav after reload");
