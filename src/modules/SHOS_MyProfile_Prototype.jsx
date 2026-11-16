@@ -50,7 +50,7 @@ import { MeasurementRepository } from "../repositories/measurementRepository";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import {
-  buildProfileShare, exportProfileShare, describeShareFields,
+  buildProfileShare, exportProfileShare, SHAREABLE_FIELDS,
 } from "../storage/profileShareService";
 // Reusing Contacts' own option constants for fields that must line up
 // with Contact's real values (Hosts/Travels/Availability/etc.) — same
@@ -1586,7 +1586,7 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
 // wanted — but this remains the user's own placement call to make after
 // a real click-through, not something to move unilaterally.
 // risk, not where the buttons live.
-function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) {
+function ShareProfilePanel({ T, tr, resolvedHivStatus, hivStatusInformedDate, onClose }) {
   const [status, setStatus] = useState(null);
   const [confirming, setConfirming] = useState(null); // "file" | "text" | null
   // ADDED 26 Aug 2026 �?" real ask: last tested date should be
@@ -1595,15 +1595,70 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
   // ADDED 1 Oct 2026 - off by default, and the default is what the app already
   // did (not shared at all), so nobody's existing exports change shape.
   const [includeHivStatus, setIncludeHivStatus] = useState(false);
-  // ADDED 14 Nov 2026 — the field-transfer list starts collapsed; the
-  // summary line is the glanceable answer, the expansion is the receipt.
-  const [shareListOpen, setShareListOpen] = useState(false);
+  // ADDED 16 Nov 2026 — per-field granularity: every SHAREABLE_FIELDS entry
+  // starts selected, the owner can un-tap anything they don't want to leave
+  // the device (specific kinks, chems, etc.). Stored as field -> boolean.
+  const [selectedFields, setSelectedFields] = useState(() => {
+    const s = {};
+    SHAREABLE_FIELDS.forEach((f) => { s[f] = true; });
+    return s;
+  });
+  // Per-section expanded state for the field list (each section expands
+  // independently rather than all-or-nothing).
+  const [expandedSections, setExpandedSections] = useState(new Set());
 
   const shareOptions = {
     includeLastTestedDate,
     includeHivStatus,
     resolvedHivStatus,
     hivStatusInformedDate,
+    selectedFields,
+  };
+
+  // Per-field granularity: every SHAREABLE_FIELDS entry starts selected;
+  // the owner can un-tap anything they don't want to leave the device
+  // (specific kinks, chems, etc.). Rendered as expandable sections below.
+  const FieldToggle = ({ field, checked, onChange }) => {
+    const label = FIELD_LABELS[field] || field;
+    return (
+      <div role="switch" tabIndex={0} aria-checked={checked}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!checked); } }}
+        onClick={() => onChange(!checked)}
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44 }}>
+        <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${checked ? T.contactsTeal : T.border}`, background: checked ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {checked && <Check size={12} color="#FFFFFF" />}
+        </div>
+        <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, flex: 1 }}>{label}</div>
+      </div>
+    );
+  };
+
+  const SECTIONS = [
+    { key: "identity", label: "Identity", fields: ["displayName", "nickname", "pronouns", "recon", "age", "ageIsApprox", "city", "profilePicture"] },
+    { key: "contact", label: "Contact details", fields: ["phone", "snapchat", "fabguys", "fabswingers", "contactableVia"] },
+    { key: "hosting", label: "Hosting & travel", fields: ["hosts", "travels", "travelMode"] },
+    { key: "availability", label: "Availability", fields: ["availability", "nonAvailabilityRules", "readilyAvailable"] },
+    { key: "into", label: "Into / limits", fields: ["statedKinks", "limits"] },
+    { key: "chems", label: "Chems", fields: ["knownChems"] },
+    { key: "physical", label: "Physical", fields: ["bdsmRole", "sexualPosition", "length", "thickness", "foreskin", "foreskinDetail", "chastityStatus", "cummer", "knownPrepDoxy"] },
+  ];
+
+  const selectedCount = SHAREABLE_FIELDS.filter((f) => selectedFields[f]).length;
+  const allSelected = selectedCount === SHAREABLE_FIELDS.length;
+  const toggleAll = () => setSelectedFields(() => {
+    const s = {};
+    SHAREABLE_FIELDS.forEach((f) => { s[f] = !allSelected; });
+    return s;
+  });
+
+  const toggleSection = (key) => {
+    const fields = SECTIONS.find((s) => s.key === key)?.fields || [];
+    const sectionAll = fields.every((f) => selectedFields[f] ?? true);
+    setSelectedFields((p) => {
+      const s = { ...p };
+      fields.forEach((f) => { s[f] = !sectionAll; });
+      return s;
+    });
   };
 
   // ADDED 14 Nov 2026 — the panel's wording is DERIVED from the same
@@ -1657,11 +1712,6 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
     address: "Address",
     nhsNumber: "NHS number",
   };
-  const { shared, neverShared, optIn } = describeShareFields(shareOptions);
-  const label = (f) => FIELD_LABELS[f] || f;
-  const sharedCopy = shared.map(label).join(", ") + (optIn.length ? `, ${optIn.map(label).join(", ")}` : "");
-  const neverSharedCopy = neverShared.map(label).join(", ");
-  const optInCopy = optIn.length ? optIn.map(label).join(" and ") : "";
 
   const doExportFile = async () => {
     try {
@@ -1703,84 +1753,106 @@ function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate, tr }) 
   }
 
   return (
-    <div style={{ padding: "8px 16px 100px" }}>
-      {/* ADDED 26 Aug 2026 — real ask: opt-in toggle, off by default. */}
-      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setIncludeLastTestedDate((v) => !v)}
-        style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, marginBottom: 10 }}>
-        <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${includeLastTestedDate ? T.contactsTeal : T.border}`, background: includeLastTestedDate ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {includeLastTestedDate && <Check size={12} color="#FFFFFF" />}
+    <div style={{ position: "fixed", inset: 0, zIndex: 230, background: T.bg, overflowY: "auto", fontFamily: FONT_FAMILY, paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>
+      {/* Header — sits at top so the share controls are visible immediately,
+          not scrolled off the bottom of a long profile page. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "calc(18px + env(safe-area-inset-top)) 16px 10px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose?.(); } }} onClick={onClose} style={{ cursor: "pointer", padding: 12, boxSizing: "content-box", marginTop: -12, marginRight: -12, marginBottom: -12, marginLeft: -12 }} aria-label="Close">
+          <ChevronLeft size={20} color={T.textSecondary} />
         </div>
-        <div>
-          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeLastTestedDate", "Include last tested date")}</div>
-          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>Just the date itself (±time) — never linked to the actual test record.</div>
-        </div>
+        <span style={{ ...TYPE.sectionLabel, color: T.contactsTeal, flex: 1 }}>{tr("myProfile.title", "My Profile")}</span>
+        <div style={{ width: 44 }} />
       </div>
-      {/* ADDED 1 Oct 2026 — HIV status is shareable, opt-in, off by default.
-          The copy names the disclosure instead of describing the field: a
-          toggle that just said "include HIV status" reads like one more
-          preference, and the person ticking it should know it lands in a file
-          that leaves the device. It also says what NOT sharing looks like on
-          the other end, because "not disclosed" and "never told me" are
-          deliberately indistinguishable there — a person sharing should not
-          have to reason about that on their own. */}
-      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setIncludeHivStatus((v) => !v)}
-        style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, marginBottom: 10 }}>
-        <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${includeHivStatus ? T.contactsTeal : T.border}`, background: includeHivStatus ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {includeHivStatus && <Check size={12} color="#FFFFFF" />}
-        </div>
-        <div>
-          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeHIVStatus", "Include my HIV status")}</div>
-          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>
-            {includeHivStatus
-              ? "Your status and the date it applies to will be written into this file. It stays off unless you tick it."
-              : "Off — this is the most sensitive thing SHOS holds about you, so it is never added unless you ask. Whoever imports this will simply see “Not recorded”, the same as if you had never said."}
+      <div style={{ padding: 16 }}>
+        {/* ADDED 26 Aug 2026 — real ask: opt-in toggle, off by default. */}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setIncludeLastTestedDate((v) => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, marginBottom: 10 }}>
+          <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${includeLastTestedDate ? T.contactsTeal : T.border}`, background: includeLastTestedDate ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {includeLastTestedDate && <Check size={12} color="#FFFFFF" />}
+          </div>
+          <div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeLastTestedDate", "Include last tested date")}</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>Just the date itself (±time) — never linked to the actual test record.</div>
           </div>
         </div>
-      </div>
-      {/* ADDED 14 Nov 2026 — BACKLOG 127/129/131: the panel now states
-          exactly which fields transfer, generated from the SAME allowlist
-          buildProfileShare writes and mapShareToContactData reads, so the
-          words on screen cannot drift from the code the way a hand-written
-          sentence could. The list is expandable rather than always-open
-          because 30 field names on one screen is noise; the summary line
-          is the glanceable answer and the expansion is the receipt. */}
-      <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.sm, padding: 12, marginBottom: 10 }}>
-        <div role="button" tabIndex={0} aria-label={shareListOpen ? "Hide field list" : "Show full field list"}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShareListOpen((v) => !v); } }}
-          onClick={() => setShareListOpen((v) => !v)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: "pointer" }}>
-          <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>What transfers to the other person's Contacts</div>
-          <ChevronDown size={14} color={T.textSecondary} style={{ transform: shareListOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+        {/* ADDED 1 Oct 2026 — HIV status is shareable, opt-in, off by default. */}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setIncludeHivStatus((v) => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, marginBottom: 10 }}>
+          <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${includeHivStatus ? T.contactsTeal : T.border}`, background: includeHivStatus ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {includeHivStatus && <Check size={12} color="#FFFFFF" />}
+          </div>
+          <div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{tr("myProfile.includeHIVStatus", "Include my HIV status")}</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>
+              {includeHivStatus
+                ? "Your status and the date it applies to will be written into this file. It stays off unless you tick it."
+                : "Off — this is the most sensitive thing SHOS holds about you, so it is never added unless you ask. Whoever imports this will simply see “Not recorded”, the same as if you had never said."}
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 6, lineHeight: 1.5 }}>
-          Everything you can see in IDENTITY, FIND ME ON, HOSTING/TRAVEL, AVAILABILITY, INTO/LIMITS, CHEMS and PHYSICAL — plus your photo{optInCopy ? `, and ${optInCopy}` : ""}.
+        {/* Master select-all / none for all shareable fields. */}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAll(); } }} onClick={toggleAll}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", minHeight: 44, marginBottom: 10 }}>
+          <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${allSelected ? T.contactsTeal : T.border}`, background: allSelected ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {allSelected && <Check size={12} color="#FFFFFF" />}
+          </div>
+          <div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{allSelected ? "Deselect all fields" : "Select all fields"}</div>
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>{selectedCount} of {SHAREABLE_FIELDS.length} selected</div>
+          </div>
         </div>
-        {shareListOpen && (
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
-            <div style={{ fontSize: 11, color: T.textSecondary, fontWeight: 600, marginBottom: 4 }}>Shared:</div>
-            <div style={{ fontSize: 11, color: T.textDisabled, lineHeight: 1.6 }}>{sharedCopy}</div>
-            <div style={{ fontSize: 11, color: T.textSecondary, fontWeight: 600, marginTop: 10, marginBottom: 4 }}>Never shared, on purpose (Clinic Card use only):</div>
-            <div style={{ fontSize: 11, color: T.textDisabled, lineHeight: 1.6 }}>{neverSharedCopy}</div>
+        {/* ADDED 16 Nov 2026 — per-field granularity: expandable sections with
+            individual toggles so the owner can share specific kinks, chems,
+            etc. instead of all-or-nothing. */}
+        {SECTIONS.map((section) => {
+          const sectionFields = section.fields.filter((f) => SHAREABLE_FIELDS.includes(f));
+          const sectionSelected = sectionFields.filter((f) => selectedFields[f]).length;
+          const sectionAll = sectionSelected === sectionFields.length;
+          return (
+            <div key={section.key} style={{ border: `1px solid ${T.border}`, borderRadius: radius.sm, overflow: "hidden", marginBottom: 10 }}>
+              <div role="button" tabIndex={0} aria-expanded={expandedSections.has(section.key)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedSections((prev) => { const ns = new Set(prev); ns.has(section.key) ? ns.delete(section.key) : ns.add(section.key); return ns; }); } }}
+                onClick={() => setExpandedSections((prev) => { const ns = new Set(prev); ns.has(section.key) ? ns.delete(section.key) : ns.add(section.key); return ns; })}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 12px", cursor: "pointer" }}>
+                <div style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, fontWeight: 600 }}>{section.label}</div>
+                <div style={{ fontSize: 11, color: T.textDisabled }}>{sectionSelected} of {sectionFields.length}</div>
+                <ChevronDown size={14} color={T.textSecondary} style={{ transform: expandedSections.has(section.key) ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+              </div>
+              {expandedSections.has(section.key) && (
+                <div style={{ padding: "0 12px 10px" }}>
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSection(section.key); } }} onClick={() => toggleSection(section.key)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: radius.sm, cursor: "pointer", marginBottom: 6 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${sectionAll ? T.contactsTeal : T.border}`, background: sectionAll ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {sectionAll && <Check size={12} color="#FFFFFF" />}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.textPrimary, flex: 1 }}>{sectionAll ? "Deselect all" : "Select all"}</div>
+                  </div>
+                  {section.fields.map((field) => (
+                    <FieldToggle key={field} field={field} checked={selectedFields[field] ?? true} onChange={(v) => setSelectedFields((p) => ({ ...p, [field]: v }))} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginBottom: 8 }}>
+          Sharing sends only what's selected above — clinical/identity fields (DOB, NHS number, emergency contacts, clinic number, address, about-me notes, allergies) are never shared, on purpose.
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("file")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
+            <Download size={13} /> Save as file
+          </div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("text")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
+            <Copy size={13} /> Copy as text
+          </div>
+        </div>
+        {status && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 10, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreenText : T.actionRedText, fontSize: 12 }}>
+            {status.ok ? <Check size={14} /> : <X size={14} />}
+            {status.msg}
           </div>
         )}
       </div>
-      <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginBottom: 8 }}>
-        Sharing sends only what's above — never relationship notes or how-we-met info, since those don't exist on this record.
-      </div>
-      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("file")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
-          <Download size={13} /> Save as file
-        </div>
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirming("text")} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer"}}>
-          <Copy size={13} /> Copy as text
-        </div>
-      </div>
-      {status && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 10, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreenText : T.actionRedText, fontSize: 12 }}>
-          {status.ok ? <Check size={14} /> : <X size={14} />}
-          {status.msg}
-        </div>
-      )}
     </div>
   );
 }
@@ -1908,7 +1980,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
 
         <ProfileSummary profile={profile} T={T} onEdit={() => setEditing(true)} />
         <ProfileDataView profile={profile} T={T} onOpenGlossary={onOpenGlossary} />
-        {showShare && <ShareProfilePanel T={T} tr={tr} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} />}
+        {showShare && <ShareProfilePanel T={T} tr={tr} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} onClose={() => setShowShare(false)} />}
 
         {editing && (
           <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} onOpenGlossary={onOpenGlossary} initialTab={initialEditTab} />

@@ -159,72 +159,21 @@ export async function buildProfileShare(options = {}) {
     hivStatusInformedDate = "",
     anonymise = false,
     expiresInSeconds = 30,
+    selectedFields,
   } = options;
   const profile = await MyProfileRepository.getProfile();
-  const shareableData = {
-    displayName: profile.displayName,
-    nickname: profile.nickname,
-    pronouns: profile.pronouns,
-    recon: profile.recon,
-    age: profile.age,
-    ageIsApprox: profile.ageIsApprox,
-    city: anonymise ? "" : profile.city,
-    phone: anonymise ? "" : profile.phone,
-    snapchat: anonymise ? "" : profile.snapchat,
-    fabguys: anonymise ? "" : profile.fabguys,
-    fabswingers: anonymise ? "" : profile.fabswingers,
-    contactableVia: profile.contactableVia,
-    hosts: profile.hosts,
-    travels: profile.travels,
-    travelMode: profile.travelMode,
-    availability: profile.availability,
-    nonAvailabilityRules: profile.nonAvailabilityRules,
-    readilyAvailable: profile.readilyAvailable,
-    statedKinks: profile.statedKinks,
-    limits: profile.limits,
-    knownChems: profile.knownChems,
-    bdsmRole: profile.bdsmRole,
-    sexualPosition: profile.sexualPosition,
-    length: profile.length,
-    thickness: profile.thickness,
-    foreskin: profile.foreskin,
-    foreskinDetail: profile.foreskinDetail,
-    chastityStatus: profile.chastityStatus,
-    cummer: profile.cummer,
-    knownPrepDoxy: profile.knownPrepDoxy,
-    // CHANGED 26 Aug 2026 — real ask: made genuinely optional (off
-    // unless explicitly requested), not automatically included every
-    // time. Already was — and stays — a plain date string with no
-    // link to any real Testing record; this only adds the opt-in
-    // gate on top of that, doesn't change what the value itself is.
-    // CHANGED 26 Aug 2026 — real ask: computed live from actual Test
-    // records at share time (same logic as the profile screen's own
-    // display), not read from a stored profile field — the user's own
-    // clarification: this should be auto-calculated, not manually
-    // maintained. Still just a raw date string here, same as before —
-    // the underlying Test record itself is never referenced or
-    // shared, only its date value.
-    ...(includeLastTestedDate ? { lastTestedDate: await getAutoLastHivTestedDate() } : {}),
-    // ADDED 1 Oct 2026 - HIV status becomes shareable, but ONLY when the user
-    // ticks the box, and the default is the existing behaviour of not
-    // including it. That matters more here than for any other field: it is
-    // arguably the most sensitive single fact this app holds about the owner.
-    //
-    // Resolved by the CALLER and passed in, deliberately: re-deriving it here
-    // would be a second implementation of "stated over derived" in a
-    // different file, which is precisely the drift this app keeps paying for
-    // (the Testing banner shipped dead for a whole release because a
-    // fingerprint was computed in one file with no copy where the consumer
-    // could see it). The shape of the payload is still owned in one place, by
-    // hivStatusSharePayload.
-    ...(includeHivStatus ? hivStatusSharePayload(resolvedHivStatus, hivStatusInformedDate) || {} : {}),
-    profilePicture: profile.profilePicture,
-    // Deliberately NOT included, ever — no toggle, no option, not
-    // just "excluded by default": aboutMeNotes, allergies,
-    // emergencyContactName, emergencyContactPhone, emergencyNotes,
-    // dateOfBirth, clinicNumber, address, nhsNumber, updatedAt —
-    // highly sensitive personal/clinical-use data.
-  };
+  // selectedFields is a map of field name -> boolean. Anything not in the
+  // map (or explicitly true) is included; explicitly false drops it. This
+  // lets the Share panel offer per-field granularity (pick specific kinks,
+  // chems, etc.) instead of all-or-nothing.
+  const anonymised = new Set(["city", "phone", "snapchat", "fabguys", "fabswingers"]);
+  const include = (field) => selectedFields?.[field] ?? true;
+  const shareableData = {};
+  SHAREABLE_FIELDS.forEach((field) => {
+    if (include(field)) {
+      shareableData[field] = anonymise && anonymised.has(field) ? "" : profile[field];
+    }
+  });
   return {
     type: SHARE_TYPE,
     schemaVersion: SCHEMA_VERSION,
