@@ -2478,7 +2478,7 @@ link.
 - **Source:** Device audit (14 Nov 2026) — screen coverage tracker
 - **Issue:** Onboarding/welcome flow, PIN-creation flow, and first-run seeding UI were never exercised this pass (dev profile already complete). Unverified visually. Quick tour also crashed in an earlier session and was not re-tested.
 - **Expected:** dedicated pass with cleared app data: exercise onboarding end-to-end (welcome, PIN creation, first-run seeding, quick tour) and fix any defects found.
-- **Status:** Verified on device (16 Nov 2026) — 5 onboarding slides, buttons clear of the nav bar; quick tour step 1/12 → Contacts spotlight → Back returned to Home, no crash. PIN setup + App Lock flows verified separately.
+- **Status:** Verified on device (16 Nov 2026) — 5 onboarding slides, buttons clear of the nav bar. Interactive tour fully walked 1/12 → 12/12: Contacts tab spotlight, Medication tab spotlight (step 4), Settings gear spotlight (step 9), Quick exit icon spotlight (step 11), "That's it!" finish card, Done closes the overlay back to Home with no crash. Back from the Contacts spotlight returns to step 1 with Home rendered (the backward-to-Home fix). PIN setup + App Lock flows verified separately.
 
 ### 142. Encounter landing live search not exercised
 - **Source:** Device audit (14 Nov 2026) — screen coverage tracker
