@@ -21,6 +21,8 @@ Fresh-install walkthrough (demo data), full code/docs audit, and ranked fixes. N
 - **`CHALLENGE-OF-INTEROP-PLAN.md`** — challenge of the above: deep-link "doors with no keys", import scope tightened, LOINC dropped, UK-first + US compatibility gaps, menopause scope caveats.
 - **`DECISIONS-ROUND3.md`** — final owner decisions: no deep links yet, import v1 + synthetic Clue data, Clinic Card extension, menopause with neutral hysterectomy field, build order.
 - **`WIDGET-BRAINSTORM.md`** — suggested new widgets; W1 contact widget framework (deep-link key + guard) recommended this round.
+- **`BROWSER-FEEDBACK-ROUND2.md`** — owner's second live review; A1–A8 triaged (6 fixed, 2 challenged/open).
+- **`CHALLENGE-TESTING-MEASUREMENTS.md`** — challenge of Testing↔Measurements linkage + measurement-type suggestion bank; A2 "routine meds" challenged with evidence.
 - **`screenshots/`** — 28 captured screens (dark + light, list/detail/form).
 
 Shipped from this review: the "No barrier method" canonical label + search/filter, the update-banner dismiss fix, and the web biometric gating (see `docs/HISTORY.md`, 17 Nov entries). Owner decisions are in `BACKLOG.md` under "17 Nov 2026".

@@ -1205,8 +1205,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
                 <span>{locationName}</span>
                 {attendeeChips.length > 0 && <span> · </span>}
                 {attendeeChips}
-                <span> · </span>
-                <span>{encounter.encounterType}</span>
+                {encounter.encounterType && <><span> · </span><span>{encounter.encounterType}</span></>}
               </div>
             </div>
         </div>
@@ -1723,9 +1722,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           </div>
         )}
         {anyPrepCoverage && (
-          <div style={{ margin: "0 16px 6px", padding: "8px 12px", borderLeft: "3px solid #FF7A7E", borderRadius: 6, background: `${T.actionRed}15`, fontSize: 11, lineHeight: 1.4, color: T.textPrimary, display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-            <span style={{ color: "#FF7A7E", fontWeight: 800, flex: "0 0 auto" }}>⚠ INFERRED — not confirmed:</span>
-            <span style={{ flex: "0 1 auto", minWidth: 0, fontWeight: 500 }}>PrEP coverage is estimated from your 7-day medication log and reassessed 24h post-event. It is not a confirmed lab result.</span>
+          <div style={{ margin: "0 16px 6px", padding: "8px 12px", borderLeft: "3px solid #FF7A7E", borderRadius: 6, background: `${T.actionRed}15`, fontSize: 11, lineHeight: 1.4, color: T.textPrimary, display: "flex", alignItems: "flex-start", gap: 6, fontWeight: 500 }}>
+            {/* CHANGED 17 Nov 2026 (owner): one continuous line of text —
+                "INFERRED — not confirmed: PrEP coverage is…" — rather than two
+                separate flex spans that left an awkward gap/wrap on narrow screens. */}
+            <span style={{ flex: "0 1 auto", minWidth: 0 }}>⚠ <strong style={{ color: "#FF7A7E" }}>INFERRED — not confirmed:</strong> PrEP coverage is estimated from your 7-day medication log and reassessed 24h post-event — not a confirmed lab result.</span>
             <button onClick={() => setDismissedPrepWarning(true)} aria-label="Dismiss PrEP coverage note" style={{ flex: "0 0 auto", width: 22, height: 22, display: "grid", placeItems: "center", borderRadius: 999, border: "none", background: "transparent", color: T.textSecondary, cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, marginLeft: 4, WebkitAppearance: "none", MozAppearance: "none", appearance: "none" }}>×</button>
           </div>
         )}

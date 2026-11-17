@@ -322,12 +322,6 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             <Stack size={15} color={T.healthcare} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.episodes", "Episodes")}</span>
           </div>
-          <div onClick={() => setShowAttachments(true)} role="button" tabIndex={0} aria-label="Attachments"
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAttachments(true); } }}
-            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
-            <Paperclip size={15} color={T.healthcare} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.attachments", "Attachments")}</span>
-          </div>
           {/* ADDED 20 Oct 2026 (t122) - real ask: "add calendar to healthcare
               next to attachments". It REUSES the existing Calendar screen
               rather than mounting a second copy of it: the Calendar screen is
@@ -349,6 +343,15 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
             <CreditCard size={16} color={T.healthcare} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.clinicCard", "Clinic Card")}</span>
+          </div>
+          {/* MOVED 17 Nov 2026 (owner): Attachments last — Episodes, Calendar,
+              Clinic Card, Attachments. It's the least-used entry point, so it
+              sits after the three clinical shortcuts. */}
+          <div onClick={() => setShowAttachments(true)} role="button" tabIndex={0} aria-label="Attachments"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAttachments(true); } }}
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
+            <Paperclip size={15} color={T.healthcare} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcare }}>{tr("healthcare.attachments", "Attachments")}</span>
           </div>
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/

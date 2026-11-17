@@ -1727,7 +1727,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               busy={clearingSample}
               onCancel={closeSampleClearConfirm}
               onConfirm={clearSample}
-              margin="0px"
+              margin="6px 0 0"
             />
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>

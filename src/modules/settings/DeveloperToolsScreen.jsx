@@ -671,7 +671,7 @@ export function DeveloperToolsScreen({ onClose }) {
                       busy={clearingSample}
                       onCancel={() => setSampleList(null)}
                       onConfirm={handleClearSample}
-                      margin="0px"
+                      margin="6px 0 0"
                     />
                   </div>
                 )}
