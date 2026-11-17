@@ -1603,6 +1603,16 @@ async function testServiceWorkerAutoUpdate(browser) {
   try {
     fs.writeFileSync(distSwPath, bumpedSwSource);
 
+    // CHANGED 17 Nov 2026 — the update notice is now genuinely dismissible:
+    // dismissTransientBanners() above clicks "Dismiss", which (correctly)
+    // persists a 24h cooldown in localStorage["shos-sw-update-dismissed"].
+    // A genuinely NEW deploy must still show a banner even if a previous one
+    // was dismissed, so clear that cooldown here before simulating the new
+    // service-worker version. Previously the test relied on the DISMISS BUG
+    // (it wrote sessionStorage "1", which the guards ignored) — now that the
+    // bug is fixed, the test must set up its own precondition honestly.
+    await page.evaluate(() => { try { localStorage.removeItem("shos-sw-update-dismissed"); } catch {} });
+
     // Same real re-check the app's own visibilitychange handler
     // performs — triggers the browser to fetch the now-changed sw.js
     // off disk, see it's different, and run through the real install/
