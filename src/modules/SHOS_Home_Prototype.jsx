@@ -1760,7 +1760,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             You can bring the example records back any time. Anything you have added since is kept.
           </div>
           {restoreError ? (
-            <div role="alert" style={{ fontSize: 12, color: ACTION.red, marginTop: 8 }}>{restoreError}</div>
+            <div role="alert" style={{ fontSize: 12, color: actionRedColor, marginTop: 8 }}>{restoreError}</div>
           ) : null}
           {snapshotInfo ? (
             <div role="status" style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 8 }}>{snapshotInfo}</div>
