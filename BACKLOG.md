@@ -1830,7 +1830,7 @@ and fixed; the rest is a recorded finding list.
   in `recordExportService.js`).
 - `resolveDarkAccent` default-argument audit: the only outlier was Encounters'
   medication (`#4a90e2`); every other module/key is consistent.
-- No test referenced `#4a90e2` or `#3D63C9`, so the colour fixes are behaviour-safe.
+- Colour fixes for `#4a90e2` / `#3D63C9` are behaviour-safe (those literals are not pinned by tests).
 
 ### Recorded (not fixed — needs a decision or a bigger pass)
 - `13px` is used 516 times but has no TYPE token (TYPE defines 11/12/14/16/18/20/22).
@@ -1868,7 +1868,7 @@ and fixed; the rest is a recorded finding list.
 5. Add a CI guard for mockup hygiene (port the undefined-var / dead-palette /
    undefined-class checks into `smoke-test.cjs`) so the 0-FAIL state is ratcheted.
 6. Run the full `vitest run` once more after the Encounters/customOptionLists edits
-   (lint clean; no test references the changed values).
+   (lint clean; changed values are not pinned by any test).
 
 ## 49. Visual audit (13 Nov 2026) — full screen-by-screen pass + control-linkage rule
 
@@ -2593,4 +2593,20 @@ link.
 | 7 | Light-mode audit (solid surfaces, not glassmorphism) | 1 day | Ready |
 | 8 | Encounter search exercise | 0.25 day | Ready |
 | 9 | "Log all daily meds" exercise | 0.25 day | Ready |
+
+---
+
+## 17 Nov 2026 — beta audit decisions + shipped fix
+
+### Owner decisions (from the beta walkthrough / FSRH brainstorm)
+- **Vaginal health = remove + migrate (D1=B).** Folds into Symptoms (presentations), Testing (lab confirmation), Episodes (diagnosis + treatment + outcome). Keep a read-only repository shim one release so old backups (which `backupService.js` imports it to restore) still import. Overrides the 13 Nov "keep + enrich" decision. Full reasoning: `FSRH-ARCHITECTURE-BRAINSTORM.md`.
+- **Demo-data restore = snapshot-on-clear (D2=B).** "Restore sample data" beside "Clear sample data" in Home's banner + Developer tools (`ClearSampleDataConfirm` is shared by both). Never overwrite non-empty user collections; guard-rail tests required.
+- **hCG = urine default + optional quantitative serum value (D3).** NOT blood-only — urine hCG is the standard qualitative home test. Reuse Testing's `sampleType` option list (already has Blood/Urine).
+- **FSRH structure (cluster).** Rename "Menstrual & Contraception" to "Reproductive health"; keep three inner sections Cycle / Contraception / Pregnancy; do NOT add a 6th bottom tab and do NOT add to the overflowing top-level sub-tab row. Testing is the single owner of test records; Pregnancy becomes a projection + prefilled "+ Log test" deep-link (`testingRepository` already supports `prefill`).
+- **Pregnancy test = enter once, access from two places.** Stop storing the same event in both `TestingRepository` and `PregnancySheet`. Owner testing once in Testing; Pregnancy shows a filtered view.
+- **Menopause (considering, not decided):** user-entered status; a NEUTRAL "spotting after menopause → discuss with a clinician promptly" prompt linking to Resources. No referral/decision rule — app permanently excludes diagnosis engines and clinical risk scoring. Patient-facing wording needs owner sign-off (ideally clinical review).
+- **Cycle stats context (correctness):** annotate averages for active hormonal contraception (Depot/IUD suppress periods) and suppress the "irregular cycles" advisory in that context.
+
+### Ranked fixes R1–R13
+Shipped: R13 (No barrier method search/filter + canonical label); R1 (update banner dismiss fix + APK link removed on web); biometric toggle gated on web — see `docs/HISTORY.md`. Open, in priority order: R2 icon 404s + CSP; R3 restore demo data; R4 repeated summary cards + allergies green outline for NKDA/none/N/A; R5 hCG fields; R6 multiple mounted dialogs; R7 vaginal health removal; R8 transient zero counts; R9 overlapping ongoing periods; R10 onboarding polish; R11 Safety Share empty fields; R12 consistency nits. Full detail with effort/risk/code refs: `BETA-ACTION-PLAN.md`.
 

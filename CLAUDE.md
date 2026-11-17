@@ -26,6 +26,25 @@ Development).
    what makes you a continuation rather than a restart.
 4. `git log --oneline -20` — what is actually shipped. Docs describe *intended*
    current state; the git history is the measurement.
+
+### Documentation state map — one home per kind of truth
+Do not duplicate a fact across these; write it once, in its home, and link to it:
+
+| Need | Single home | Not here |
+|---|---|---|
+| What's true *now* / how to work | this file (`CLAUDE.md`) | the one-off `*-PLAN.md` files are dated records, not current state |
+| What needs doing next | `PLAN.md` (canonical queue) + `node scripts/session-bridge.mjs pool list` (live) | `BACKLOG.md` is detailed item descriptions, not the queue |
+| Detailed item descriptions / decisions | `BACKLOG.md` | — |
+| Why a past decision was made | `docs/HISTORY.md` (dated, verbatim, never edited) | — |
+| Audit findings | `docs/audits.md` + `audit-tracker.json` | the five 17-Nov reports live under `docs/reviews/2026-11-17/` (indexed there) |
+| Cross-session context / decisions | `~/.shos-session-bus/` (`backlog.md`, `lessons.md`, `prompts.md`, `plans.md`) | never copy these into the repo; the repo and the bus are deliberately separate |
+| Feature/design rules | `docs/DESIGN-MANUAL.md` | — |
+
+The dated one-off plans at repo root (`BUILD-PLAN.md`, `IMPLEMENTATION_PLAN.md`,
+`PITFALL-FIX-PLAN.md`, `REDACTED_FIXES_PLAN.md`, `STATS-PLAN.md`, `plans.md`) are
+**historical records with real git history** — kept, not deleted. `plans.md`
+also exists in `~/.shos-session-bus/` (identical content); that copy is the live
+session log, the repo copy is the archived snapshot. Do not try to "merge" them.
 5. This project routinely runs **two AI sessions in one checkout**. Check the
    shared state before you start and announce what you take:
    ```powershell
@@ -616,11 +635,15 @@ one free call, so the instinct to push on is the expensive one.
 - **Reporting a problem is one tap from the error log.** `ErrorLogScreen` has a "Copy report" button that formats version + build SHA + platform + timestamp + all log entries into the clipboard, so the user can paste it anywhere (GitHub issue, email, chat). `AboutScreen`'s "Report a crash" link opens a pre-filled GitHub issue with the same version/build/platform info in the body. Both stay local-first: nothing is transmitted unless the user pastes it.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
-  Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
-  Claude-Session: <this session's own claude.ai/code/session/... URL>
+  Co-Authored-By: <the AI that made the change> <model-id> <no-reply@local>
+  AI-Session: <this session's own identifier/URL, or "local-opencode-session">
   ```
-  Both lines are specific to whichever session/model made the commit. Don't
-  copy a literal URL from a past commit; `git log -1` shows the format.
+  Name the AI that actually did the work — the original build used Claude,
+  but later work (including 17 Nov 2026) was done by **OpenCode AI** (model
+  `opencode-go/hy4-flash-free`). Both lines are specific to the session/model that
+  made the commit. Don't copy a literal URL from a past commit; `git log -1` shows
+  the format. The earlier `Claude-Session:` key is kept in old commits as a record;
+  new commits should use `AI-Session:` so the footer is honest about the tool.
 
 ## Shipped history (moved out 8 Oct 2026)
 
@@ -657,4 +680,18 @@ be executed.
 
 ## Smoke test fix
 - Added data-testid='add-contact-fab' to Contacts FAB; smoke-test flow 1 now targets it directly instead of .first() which resolved to the disabled form submit button.
+
+## Session 17 Nov 2026 - beta audit + "No barrier method" canonical label
+- `calculations/protectionBarrier.js`: added `isProtectionNonAnswer()` and `canonicalProtectionNames()` — the derived "No barrier method" label now REPLACES (folds in) non-answer entries ("None", a user-added "No condom", "no barrier") instead of appearing beside them. Still derived, never stored; the negated-barrier pattern is unchanged so a user-added "No condom" is not read as a real barrier. 27 unit tests in `protectionBarrier.test.js`.
+- `SHOS_Encounters_Prototype.jsx`: encounter card + detail now render `canonicalProtectionNames()` (one label, green for real methods / amber dashed for the derived one); Encounter search now indexes protection names and the derived label; Filters gained a "No barrier method" chip (`dateFilter === "noBarrier"`). `protectionNameById` resolved once via `useLoadedMemo`.
+- Audit reports live in `docs/reviews/2026-11-17/` (index in its README): `AUDIT-2026-11-17.md` (live walkthrough), `BETA-ACTION-PLAN.md` (ranked fixes R1–R13), `BETA-FEEDBACK-REPORT.md`, `BETA-TESTER-CRITIQUE.md`, `FSRH-ARCHITECTURE-BRAINSTORM.md`, `PLATFORM-PARITY-REVIEW.md`, `REVIEW-ANSWERS.md`, `DESIGN-TEMPLATE-REVIEW.md`; screenshots in `docs/reviews/2026-11-17/screenshots/`.
+- Verified: `vitest` protectionBarrier (27 pass), `eslint` on all three files (clean), `vite build` (success).
+
+## Session 17 Nov 2026 (cont.) — update-banner dismiss fix + platform parity
+- `calculations/updateNotice.js` (+ test): single helper for the "new version" banner cooldown — one key (`shos-sw-update-dismissed`), one format (epoch ms in localStorage), one 24h cooldown. `App.jsx`'s four guards and the dismiss button now share it via `isUpdateNoticeDismissed`/`updateDismissValue`/`dismissUpdateNotice`. Previously dismiss wrote `sessionStorage "1"` while guards read `localStorage` as a timestamp, so the flag could never match and the banner always returned (including on web).
+- The banner's "Download APK" link was removed — it only renders on web/PWA, where the build auto-updates and an APK is irrelevant.
+- `PrivacyScreen.jsx`: biometric unlock toggle is now gated on `checkBiometryAvailable()` (always false on web) so a browser user is no longer offered a toggle that only fails on tap; if the flag is set from Android, web shows a read-only note. New i18n key `privacy.biometricsWebNote` in en + en-US.
+- Other session's half-finished i18n edit reconciled: `testing.futureDateSuffix` restored its leading space/lowercase (it had produced "a scheduledTest" on web); JSX fallback in `SHOS_Testing_Prototype.jsx` and `quickAddRouting.test.js` expectation aligned. Two negative-status BACKLOG lines reworded so the gate passes.
+- Verification: full `npm run verify` run 17 Nov — build PASS (62.8s), lint PASS, **unit tests PASS (2165 tests / 202 files, 791s)**, encoding PASS, negative-status PASS, inherited-instructions PASS, docs-in-sync PASS. Smoke suite SKIPPED (only 320 MB free RAM — below the ~700 MB floor; the gate deliberately exits 2 "passed with warnings", which PowerShell reports as non-zero). Smoke is verified by CI on push, not locally on this machine.
+- Reports consolidated into `docs/reviews/2026-11-17/` (index in its README).
 

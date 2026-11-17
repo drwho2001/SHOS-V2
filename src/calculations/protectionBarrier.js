@@ -33,6 +33,36 @@ const NEGATED_BARRIER_PATTERN =
 
 export const NO_BARRIER_LABEL = "No barrier method";
 
+// NON-ANSWER entries ("None", "N/A", a user-added "No condom", "no barrier"…)
+// describe the absence of protection. They are NOT distinct protection methods
+// and must never appear next to the derived NO_BARRIER_LABEL — that double
+// label ("None" + "No barrier method") was the exact redundancy reported.
+// Negated barriers are already caught by NEGATED_BARRIER_PATTERN; the rest are
+// explicit non-answer words. Whole-value match only (no "Amsterdam" false hit).
+const NON_ANSWER_PATTERN = /^(none|n\/a|na|not applicable|nil|no protection|no barrier|nothing)$/i;
+
+export function isProtectionNonAnswer(name) {
+  const value = String(name || "").trim();
+  if (!value) return false;
+  return NON_ANSWER_PATTERN.test(value) || NEGATED_BARRIER_PATTERN.test(value);
+}
+
+/**
+ * Single canonical display list for a record's protection names.
+ *
+ * Rule (owner, 17 Nov 2026):
+ *   - a condom/dam selected  -> show the real methods only
+ *   - none selected          -> show exactly one derived "No barrier method"
+ * "No barrier method" REPLACES "No condom" and "None" — it is never stored,
+ * and a non-answer entry is folded into it rather than shown alongside it.
+ */
+export function canonicalProtectionNames(names) {
+  const list = Array.isArray(names) ? names.filter(Boolean) : [];
+  const real = list.filter((n) => !isProtectionNonAnswer(n) && n !== NO_BARRIER_LABEL);
+  if (hasBarrierMethod(list)) return real;
+  return [NO_BARRIER_LABEL, ...real];
+}
+
 export function isBarrierMethod(name) {
   const value = String(name || "").trim();
   if (!value) return false;

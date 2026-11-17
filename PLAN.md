@@ -5,16 +5,23 @@
 > Companion: `BACKLOG.md` (detailed item descriptions), `AUDITS.md` (findings log),
 > `audit-tracker.json` (screen coverage + toggle status).
 
-## Current state
-- **Visual audit (Finding 49):** Dark pass mostly complete. Light pass complete.
-  Onboarding UNVERIFIED. Control-linkage rule (§49a) requires retroactive
-  verification of all toggles.
-- **Uncommitted changes:** 37 files, 1685 insertions (audit/fix work from
-  sessions 11-13 Nov). Needs committing.
-- **Tests:** vitest 2063 passed / 1 skipped / 0 failed. eslint 0 errors, 2
-  pre-existing warnings. Smoke tests 0 FAIL on 10 files.
-- **Open findings:** Dead-exports cleanup (Batch 1c) only. All other findings resolved.
-  Challenge pass: 13px untokenised (516 sites), dead exports, contactMerge.js.
+## Current state (refreshed 17 Nov 2026)
+- **Live beta audit done:** full fresh-install walkthrough of every screen, form and toggle
+  (dark + light), with screenshots. Reports + ranked fixes: `docs/reviews/2026-11-17/`
+  (start with `BETA-ACTION-PLAN.md` R1–R13 and `AXES-BRAINSTORM.md`).
+- **Shipped this round:** "No barrier method" canonical label + search/filter (R13);
+  update-banner dismiss fix + APK link removed (R1); biometric toggle gated on web.
+  See `docs/HISTORY.md`, 17 Nov entries.
+- **Owner decisions recorded (not built):** D1=B remove+migrate vaginal health; D2=B
+  snapshot-on-clear demo restore; D3 urine+serum hCG; FSRH = cluster, menopause build,
+  pregnancy tests owned by Testing. See `BACKLOG.md` "17 Nov 2026".
+- **Verification (17 Nov, local):** 38 targeted unit tests pass, eslint clean on changed
+  files, `vite build` success. A full `npm run verify --fast` run did not complete on this
+  machine (300s timeout); CI remains the gate. Check `git status` for the current
+  uncommitted set rather than trusting a number here.
+- The batches below are the older 11–13 Nov working plan; items already shipped are
+  recorded in `docs/HISTORY.md`. Treat this file's *queue* as the canonical next work,
+  and `docs/reviews/2026-11-17/BETA-ACTION-PLAN.md` as the current priority order.
 
 ---
 
@@ -205,6 +212,13 @@ confirmed working (103)).
 | 0av | My Profile: pad bottom above INTO / LIMITS + remove left-edge artifact (BACKLOG 101/102) | Medium | 0.25 day |
 
 ## Recommended next steps (in priority order)
+
+> **17 Nov 2026:** The list below is the older 11–13 Nov working order (Batches 1–5 are
+> all DONE per their own tables above; do not re-run them). The **current ranked,
+> challenged backlog is `docs/reviews/2026-11-17/CONSOLIDATED-BACKLOG.md`** — it folds in
+> the beta findings, the approved axes (recovery ranked above cosmetic), the 14 Nov
+> device-audit items, and the owner's FSRH decisions, and marks rejected items so they
+> are not rebuilt. Prefer it over the list below.
 
 1. **Batch 1** — ✅ DONE (committed, renamed, baseline verified)
 2. **Batch 2** — ✅ DONE (8a/8c/8e/10 already fixed, banner guard done)

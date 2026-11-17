@@ -1,19 +1,71 @@
 {
-    "$schema":  "https://opencode.ai/config.json",
-    "mcp":  {
-                "notion":  {
-                               "type":  "local",
-                               "command":  [
-                                               "npx",
-                                               "-y",
-                                               "@notionhq/notion-mcp-server"
-                                           ],
-                               "enabled":  true,
-                               "environment":  {
-                                                   "NOTION_TOKEN":  "${env:NOTION_TOKEN}"
-                                               }
-                           }
-            },
-    "model":  "opencode-go/beam-free",
-    "small_model":  "opencode-go/beam-free"
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+        "notion": {
+            "type": "local",
+            "command": [
+                "npx",
+                "-y",
+                "@notionhq/notion-mcp-server"
+            ],
+            "enabled": true,
+            "environment": {
+                "NOTION_TOKEN": "${env:NOTION_TOKEN}"
+            }
+        }
+    },
+    "provider": {
+        "cloudflare": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Cloudflare Workers AI (free tier)",
+            "options": {
+                "baseURL": "https://api.cloudflare.com/client/v4/accounts/${env:CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+                "apiKey": "${env:CLOUDFLARE_API_TOKEN}"
+            }
+        },
+        "huggingface": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Hugging Face Inference (free tier)",
+            "options": {
+                "baseURL": "https://router.huggingface.co/v1",
+                "apiKey": "${env:HF_TOKEN}"
+            }
+        },
+        "mistral": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Mistral (free tier)",
+            "options": {
+                "baseURL": "https://api.mistral.ai/v1",
+                "apiKey": "${env:MISTRAL_API_KEY}"
+            }
+        }
+    },
+    "plugins": [
+        {
+            "package": "@renjfk/opencode-model-fallback",
+            "options": {
+                "mappings": {
+                    "opencode-go/beam-free": "openrouter/google/gemini-2.0-flash-exp:free",
+                    "opencode-go/deepseek-v4.1-flash": "openrouter/google/gemini-2.0-flash-exp:free",
+                    "opencode-go/glm-5.3-flash": "openrouter/google/gemini-2.0-flash-exp:free"
+                },
+                "retry_on_errors": [408, 429, 500, 502, 503, 504],
+                "retryable_error_patterns": ["timeout", "rate.?limit", "overloaded", "unavailable", "weekly limit", "does not support tools"],
+                "cooldown_seconds": 300,
+                "notify_on_fallback": true
+            }
+        }
+    ],
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "small_model": "openrouter/google/gemini-2.0-flash-exp:free",
+    "compaction": {
+        "auto": true,
+        "keep": {
+            "tokens": 15000
+        },
+        "buffer": "15%"
+    },
+    "experimental": {
+        "background_compaction": true
+    }
 }

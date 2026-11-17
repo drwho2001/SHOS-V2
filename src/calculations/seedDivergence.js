@@ -2048,7 +2048,7 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "myDoxyPepStatus": "",
       "myPrepCoverage": "",
       "chemsAlcoholUsed": [],
-      "wouldMeetAgain": "Fuck YES 💖",
+      "wouldMeetAgain": "Absolutely",
       "protectionUsed": [
         "protection_002"
       ],

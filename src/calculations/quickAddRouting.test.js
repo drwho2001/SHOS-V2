@@ -92,6 +92,6 @@ describe("the New test form refuses a result for a scheduled test", () => {
     expect(form).toMatch(/<strong>\{tr\("testing\.scheduledWord", "scheduled"\)\}<\/strong>/);
     expect(form).toMatch(/tr\("testing\.futureDateSuffix", " test, not a result\./);
     expect(`${translations.testing.futureDatePrefix} ${translations.testing.scheduledWord}${translations.testing.futureDateSuffix}`)
-      .toBe("A date in the future is a scheduled test, not a result. It will be shown as planned, and it will not count as a completed test.");
+      .toBe("A date in the future is a scheduled test, not a result. Shown as planned. Does not count as completed.");
   });
 });

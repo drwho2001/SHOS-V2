@@ -110,7 +110,7 @@ const SEED_LISTS = {
   // all — every comparable field on this list already gets real
   // suggestion chips via SuggestField, this one was just missed. Same
   // "no Other chip" convention as gender above.
-  pronouns: ["He/him", "She/her", "They/them"],
+  pronouns: ["He/him", "She/her", "They/them", "He/they", "She/they"],
   // ADDED — real ask: contraception, gated to Female/Trans-male (see
   // both edit screens' own comments on the exact gating condition).
   // Testosterone is included because it's still worth tracking for a

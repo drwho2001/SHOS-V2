@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense, laz
 import { useReducedMotion } from "./calculations/useReducedMotion";
 import { countSampleData } from "./repositories/clearSampleData";
 import { resolveQuickExitPlan } from "./calculations/quickExit";
+import { isUpdateNoticeDismissed, updateDismissValue } from "./calculations/updateNotice";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { syncAllWidgets } from "./calculations/syncAllWidgets";
 import { useDarkModePreference } from "./calculations/darkModePreference";
@@ -1480,8 +1481,14 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
   // someone mid-form would be a worse bug than the staleness itself.
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
   const showUpdateBanner = useCallback(() => {
-    try { const dismissed = localStorage.getItem("shos-sw-update-dismissed"); if (dismissed && (Date.now() - parseInt(dismissed)) < 86400000) return; } catch { /* ignore */ }
+    try { if (isUpdateNoticeDismissed(Date.now(), localStorage.getItem("shos-sw-update-dismissed"))) return; } catch { /* ignore */ }
     setSwUpdateAvailable(true);
+  }, []);
+  // Single dismiss path: write localStorage with an epoch-ms timestamp so all
+  // four guards (which now share isUpdateNoticeDismissed) actually honour it.
+  const dismissUpdateNotice = useCallback(() => {
+    try { localStorage.setItem("shos-sw-update-dismissed", updateDismissValue(Date.now())); } catch { /* ignore */ }
+    setSwUpdateAvailable(false);
   }, []);
   useEffect(() => {
     // Web/PWA only: Capacitor WebViews have no service worker to swap,
@@ -1502,7 +1509,7 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
         sessionStorage.removeItem("shos-sw-reloaded");
         return;
       }
-      const onControllerChange = () => { try { const d = localStorage.getItem("shos-sw-update-dismissed"); if (d && (Date.now() - parseInt(d)) < 86400000) return; } catch { /* ignore */ } setSwUpdateAvailable(true); };
+      const onControllerChange = () => { try { if (isUpdateNoticeDismissed(Date.now(), localStorage.getItem("shos-sw-update-dismissed"))) return; } catch { /* ignore */ } setSwUpdateAvailable(true); };
       // Delay registration so controllerchange during initial SW activation
       // doesn't immediately re-show the banner after a reload.
       const regTimer = setTimeout(() => {
@@ -1535,7 +1542,7 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
         // package.json in CI, so a hardcoded-version compare can never fire.
         const currentSha = typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev";
         if (data?.channel === "stable" && data?.buildSha && currentSha && currentSha !== "dev" && data.buildSha !== currentSha) {
-          try { const d = localStorage.getItem("shos-sw-update-dismissed"); if (d && (Date.now() - parseInt(d)) < 86400000) return; } catch { /* ignore */ }
+          try { if (isUpdateNoticeDismissed(Date.now(), localStorage.getItem("shos-sw-update-dismissed"))) return; } catch { /* ignore */ }
           setSwUpdateAvailable(true);
         }
       } catch {
@@ -1576,7 +1583,7 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
           if (x < y) { newer = false; break; }
         }
         if (newer) {
-          try { const d = localStorage.getItem("shos-sw-update-dismissed"); if (d && (Date.now() - parseInt(d)) < 86400000) return; } catch { /* ignore */ }
+          try { if (isUpdateNoticeDismissed(Date.now(), localStorage.getItem("shos-sw-update-dismissed"))) return; } catch { /* ignore */ }
           setSwUpdateAvailable(true);
         }
       } catch {
@@ -3315,8 +3322,10 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               action without needing a new colour. */}
           <button onClick={() => setSettingsScreen("settings")} aria-label="Export backup" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Backup</button>
           <button onClick={() => { sessionStorage.setItem("shos-sw-reloaded", "1"); window.location.reload(); }} aria-label="Refresh page" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, background: "transparent", border: "none", padding: "4px 6px", fontFamily: "inherit", pointerEvents: "auto" }}>Refresh</button>
-          <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noopener noreferrer" aria-label="Download latest Android APK" style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0, padding: "4px 6px", pointerEvents: "auto" }}>Download APK</a>
-          <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={() => { try { sessionStorage.setItem("shos-sw-update-dismissed", "1"); } catch { /* ignore */ } setSwUpdateAvailable(false); }} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); try { sessionStorage.setItem("shos-sw-update-dismissed", "1"); } catch { /* ignore */ } setSwUpdateAvailable(false); } }} />
+          {/* "Download APK" removed: this banner only ever renders on web/PWA
+              (all three triggers return early on native), where the build
+              auto-updates — an APK link is irrelevant here. */}
+          <X size={20} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0, padding: 4, pointerEvents: "auto" }} onClick={dismissUpdateNotice} aria-label="Dismiss update notice" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); dismissUpdateNotice(); } }} />
         </div>
       )}
 

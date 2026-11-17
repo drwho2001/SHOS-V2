@@ -19,6 +19,7 @@ The source of truth for colours, type, radius, and fonts is `src/calculations/de
 4. **Accessibility before polish.** Contrast, touch targets, reduced motion, and screen-reader labels are part of the design, not a later pass.
 5. **Shared components win.** If a presentational pattern appears in three or more modules, consolidate it before adding a fourth copy.
 6. **Exceptions are named.** A deliberate deviation is documented here or in the relevant component. An undocumented deviation is drift.
+7. **Solid surfaces only.** All cards, sheets, and containers use opaque solid backgrounds (NEUTRAL.surface / NEUTRAL_DARK.surface) with 1px borders. There is no glassmorphism, backdrop blur, or translucent layering in the design system. Earlier audit notes referenced "frosted glass" aspirationally; the actual implementation is solid surfaces with subtle borders and accent outlines. Do not introduce translucency.
 
 ![Colour roles](design-manual/color-roles.svg)
 

@@ -117,7 +117,7 @@ export const DOXYPEP_STATUS_OPTIONS = [
   "Indicated - missed window", "N/A",
 ];
 
-export const WOULD_MEET_AGAIN_OPTIONS = ["Fuck YES 💖", "Yes", "If he makes effort", "Maybe", "No"];
+export const WOULD_MEET_AGAIN_OPTIONS = ["Absolutely", "Yes", "If he makes effort", "Maybe", "No"];
 
 // ---------------------------------------------------------------------
 // Default shape — single source of truth for "what does an empty
@@ -484,7 +484,7 @@ let seedEncounters = [
     myRole: "Switch",
     protectionUsed: ["protection_002"],
     enjoymentRating: 93,
-    wouldMeetAgain: "Fuck YES 💖",
+    wouldMeetAgain: "Absolutely",
     createdAt: daysAgo(10, 22, 30),
     isArchived: false,
   },

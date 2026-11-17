@@ -207,8 +207,19 @@ async function resolveTargetCalendar(plugin) {
   return { id, name: SHOS_CALENDAR_NAME };
 }
 
+// Wraps findEvents in try/catch to handle the RejectedExecutionException
+// crash in @capacitor/calendar v1.0.1 when its thread pool is terminated.
+async function safeFindEvents(plugin, opts) {
+  try {
+    return await plugin.findEvents(opts);
+  } catch (e) {
+    console.warn("[calendarSync] findEvents failed:", e?.message || e);
+    return { events: [] };
+  }
+}
+
 async function findSyncedEventId(plugin, calendarName, visitId) {
-  const { events } = await plugin.findEvents({ notes: markerFor(visitId), calendarName });
+  const { events } = await safeFindEvents(plugin,{ notes: markerFor(visitId), calendarName });
   return events[0]?.id || null;
 }
 
@@ -316,7 +327,7 @@ export async function syncClinicVisitsToCalendar(visits) {
 
   for (const visit of booked) await syncOneVisit(plugin, calendar, visit);
 
-  const { events } = await plugin.findEvents({ calendarName: calendar.name });
+  const { events } = await safeFindEvents(plugin,{ calendarName: calendar.name });
   for (const event of events) {
     const match = /^\[shos:(.+)\]$/.exec(event.notes || "");
     if (match && !bookedIds.has(match[1])) {
@@ -368,7 +379,7 @@ async function syncOneDose(plugin, calendar, vaccination, dose, marker) {
     endDate: realTimestampFromStored(stored) + 3600000,
     calendarId: calendar.id,
   };
-  const { events } = await plugin.findEvents({
+  const { events } = await safeFindEvents(plugin,{
     notes: marker,
     calendarName: calendar.name,
     ...wideEventWindow(),
@@ -421,7 +432,7 @@ export async function syncVaccinationsToCalendar(vaccinations) {
   // The cleanup, with the WIDE window - a dose from two years ago is
   // invisible to the plugin's default one, and would then never be cleaned
   // up even after the record is deleted.
-  const { events } = await plugin.findEvents({
+  const { events } = await safeFindEvents(plugin,{
     calendarName: calendar.name,
     ...wideEventWindow(),
   });
@@ -449,7 +460,7 @@ export async function removeSyncedVaccinationEvents(calendarName) {
   if (!plugin) return;
   const { calendars } = await plugin.listCalendars();
   if (!calendars.some((c) => c.name === calendarName)) return;
-  const { events } = await plugin.findEvents({ calendarName, ...wideEventWindow() });
+  const { events } = await safeFindEvents(plugin,{ calendarName, ...wideEventWindow() });
   for (const event of events) {
     if ((event.notes || "").startsWith(VACCINATION_MARKER_PREFIX)) {
       await plugin.deleteEvent({ id: event.id });
@@ -512,7 +523,7 @@ async function syncOnePlannedEvent(plugin, calendar, planned, marker) {
     endDate: start + 3600000,
     calendarId: calendar.id,
   };
-  const { events } = await plugin.findEvents({
+  const { events } = await safeFindEvents(plugin,{
     notes: marker,
     calendarName: calendar.name,
     ...wideEventWindow(),
@@ -566,7 +577,7 @@ export async function syncPlannedEventsToCalendar() {
   // The cleanup, with the WIDE window: a plan that was moved, or that has
   // been given, leaves an event behind that the default window might not
   // even see.
-  const { events } = await plugin.findEvents({
+  const { events } = await safeFindEvents(plugin,{
     calendarName: calendar.name,
     ...wideEventWindow(),
   });
@@ -589,7 +600,7 @@ export async function removeSyncedPlannedEvents(calendarName) {
   if (!plugin) return;
   const { calendars } = await plugin.listCalendars();
   if (!calendars.some((c) => c.name === calendarName)) return;
-  const { events } = await plugin.findEvents({ calendarName, ...wideEventWindow() });
+  const { events } = await safeFindEvents(plugin,{ calendarName, ...wideEventWindow() });
   for (const event of events) {
     if ((event.notes || "").startsWith(PLANNED_MARKER_PREFIX)) {
       await plugin.deleteEvent({ id: event.id });
@@ -620,7 +631,7 @@ export async function removeSyncedEventsFrom(calendarName) {
   if (!plugin) return;
   const { calendars } = await plugin.listCalendars();
   if (!calendars.some((c) => c.name === calendarName)) return;
-  const { events } = await plugin.findEvents({ calendarName });
+  const { events } = await safeFindEvents(plugin,{ calendarName });
   for (const event of events) {
     if (isOurMarker(event.notes)) {
       await plugin.deleteEvent({ id: event.id });

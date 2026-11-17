@@ -24,6 +24,11 @@ Consolidated audit findings. Each entry: scope, finding, action/pool task.
 - Scope: widgetPrivacy.js.
 - Finding: defaults redacted, allowlists fail-closed. No code changes.
 
+## Beta walkthrough + barrier label (17 Nov 2026)
+- Scope: fresh install, every screen/sub-screen/form/toggle, dark + light; full report `AUDIT-2026-11-17.md`, ranked fixes `BETA-ACTION-PLAN.md`.
+- Findings: update banner never dismisses (`App.jsx` sessionStorage/localStorage mismatch); ~15 icon 404s + CSP font/meta errors; repeated summary cards across Healthcare tabs; no "Restore demo data" action; transient all-zero counts in Developer tools; multiple settings dialogs stay mounted; two simultaneous "ongoing" periods allowed; pregnancy test form has no sample type while Testing does.
+- Action on barrier label: SHIPPED — `canonicalProtectionNames()` folds "None"/"No condom" into one derived "No barrier method"; search + filter added; 27 tests pass, lint/build clean. Remaining findings captured in `BETA-ACTION-PLAN.md` R1–R13; owner decisions recorded in `docs/HISTORY.md` and `BACKLOG.md`.
+
 ## Meta
 - All findings also logged in session bus (notices #511-#538).
 

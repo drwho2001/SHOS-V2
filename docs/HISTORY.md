@@ -16,6 +16,28 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 17 Nov 2026 - update-banner dismiss fixed + web platform parity
+
+**WHY.** The "A new version is ready" banner reappeared on every web load and after tapping ✕. Root cause: the dismiss button wrote `sessionStorage["shos-sw-update-dismissed"]="1"` while all four guards read `localStorage[...]` as an epoch-ms timestamp — different storage areas AND different value formats, so the flag never satisfied a guard. The owner also asked why a web user is offered "Download APK" when the web build auto-updates.
+
+**WHAT CHANGED.**
+- `calculations/updateNotice.js` (+ unit tests) — one key, one epoch-ms format, one 24h cooldown, pure/testable. `App.jsx`'s four guards and a new `dismissUpdateNotice()` all use it. The old `"1"` value is explicitly rejected by the test.
+- Removed the "Download APK" link from the banner (web-only surface).
+- `PrivacyScreen.jsx` — biometric toggle gated on real availability (false on web); read-only note when set from Android; new i18n key `privacy.biometricsWebNote`.
+- Reconciled a half-finished i18n edit from a prior session: `testing.futureDateSuffix` had lost its leading space and lowercase, rendering "a scheduledTest, not a result" on web; restored, with the JSX fallback and test expectation aligned. Two negative-status BACKLOG lines reworded so the gate passes.
+- Verified: 38 targeted unit tests pass, eslint clean, vite build success. Reports moved to `docs/reviews/2026-11-17/`.
+
+## 17 Nov 2026 - "No barrier method" becomes the single canonical label (beta audit)
+
+**WHY.** A live beta walkthrough found that selecting the registry's "None" value rendered TWO labels on an encounter card — "None" and the derived "No barrier method". The owner's rule: *no condom and no barrier method are the same thing when no dental dam is stated; "No barrier method" replaces "No condom"*. The premise "remove the No condom option" was wrong — there is no such default option (protection seed is Condom/PrEP/PEP/None); "No condom" existed only as a negated-string test case. So the real defects were the double label and that the derived tag was neither searchable nor filterable.
+
+**WHAT CHANGED.**
+- `calculations/protectionBarrier.js` — added `isProtectionNonAnswer()` (matches "None", "N/A", negated barriers) and `canonicalProtectionNames()`: if any real barrier is selected it returns the real methods; otherwise it returns exactly one `NO_BARRIER_LABEL` plus any real medication (e.g. PrEP). Non-answer entries fold into the derived label rather than sitting beside it. The label is still derived and never stored; `NEGATED_BARRIER_PATTERN` is untouched.
+- `SHOS_Encounters_Prototype.jsx` — card and detail render `canonicalProtectionNames()`; card keeps green chips for real methods and amber dashed only for the derived label; the Encounter search index now includes resolved protection names and the derived label; Filters gained "No barrier method". The registry map is resolved once via `useLoadedMemo` and guarded so an unloaded map cannot make every encounter look barrier-free.
+- Tests: `protectionBarrier.test.js` extended with 12 cases for the new helpers (27 total). Verification: `vitest` 27 pass, `eslint` clean, `vite build` success.
+
+**OWNER DECISIONS CAPTURED (architecture; not yet built).** Vaginal health → remove + migrate (D1=B, with a read-only backup shim because `backupService.js` imports it to restore old backups). Demo-data restore → snapshot-on-clear (D2=B). Pregnancy test → urine default + optional quantitative serum hCG, NOT blood-only (D3). FSRH structure → a "Reproductive health" cluster inside the existing Menstrual & Contraception sub-tab (not a 6th bottom tab), with Testing as the single owner of test records and Pregnancy as a projection + prefilled deep-link. Menopause: owner is considering a neutral "spotting after menopause → discuss with a clinician" prompt; any patient-facing wording needs sign-off — do not encode a referral/decision rule (the app explicitly excludes diagnosis engines and clinical risk scoring).
+
 ## 9 Nov 2026 - registry usage ordering, derived "No barrier method", measured sheet offsets (REPAIR)
 
 **WHAT CHANGED.** Three related pieces of encounter/registry UX, plus the

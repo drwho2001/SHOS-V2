@@ -67,7 +67,7 @@
     "requiredDetails": "Required details",
     "missingRequiredDetails": "Missing mandatory details",
     "acknowledgeIncomplete": "Acknowledge incomplete / anonymous record",
-    "acknowledgeIncompleteDesc": "I understand these mandatory details are missing. Hide the warnings and allow this intentionally incomplete or anonymous record to be saved.",
+    "acknowledgeIncompleteDesc": "I understand these details are missing. Save anyway.",
     "requiredEitherRolePosition": "Add either a role or a position; one is enough.",
     "alreadyInSuggestions": "is already in the suggestions.",
     "addedToSuggestions": "was added to the suggestions.",
@@ -78,9 +78,9 @@
     "dontMeetAgain": "Don't meet again",
     "draftRestored": "Restored unsaved changes from earlier.",
     "markAsComplete": "Mark as complete",
-    "markCompleteDesc": "Stops the \"Incomplete\" tag showing, even if some fields are genuinely blank — for contacts you consider as filled-in as they'll ever be.",
+    "markCompleteDesc": "Stops the Incomplete tag showing, even if fields are blank.",
     "oneOff": "One-off / never expect to recur",
-    "oneOffDesc": "Excludes this contact from the inactive flag entirely — for a genuine one-time encounter, not a gap you'd want flagged.",
+    "oneOffDesc": "Excludes this contact from the inactive flag. For genuine one-time encounters.",
     "drives": "Drives",
     "chastityNote": "Only relevant if chastity is something they're genuinely into — leave as N/A otherwise.",
     "markedDontMeetAgain": "Marked: don't meet again",
@@ -175,7 +175,7 @@
     "date": "Date",
     "futureDatePrefix": "A date in the future is a",
     "scheduledWord": "scheduled",
-    "futureDateSuffix": " test, not a result. It will be shown as planned, and it will not count as a completed test.",
+    "futureDateSuffix": " test, not a result. Shown as planned. Does not count as completed.",
     "removeResultToSavePlan": "Remove the result below to save it as a scheduled test.",
     "resultDate": "Result date",
     "setting": "Setting",
@@ -451,11 +451,11 @@
     "vaginalHealth": "Vaginal health"
   },
   "registry": {
-    "duplicateHelp": "Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.",
+    "duplicateHelp": "Flagged by name similarity. Nothing is merged automatically. Rename to match, or archive.",
     "noDuplicates": "No likely duplicates found.",
     "archiveThis": "Archive this one",
     "noEntries": "No entries yet.",
-    "tapToRename": "Tap a name to rename it. Renaming updates everywhere it's used, immediately.",
+    "tapToRename": "Tap a name to rename it. Updates everywhere it is used.",
     "hideArchived": "Hide",
     "showArchived": "Show",
     "showDuplicates": "Show duplicates",
@@ -465,11 +465,11 @@
   },
   "attachments": {
     "title": "Attachments",
-    "subtitle": "Everything attached to a Test or Clinic Visit, in one place. Files still live on their original record — deleting here removes it from there too.",
+    "subtitle": "Everything attached to a Test or Clinic Visit, in one place.",
     "filterAll": "All",
     "empty": "No attachments yet — add one from a Test or Clinic Visit.",
     "noMatch": "Nothing matches this filter.",
-    "removeConfirm": "Remove \"{title}\"? It'll also disappear from its original {kind} record — there's no getting it back.",
+    "removeConfirm": "Remove this file? It also disappears from its original record.",
     "openSource": "Open source record",
     "back": "Back",
     "showAll": "Show all attachments"
@@ -486,7 +486,7 @@
     "open": "Open",
     "install": "Install / open on this device",
     "installCta": "Get the app",
-    "footer": "Local-first — nothing here leaves this device unless you choose to export or share it.",
+    "footer": "Local-first. Nothing leaves this device unless you export or share it.",
     "checkUpdates": "Check for updates",
     "latest": "Latest",
     "reportCrash": "Report a crash",
@@ -494,13 +494,13 @@
   },
   "dataNetwork": {
     "title": "Data & network",
-    "intro": "SHOS is on-device only — nothing is ever sent to a server SHOS runs. Two features do call a third party directly from your device to do their job. Both are listed here exactly, and can be turned off.",
+    "intro": "On-device only. Nothing is sent to a server SHOS runs. Two features call a third party directly from your device. Both are listed here and can be turned off.",
     "addressLookup": "Address lookup",
-    "addressLookupDesc": "“Use current location” and address autocomplete (Contacts, My Profile, Clinic Visits, Encounters) send a typed address or your GPS coordinates to OpenStreetMap’s free Nominatim service to look up a real address or place name. Off: you can still type an address by hand, just without suggestions or auto-lookup.",
+    "addressLookupDesc": "Address autocomplete sends typed addresses or GPS coordinates to OpenStreetMap Nominatim. Off: type addresses by hand, no suggestions.",
     "updateCheck": "Check for app updates",
-    "updateCheckDesc": "On the installed Android app only, checks GitHub’s public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen.",
+    "updateCheckDesc": "On Android only, checks GitHub for a newer build. Reveals your IP to GitHub. Off: check manually from About.",
     "sendReports": "Send problem reports",
-    "sendReportsDesc": "Settings > Developer tools > Error log’s own \"Report a problem\" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly — no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.",
+    "sendReportsDesc": "Error log Report a problem always saves on-device. If you set a URL, Send also posts just that text directly. Leave blank for local-only.",
     "endpointPlaceholder": "https://…"
   },
   "widgets": {
@@ -548,7 +548,7 @@
   "backup": {
     "title": "Backup & Export",
     "intro": "Everything here makes a copy of your data or brings one back in — nothing here ever leaves this device unless you choose to send it somewhere yourself.",
-    "sampleWarning": "Heads up: {count} of the records in this export are still SHOS's made-up sample data, not yours. Clear it first if this file is going to a clinic or a new phone — it's in Settings → Support → Developer tools.",
+    "sampleWarning": "Heads up: {count} records are still sample data, not yours. Clear it first if sharing with a clinic.",
     "exportBackup": "Export backup",
     "exportToFolder": "Export backup to a folder…",
     "selectiveExport": "Selective export…",
@@ -559,12 +559,12 @@
   },
   "guide": {
     "title": "Guide",
-    "intro": "Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to \"where do I find X.\"",
+    "intro": "Where things live and what the less-obvious features do.",
     "takeTour": "Take the interactive tour"
   },
   "glossary": {
     "title": "Glossary",
-    "intro": "Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.",
+    "intro": "Plain-language explanations of clinical shorthand used here.",
     "search": "Search terms",
     "noMatch": "No terms match your search.",
     "viewEvidence": "View clinical evidence and sources"
@@ -608,9 +608,9 @@
   "preferences": {
     "title": "Preferences",
     "menstrualTracking": "Menstrual & contraception tracking",
-    "menstrualTrackingDesc": "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.",
+    "menstrualTrackingDesc": "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default.",
     "hidePregnancy": "Hide Pregnancy tab",
-    "hidePregnancyDesc": "Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.",
+    "hidePregnancyDesc": "Keeps Cycle and Contraception, removes Pregnancy. Existing records stay reachable by tapping them.",
     "tabOrder": "Bottom nav tab order",
     "tabOrderDesc": "Reorder Contacts, Encounter, Medication, and Healthcare — Home always stays fixed in the centre.",
     "tabOrderReload": "Tab order needs a reload to apply.",
@@ -624,7 +624,7 @@
   },
   "privacy": {
     "title": "Privacy & Security",
-    "noCloud": "SHOS has no account, no server, and no cloud sync — everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.",
+    "noCloud": "No account, no server, no cloud sync. Everything exists only on this device.",
     "lockScreenDetail": "Lock screen & notification detail",
     "anonymiseOn": "Anonymise mode is ON",
     "anonymiseTurnOn": "Turn on Anonymise mode",
@@ -636,6 +636,7 @@
     "recoveryString": "Recovery string (optional)",
     "allowScreenshots": "Allow screenshots",
     "biometrics": "Unlock with biometrics",
+    "biometricsWebNote": "Biometric unlock is set up in the installed Android app. The PIN works here in the browser.",
     "skipReverify": "Skip re-verification briefly",
     "changePin": "Change PIN",
     "setPin": "Set a PIN",
@@ -691,7 +692,7 @@
     "notesAria": "Resource notes",
     "editAria": "Edit {name}",
     "clinicalJustifications": "Clinical justifications used",
-    "clinicalJustificationsIntro": "What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice."
+    "clinicalJustificationsIntro": "What this app calculates (exposure windows, DoxyPEP timing, testing intervals) is based on."
   },
   "devTools": {
     "title": "Developer tools",
@@ -800,7 +801,7 @@
     "openIn": "Open in {module}?",
     "open": "Open",
     "whichSections": "Which sections to show",
-    "visibilityIntro": "Every section shows the most detail permitted by default — these only ever narrow what's shown, never add anything.",
+    "visibilityIntro": "Sections show the most detail by default. These only narrow what is shown, never add.",
     "pdfExport": "PDF export",
     "includeRecentContacts": "Include recent contacts",
     "closeVisibility": "Close visibility settings"
@@ -809,10 +810,10 @@
     "title": "Option lists",
     "intro": "Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.",
     "addNew": "Add a new option",
-    "tapToRename": "Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app. Removing archives it (below), rather than deleting it outright.",
+    "tapToRename": "Tap to rename. Arrows reorder. Removing archives it.",
     "noOptions": "No options — add one above.",
     "archived": "Archived",
-    "reassociateHint": "Reassociate moves every record using the archived value onto the one you pick, then removes it from the archive for good. Restore just brings it back as a normal, live option.",
+    "reassociateHint": "Moves all records using the archived value to the one you pick, then removes it from the archive.",
     "noLiveValues": "No live values to reassociate with yet — add one above first."
   },
   "timeline": {
@@ -941,7 +942,7 @@
     "withinBashh": "Within BASHH-recommended interval?",
     "daysSinceLastVisit": "Days since last visit",
     "explDaysSinceVisit": "Days since your most recent real (already happened, not a future booking) clinic visit.",
-    "explAdherence": "Average of each daily/scheduled medication own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications are not included.",
+    "explAdherence": "Average of each daily/scheduled medication 7-day adherence rate. PRN excluded.",
     "doxyPepCompliance": "DoxyPEP compliance",
     "overallAdherence7d": "Overall adherence (7-day)"
   },

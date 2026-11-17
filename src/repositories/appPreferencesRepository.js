@@ -21,9 +21,12 @@ export const DEFAULT_APP_PREFERENCES = {
   // (the red dot). Was hardcoded at 90 — real ask to make this a
   // genuine preference.
   inactiveThresholdDays: 90,
-  // ADDED — optional Contacts-card weekly schedule summary. Off by default
+  // ADDED - optional Contacts-card weekly schedule summary. Off by default
   // because availability is sensitive and the extra line is user-selectable.
   showAvailabilityOnContactCards: false,
+  // ADDED 17 Nov 2026 - contacts count display preference. When true,
+  // archived contacts are included in the count shown on the Contacts list.
+  includeArchivedInContactCount: false,
   // ADDED 26 Aug 2026 — real ask: onboarding, deliberately built last
   // per the user's own ordering ("comes after all features made") — a
   // walkthrough is only worth building once there's something real to

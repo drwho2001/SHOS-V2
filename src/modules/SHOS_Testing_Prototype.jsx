@@ -879,7 +879,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
               counting as a completed test. */}
           {isFutureDated && (
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: -4, marginBottom: 8, lineHeight: 1.4 }}>
-              {tr("testing.futureDatePrefix", "A date in the future is a")}{" "}<strong>{tr("testing.scheduledWord", "scheduled")}</strong>{tr("testing.futureDateSuffix", " test, not a result. It will be shown as planned, and it will not count as a completed test.")}
+              {tr("testing.futureDatePrefix", "A date in the future is a")}{" "}<strong>{tr("testing.scheduledWord", "scheduled")}</strong>{tr("testing.futureDateSuffix", " test, not a result. Shown as planned. Does not count as completed.")}
               {futureDatedWithResult && ` ${tr("testing.removeResultToSavePlan", "Remove the result below to save it as a scheduled test.")}`}
             </div>
           )}

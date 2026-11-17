@@ -85,7 +85,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { sessionTally, chronologicalSessionEncounters } from "../calculations/sessionTally";
 import { useRegistryUsage, sortByUsage } from "../calculations/registryUsage";
-import { hasBarrierMethod, NO_BARRIER_LABEL } from "../calculations/protectionBarrier";
+import { hasBarrierMethod, isProtectionNonAnswer, canonicalProtectionNames, NO_BARRIER_LABEL } from "../calculations/protectionBarrier";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -1238,18 +1238,17 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
           )}
 
           {/* Protection & medication — green + blue */}
-          {protectionNames.length > 0 || encounter.myPrepCoverage || (!hasBarrierMethod(protectionNames) && !protectionNames.includes(NO_BARRIER_LABEL)) ? (
+          {canonicalProtectionNames(protectionNames).length > 0 || encounter.myPrepCoverage ? (
             <>
               <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Protection & medication</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                {protectionNames.map((name, i) => (
-                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+                {canonicalProtectionNames(protectionNames).map((name, i) => (
+                  name === NO_BARRIER_LABEL ? (
+                    <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12`, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{name}</span>
+                  ) : (
+                    <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+                  )
                 ))}
-                {/* ADDED 8 Nov 2026 — derived, never stored: a PrEP-only record
-                    used to read as protection-handled with no barrier recorded. */}
-                {!hasBarrierMethod(protectionNames) && !protectionNames.includes(NO_BARRIER_LABEL) && (
-                  <span style={{ padding: "2px 8px", borderRadius: "999px", border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12`, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{NO_BARRIER_LABEL}</span>
-                )}
                 {encounter.myPrepCoverage && (
                   <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
                 )}
@@ -1345,7 +1344,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // most-recent-test lookup Home's own dashboard already does, not a
   // separate calculation.
   const [showFilters, setShowFilters] = useState(false);
-  const [dateFilter, setDateFilter] = useState(null); // null | "week" | "month" | "sinceLastTest"
+  const [dateFilter, setDateFilter] = useState(null); // null | "week" | "month" | "sinceLastTest" | "noBarrier"
+  // ADDED 17 Nov 2026 — the derived "No barrier method" tag was visible but not
+  // searchable or filterable. Resolve protection names once for the list so the
+  // search index and the no-barrier filter can both use the same source.
+  const protectionNameById = useLoadedMemo(async () => new Map((await ProtectionRegistry.getAll()).map((p) => [p.id, p.name])), [], new Map());
   // ADDED 1 Sep 2026 — real ask: "add encounters search" — every
   // sibling module (Contacts, Medication, Testing, Symptom Log,
   // Resources, Glossary) already has a search box; this was the one
@@ -1413,6 +1416,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         filtered = lastTestDate ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTestDate).getTime()) : dated;
       }
     }
+    const namesFor = (e) => (e.protectionUsed || []).map((id) => protectionNameById.get(id)).filter(Boolean);
+    if (dateFilter === "noBarrier") {
+      // Only once the registry map has resolved, so a not-yet-loaded map can't
+      // make every encounter look barrier-free.
+      if (protectionNameById.size > 0 || encountersList.every((e) => !(e.protectionUsed || []).length)) {
+        filtered = filtered.filter((e) => !hasBarrierMethod(namesFor(e)));
+      }
+    }
     const q = query.trim().toLowerCase();
     if (q) {
       filtered = filtered.filter((e) => {
@@ -1425,7 +1436,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         // the one shared function.
         const attendeeNames = anonymise ? [] : e.attendeeIds.map((id) => contactName(contacts, id));
         const kinkNames = (e.kinksInvolved || []).map((sel) => kinkNameById.get(sel.kinkId));
-        return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
+        const names = namesFor(e);
+        // Protection names ARE searchable, and "no barrier" is searchable via
+        // the derived label (which is what the user actually sees on the card).
+        const protectionSearch = !hasBarrierMethod(names) ? [NO_BARRIER_LABEL, ...names.map((n) => isProtectionNonAnswer(n) ? NO_BARRIER_LABEL : n)] : names;
+        return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames, ...protectionSearch].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
     }
     const sorted = [...filtered].sort((a, b) => {
@@ -1452,7 +1467,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     // defect as the one found in Symptom Log in the same round, in the sibling
     // module — which is why it is worth stating that the 28 Sep audit fixed the
     // expression without fixing the dependency.
-  }, [encountersList, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise, encounterSort]);
+  }, [encountersList, showArchived, sessionFilter, dateFilter, query, contacts, lastTestDate, kinkNameById, protectionNameById, anonymise, encounterSort]);
   const sessionSummaries = useMemo(() => sessions
     .filter((session) => !session.isArchived)
     .map((session) => {
@@ -1695,6 +1710,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               { key: "week", label: "Last week" },
               { key: "month", label: "Last month" },
               { key: "sinceLastTest", label: "Since last test" },
+              { key: "noBarrier", label: NO_BARRIER_LABEL },
             ].map((f) => {
               const active = dateFilter === f.key;
               return (
@@ -2021,7 +2037,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             // label while the registry map is still empty and an id is
             // waiting to resolve.
             const loaded = (encounter.protectionUsed || []).length === 0 || protectionNameById.size > 0;
-            return <ReadRow label="Protection used" value={loaded && !hasBarrierMethod(names) ? [...names.filter((n) => n !== NO_BARRIER_LABEL), NO_BARRIER_LABEL] : names} T={T} />;
+            return <ReadRow label="Protection used" value={loaded ? canonicalProtectionNames(names) : names} T={T} />;
           })()}
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
           <ReadRow label="My DoxyPEP status" value={doxyPepDisplay.value} T={T} />

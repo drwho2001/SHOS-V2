@@ -342,6 +342,16 @@ useEffect(() => {
   // same "no re-entry once already in Settings" pattern as everywhere
   // else on this screen.
   const [biometricError, setBiometricError] = useState("");
+  // Platform parity (17 Nov 2026): biometrics need the native plugin and real
+  // hardware/enrolment. A browser/PWA can never satisfy that, so do not offer
+  // a toggle that only fails on tap. checkBiometryAvailable() already returns
+  // {available:false} on web (lazy import fails), so reuse it as the gate.
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  useEffect(() => {
+    let live = true;
+    checkBiometryAvailable().then((res) => { if (live) setBiometricAvailable(!!res.available); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
   const toggleBiometric = async () => {
     setBiometricError("");
     if (settings.biometricUnlockEnabled) {
@@ -617,16 +627,21 @@ useEffect(() => {
               </div>
             </div>
           )}
-          {/* ADDED — real ask: biometric unlock, via
-              @aparajita/capacitor-biometric-auth. Only offered once App
-              Lock (and therefore a PIN) is already on — biometric is a
-              convenience layered on top of the PIN, not a standalone
-              gate, and the PIN field on the lock screen always still
-              works even with this on. Not shown at all in a browser
-              preview's own build check (see toggleBiometric's real
-              checkBiometryAvailable() call) — that's expected, not a
-              bug, the native plugin only exists in the installed app. */}
-          {settings.appLockEnabled && (
+          {/* Biometric unlock, via @aparajita/capacitor-biometric-auth.
+              Only offered once App Lock (and a PIN) is on — a convenience
+              on top of the PIN, never a standalone gate; the PIN always works.
+              PLATFORM PARITY (17 Nov 2026): biometrics need native hardware
+              and the plugin, so the toggle is gated on checkBiometryAvailable()
+              (which is always false on web). Previously this rendered on web
+              and only failed on tap — a browser user was offered something
+              the build cannot do. If the flag is set from the Android app,
+              web shows a read-only note instead of a dead toggle. */}
+          {settings.appLockEnabled && !biometricAvailable && settings.biometricUnlockEnabled && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+              {t("privacy.biometricsWebNote", "Biometric unlock is set up in the installed Android app. The PIN works here in the browser.")}
+            </div>
+          )}
+          {settings.appLockEnabled && biometricAvailable && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} onClick={toggleBiometric}
               role="switch" tabIndex={0} aria-checked={settings.biometricUnlockEnabled} aria-label="Unlock with biometrics"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleBiometric(); } }}>
