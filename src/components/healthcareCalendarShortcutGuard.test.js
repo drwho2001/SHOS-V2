@@ -74,20 +74,21 @@ it("the Healthcare module ACCEPTS the onOpenCalendar prop", () => {
   expect(signature).toMatch(/\bonOpenCalendar\b/);
 });
 
-it("the Healthcare module renders exactly one Calendar entry, next to Attachments", () => {
+it("the Healthcare module renders exactly one Calendar entry in the owner-approved shortcut order", () => {
   const entries = healthcare.match(/aria-label="Calendar"/g) || [];
   expect(entries.length, "expected exactly one Calendar entry in Healthcare").toBe(1);
 
-  // "Next to Attachments" is a positional claim, so it is checked
-  // positionally: the Calendar entry must come after the Attachments entry
-  // and before the Clinic Card entry in the shortcut row.
+  // CHANGED 17 Nov 2026 (owner): the shortcut row order is now
+  // Episodes, Calendar, Clinic Card, Attachments — Attachments moved to last
+  // (it is the least-used entry point). Check the order positionally so a
+  // future edit cannot silently reorder the owner-approved layout.
   const attachments = healthcare.indexOf('aria-label="Attachments"');
   const calendar = healthcare.indexOf('aria-label="Calendar"');
   const clinicCard = healthcare.indexOf('aria-label="Clinic Card"');
   expect(attachments).toBeGreaterThan(-1);
   expect(clinicCard).toBeGreaterThan(-1);
-  expect(calendar, "the Calendar entry must sit after Attachments").toBeGreaterThan(attachments);
   expect(calendar, "the Calendar entry must sit before Clinic Card").toBeLessThan(clinicCard);
+  expect(clinicCard, "the Clinic Card entry must sit before Attachments (owner order)").toBeLessThan(attachments);
 });
 
 it("the Calendar entry calls the handler, and is reachable by keyboard", () => {
