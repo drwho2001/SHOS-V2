@@ -93,7 +93,7 @@ import {
 //
 // Order follows resetAllData.js's own ordering (Contacts, Encounters, then
 // Healthcare) so the two read as siblings.
-const SAMPLE_REPOSITORIES = [
+export const SAMPLE_REPOSITORIES = [
   ["Contacts", ContactRepository, SEED_CONTACT_IDS, (r) => r.name || r.nickname || "Unnamed contact"],
   ["Encounters", EncounterRepository, SEED_ENCOUNTER_IDS, (r) => r.title || "Untitled encounter"],
   ["Clinic visits", ClinicVisitsRepository, SEED_CLINIC_VISIT_IDS, (r) => r.title || "Untitled clinic visit"],
@@ -262,6 +262,23 @@ async function loadSampleCollections() {
     }
   }
   return { collections, failures };
+}
+
+// Shared selection bridge for demoRestore.js (17 Nov 2026). Exposes the EXACT
+// removable set — same isRemovableSampleRecord predicate and the same
+// referential guard as clearSampleData() — so the snapshot photographed just
+// before a clear can never disagree with what the clear actually removes.
+// Returns plain objects (no repo/label functions) — enough to photograph and
+// to map back to a repository by name on restore.
+export async function getRemovableSampleCollections() {
+  const { collections } = await loadSampleCollections();
+  const referenced = referencedSeedIds(collections);
+  const out = [];
+  for (const { name, records, seedIds } of collections) {
+    const removable = records.filter((r) => isRemovableSampleRecord(r, seedIds, referenced));
+    if (removable.length) out.push({ name, records: removable });
+  }
+  return { collections: out };
 }
 
 /**

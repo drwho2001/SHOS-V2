@@ -12,7 +12,8 @@ import { hasUnbackedChanges } from "../../storage/backupService";
 import { ErrorLogRepository } from "../../repositories/errorLogRepository";
 import { localStorageAdapter } from "../../storage/storageAdapter";
 import { resetAllData } from "../../repositories/resetAllData";
-import { countSampleData, clearSampleData, listSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
+import { countSampleData, listSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
+import { clearWithSnapshot, restoreDemoSnapshot, hasDemoSnapshot } from "../../repositories/demoRestore";
 import ClearSampleDataConfirm from "../../components/ClearSampleDataConfirm";
 import { findOrphanReferences } from "../../calculations/orphanReferenceCheck";
 import { findDataAnomalies, ANOMALY_KIND_LABELS } from "../../calculations/dataAnomalyScan";
@@ -385,11 +386,27 @@ export function DeveloperToolsScreen({ onClose }) {
   const handleClearSample = async () => {
     setClearingSample(true);
     try {
-      const result = await clearSampleData();
+      // 17 Nov 2026 — snapshot-on-clear so this is reversible (owner's #1 ask).
+      const result = await clearWithSnapshot();
       setSampleResult(result);
       setSampleList(null);
+      setCanRestoreDemo(true);
     } finally {
       setClearingSample(false);
+    }
+  };
+  // Restore demo data (reversible clear).
+  const [canRestoreDemo, setCanRestoreDemo] = useState(false);
+  const [restoringDemo, setRestoringDemo] = useState(false);
+  useEffect(() => { hasDemoSnapshot().then(setCanRestoreDemo).catch(() => {}); }, []);
+  const handleRestoreDemo = async () => {
+    setRestoringDemo(true);
+    try {
+      const result = await restoreDemoSnapshot();
+      setSampleResult({ restored: result.restored, skipped: result.skipped, failed: result.failed });
+      setCanRestoreDemo(await hasDemoSnapshot());
+    } finally {
+      setRestoringDemo(false);
     }
   };
 
@@ -660,6 +677,22 @@ export function DeveloperToolsScreen({ onClose }) {
                 )}
               </div>
             )}
+            {/* 17 Nov 2026 — Restore demo data (reversible clear). */}
+            {canRestoreDemo && sampleDataCount === 0 && (
+              <div style={{ marginBottom: 12, padding: "12px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
+                  Demo data can be restored
+                </div>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.45, marginBottom: 10 }}>
+                  The example records you cleared are kept in a reversible snapshot. Restoring adds them back without touching anything you added since.
+                </div>
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleRestoreDemo(); } }} onClick={handleRestoreDemo}
+                  aria-label="Restore demo data"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: restoringDemo ? "default" : "pointer", opacity: restoringDemo ? 0.6 : 1 }}>
+                  {restoringDemo ? "Restoring…" : "Restore demo data"}
+                </div>
+              </div>
+            )}
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setResetStage("confirming")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <Trash2 size={17} color={ACTION.red} />
               <span style={{ fontSize: 14, color: ACTION.red, fontWeight: 600 }}>{t("devTools.resetAllData", "Reset all app data")}</span>
@@ -681,10 +714,12 @@ export function DeveloperToolsScreen({ onClose }) {
               // exists while there is still a problem to confirm is not a
               // confirmation.
               <div style={{ marginTop: 8, fontSize: 12, color: sampleResult.failed.length ? ACTION_TEXT_SAFE.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), lineHeight: 1.45 }}>
-                {sampleResult.removed > 0
-                  ? `Removed ${sampleResult.removed} sample record${sampleResult.removed === 1 ? "" : "s"}. Anything you added yourself was kept.`
-                  : "There was no sample data left to remove."}
-                {sampleResult.failed.length > 0 && ` Could not clear: ${sampleResult.failed.map((f) => f.name).join(", ")}.`}
+                {typeof sampleResult.restored === "number"
+                  ? `Restored ${sampleResult.restored} demo record${sampleResult.restored === 1 ? "" : "s"}${sampleResult.skipped ? `, ${sampleResult.skipped} already present` : ""}.`
+                  : (sampleResult.removed > 0
+                    ? `Removed ${sampleResult.removed} sample record${sampleResult.removed === 1 ? "" : "s"}. Anything you added yourself was kept.`
+                    : "There was no sample data left to remove.")}
+                {sampleResult.failed.length > 0 && ` Could not ${typeof sampleResult.restored === "number" ? "restore" : "clear"}: ${sampleResult.failed.map((f) => f.name).join(", ")}.`}
               </div>
             )}
           </>

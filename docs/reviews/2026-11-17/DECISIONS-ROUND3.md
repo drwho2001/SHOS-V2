@@ -28,3 +28,9 @@
 7. Deep links: none until a widget needs them
 
 *No clinical advice. UK-first; US compatibility as agreed.*
+
+## Built 17 Nov (after these decisions)
+- **R3 demo restore — SHIPPED.** `repositories/demoRestore.js` snapshots the exact removable records before clear (`getRemovableSampleCollections` bridge in `clearSampleData.js`, same predicate as clear), stores under an encrypted key, and restores by **merge-by-id via replaceAll** (never `create()` — that regenerates ids and breaks referential links; never overwrites real records added since the clear). Snapshot cleared after a successful restore; kept on partial failure for retry. Restore UI added to Home banner and Developer tools. Verified end to end in the browser: clear → "Demo data was cleared" + Restore → records back and demo banner returned. 6 unit tests for the merge rule + snapshot helpers.
+- **R6 widget framework** — note: W1 contact-widget brainstorm written (`WIDGET-BRAINSTORM.md`); the deep-link key itself deferred (no widget yet).
+- **Contrast bug fixed (owner-reported):** "Remove these 96 records" was white-on-white. `ConfirmDeleteCard` relied on `T.actionRed`, absent from bare NEUTRAL/DARK themes. Now derives from shared `ACTION` / `ACTION_TEXT_SAFE` tokens. Verified live: button `rgb(197,38,38)` on white text. This reaches all ~15 delete confirmations.
+- Verification: eslint clean, 33 targeted tests pass, `vite build` success, negative-status + encoding pass. Full `--fast` gate times out locally (unit tests ~790s); CI is the gate.

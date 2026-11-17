@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef } from "react";
-import { RADIUS, TYPE } from "../calculations/designTokens";
+import { RADIUS, TYPE, ACTION, ACTION_TEXT_SAFE } from "../calculations/designTokens";
 import { useEscapeToClose } from "./useEscapeToClose";
 
 // Shared delete-confirmation UI, extracted from a real live audit finding
@@ -27,7 +27,17 @@ export default function ConfirmDeleteCard({
   onCancel,
   onConfirm,
 }) {
-  const accent = moduleColor || T.actionRed;
+  // FIXED 17 Nov 2026 — T is NOT guaranteed to carry actionRed. Some callers
+  // (ClearSampleDataConfirm from Home/Developer tools) pass a bare NEUTRAL/DARK
+  // theme object, which has no actionRed key — so the old `T.actionRed` was
+  // undefined and the confirm button rendered WHITE TEXT ON WHITE (illegible),
+  // with a missing border/tint too. Derive the danger red from the shared ACTION
+  // token instead, falling back safely if a caller's T does carry one.
+  const dangerRed = T.actionRed || ACTION.red;
+  // The confirm button needs a text-safe red (dark enough for white text).
+  // Module themes supply actionRedText; otherwise use the shared safe red.
+  const dangerRedText = T.actionRedText || ACTION_TEXT_SAFE.red;
+  const accent = moduleColor || dangerRed;
 
   // FIXED 28 Sep 2026 — a live bug in the Escape-to-dismiss sweep, found by
   // checking the sweep's own most load-bearing design decision.
@@ -74,9 +84,9 @@ export default function ConfirmDeleteCard({
         margin,
         padding: 14,
         borderRadius: RADIUS.md,
-        border: `1px solid ${T.actionRed}`,
+        border: `1px solid ${dangerRed}`,
         borderLeft: `4px solid ${accent}`,
-        background: `${T.actionRed}11`,
+        background: `${dangerRed}11`,
       }}
     >
       <div id={messageId} style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary, marginBottom: 10, lineHeight: 1.5 }}>{message}</div>
@@ -90,7 +100,7 @@ export default function ConfirmDeleteCard({
         </button>
         <button
           onClick={onConfirm}
-          style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}
+          style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: dangerRedText, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}
         >
           {confirmLabel}
         </button>

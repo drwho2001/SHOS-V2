@@ -63,7 +63,8 @@ import { computeAdherence } from "../calculations/medicationCalculations";
 // it so the two cannot drift again.
 import { isQuickActionLocked, quickActionLockoutMessage, dueRoutineMedications } from "../calculations/homeQuickAddEligibility";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
-import { countSampleData, clearSampleData, listSampleData } from "../repositories/clearSampleData";
+import { countSampleData, listSampleData } from "../repositories/clearSampleData";
+import { clearWithSnapshot, restoreDemoSnapshot, hasDemoSnapshot, describeDemoSnapshot } from "../repositories/demoRestore";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
@@ -530,13 +531,35 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const clearSample = async () => {
     setClearingSample(true);
     try {
-      await clearSampleData();
+      // 17 Nov 2026 — snapshot-on-clear so this is reversible (owner's #1 ask).
+      await clearWithSnapshot();
       setSampleData({ total: 0, byCollection: [] });
       setSampleList(null);
+      setHasSnapshot(true);
     } finally {
       setClearingSample(false);
     }
   };
+  // Restore demo data (reversible clear). The snapshot holds the exact records
+  // that were removed; restore merges them back by id and never overwrites real
+  // data added since the clear.
+  const [hasSnapshot, setHasSnapshot] = useLoadedState(() => hasDemoSnapshot(), [], false);
+  const [restoringSample, setRestoringSample] = useState(false);
+  const [snapshotInfo, setSnapshotInfo] = useState(null);
+  const restoreSample = async () => {
+    setRestoringSample(true);
+    try {
+      const result = await restoreDemoSnapshot();
+      setSampleData(await countSampleData());
+      setHasSnapshot(await hasDemoSnapshot());
+      setSampleList(null);
+      if (result.failed && result.failed.length) setRestoreError("Some records could not be restored — your snapshot is kept so you can try again.");
+      else setSnapshotInfo(`Restored ${result.restored} demo record${result.restored === 1 ? "" : "s"}.`);
+    } finally {
+      setRestoringSample(false);
+    }
+  };
+  const [restoreError, setRestoreError] = useState("");
   // ADDED — real ask: "scheduled auto-export" — self-gated inside
   // runAutoExportIfDue() on whether the preference is actually turned
   // on (Settings -> Preferences), safe to call unconditionally here,
@@ -1722,6 +1745,36 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 8, lineHeight: 1.4 }}>
             Clearing removes only the example records. Anything you have added yourself is always
             kept — and you can do the same from Settings → Support → Developer tools.
+          </div>
+        </div>
+      )}
+
+      {/* 17 Nov 2026 — Restore demo data. Shown after a clear (a reversible
+          snapshot exists) and only when the demo records are gone. */}
+      {sampleData.total === 0 && hasSnapshot && !sampleDataHidden && (
+        <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : "#F0FDFA" }}>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+            Demo data was cleared
+          </div>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4, lineHeight: 1.45 }}>
+            You can bring the example records back any time. Anything you have added since is kept.
+          </div>
+          {restoreError ? (
+            <div role="alert" style={{ fontSize: 12, color: ACTION.red, marginTop: 8 }}>{restoreError}</div>
+          ) : null}
+          {snapshotInfo ? (
+            <div role="status" style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 8 }}>{snapshotInfo}</div>
+          ) : null}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); restoreSample(); } }} onClick={restoreSample}
+              aria-label="Restore demo data"
+              style={{ fontSize: 12, fontWeight: 600, color: homeColorText, cursor: restoringSample ? "default" : "pointer", opacity: restoringSample ? 0.6 : 1 }}>
+              {restoringSample ? "Restoring…" : "Restore demo data"}
+            </div>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSampleDataHidden(true); } }} onClick={() => setSampleDataHidden(true)}
+              style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>
+              Keep it cleared
+            </div>
           </div>
         </div>
       )}
