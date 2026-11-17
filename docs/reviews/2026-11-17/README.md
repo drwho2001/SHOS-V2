@@ -19,6 +19,7 @@ Fresh-install walkthrough (demo data), full code/docs audit, and ranked fixes. N
 - **`F3-RESEARCH-CHALLENGE.md`** — all-four-body check (NICE NG23/NG12, RCOG, FSRH/UKMEC, BMS joint) + existing-app survey + brutal challenge of the F3 draft; lists what's missing.
 - **`DEEPLINKS-AUTOMATION-INTEROP.md`** — deep-link coverage/gaps + automation opportunities + app-integration/standards research + menopause-status storage decision (My Profile / NEVER_SHARED).
 - **`CHALLENGE-OF-INTEROP-PLAN.md`** — challenge of the above: deep-link "doors with no keys", import scope tightened, LOINC dropped, UK-first + US compatibility gaps, menopause scope caveats.
+- **`DECISIONS-ROUND3.md`** — final owner decisions: no deep links yet, import v1 + synthetic Clue data, Clinic Card extension, menopause with neutral hysterectomy field, build order.
 - **`screenshots/`** — 28 captured screens (dark + light, list/detail/form).
 
 Shipped from this review: the "No barrier method" canonical label + search/filter, the update-banner dismiss fix, and the web biometric gating (see `docs/HISTORY.md`, 17 Nov entries). Owner decisions are in `BACKLOG.md` under "17 Nov 2026".
