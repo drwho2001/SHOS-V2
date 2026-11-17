@@ -2538,7 +2538,11 @@ link.
 - **Source:** User request (17 Nov 2026)
 - **Issue:** "Log dose" merely navigated to the Medication dashboard; PrEP/DoxyPEP wrote doses with no lockout check while the bulk button enforced one; the dose flash was never rendered; ineligible buttons were not ghosted; group order did not match the owner's sequence. Tour X also yanked the user back to Home from the sub-screen being explained.
 - **Expected:** two Encounter adds, Contacts (unnamed group), a Medications subheading with the three dose shortcuts, Healthcare last; shared lockout rule + visible feedback + ghosting; X/Escape/back closes the guide in place.
-- **Status:** Implemented — 13 focused tests green, lint/build green. Device verification pending on the rebuilt APK (adb port dropped mid-verification).
+- **Status:** Implemented and partially device-verified (17 Nov 2026). Source: `src/calculations/homeQuickAddEligibility.js` (shared rule), `src/modules/SHOS_Home_Prototype.jsx` (UI/feedback), `src/modules/InteractiveTour.jsx` + `src/App.jsx` (X/Escape/back skip). `homeQuickAddEligibility.test.js` (6) + `homeQuickAddWiring.test.js` (7) green; lint and `npm run build` green; local APK built with `npm run build` → `cap sync` → Gradle, installed on the Redmi Note 13.
+
+  Device CONFIRMED: Home shows Encounter ×2 (pink), then Contacts (orange) in the unnamed group, then the MEDICATIONS heading with Take DoxyPEP now (solid), Take PrEP now (ghosted: dashed neutral border, faded), Log all due routine meds (ghosted), then the HEALTHCARE heading; "Log dose" is gone. Tapping the ghosted bulk button produced the visible live toast "All daily meds logged — nothing due right now." — the flash is no longer invisible.
+
+  Device NOT YET CONFIRMED (adb dropped before these taps): the first-tap lockout explanation on the ghosted Take PrEP now button (the tap-again override remains guard/decision-tested only), and the tour X/Escape/back behaviour leaving the explained sub-screen open (guard-tested only). Both need one short pass when adb is available.
 
 ---
 
