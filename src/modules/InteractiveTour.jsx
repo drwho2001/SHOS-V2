@@ -51,7 +51,7 @@ export const TOUR_STEPS = [
   // says WHERE to switch them on rather than pretending they are already on.
   { id: "screenshots-toggle", navigate: "settings", settingsScreen: "privacy", target: "screenshots-toggle", title: "Allow screenshots", body: "On by default. Find it in Settings → Security & Privacy → Privacy — turn it off to block screenshots, recording and casting again." },
   { id: "cycle-toggle", navigate: "settings", settingsScreen: "preferences", target: "cycle-toggle", title: "Cycles & contraception", body: "Off by default. Turn on Menstrual & contraception tracking in Settings → General → Preferences to add Cycle/Contraception/Pregnancy under Healthcare." },
-  { id: "settings-about", target: "settings-about", navigate: "settings", settingsScreen: "about", title: "About & version", body: "Version, build, and install link live here. The Guide tab next to it is the full written manual." },
+  { id: "settings-about", target: "about-screen", navigate: "settings", settingsScreen: "about", title: "About & version", body: "Version, build, and install link live here. The Guide tab next to it is the full written manual." },
   { id: "quick-exit", navigate: "home", target: "quick-exit", title: "Quick exit", body: "The discreet control that leaves the app immediately — and locks the vault first if App Lock is on. Use it when you need to get off the screen fast." },
   { id: "closing", navigate: "home", target: null, title: "That's it!", body: "Replay this tour anytime from Settings → Guide → \"Take the interactive tour\"." },
 ];

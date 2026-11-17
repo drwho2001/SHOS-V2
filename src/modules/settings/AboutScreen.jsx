@@ -33,7 +33,11 @@ export function AboutScreen({ onClose }) {
           <div style={{ ...TYPE.recordTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("about.appName", "SHOS")}</div>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{t("about.appSubtitle", "Sexual Health Operating System")}</div>
         </div>
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
+        {/* ADDED 16 Nov 2026 — the tour's About step opens THIS screen, so
+            its spotlight must anchor here. It used to target the "About" row
+            in the Settings list underneath, which is hidden once the screen
+            opens — the ring landed on an empty box with nothing in it. */}
+        <div data-tour="about-screen" style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.version", "Version")}</span>
             {/* CHANGED — real ask: was hardcoded placeholder, now reads

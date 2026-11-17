@@ -45,8 +45,13 @@ describe("interactive tour content", () => {
     expect(screenshots.body).toMatch(/On by default/);
   });
 
-  it("no longer claims About holds privacy info", () => {
-    expect(step("settings-about").body).not.toMatch(/privacy info/);
+  it("no longer claims About holds privacy info, and anchors on the open screen", () => {
+    const about = step("settings-about");
+    expect(about.body).not.toMatch(/privacy info/);
+    // It opens the About screen, so the ring must wrap something on THAT
+    // screen, not the hidden Settings row underneath (empty ring on device).
+    expect(about.target).toBe("about-screen");
+    expect(read("src/modules/settings/AboutScreen.jsx")).toMatch(/data-tour="about-screen"/);
   });
 
   it("the closing step still points at the real replay path", () => {

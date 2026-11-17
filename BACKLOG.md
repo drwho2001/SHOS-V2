@@ -2532,5 +2532,5 @@ link.
 - **Source:** Device audit + user request (16 Nov 2026)
 - **Issue:** The Live session step spotlighted empty space on a fresh install (card exists only while a session is active); the tour never explained the Allow screenshots or cycle/contraception toggles; the About step claimed privacy info lived there, which it does not.
 - **Expected:** labelled demo session card for that step, two new settings steps with real `data-tour` anchors and sub-screens, honest About copy, spotlight ring and bubble not overlapping.
-- **Status:** Implemented — 14-step tour walked on device; screenshots step verified with a clean teal outline and no overlap. Device re-check pending after fixing the cycles sub-screen navigation and the demo card's delayed spotlight re-measure (adb dropped mid-verification). `tourContentGuard.test.js` (9 tests) green.
+- **Status:** Done and device-verified (16 Nov 2026) — full 14-step walk after the fixes: demo session card has a teal ring and no text overlap, Allow screenshots highlights its real card, Cycles opens Preferences and highlights the menstrual/contraception toggle, About opens the real screen and highlights its version card (its old anchor pointed at the hidden Settings row, producing an empty ring — fixed too). `tourContentGuard.test.js` (9 tests) green.
 
