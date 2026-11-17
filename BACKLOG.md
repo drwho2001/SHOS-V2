@@ -2534,3 +2534,47 @@ link.
 - **Expected:** labelled demo session card for that step, two new settings steps with real `data-tour` anchors and sub-screens, honest About copy, spotlight ring and bubble not overlapping.
 - **Status:** Done and device-verified (16 Nov 2026) — full 14-step walk after the fixes: demo session card has a teal ring and no text overlap, Allow screenshots highlights its real card, Cycles opens Preferences and highlights the menstrual/contraception toggle, About opens the real screen and highlights its version card (its old anchor pointed at the hidden Settings row, producing an empty ring — fixed too). `tourContentGuard.test.js` (9 tests) green.
 
+### 151. Home quick-add rework: feedback, lockout consistency, ghosting and order
+- **Source:** User request (17 Nov 2026)
+- **Issue:** "Log dose" merely navigated to the Medication dashboard; PrEP/DoxyPEP wrote doses with no lockout check while the bulk button enforced one; the dose flash was never rendered; ineligible buttons were not ghosted; group order did not match the owner's sequence. Tour X also yanked the user back to Home from the sub-screen being explained.
+- **Expected:** two Encounter adds, Contacts (unnamed group), a Medications subheading with the three dose shortcuts, Healthcare last; shared lockout rule + visible feedback + ghosting; X/Escape/back closes the guide in place.
+- **Status:** Implemented — 13 focused tests green, lint/build green. Device verification pending on the rebuilt APK (adb port dropped mid-verification).
+
+---
+
+## 50. Decisions & simplifications (17 Nov 2026)
+
+### Profanity in default content
+- **Found:** "Fuck YES" (with Italian hand gesture emoji) in WOULD_MEET_AGAIN_OPTIONS (encounterRepository.js:120, :487) and seedDivergence.js:2051.
+- **Action:** Replaced with "Absolutely" in all 3 locations.
+- **Other default content:** Clean. Kink registry terms are clinical/community terms, not swear words.
+
+### Glassmorphism challenge
+- **Finding:** No glassmorphism, backdrop blur, or translucent surfaces exist in the codebase. Design tokens use solid opaque surfaces (NEUTRAL.surface / NEUTRAL_DARK.surface) with 1px borders.
+- **Conclusion:** The "frosted glass" language in BACKLOG items 94, 96, 99, 100 was aspirational, not actual. The design system is solid surfaces with subtle borders and accent outlines.
+- **Action:** Design manual updated with principle #7: "Solid surfaces only." BACKLOG items referencing glassmorphism should be re-read as "match Encounter's solid-surface + accent-border + pill-control pattern."
+
+### 5 backlogged items - decisions made
+
+| # | Item | Decision | Status |
+|---|------|----------|--------|
+| 1 | Contacts count-off button placement | Move to Contacts settings. Add toggle: "Include archived contacts in count." | Ready to build |
+| 2 | Pronouns free-text entry | Free text with suggested base chips (He/him, She/her, They/them, He/they, She/they). User can type anything. | Ready to build |
+| 3 | Light mode full audit | Do full pass. Check solid surface consistency, accent token usage, pill control styling, header tracking, spacing rhythm. Do NOT look for glassmorphism (it does not exist). | Ready to do |
+| 4 | Encounter search live behaviour | Exercise on device. Fix any defects found. | Ready to do |
+| 5 | "Log all daily meds" on-device verification | Exercise on device. Confirm correct behaviour. | Ready to do |
+
+### Updated action list (priority order)
+
+| # | Action | Effort | Status |
+|---|--------|--------|--------|
+| 1 | Fix calendar plugin crash (try/catch around 8 findEvents calls) | 15 min | Ready |
+| 2 | Create release keystore | 5 min | Ready |
+| 3 | Set up Firebase Crashlytics | 15 min | Ready |
+| 4 | Simplify ~13 long i18n strings | 30 min | Ready |
+| 5 | Move contacts count to settings + include/exclude archived | 0.5 day | Ready (decision made) |
+| 6 | Free-text pronouns with suggested base chips | 0.5 day | Ready (decision made) |
+| 7 | Light-mode audit (solid surfaces, not glassmorphism) | 1 day | Ready |
+| 8 | Encounter search exercise | 0.25 day | Ready |
+| 9 | "Log all daily meds" exercise | 0.25 day | Ready |
+

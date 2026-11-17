@@ -17,7 +17,7 @@ import ClearSampleDataConfirm from "../components/ClearSampleDataConfirm";
 // screen content, living directly inside App.jsx. Pure code motion —
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent, deriveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
@@ -57,7 +57,11 @@ import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay, now
 import { getTestingFrequencyStats, getOverallAdherence, getOverallContainerAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
 import { isCompletedTestRecord, isRoutineRetestEligible, suggestedRoutineRetestDate, ROUTINE_RETEST_PANEL } from "../calculations/testingCalculations";
 import { ResultsRegistry } from "../registries/resultsRegistry";
-import { computeAdherence, isDoseLockedOut, latestLogOfType } from "../calculations/medicationCalculations";
+import { computeAdherence } from "../calculations/medicationCalculations";
+// 17 Nov 2026 — Home's three medication shortcuts must ask the SAME lockout
+// question the Medication Dashboard asks; the shared helper is tested against
+// it so the two cannot drift again.
+import { isQuickActionLocked, quickActionLockoutMessage, dueRoutineMedications } from "../calculations/homeQuickAddEligibility";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { countSampleData, clearSampleData, listSampleData } from "../repositories/clearSampleData";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
@@ -320,18 +324,47 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   }, []);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
-  // Flash message shown after a quick-action dose log, auto-clears after 4s.
-  const [doseFlash, setDoseFlash] = useState(null); // { meds: string[], count: number }
-  // Pre-computed DoxyPEP/PrEP medications for quick-action buttons.
+  // FIXED 17 Nov 2026 — doseFlash was SET by both medication quick actions
+  // but NEVER RENDERED: the buttons silently did their write and gave no
+  // feedback at all. It now carries a plain message and is shown as a toast.
+  const [doseFlash, setDoseFlash] = useState(null); // { message: string }
+  const flashTimerRef = useRef(null);
+  const showDoseFlash = (message) => {
+    setDoseFlash({ message });
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = setTimeout(() => { setDoseFlash(null); setLockOverrideId(null); }, 4000);
+  };
+  useEffect(() => () => { if (flashTimerRef.current) clearTimeout(flashTimerRef.current); }, []);
+  // Pre-computed DoxyPEP/PrEP medications for quick-action buttons, plus the
+  // eligibility flags that ghost them when a dose is locked out or nothing
+  // is due. All read the shared Medication module rule (see helper above).
   const [doxyMed, setDoxyMed] = useState(null);
   const [prepMed, setPrepMed] = useState(null);
+  const [doxyLocked, setDoxyLocked] = useState(false);
+  const [prepLocked, setPrepLocked] = useState(false);
+  const [routineDueCount, setRoutineDueCount] = useState(0);
+  const [lockOverrideId, setLockOverrideId] = useState(null);
+  const refreshQuickAddEligibility = async () => {
+    const allMeds = await MedicationRepository.getAll();
+    const doxy = findDoxyPepMedication(allMeds);
+    const prep = (allMeds || []).find((m) => !m.isArchived && m.name.toLowerCase().includes("prep"));
+    const logsByMed = {};
+    for (const med of [doxy, prep, ...(allMeds || [])].filter(Boolean)) {
+      if (logsByMed[med.id]) continue;
+      logsByMed[med.id] = await LogRepository.getForMedication(med.id);
+    }
+    return { allMeds, doxy, prep, doxyLocked: isQuickActionLocked(doxy, logsByMed[doxy?.id]), prepLocked: isQuickActionLocked(prep, logsByMed[prep?.id]), dueCount: dueRoutineMedications(allMeds, logsByMed).length };
+  };
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const allMeds = await MedicationRepository.getAll();
+      const result = await refreshQuickAddEligibility();
       if (!cancelled) {
-        setDoxyMed(findDoxyPepMedication(allMeds));
-        setPrepMed((allMeds || []).find((m) => !m.isArchived && m.name.toLowerCase().includes("prep")));
+        setDoxyMed(result.doxy);
+        setPrepMed(result.prep);
+        setDoxyLocked(result.doxyLocked);
+        setPrepLocked(result.prepLocked);
+        setRoutineDueCount(result.dueCount);
       }
     })();
     return () => { cancelled = true; };
@@ -350,28 +383,42 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   }, []);
 
   // BACKLOG 137b: medication quick actions — log doses directly from Home.
+  // FIXED 17 Nov 2026 — the same lockout rule as the Medication Dashboard,
+  // with its tap-again override and its visible feedback. A locked button is
+  // ghosted but stays tappable: first tap explains, second tap within the
+  // window is the deliberate "accept the risk" confirmation.
   const logMedicationDose = async (med) => {
     if (!med) return false;
-    const entry = await LogRepository.create({ medicationId: med.id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
+    const logs = await LogRepository.getForMedication(med.id);
+    if (isQuickActionLocked(med, logs)) {
+      if (lockOverrideId !== med.id) {
+        setLockOverrideId(med.id);
+        showDoseFlash(quickActionLockoutMessage(med, logs));
+        return false;
+      }
+      setLockOverrideId(null);
+    }
+    await LogRepository.create({ medicationId: med.id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
     syncDoxyPepAlert();
     syncMedicationReminders();
     syncRefillReminder();
-    setDoseFlash({ meds: [med.name], count: 1 });
-    setTimeout(() => setDoseFlash(null), 4000);
+    showDoseFlash(`Logged ${med.name}.`);
+    const fresh = await refreshQuickAddEligibility();
+    setDoxyLocked(fresh.doxyLocked);
+    setPrepLocked(fresh.prepLocked);
+    setRoutineDueCount(fresh.dueCount);
     return true;
   };
   const logAllDueDailyMeds = async () => {
     const allMeds = await MedicationRepository.getAll();
-    const dailyMeds = (allMeds || []).filter((m) => !m.isArchived && m.usagePattern === "daily");
-    const due = [];
-    for (const m of dailyMeds) {
-      const logs = await LogRepository.getForMedication(m.id);
-      const lastDose = latestLogOfType({ logs: logs || [] }, "dose");
-      if (!lastDose || !isDoseLockedOut(m, lastDose.date)) due.push(m);
-    }
+    const logsByMed = {};
+    for (const m of allMeds || []) logsByMed[m.id] = await LogRepository.getForMedication(m.id);
+    // The same helper that decides the button's ghosted state decides what
+    // gets logged — no window where the UI says "none due" but the write
+    // still finds one (or vice versa).
+    const due = dueRoutineMedications(allMeds, logsByMed);
     if (due.length === 0) {
-      setDoseFlash({ meds: [], count: 0, message: "All daily meds logged" });
-      setTimeout(() => setDoseFlash(null), 3000);
+      showDoseFlash("All daily meds logged — nothing due right now.");
       return;
     }
     const timestamp = nowAsStoredDateTime();
@@ -379,8 +426,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     syncDoxyPepAlert();
     syncMedicationReminders();
     syncRefillReminder();
-    setDoseFlash({ meds: due.map((m) => m.name), count: due.length });
-    setTimeout(() => setDoseFlash(null), 4000);
+    showDoseFlash(`Logged ${due.length} routine med${due.length === 1 ? "" : "s"}: ${due.map((m) => m.name).join(", ")}.`);
+    const fresh = await refreshQuickAddEligibility();
+    setDoxyLocked(fresh.doxyLocked);
+    setPrepLocked(fresh.prepLocked);
+    setRoutineDueCount(fresh.dueCount);
   };
 
   // The active Session is a local-only, user-controlled live view. It is
@@ -1015,7 +1065,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // tinting the whole button. The group itself is layout only (no card fill
   // or border): a bordered card wrapping bordered rows would double every
   // edge on screen.
-  const QuickAddButton = ({ icon: Icon, label, color, onClick, size = "compact" }) => {
+  // `muted` is VISUAL ONLY — it fades a shortcut whose action is not currently
+  // available (locked out dose, nothing due). It deliberately stays tappable:
+  // the tap is what explains WHY, and for locked doses is the tap-again
+  // override, exactly as the Medication Dashboard does it.
+  const QuickAddButton = ({ icon: Icon, label, color, onClick, size = "compact", muted = false }) => {
     const sizeMap = {
       standard: { padding: "14px 16px", minHeight: 44, iconSize: 22, fontSize: 15 },
       compact: { padding: "8px 8px", minHeight: 36, iconSize: 20, fontSize: 14 },
@@ -1024,7 +1078,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     const s = sizeMap[size] || sizeMap.compact
     return (
       <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onClick}
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: s.padding, minHeight: s.minHeight, borderRadius: RADIUS.sm, border: `1px solid ${color}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: s.padding, minHeight: s.minHeight, borderRadius: RADIUS.sm, border: `1px solid ${muted ? (darkMode ? DARK.border : NEUTRAL.border) : color}`, borderStyle: muted ? "dashed" : "solid", background: darkMode ? DARK.surface : NEUTRAL.surface, color: muted ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : undefined, opacity: muted ? 0.55 : 1, cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon size={s.iconSize} color={color} />
           <span style={{ fontSize: s.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
@@ -1500,48 +1554,35 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.quickAdd", "Quick add")}</div>
-      {/* CHANGED 5 Nov 2026 — real ask: "remove 'personal' after quick add
-          subtitle". The first group now sits directly under "Quick add"
-          with no second heading, so only the groups that need
-          distinguishing from it carry a label ("Healthcare"). */}
+      {/* REORDERED 17 Nov 2026 to the owner's sequence: the two Encounter
+          adds first, then Contacts in the SAME unnamed grouping (no extra
+          heading), then a Medications subheading and its three dose
+          shortcuts, then Healthcare. "Log dose" was removed — it merely
+          navigated to the Medication dashboard and duplicated the real
+          button there. */}
       <QuickAddGroup>
-        {/* CHANGED 20 Aug 2026 — real bug found in the design-
-            unification pass: this was #3B82F6, a different, lighter
-            blue than Medication Dashboard's own accent (medsBlue,
-            ACCENTS.medication). Now reads from the same shared token
-            the module itself uses. */}
-        {/* CHANGED 26 Aug 2026 — real bug fix: this used to call
-            onQuickAdd("medication"), which opens the Add New Medicine
-            form — wrong action entirely. Now navigates to Medication's
-            default Registry tab, where the real "Log all daily meds"
-            button already lives (with its own "Includes: X, Y" line,
-            built 18 Aug 2026) — reuses onNavigateToRecord with no
-            record id, the same plain-navigation path Global Search
-            uses, rather than the quick-add mechanism. Deliberately
-            NOT auto-firing the bulk log on mount: logging a real dose
-            is an immediate write with no intermediate editable form
-            (unlike every other quick-add, which only opens a blank
-            draft), so it keeps the same explicit, visible tap every
-            other write in this app requires. */}
-        {/* MOVED 5 Nov 2026 — owner-set order: "log medication, new
-            contact, new encounter, new session". Medication is the
-            most frequent daily write, so it leads. */}
-        <QuickAddButton icon={Pill} label="Log dose" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} size="compact" />
-        {/* BACKLOG 137b: medication quick actions — log doses directly from Home without opening the Medication Dashboard. */}
-        {doxyMed && (
-          <QuickAddButton icon={Syringe} label="Take DoxyPEP now" color={medsBlue} onClick={() => logMedicationDose(doxyMed)} size="compact" />
-        )}
-        {prepMed && (
-          <QuickAddButton icon={Pill} label="Take PrEP now" color={medsBlue} onClick={() => logMedicationDose(prepMed)} size="compact" />
-        )}
-        <QuickAddButton icon={ListChecks} label="Log all due routine meds" color={medsBlue} onClick={logAllDueDailyMeds} size="compact" />
-        <QuickAddButton icon={Users} label="New contact" color={contactsColor} onClick={() => onQuickAdd("contacts")} size="compact" />
-        {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
-            the earlier Flame decision above: back to the same Pulse/
-            Activity glyph the bottom nav and Global Search already use
-            for Encounters everywhere else, for consistency. */}
+        {/* Pulse/Activity is the glyph the bottom nav and Global Search
+            already use for Encounters everywhere else. */}
         <QuickAddButton icon={Activity} label="New encounter" color={encountersColor} onClick={() => onQuickAdd("activity")} size="compact" />
         <QuickAddButton icon={Stack} label="New session" color={encountersColor} onClick={async () => { const session = await SessionRepository.create({ title: "New session", status: "active" }); onQuickAddWithPrefill?.("activity", null, { sessionId: session.id }); }} size="compact" />
+      </QuickAddGroup>
+      {/* No heading — Contacts stays in the unnamed first grouping by the
+          owner's instruction. */}
+      <QuickAddGroup>
+        <QuickAddButton icon={Users} label="New contact" color={contactsColor} onClick={() => onQuickAdd("contacts")} size="compact" />
+      </QuickAddGroup>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "0 0 6px" }}>{tr("home.medications", "Medications")}</div>
+      <QuickAddGroup>
+        {/* BACKLOG 137b + 17 Nov 2026: direct dose writes now share the
+            Medication module's lockout rule. A locked/nothing-due button is
+            ghosted but still tappable so it can explain itself. */}
+        {doxyMed && (
+          <QuickAddButton icon={Syringe} label="Take DoxyPEP now" color={medsBlue} onClick={() => logMedicationDose(doxyMed)} size="compact" muted={doxyLocked} />
+        )}
+        {prepMed && (
+          <QuickAddButton icon={Pill} label="Take PrEP now" color={medsBlue} onClick={() => logMedicationDose(prepMed)} size="compact" muted={prepLocked} />
+        )}
+        <QuickAddButton icon={ListChecks} label="Log all due routine meds" color={medsBlue} onClick={logAllDueDailyMeds} size="compact" muted={routineDueCount === 0} />
       </QuickAddGroup>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, margin: "0 0 6px" }}>{tr("home.healthcare", "Healthcare")}</div>
       <QuickAddGroup>
@@ -1773,6 +1814,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
+        </div>
+      )}
+      {/* FIXED 17 Nov 2026 — the medication quick actions SET a flash but
+          never rendered it: a dose write (or a refused, locked-out write)
+          gave the user no feedback at all. Fixed above the bottom nav, well
+          below overlays/tour z-indexes, and announced as a live status. */}
+      {doseFlash && (
+        <div role="status" aria-live="polite" style={{ position: "fixed", left: 16, right: 16, bottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 150, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${actionGreenColor}80`, background: darkMode ? DARK.surface : NEUTRAL.surface, boxShadow: "0 8px 24px rgba(0,0,0,.25)", textAlign: "center", fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+          {doseFlash.message}
         </div>
       )}
       </div>

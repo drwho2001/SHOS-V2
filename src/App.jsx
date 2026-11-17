@@ -1366,12 +1366,18 @@ export default function App() {
   // spotlight. A real session card only exists while a session is active,
   // which on a fresh install is never — the old step spotlighted empty space.
   const [tourStep, setTourStep] = useState(null);
-  const finishTour = async () => {
+  const finishTour = async (reason) => {
     setShowTour(false);
     setTourStep(null);
-    setSettingsScreen(null);
-    setSettingsInitialScreen(null);
-    selectTab("home");
+    // FIXED 17 Nov 2026 — X / Escape / back means "get me out of this
+    // overlay", NOT "take me back to Home". The settings steps explain a
+    // real sub-screen; closing the guide there must leave that screen open.
+    // Only a genuine "Done" (the closing step) resets navigation.
+    if (reason !== "skipped") {
+      setSettingsScreen(null);
+      setSettingsInitialScreen(null);
+      selectTab("home");
+    }
     await AppPreferencesRepository.update({ hasCompletedTour: true });
   };
   // ADDED 26 Aug 2026 — dedicated visible toast for the back-button

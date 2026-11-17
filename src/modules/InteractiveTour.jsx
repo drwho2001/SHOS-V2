@@ -83,8 +83,12 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, onNavigate, on
   // spotlight on screen, and only its X and its Next/Skip buttons could end
   // it. On Home there is no module handler to consult, so the back press
   // went nowhere at all.
-  useEscapeToClose(() => { onDone?.(); });
-  useOverlayBackHandler(() => { onDone?.(); return true; });
+  // FIXED 17 Nov 2026 — backing out of the tour (X, Escape, hardware back)
+  // must leave the user on whatever screen the step was explaining. It used
+  // to call onDone() with no reason, which App treated as "finished" and
+  // yanked the user back to Home from Privacy/Preferences/About.
+  useEscapeToClose(() => { onDone?.("skipped"); });
+  useOverlayBackHandler(() => { onDone?.("skipped"); return true; });
   const [rect, setRect] = useState(null);
   const [, forceRecalc] = useState(0);
   // ADDED — real bug found: the card's vertical position was computed
