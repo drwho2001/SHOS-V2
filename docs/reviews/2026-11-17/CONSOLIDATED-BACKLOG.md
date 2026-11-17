@@ -6,6 +6,11 @@
 
 ---
 
+## 0b. Built after the consolidated backlog (17 Nov, all pushed)
+- **R1** update-banner dismiss fix + APK link removed on web; **R13** No-barrier canonical label + search/filter; **R3** reversible demo-data snapshot/restore; web-biometric gating; white-on-white confirm button fix; shared theme-key hardening + guard; round-2 visual fixes (6px confirm spacing, single-line INFERRED, conditional stray ·, Healthcare order Episodes/Calendar/Clinic Card/Attachments). CI guard failures from these were fixed as they surfaced (styleColourGuard, healthcareCalendarShortcutGuard, PWA auto-update smoke).
+- **Challenged, NOT built (with evidence):** R6 dialog stack (test artifact), A2 "routine meds" (already includes BD/TDS/QDS, excludes PRN), A6 end time (already shown when data exists), deep-link gaps (no widget needs them — "doors with no keys").
+- **Awaiting owner decisions:** Testing↔Measurements `sourceTestId` link (recommended yes), measurement-type suggestion bank (recommended yes), A3 medications horizontal scroll (needs visual re-diagnosis), A7 contacts sort (needs-attention default vs filter), import v1 + Clinic Card extension + menopause fields (approved, not built).
+
 ## 0. Shipped — DO NOT REBUILD (verified this session)
 - **Update-banner dismiss** — was broken (sessionStorage "1" vs localStorage timestamp); fixed via `calculations/updateNotice.js`, all four guards + dismiss share it. APK link removed on web. (`R1`)
 - **"No barrier method" canonical label + search/filter** — `canonicalProtectionNames()` folds "None"/"No condom" into one derived label; Encounter search + filter updated. (`R13`)
