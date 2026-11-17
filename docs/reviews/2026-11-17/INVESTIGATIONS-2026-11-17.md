@@ -6,6 +6,7 @@ The owner answered "treat as a bug". Investigation suggests otherwise:
 - `goBackOneLevel()` (`:685-712`) closes the topmost sub-screen on Back/Escape, then Settings itself; `useEscapeToClose` wires it (`:717`).
 - I saw 3 dialogs all `display:block` only after I **clicked multiple Settings rows via DOM `dispatchEvent` without pressing Back between them** — a synthetic click bypasses the visual occlusion that would stop a real user, so I set `showDesign`, `showDevTools`, etc. true simultaneously. A real user cannot click a row behind an open sub-screen.
 - **Recommendation:** do NOT change code. Re-verify through the real UI: open Colour scheme → tap its Back → open Developer tools → confirm only one dialog is present. Only fix if a real user can reproduce. (Recorded so the next session does not "fix" a non-bug.)
+- **RE-VERIFIED through the real UI (deployed build, 17 Nov):** Settings → Colour scheme showed dialogs `[Settings, Colour scheme]`; pressing Escape (the app's Back path) reduced it to `[Settings]`; then opening Developer tools showed `[Settings, Developer tools]` with no stale Colour scheme. **Confirmed: NOT a bug — a test artifact from earlier DOM clicks without Back.** No code change.
 
 ## 2. contactMerge.js — VERIFIED WIRED; close the stale backlog item
 - `contactMerge.js` exports `detectDuplicateCandidates` / `duplicateCandidatePanel`.
