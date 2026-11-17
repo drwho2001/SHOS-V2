@@ -2918,6 +2918,14 @@ async function testSampleDataClearInDeveloperTools(browser) {
     await confirmClearSampleData(page);
     void devPanel;
 
+    // CHANGED 17 Nov 2026 — clear now takes an encrypted reversible snapshot
+    // before removing (demoRestore.js), so the confirmation text appears a beat
+    // after the click. Wait for the text itself, not a fixed sleep: the repo's
+    // own rule is "wait for the thing you are waiting for", and this still
+    // asserts the EXACT wording — it only removes the timing race that made the
+    // full CI suite fail while the isolated flow passed.
+    const clearedMsg = page.getByText(/Removed \d+ sample record/).first();
+    await clearedMsg.waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
     const after = await page.evaluate(() => document.body.innerText);
     assert(/Removed \d+ sample record/.test(after),
       "clearing from Developer Tools reports how many sample records it removed");

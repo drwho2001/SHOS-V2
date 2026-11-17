@@ -1084,6 +1084,13 @@ function didICum(encounter) {
   return (encounter?.whereICame || []).some((l) => l && l !== "Didn't happen");
 }
 
+// 17 Nov 2026 — true when a cum-location list names an actual location (not the
+// "Didn't happen" sentinel). Used to reveal the "Loads" field only once cum is
+// relevant, so a no-cum encounter doesn't show an irrelevant counter.
+function hasCumLocation(list) {
+  return Array.isArray(list) && list.some((l) => l && l !== "Didn't happen");
+}
+
 function ClimaxMarker({ encounter, T }) {
   return didICum(encounter) ? (
     <span style={{ color: T.encountersPink, display: "inline-flex" }} title="I came">
@@ -2163,6 +2170,12 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   // DEFAULT_ENCOUNTER for the one render before it resolves rather than
   // undefined (nothing here null-guards form before rendering fields).
   const [form, setForm] = useState(() => ({ ...DEFAULT_ENCOUNTER, sessionId: initialSessionId }));
+  // 17 Nov 2026 (owner): "Fisting acts" is only relevant when a fisting kink is
+  // tagged. Resolve the selected kink ids to names and look for "fist". An
+  // existing non-empty count keeps the field visible so a saved value is never
+  // hidden from someone editing an older encounter.
+  const fistingTagged = (form.kinksInvolved || []).some((sel) => /fist/i.test(kinkNameById.get(sel.kinkId) || ""));
+  const showFistCount = fistingTagged || form.fistCount != null;
   // ADDED 8 Nov 2026 — derived, never stored: "No barrier method" when the
   // selected protection entries name no condom/dental dam. PrEP-only records
   // previously showed protection as if it were handled.
@@ -2543,8 +2556,16 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
           <GivingReceivingChips label="My position" value={form.myPosition} onChange={set("myPosition")} options={MY_POSITION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did I cum?" value={form.whereICame} onChange={set("whereICame")} options={CUM_LOCATION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did my partner cum?" value={form.whereHeCame} onChange={set("whereHeCame")} options={CUM_LOCATION_OPTIONS} T={T} />
-          <TextField label="Loads during this encounter" value={form.loadsCount} onChange={set("loadsCount")} T={T} type="number" />
-          <TextField label="Fisting acts during this encounter" value={form.fistCount} onChange={set("fistCount")} T={T} type="number" />
+          {/* CHANGED 17 Nov 2026 (owner): "Loads during this encounter" only
+              matters once a cum location is recorded. Hiding it until then
+              removes an irrelevant field from the common no-cum case; the value
+              is preserved in form state, so tapping a location reveals it again. */}
+          {(hasCumLocation(form.whereICame) || hasCumLocation(form.whereHeCame) || form.loadsCount != null) && (
+            <TextField label="Loads during this encounter" value={form.loadsCount} onChange={set("loadsCount")} T={T} type="number" />
+          )}
+          {showFistCount && (
+            <TextField label="Fisting acts during this encounter" value={form.fistCount} onChange={set("fistCount")} T={T} type="number" />
+          )}
         </SectionCard>
 
         <SectionCard title={tr("encounters.kinkChems", "Kink & chems")} T={T}>

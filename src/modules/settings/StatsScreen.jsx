@@ -4,10 +4,10 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "../../i18n/index.js";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
+import { ACCENTS, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
 import { computeAdherence } from "../../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../../calculations/doxyPepCalculations";
-import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../../calculations/statsCalculations";
+import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../../calculations/statsCalculations";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
@@ -56,24 +56,6 @@ function StatRow({ label, value, explanation, sourceUrl }) {
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-// ADDED — real ask: "Stats is descriptive, not predictive" — a real
-// nudge, distinct from StatRow's plain label/value shape since this is
-// meant to be noticed and acted on, not just looked up. "alert" tone
-// (the direction that means testing less often than your own pattern)
-// reads the same red as every other real alert in this app; "neutral"
-// (interval getting shorter, or informational) stays the Healthcare
-// section's own teal rather than green — a shorter gap isn't
-// necessarily "good" either, just not the concerning direction.
-function TrendInsight({ text, tone, T }) {
-  const [darkMode] = useDarkModePreference();
-  const color = tone === "alert" ? (darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red) : ACCENTS.healthcare;
-  return (
-    <div style={{ margin: "10px 16px 12px", padding: "10px 12px", borderRadius: 10, border: `1px solid ${color}`, background: `${color}14`, fontSize: 12, color: T.textPrimary, lineHeight: 1.5 }}>
-      {text}
     </div>
   );
 }
@@ -139,7 +121,7 @@ export function StatsScreen({ onClose }) {
   // nudge against the person's OWN pattern (not just the fixed BASHH
   // benchmark above), see getTestingIntervalTrend's own comment for
   // the two distinct comparisons this covers.
-  const testingTrend = useMemo(() => getTestingIntervalTrend(tests), [tests]);
+
   // ADDED 16 Sep 2026 — real ask (#78): "positive-test counts by
   // organism/site" — see statsCalculations.js's own comment on the
   // real same-day-multi-site double-counting risk this dedupes.
@@ -311,16 +293,19 @@ export function StatsScreen({ onClose }) {
             value={testingStats.withinBashhInterval == null ? "—" : testingStats.withinBashhInterval ? "Yes" : "No"}
             explanation={`BASHH's 2023 summary guidance recommends 3-monthly (90-day) asymptomatic STI screening for higher-risk groups, matching CDC's own 3–6 month guidance for PrEP users. This compares days since your last test against that 90-day reference point — not a personalised recommendation, just the cited benchmark.`}
             sourceUrl={BASHH_TESTING_SOURCE_URL} />
-          {testingTrend.currentGapVsAverage && (
-            <TrendInsight T={darkMode ? DARK : NEUTRAL}
-              tone={testingTrend.currentGapVsAverage.direction === "longer" ? "alert" : "neutral"}
-              text={`It's been ${testingTrend.currentGapVsAverage.daysSinceLast} days since your last test — ${testingTrend.currentGapVsAverage.percent}% ${testingTrend.currentGapVsAverage.direction} than your own average gap of ${testingTrend.currentGapVsAverage.averageIntervalDays} days.`} />
-          )}
-          {testingTrend.recentTrend && (
-            <TrendInsight T={darkMode ? DARK : NEUTRAL}
-              tone={testingTrend.recentTrend.direction === "up" ? "alert" : "neutral"}
-              text={`Your testing interval has been trending ${testingTrend.recentTrend.direction === "up" ? "longer" : "shorter"} lately — recently averaging ${testingTrend.recentTrend.recentAvgDays} days between tests, vs. ${testingTrend.recentTrend.earlierAvgDays} days earlier on (${testingTrend.recentTrend.percent}% ${testingTrend.recentTrend.direction === "up" ? "slower" : "faster"}).`} />
-          )}
+          {/* REMOVED 17 Nov 2026 (owner feedback): the "current gap vs your
+              average" and "trending shorter/longer" insights were misleading.
+              Test intervals are driven by CLINICAL NEED (symptoms, a positive
+              result, test-of-cure and C&S in quick succession), not a regular
+              cadence — so averaging them produces a tiny "average" that makes
+              any normal gap look like an alarming "longer/slower" trend, and
+              frames shorter gaps as "good". That reads as a directive to go get
+              tested, which is wrong for an asymptomatic person well within the
+              90-day window. The two factual StatRows above (Average interval,
+              Within BASHH interval?) still state the data without a verdict.
+              Kept the calculation in statsCalculations.js — pure, tested, and
+              harmless — in case a purely descriptive presentation is wanted
+              later; the misleading RED/ALERT framing is what was removed. */}
           {/* ADDED 16 Sep 2026 — real ask (#78): positive-test-by-
               organism and by-sample-site breakdowns. */}
           <div style={{ padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
