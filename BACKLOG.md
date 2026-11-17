@@ -2607,6 +2607,16 @@ link.
 - **Menopause (considering, not decided):** user-entered status; a NEUTRAL "spotting after menopause → discuss with a clinician promptly" prompt linking to Resources. No referral/decision rule — app permanently excludes diagnosis engines and clinical risk scoring. Patient-facing wording needs owner sign-off (ideally clinical review).
 - **Cycle stats context (correctness):** annotate averages for active hormonal contraception (Depot/IUD suppress periods) and suppress the "irregular cycles" advisory in that context.
 
+### Owner decisions from popup Q&A (17 Nov 2026)
+- **R6 dialogs = BUG** (not intentional): investigate why Settings sub-screens stay mounted/visible and fix.
+- **R9 overlapping periods:** do NOT auto-close. When a second "Log period" is attempted, open the first record's edit sheet to enter its end date, with plain feedback explaining why ("a new period cannot start until the previous has ended"); include an "I don't remember" escape hatch. Clinically checked — see CLINICAL-RESEARCH-2026-11-17.md.
+- **F3 menopause:** draft neutral, NICE/FSRH/RCOG-aligned wording, then owner reviews before shipping. Must use the 12-month definition + HRT qualifier, never a referral instruction.
+- **F4 cycle stats:** option 1 refined per research — annotate + soften (not hide) the "irregular" advisory under hormonal contraception; never label 2 cycles "irregular". Owner to confirm on seeing drafted copy.
+- **0u/0w Safety Share:** try both platforms with web alternatives (Web Share API / clipboard); if not feasible on web, Android-only. Decide per feature after investigation.
+- **contactMerge.js:** look properly (full review) and report back before closing.
+- **13px tokenisation:** do after the current batch (option 1), but FIRST investigate whether a guard exists that enforces design tokens over raw values — including light/dark, colour-blind and custom colour variants.
+- **Smoke suite:** CI-only accepted (smoke skipped locally for RAM).
+
 ### Ranked fixes R1–R13
 Shipped: R13 (No barrier method search/filter + canonical label); R1 (update banner dismiss fix + APK link removed on web); biometric toggle gated on web — see `docs/HISTORY.md`. Open, in priority order: R2 icon 404s + CSP; R3 restore demo data; R4 repeated summary cards + allergies green outline for NKDA/none/N/A; R5 hCG fields; R6 multiple mounted dialogs; R7 vaginal health removal; R8 transient zero counts; R9 overlapping ongoing periods; R10 onboarding polish; R11 Safety Share empty fields; R12 consistency nits. Full detail with effort/risk/code refs: `BETA-ACTION-PLAN.md`.
 

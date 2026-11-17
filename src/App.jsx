@@ -3306,7 +3306,14 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // above; role="status" (not "region") since notifToast right
         // above already uses that role for the same "persistent,
         // non-urgent notice" shape.
-        <div role="status" style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: FONT_FAMILY, pointerEvents: "none" }}>
+        // CHANGED 17 Nov 2026 — real bug (CI smoke flow 21 + beta finding M3):
+        // at bottom:76px this banner's Backup/Refresh buttons (pointerEvents:auto)
+        // sat directly ON TOP of every module's floating "+" FAB (FAB occupies
+        // ~90-146px above the bottom), so taps/Playwright clicks on Add encounter
+        // were intercepted and timed out. Raised to 150px so the banner clears
+        // the FAB. Still above notifToast (90px) and the nav, so the three bottom
+        // overlays stack rather than collide.
+        <div role="status" style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: FONT_FAMILY, pointerEvents: "none" }}>
           <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version is ready. Back up your data first, then refresh.</span>
           {/* FIXED — real accessibility finding (10 Sep 2026, automated
               axe-core scan): ACCENTS.healthcare (#09582E, a dark green)

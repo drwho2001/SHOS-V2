@@ -12,6 +12,9 @@ Fresh-install walkthrough (demo data), full code/docs audit, and ranked fixes. N
 - **`PLATFORM-PARITY-REVIEW.md`** — native vs web limits (biometrics, calendar sync, APK link), think/challenge/plan/fix.
 - **`REVIEW-ANSWERS.md`** — direct answers to the owner's review questions.
 - **`AXES-BRAINSTORM.md`** — honest review of axes under-covered by the audit (lifecycle, recovery, a11y, responsive, clinical).
+- **`CLINICAL-RESEARCH-2026-11-17.md`** — RCOG/NICE/FSRH checks + user-preference research + self-challenge (period/hormone/PMB wording).
+- **`INVESTIGATIONS-2026-11-17.md`** — dialog-stack re-verification, contactMerge verified-wired, 13px guard finding, CI smoke banner/FAB overlap root cause + fix verification.
+- **`CLINICAL-RESEARCH-2026-11-17.md`** — RCOG/NICE/FSRH checks + user-preference research + self-challenge.
 - **`screenshots/`** — 28 captured screens (dark + light, list/detail/form).
 
 Shipped from this review: the "No barrier method" canonical label + search/filter, the update-banner dismiss fix, and the web biometric gating (see `docs/HISTORY.md`, 17 Nov entries). Owner decisions are in `BACKLOG.md` under "17 Nov 2026".
