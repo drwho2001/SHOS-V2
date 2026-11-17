@@ -66,6 +66,16 @@
          stray wider-than-viewport content, overscroll-behavior none
          suppresses the edge-bounce/pan that shifted everything. -->
     <style>html, body { overflow-x: hidden; overscroll-behavior: none; }</style>
+    <!-- ADDED 17 Nov 2026 — real mobile-web report: "nav buttons appear a bit
+         covered; can't change modules". 100vh is the LARGEST viewport, i.e.
+         it includes the strip behind the mobile browser's collapsing address
+         bar / gesture area, so the flex-child bottom nav sat partly below the
+         visually visible page. 100dvh is the DYNAMIC viewport (what the user
+         can actually see) and keeps the nav tappable; the plain 100vh default
+         plus @supports keeps older browsers working. App.jsx's app root reads
+         this variable instead of hardcoding a height. -->
+    <style>:root { --shos-app-height: 100vh; }</style>
+    <style>@supports (height: 100dvh) { :root { --shos-app-height: 100dvh; } }</style>
   </head>
   <body>
     <div id="root"></div>

@@ -2550,6 +2550,12 @@ link.
 - **Expected:** local web deliveries are logged to history but do not re-trigger due checks; genuine native/OS deliveries still refresh state immediately.
 - **Status:** Implemented (17 Nov 2026) — `WEB_LOCAL_NOTIFICATION_ORIGIN` marker on the synthetic event, pure `shouldRecheckOnDelivery()` gate in App's listener, `webNotificationLoopGuard.test.js` (5 tests) green, lint clean. Not yet reproduced/fixed-tested in a real browser profile with notification permission; the loop is structural and the fix is at the shared delivery chokepoint.
 
+### 153. Mobile web: bottom nav covered, module tabs not tappable
+- **Source:** User report (17 Nov 2026) — "nav buttons in website mode appear a bit covered, on mobile, can't change modules"
+- **Issue:** App root used `height: 100vh`, the LARGEST viewport, which includes the strip behind a mobile browser's collapsing toolbar; the flex-child bottom nav was pushed into that strip and became untappable.
+- **Expected:** root uses the DYNAMIC visible viewport (`100dvh`) with a plain `vh` fallback; nav stays a flex child with its own safe-area inset.
+- **Status:** Implemented and browser-verified (17 Nov 2026) — `index.html` defines `--shos-app-height` (100vh + `@supports` upgrade to 100dvh); App root uses `var(--shos-app-height, 100vh)`. In Chromium the variable resolves to `100dvh`, root height = `innerHeight` = 700 and the nav's bottom = `innerHeight` (66px tall, top at 634), i.e. flush with the visible viewport. `mobileViewportGuard.test.js` (3 tests) green. True mobile-browser chrome cannot be emulated in this harness, so the final check is the owner's phone.
+
 ---
 
 ## 50. Decisions & simplifications (17 Nov 2026)

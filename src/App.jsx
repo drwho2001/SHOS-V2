@@ -2942,7 +2942,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // and sit flush below the banner card when one is, with no gap and
     // no double counted inset. <main> below keeps env+content so Home
     // (which has no header of its own) still clears the status bar.
-    <div style={{ height: "100vh", overflow: "hidden", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column", "--shos-top-banner-h": `${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px` }}>
+    <div style={{ height: "var(--shos-app-height, 100vh)", overflow: "hidden", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column", "--shos-top-banner-h": `${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px` }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
 
       {/* ADDED 3 Sep 2026 — real ask: "clear notification awareness"
