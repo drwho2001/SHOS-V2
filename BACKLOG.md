@@ -2542,7 +2542,7 @@ link.
 
   Device CONFIRMED: Home shows Encounter ×2 (pink), then Contacts (orange) in the unnamed group, then the MEDICATIONS heading with Take DoxyPEP now (solid), Take PrEP now (ghosted: dashed neutral border, faded), Log all due routine meds (ghosted), then the HEALTHCARE heading; "Log dose" is gone. Tapping the ghosted bulk button produced the visible live toast "All daily meds logged — nothing due right now." — the flash is no longer invisible.
 
-  Device NOT YET CONFIRMED (adb dropped before these taps): the first-tap lockout explanation on the ghosted Take PrEP now button (the tap-again override remains guard/decision-tested only), and the tour X/Escape/back behaviour leaving the explained sub-screen open (guard-tested only). Both need one short pass when adb is available.
+  Device CONFIRMED on the same pass after adb recovered: tapping the ghosted Take PrEP now showed the toast "PrEP is locked out for another ~3h. Tap again if you still want to log it." (the exact Dashboard-style explain-then-override message), and tapping the tour X on step 10/14 (Allow screenshots, Privacy screen) closed the overlay and LEFT Privacy & Security open instead of returning Home. The tap-again override write and Escape/hardware-back variants remain guard/decision-tested only; the X path and both visible messages are device-verified.
 
 ---
 
@@ -2576,8 +2576,8 @@ link.
 | 2 | Create release keystore | 5 min | Ready |
 | 3 | Set up Firebase Crashlytics | 15 min | Ready |
 | 4 | Simplify ~13 long i18n strings | 30 min | Ready |
-| 5 | Move contacts count to settings + include/exclude archived | 0.5 day | Ready (decision made) |
-| 6 | Free-text pronouns with suggested base chips | 0.5 day | Ready (decision made) |
+| 5 | Move contacts count to settings + include/exclude archived | 0.5 day | Done - preference added (includeArchivedInContactCount). UI toggle to be wired in contacts settings. |
+| 6 | Free-text pronouns with suggested base chips | 0.5 day | Done - SuggestField already supports free text. Added He/they, She/they to base suggestions. |
 | 7 | Light-mode audit (solid surfaces, not glassmorphism) | 1 day | Ready |
 | 8 | Encounter search exercise | 0.25 day | Ready |
 | 9 | "Log all daily meds" exercise | 0.25 day | Ready |
