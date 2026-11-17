@@ -19,10 +19,13 @@
 // matching how every caller already worked. Nothing here is stateful or
 // effectful: it is a presentational box, which is why extracting it is safe.
 
-import { RADIUS, TYPE } from "../calculations/designTokens.js";
+import { RADIUS, TYPE, ACCENTS } from "../calculations/designTokens.js";
 
 export default function SectionCard({ title, T, children, accent }) {
-  const labelColor = accent || T.healthcare;
+  // Defensive fallback (17 Nov 2026): T.healthcare exists on module themes but
+  // NOT on the bare NEUTRAL/NEUTRAL_DARK objects. If a caller ever passes a bare
+  // theme with no accent, the old `T.healthcare` was undefined => invisible label.
+  const labelColor = accent || T.healthcare || ACCENTS.healthcare;
   // §49b — colour-indent/backfill: tinted background, matching encounters-card-mockup.html
   // section-row style. Falls back to the original plain card when no accent is passed.
   return (
