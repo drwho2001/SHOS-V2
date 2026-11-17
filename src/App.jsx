@@ -1766,10 +1766,16 @@ const [refillAwaitingBannerHeight, refillAwaitingBannerCallbackRef] = useMeasure
   useEffect(() => {
     let listenerHandle = null;
     (async () => {
-      const { addNotificationReceivedListener } = await import("./storage/notificationService");
+      const { addNotificationReceivedListener, shouldRecheckOnDelivery } = await import("./storage/notificationService");
       const { NotificationHistoryRepository } = await import("./repositories/notificationHistoryRepository");
       listenerHandle = await addNotificationReceivedListener((notification) => {
-        checkDueMeds();
+        // FIXED 17 Nov 2026 — a WEB-local notification is one WE just showed
+        // from a due-check. Re-running the whole due-check on that synthetic
+        // "delivery" re-scheduled due-now reminders and looped every few
+        // seconds (reported on the website). Still record it in history;
+        // only the re-check is skipped. Real OS/native deliveries have no
+        // origin and still refresh state immediately, unchanged.
+        if (shouldRecheckOnDelivery(notification)) checkDueMeds();
         // ADDED 3 Sep 2026 — real ask: a notification history log —
         // same real delivery event already driving the banner's live
         // refresh above, now also recorded so Settings > Notifications

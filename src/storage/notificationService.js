@@ -704,6 +704,21 @@ export async function sendTestNotification() {
 // why that's a real web-platform ceiling, not a bug.
 const webTimeouts = new Map();
 
+// FIXED 17 Nov 2026 — real web-only loop reported live: showWebNotification()
+// dispatches a synthetic "delivered" event so history can see local web
+// notifications, and App's listener used that event to call checkDueMeds().
+// checkDueMeds() re-runs every reminder sync; a due-now reminder (testing,
+// medication, refill, vaccination) reschedules at now/now+3s, fires again,
+// dispatches again — an infinite "notification every few seconds" loop.
+// Marking OUR synthetic deliveries lets the listener still log history while
+// skipping the re-check; genuine OS/native deliveries have no origin and are
+// still re-checked exactly as before.
+export const WEB_LOCAL_NOTIFICATION_ORIGIN = "web-local";
+
+export function shouldRecheckOnDelivery(notification) {
+  return notification?.origin !== WEB_LOCAL_NOTIFICATION_ORIGIN;
+}
+
 async function showWebNotification({ id, title, body, actionTypeId }) {
   if (!webNotificationsSupported() || Notification.permission !== "granted") return false;
   try {
@@ -719,7 +734,7 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
     // Web's own equivalent of native's localNotificationReceived — see
     // addNotificationReceivedListener()'s own comment above.
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("shos-notification-delivered", { detail: { id, title, body } }));
+      window.dispatchEvent(new CustomEvent("shos-notification-delivered", { detail: { id, title, body, origin: WEB_LOCAL_NOTIFICATION_ORIGIN } }));
     }
     return true;
   } catch (err) {
