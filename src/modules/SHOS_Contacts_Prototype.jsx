@@ -21,7 +21,10 @@ import {
   ClockCounterClockwiseIcon as ClockCounterClockwise, ClockIcon as Clock,
 } from "@phosphor-icons/react";
 
-const CONTACT_ICON_BASE = "/contact-platform-icons/";
+// R2 (18 Nov) — was hardcoded to "/contact-platform-icons/", which 404s on
+// the GitHub Pages deploy where Vite's base is "/SHOS-V2/". Every other
+// public/ asset in this app uses BASE_URL; this one must too.
+const CONTACT_ICON_BASE = `${import.meta.env.BASE_URL}contact-platform-icons/`;
 // Android/PWA launcher assets are bundled locally. Generic/unknown method
 // names still use the neutral chat fallback rather than a guessed brand mark.
 const GmailLogo = ({ size = 20 }) => (
@@ -304,7 +307,7 @@ function MethodBadge({ method, T, size }) {
     return <div title="Email" aria-label="Email" style={{ ...box, background: T.surfaceVariant }}><GmailLogo size={size * 0.6} color="#EA4335" /></div>;
   }
   const platform = platformIconFor(method);
-  if (platform) {
+  if (platform?.file) {
     const style = {
       ...box,
       objectFit: "cover",
@@ -1090,7 +1093,10 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
             return (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
                 style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4}}>
-                {platform && <img src={`${CONTACT_ICON_BASE}${platform.file}`} alt="" aria-hidden="true" style={{ width: 14, height: 14, objectFit: "cover", borderRadius: 3, background: /^fab ?(guys|swingers)$/i.test(tag) ? "#FFFFFF" : "transparent", filter: platform.edge && T.bg !== NEUTRAL_DARK.bg ? "drop-shadow(0 1px 1px rgba(0,0,0,.28))" : "none" }} />}
+                {/* R2 — the email entry carries an `icon`, not a `file`;
+                    without this guard it requested .../undefined.png (a 404)
+                    alongside the Envelope glyph already rendered below. */}
+                {platform?.file && <img src={`${CONTACT_ICON_BASE}${platform.file}`} alt="" aria-hidden="true" style={{ width: 14, height: 14, objectFit: "cover", borderRadius: 3, background: /^fab ?(guys|swingers)$/i.test(tag) ? "#FFFFFF" : "transparent", filter: platform.edge && T.bg !== NEUTRAL_DARK.bg ? "drop-shadow(0 1px 1px rgba(0,0,0,.28))" : "none" }} />}
                 {isEmail && <Envelope size={12} />}{isTwitterX && <TwitterLogo size={12} />} {tag} <X size={11} />
               </div>
             );
