@@ -45,8 +45,9 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
-import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate, realTimestampFromStored } from "../calculations/dateInputHelpers";
 import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
+import { cycleVariabilityAdvisory, hormonalContextNote } from "../calculations/cycleStatContext";
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 // R9 — stable empty list so the "not loaded yet" null fallback above is
@@ -614,6 +615,24 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
   const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
   const regularity = useLoadedMemo(() => MenstrualCycleRepository.getCycleRegularity(), [cycles], null);
   const avgPeriodLength = useLoadedMemo(() => MenstrualCycleRepository.getAveragePeriodLengthDays(), [cycles], null);
+  // F4 — read the same active contraception list the Contraception tab uses,
+  // purely to add honest CONTEXT to the cycle averages (never to interpret them).
+  const activeContraception = useLoadedMemo(
+    () => ContraceptionRepository.getAll().then((list) => list.filter((e) => !e.isArchived && !e.endDate)),
+    [force], []
+  );
+  // A name hint, not a clinical classification — the app does not know a
+  // method's hormone content, so this only decides whether to SHOW a neutral
+  // context note, never a value or a recommendation.
+  const HORMONAL_HINT = /pill|patch|depot|inject|implant|ius|iud|hormone|ring|mini|contracept/i;
+  const hormonalMethod = activeContraception.find((e) => HORMONAL_HINT.test(`${e.method || ""} ${e.formulation || ""}`)) || null;
+  const hormonalContext = hormonalMethod ? {
+    active: true,
+    methodName: hormonalMethod.method || null,
+    settlingIn: hormonalMethod.startDate ? (Date.now() - realTimestampFromStored(hormonalMethod.startDate)) < 90 * 86400000 : false,
+  } : { active: false };
+  const variabilityAdvisory = cycleVariabilityAdvisory(regularity, hormonalContext);
+  const hormonalNote = hormonalContextNote(hormonalContext);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
   // async — resolved once here (component-level, since a hook can't be
@@ -702,8 +721,11 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
           Cycle tracking is paused while pregnant — you can still add an entry manually if you need to (e.g. spotting).
         </div>
       ) : avgLength ? (
-        <div style={{ margin: "12px 16px 0", fontSize: 12, color: T.textSecondary }}>Average cycle length so far: <strong style={{ color: T.textPrimary }}>{avgLength} days</strong>{regularity && regularity.min !== regularity.max ? <span style={{ color: T.textDisabled }}> (range {regularity.min}-{regularity.max} days over {regularity.count} cycles)</span> : null}</div>
+        <div style={{ margin: "12px 16px 0", fontSize: 12, color: T.textSecondary }}>Average cycle length so far: <strong style={{ color: T.textPrimary }}>{avgLength} days</strong>{regularity && regularity.min !== regularity.max ? <span style={{ color: T.textDisabled }}> (range {regularity.min}-{regularity.max} days over {regularity.count + 1} cycles)</span> : null}</div>
       ) : null}
+      {/* F4 — honest context, never an interpretation. The note is shown next to
+          the numbers; the numbers themselves are unchanged. */}
+      {hormonalNote ? <div style={{ margin: "8px 16px 0", fontSize: 11, color: T.textDisabled, lineHeight: 1.4 }}>{hormonalNote}</div> : null}
       {avgPeriodLength ? <div style={{ margin: "4px 16px 0", fontSize: 12, color: T.textSecondary }}>Average period length: <strong style={{ color: T.textPrimary }}>{avgPeriodLength} day{avgPeriodLength === 1 ? "" : "s"}</strong></div> : null}
       {cycles && cycles.length >= 2 && (() => {
         const recent = cycles.slice(0, Math.min(5, cycles.length));
@@ -720,8 +742,13 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
         if (monthsSince >= 12) {
           return <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>No period logged in {monthsSince} months. If you are not pregnant, this may be worth discussing with a clinician - periods can stop for many reasons, including menopause, and a clinician can help work out which. <a href="https://www.nhs.uk/conditions/menopause/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcare }}>NHS: menopause</a></div>;
         }
-        if (regularity && regularity.min && regularity.max && (regularity.max - regularity.min) > 14) {
-          return <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>Your cycles have varied by more than 2 weeks ({regularity.min}-{regularity.max} days). Irregular cycles are common, but a change in pattern is worth mentioning to a clinician. <a href="https://www.nhs.uk/conditions/irregular-periods/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcare }}>NHS: irregular periods</a></div>;
+        // F4 — never call a short history "irregular", and soften the wording
+        // when a hormonal method is in its settling-in window. The pure copy
+        // lives in cycleStatContext.js so it is unit-testable.
+        if (variabilityAdvisory.show) {
+          return <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: "1px solid " + T.border, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>
+            {variabilityAdvisory.text} <a href="https://www.nhs.uk/conditions/irregular-periods/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcare }}>NHS: menstrual cycles</a>
+          </div>;
         }
         return null;
       })()}

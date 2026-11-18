@@ -1,7 +1,7 @@
 {
   "_readme": "Ratchet baseline for styleColourGuard.test.js. 'hex' counts raw hex/rgba colour literals in JSX style object values; 'accent' counts raw ACCENTS.* / ACTION.* reads used directly as style values. The guard fails when a count rises or a new file appears. When a legitimate new use is added, update this file in the same commit and say why. See docs/DESIGN-AUDIT.md section 8, 'Tests worth adding'.",
   "totals": {
-    "hex": 320,
+    "hex": 321,
     "accent": 95
   },
   "files": {
@@ -152,6 +152,11 @@
     "modules/SHOS_Vaccinations_Prototype.jsx": {
       "hex": 15,
       "accent": 0
+    },
+    "modules/settings/PeriodCsvImportSheet.jsx": {
+      "hex": 1,
+      "accent": 0,
+      "_reason": "Standard modal scrim rgba(0,0,0,0.4) — the same one every other bottom sheet uses. No shared scrim token exists; all other raw colours in the file use tokens."
     }
   }
 }

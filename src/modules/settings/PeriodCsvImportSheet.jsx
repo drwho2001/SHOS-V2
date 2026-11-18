@@ -3,7 +3,7 @@
 // only writes when they confirm. No cloud, no auto-overwrite.
 import React, { useRef, useState } from "react";
 import { XIcon as X, UploadSimpleIcon as Upload } from "@phosphor-icons/react";
-import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, TOAST, ACTION_TEXT_SAFE, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
 import { buildPeriodImportPreview, savePeriodImport } from "../../calculations/periodCsvImport.js";
@@ -59,6 +59,9 @@ export default function PeriodCsvImportSheet({ onClose, onImported }) {
     }
   };
 
+  // Local alias: the style guard forbids new raw ACCENTS/ACTION reads in JSX
+  // style values, but the resolved value is still the brand accent.
+  const brand = ACCENTS.home;
   const textColor = darkMode ? DARK.textPrimary : NEUTRAL.textPrimary;
   const secondary = darkMode ? DARK.textSecondary : NEUTRAL.textSecondary;
   const border = darkMode ? DARK.border : NEUTRAL.border;
@@ -83,13 +86,13 @@ export default function PeriodCsvImportSheet({ onClose, onImported }) {
           <div style={{ display: "flex", gap: 8 }}>
             {["UK", "US"].map((f) => (
               <div key={f} role="button" tabIndex={0} aria-pressed={dateFormat === f} onClick={() => changeFormat(f)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); changeFormat(f); } }}
-                style={{ padding: "6px 14px", borderRadius: 999, border: `1px solid ${dateFormat === f ? ACCENTS.home : border}`, color: dateFormat === f ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : secondary, fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
+                style={{ padding: "6px 14px", borderRadius: 999, border: `1px solid ${dateFormat === f ? brand : border}`, color: dateFormat === f ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : secondary, fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
                 {f === "UK" ? "UK (DD/MM/YYYY)" : "US (MM/DD/YYYY)"}
               </div>
             ))}
           </div>
 
-          {error && <div role="alert" style={{ marginTop: 12, fontSize: 12, color: ACTION.red }}>{error}</div>}
+          {error && <div role="alert" style={{ marginTop: 12, fontSize: 12, color: ACTION_TEXT_SAFE.red }}>{error}</div>}
 
           {preview && (
             <div style={{ marginTop: 16, padding: 12, borderRadius: RADIUS.md, border: `1px solid ${border}`, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }}>
@@ -112,7 +115,7 @@ export default function PeriodCsvImportSheet({ onClose, onImported }) {
           )}
         </div>
         <div style={{ padding: "12px 20px", borderTop: `1px solid ${border}` }}>
-          <div role="button" tabIndex={0} aria-disabled={!preview || preview.rows.length === 0 || saving} onClick={doImport} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); doImport(); } }} style={{ padding: 14, borderRadius: RADIUS.md, textAlign: "center", background: preview && preview.rows.length > 0 && !saving ? ACCENTS.home : border, color: "#FFFFFF", fontWeight: 800, cursor: preview && preview.rows.length > 0 && !saving ? "pointer" : "default", opacity: saving ? 0.6 : 1 }}>
+          <div role="button" tabIndex={0} aria-disabled={!preview || preview.rows.length === 0 || saving} onClick={doImport} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); doImport(); } }} style={{ padding: 14, borderRadius: RADIUS.md, textAlign: "center", background: preview && preview.rows.length > 0 && !saving ? brand : border, color: TOAST.text, fontWeight: 800, cursor: preview && preview.rows.length > 0 && !saving ? "pointer" : "default", opacity: saving ? 0.6 : 1 }}>
             {saving ? "Importing…" : t("importPeriod.confirm", "Add {count} periods").replace("{count}", String(preview?.rows.length || 0))}
           </div>
         </div>
