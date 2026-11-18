@@ -2,11 +2,11 @@
 
 **Purpose:** everything needed to resume with no lost context. Read this file first, then the specific docs referenced.
 
-## Current state (updated 18 Nov, end of the long build session)
-- Working tree **clean**; HEAD = `3a892b3` ("F4 cycle-stat context; fix CI guards flagged after the import v1 push"), pushed to `main`. All previous handoff decisions were actioned; no pending policy question.
-- CI was still running on `3a892b3` at this update. **FIRST ACTION ON RESUME: `gh run list --branch main --limit 4` and confirm Web Alpha + Build Android APK are green.** If red, `gh run view <id> --log-failed` before editing. Three CI failures were found and fixed this session (in order): (1) `__BUILD_DATE__` missing from `jsxIdentifierBindingGuard.test.js` allowlist; (2) frozen pregnancy seed snapshot lacked R5's new non-empty `sampleType: "Urine"` default; (3) `styleColourGuard` flagged the new import sheet's raw colours. A fourth (`storedDateArithmeticGuard` on the F4 settling-in window) was caught locally before push. Lesson: **run all 63 `*Guard/*Coverage` test files locally before pushing** — it takes ~4 min but catches what CI catches.
-- Local verification at this update: 405 guard-test assertions pass, eslint clean on every changed file, `vite build` success. Full local smoke is memory-starved; CI is the gate.
-- All popup decisions are recorded below and were implemented; no further policy questions are needed to resume.
+## Current state (updated 18 Nov — ALL REMAINING WORK COMPLETE)
+- Working tree **clean**; HEAD = `5faccc0` ("Tokenise 13px..."), pushed to `main`. Every item in the handoff build list has now been actioned.
+- CI: Web Alpha + Build Android APK were GREEN on the 03:20:33 run (covers R2/R4/R8/R10/R11); the final two pushes (F3 spotting prompt, 13px tokenisation) were still running at this update. Local gate is equivalent and green: **67 guard files / 418 tests pass, eslint clean across all of src, `vite build` success.** If CI is red on resume, `gh run view <id> --log-failed` before editing.
+- Lesson that kept CI green: **run all `*Guard/*Coverage` test files locally before pushing.** This session caught four gate failures that way (build-date allowlist, frozen seed snapshot, style colours, stored-date arithmetic) before they could land.
+- No policy questions outstanding. No code work remains from this audit.
 
 ## SHIPPED THIS SESSION (18 Nov, on top of the list below)
 - CI fix: `__BUILD_DATE__` added to `jsxIdentifierBindingGuard.test.js` ALLOWED_GLOBALS.
@@ -21,7 +21,7 @@
 - Import v1: `periodCsvImport.js` + `PeriodCsvImportSheet.jsx` (Settings → Backup & Export). SHOS round-trip + Clue CSV, on-device, preview-before-save, explicit UK/US dates, dedupe by start date.
 - F4 cycle stats: pure `cycleStatContext.js` copy — never "irregular" under 3 cycles, softened neutral wording, hormonal settling-in context note; dates/numbers unchanged.
 - CI fixes after CI feedback: frozen seed snapshot updated for R5 defaults; styleColour baseline + tokens for the new import sheet; `realTimestampFromStored` for the F4 settling-in window.
-- Menopause status (F3 data layer + UI): profile fields `menopauseStatus`/`menopauseConfirmedAt`/`noUterus`, all in NEVER_SHARED_FIELDS; editable in My Profile → Clinical & emergency info; read-only projection in Menstrual & Contraception. **NOT built: the neutral post-menopause spotting prompt** (approved copy still in F3-MENOPAUSE-COPY-DRAFT.md) — needs Symptom Log / period-log trigger + Resources link.
+- Menopause status (F3 data layer + UI): profile fields `menopauseStatus`/`menopauseConfirmedAt`/`noUterus`, all in NEVER_SHARED_FIELDS; editable in My Profile → Clinical & emergency info; read-only projection in Menstrual & Contraception. Spotting prompt now built too (see below).
 - Clinic Card doctor summary: CHALLENGE FINDING — already built (`clinicCardPdfService.js` generates a print-clean clinician-facing PDF of exactly what Clinic Card shows, honouring section visibility + recent-contacts opt-in). No new module needed; do not rebuild.
 - F3 spotting prompt: `menopauseSpottingPrompt.js` builds the approved neutral copy when a bleeding/spotting symptom or cycle-spotting record is logged under a user-entered Post-menopause status; precise HRT qualifier; GAHT recorded → clinician-only wording (NG23 exclusion). Banner in Menstrual & Contraception with NHS link + dismiss. 8 tests assert copy boundaries.
 - R2/R4/R8/R10/R11/R12 all actioned (see BETA-ACTION-PLAN): icon BASE_URL + email guard; allergies green clear state + context-aware summary cards; loading marks; onboarding dots/note; omit empty Safety Share fields; R12 reviewed as already-fixed/deliberate.
@@ -45,7 +45,7 @@
 - B5 barrier tags — keep single "No barrier method" (separate domains, don't conflate).
 - C2 HIV/ART — Medication module is enough; no new module.
 
-## APPROVED but NOT BUILT (ordered)
+## APPROVED items — ALL NOW BUILT (ordered; retained as a record)
 1. **Home polish A2/A3** — desktop-only "X's Home" greeting, reorder recent activity (Newest contact above Last encounter), add last-DoxyPEP-dose row.
 2. **R9 period overlap** — opening a second period while one is ongoing opens the first record to enter its end date (no auto-close), with "I don't remember → estimate duration" escape + plain explanation.
 3. **F4 cycle stats** — annotate averages for hormonal contraception, soften (not hide) the "irregular" advisory, never call 2 cycles "irregular".
