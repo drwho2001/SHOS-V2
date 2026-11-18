@@ -7,6 +7,12 @@
 - CI on `4ae7962` (and the handoff-doc commit `533f3c4`): **Web Alpha + Build Android APK are RED**, Smoke was in flight at handoff. Cause is known and mechanical: I added `__BUILD_DATE__` (Vite `define` + eslint global) for the About build date, but the repo's `src/components/jsxIdentifierBindingGuard.test.js:40` has its own `ALLOWED_GLOBALS` set (contains `__BUILD_SHA__`, `__APP_VERSION__`) and does not include `__BUILD_DATE__`, so the guard fails. **FIRST ACTION ON RESUME (no decision needed):** add `"__BUILD_DATE__"` to that set (same place as `__BUILD_SHA__`), run `npx vitest run src/components/jsxIdentifierBindingGuard.test.js`, commit + push. Then re-check CI. No other policy decisions are pending — all were answered in the last popup and recorded below. Prior smoke failures were root-caused and fixed (styleColourGuard, healthcareCalendarShortcutGuard, PWA auto-update dismiss flag, flow-2 timing race).
 - Local verification at handoff: eslint clean, 44 targeted tests pass, `vite build` success, negative-status + encoding guards pass. Full local smoke is memory-starved; CI is the gate.
 
+## SHIPPED THIS SESSION (18 Nov, on top of the list below)
+- CI fix: `__BUILD_DATE__` added to `jsxIdentifierBindingGuard.test.js` ALLOWED_GLOBALS.
+- Home polish A1–A4 (card text, activity reorder + DoxyPEP row, desktop greeting, calendar shrink).
+- R9 period overlap guard (open prior record to add end date, estimate escape, save-time re-check).
+- Contacts "Incomplete" sort: mandatory-missing contacts now precede optional-only ones; default sort untouched.
+
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
 - "No barrier method" canonical label; enc search/filter. Shared theme-key hardening + guard.

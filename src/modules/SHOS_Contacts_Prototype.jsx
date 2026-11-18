@@ -3488,7 +3488,21 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       if (a.favourited !== b.favourited) return a.favourited ? -1 : 1;
       if (sortBy === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
       if (sortBy === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
-      if (sortBy === "incomplete") return getCompletenessScore(a) - getCompletenessScore(b);
+      // CHANGED 18 Nov 2026 (owner clarification) — no default sort change;
+      // this only affects the "Incomplete" sort chip. The old comparator used
+      // getCompletenessScore(), which counts EVERY field (mandatory and
+      // optional alike). That put someone missing only "notes" or a test date
+      // alongside someone missing their city or role — exactly backwards.
+      // Mandatory-missing contacts go first (most missing first); within each
+      // group the completeness score stays as the tie-breaker. Acknowledged
+      // ("marked complete") records return no missing required fields, so
+      // they naturally fall into the non-mandatory group.
+      if (sortBy === "incomplete") {
+        const aMissing = getMissingRequiredContactFields(a).length;
+        const bMissing = getMissingRequiredContactFields(b).length;
+        if (aMissing !== bMissing) return bMissing - aMissing;
+        return getCompletenessScore(a) - getCompletenessScore(b);
+      }
       // ADDED — real ask: "orderable also by last encounter." Reuses
       // the same contactEncounterSummary already computed per-card for
       // the inactive-status dot — no new calculation invented, just a
