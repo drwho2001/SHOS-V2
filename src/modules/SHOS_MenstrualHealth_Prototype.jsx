@@ -1346,6 +1346,12 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   // pregnancy record's status actually changes) picks up a fresh value,
   // same practical effect as the old plain-call-every-render approach.
   const activePregnancy = useLoadedMemo(() => PregnancyRepository.getActive(), [subTab], null);
+  // F3 — read-only projection of the user's own menopause status. The profile
+  // is the single owner; this view never writes and never infers a stage.
+  const [profileMenopause] = useLoadedState(
+    () => MyProfileRepository.getProfile().then((p) => ({ status: p.menopauseStatus || "Not recorded", since: p.menopauseConfirmedAt || null, noUterus: !!p.noUterus })),
+    [subTab], { status: "Not recorded", since: null, noUterus: false }
+  );
   // A deep-linked Pregnancy record must be reachable even for a
   // gender that hides the tab by default — same "never a hard block"
   // rule as the "Show pregnancy tracking anyway" link itself.
@@ -1386,6 +1392,16 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
           onClick={() => setSubTab("pregnancy")}>
           <Baby size={16} color="#FFFFFF" weight="fill" />
           <span style={{ fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>Currently pregnant since {formatDate(activePregnancy.testDate)}{activePregnancy.estimatedDueDate ? ` · est. due ${formatDate(activePregnancy.estimatedDueDate)}` : ""} — tap for details</span>
+        </div>
+      )}
+      {/* F3 — read-only, user-entered only. Never a stage inferred from age or
+          a gap in periods; change it in My Profile, not here. */}
+      {profileMenopause.status !== "Not recorded" && (
+        <div style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surfaceVariant, fontSize: 12, color: T.textSecondary }}>
+          <div style={{ fontWeight: 700, color: T.textPrimary }}>Menopause status: {profileMenopause.status}</div>
+          {profileMenopause.since ? <div style={{ marginTop: 2 }}>Since {formatStoredDate(profileMenopause.since)}</div> : null}
+          {profileMenopause.noUterus ? <div style={{ marginTop: 2 }}>No uterus recorded</div> : null}
+          <div style={{ marginTop: 4, fontStyle: "italic" }}>Your own record — SHOS never guesses this. Change it in My Profile → Clinical & emergency info.</div>
         </div>
       )}
       {!pregnancyReachable && !pregnancyTrackingHidden && subTab !== "pregnancy" && (

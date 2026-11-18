@@ -63,6 +63,8 @@ import {
   PREP_DOXY_OPTIONS, DAYS_OF_WEEK, TIME_CONSTRAINT_TYPES, AVAILABILITY_RULE_TYPES,
   BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
 } from "../repositories/contactRepository";
+// F3 — user-entered only; never inferred from age or period gaps.
+const MENOPAUSE_STATUS_OPTIONS = ["Not recorded", "Pre-menopause", "Peri-menopause", "Post-menopause", "Prefer not to say"];
 // FIXED 30 Sep 2026 (audit) — ANONYMISED added to this import: the HIV status row
 // carried its own hand-typed placeholder with FIVE dots where the shared one has
 // four. It still masked, so nothing leaked — but a second private copy is
@@ -1345,6 +1347,21 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
           <TextField label="Emergency contact name" value={form.emergencyContactName} onChange={set("emergencyContactName")} T={T} placeholder="e.g. Mum" />
           <TextField label="Emergency contact phone" value={form.emergencyContactPhone} onChange={set("emergencyContactPhone")} T={T} placeholder="e.g. +44 7700 900123" />
           <TextAreaField label="Other emergency notes" value={form.emergencyNotes} onChange={set("emergencyNotes")} T={T} placeholder="e.g. blood type, relevant conditions" />
+          {/* F3 — reproductive health. User-entered only; SHOS never guesses a
+              stage from age or from a gap in periods. Optionally shown read-only
+              in Menstrual & Contraception. */}
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary, marginBottom: 6 }}>Reproductive health</div>
+            <SelectField label="Menopause status" value={form.menopauseStatus || "Not recorded"} onChange={set("menopauseStatus")} options={MENOPAUSE_STATUS_OPTIONS} T={T} />
+            <div style={{ fontSize: 11, color: T.textDisabled, margin: "0 0 8px", lineHeight: 1.4, fontStyle: "italic" }}>
+              This is your own record — SHOS never guesses your stage from your age. You can change this any time.
+            </div>
+            <TextField label="Since when (optional)" value={form.menopauseConfirmedAt || ""} onChange={set("menopauseConfirmedAt")} T={T} type="date" />
+            <div role="button" tabIndex={0} onClick={() => set("noUterus")(!form.noUterus)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set("noUterus")(!form.noUterus); } }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", cursor: "pointer", minHeight: 44 }}>
+              <input type="checkbox" checked={!!form.noUterus} onChange={() => {}} aria-label="No uterus / hysterectomy" />
+              <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>No uterus (e.g. hysterectomy) — optional, neutral record</span>
+            </div>
+          </div>
         </SectionCard>
         </div>
         </FormTabs>
@@ -1554,6 +1571,9 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
         <ReadRow label="Emergency contact name" value={profile.emergencyContactName} T={T} />
         <ReadRow label="Emergency contact phone" value={profile.emergencyContactPhone} T={T} />
         <ReadRow label="Other emergency notes" value={profile.emergencyNotes} T={T} />
+        <ReadRow label="Menopause status" value={profile.menopauseStatus || "Not recorded"} T={T} />
+        {profile.menopauseConfirmedAt ? <ReadRow label="Since" value={formatStoredDate(profile.menopauseConfirmedAt)} T={T} /> : null}
+        {profile.noUterus ? <ReadRow label="No uterus" value="Yes" T={T} /> : null}
         {profile.allergies.length === 0 && !profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes && (
           <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: "italic", padding: "2px 0 6px" }}>Nothing recorded yet — shown on your Clinic Card only, never shared.</div>
         )}

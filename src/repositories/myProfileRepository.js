@@ -71,6 +71,14 @@ export const DEFAULT_PROFILE = {
   // from this same array, but there's only one real array.
   relationshipContactIds: [],
 
+  // F3 (18 Nov 2026) — user-entered menopause stage. NEVER inferred from age
+  // or from a gap in periods: the app records facts, it does not stage people.
+  // All three are in NEVER_SHARED_FIELDS (profileShareService.js) — sensitive
+  // clinical data with no place in a profile handed to another person.
+  menopauseStatus: "Not recorded", // Not recorded / Pre-menopause / Peri-menopause / Post-menopause / Prefer not to say
+  menopauseConfirmedAt: null,      // optional user-entered date, context only
+  noUterus: false,                 // neutral: hysterectomy / no uterus — no clinical judgement
+
   // Basics
   age: null,
   ageIsApprox: false,

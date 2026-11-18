@@ -109,6 +109,12 @@ export const NEVER_SHARED_FIELDS = [
   "clinicNumber",
   "address",
   "nhsNumber",
+  // F3 — menopause stage / timing / no-uterus is sensitive clinical data.
+  // Same category as dateOfBirth and allergies: useful on a Clinic Card,
+  // never on a profile handed to another person.
+  "menopauseStatus",
+  "menopauseConfirmedAt",
+  "noUterus",
   "updatedAt",
 ];
 

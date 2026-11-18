@@ -21,6 +21,7 @@
 - Import v1: `periodCsvImport.js` + `PeriodCsvImportSheet.jsx` (Settings → Backup & Export). SHOS round-trip + Clue CSV, on-device, preview-before-save, explicit UK/US dates, dedupe by start date.
 - F4 cycle stats: pure `cycleStatContext.js` copy — never "irregular" under 3 cycles, softened neutral wording, hormonal settling-in context note; dates/numbers unchanged.
 - CI fixes after CI feedback: frozen seed snapshot updated for R5 defaults; styleColour baseline + tokens for the new import sheet; `realTimestampFromStored` for the F4 settling-in window.
+- Menopause status (F3 data layer + UI): profile fields `menopauseStatus`/`menopauseConfirmedAt`/`noUterus`, all in NEVER_SHARED_FIELDS; editable in My Profile → Clinical & emergency info; read-only projection in Menstrual & Contraception. **NOT built: the neutral post-menopause spotting prompt** (approved copy still in F3-MENOPAUSE-COPY-DRAFT.md) — needs Symptom Log / period-log trigger + Resources link.
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
