@@ -1405,7 +1405,10 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
       <div style={{ position: "sticky", top: "calc(var(--shos-top-banner-h, 0px) + var(--shos-sticky-header-h, 0px))", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
-        <span style={{ ...TYPE.sectionLabel, color: T.healthcare }}>Menstrual & Contraception</span>
+        {/* F1 — the recorded cluster decision: one sub-tab called
+            "Reproductive health" with Cycle / Contraception / Pregnancy
+            sections inside it (already the three inner tabs below). */}
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcare }}>Reproductive health</span>
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t.key} onClick={() => setSubTab(t.key)}

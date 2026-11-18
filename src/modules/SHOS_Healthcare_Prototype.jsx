@@ -291,7 +291,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // ADDED �?" real ask: gated behind Settings' own toggle, not
             // shown at all otherwise �?" same "opt-in, off by default"
             // treatment as every other feature area in this app.
-            ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Menstrual & Contraception") }] : []),
+            ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Reproductive health") }] : []),
              // R7 — the vaginal health tab was removed (diagnosis-led, and
              // Symptoms/Testing/Episodes now cover the same facts). Data is
              // migrated to Symptom Log once at boot; no UI entry remains.

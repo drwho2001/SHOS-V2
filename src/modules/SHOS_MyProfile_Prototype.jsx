@@ -1236,7 +1236,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
         {showsContraception || revealContraceptionAnyway ? (
         <SectionCard accent={T.contactsTeal} title="Contraception" T={T}>
           <div style={{ fontSize: 12, color: T.textSecondary, padding: "4px 0" }}>
-            Now tracked under Healthcare → Menstrual & Contraception (enable it in Settings if you don't see that tab).
+            Now tracked under Healthcare → Reproductive health (enable it in Settings if you don't see that tab).
           </div>
         </SectionCard>
         ) : (
