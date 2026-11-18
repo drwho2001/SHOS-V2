@@ -30,7 +30,13 @@ export function AboutScreen({ onClose }) {
       </div>
       <div style={isDesktopWidth ? { padding: 16, maxWidth: 480, margin: "0 auto" } : { padding: 16 }}>
         <div style={{ textAlign: "center", padding: "24px 0" }}>
+          {/* ADDED 18 Nov 2026 (owner): the real app icon above the name — same
+              pwa-512.png the PWA/favicon/onboarding use, not a second drawing. */}
+          <img src={`${import.meta.env.BASE_URL}pwa-512.png`} alt="" aria-hidden="true"
+            style={{ width: 72, height: 72, borderRadius: 18, margin: "0 auto 12px", display: "block" }} />
           <div style={{ ...TYPE.recordTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("about.appName", "SHOS")}</div>
+          {/* Expansion deliberately left open (owner preference) — do not spell
+              out "sexual" in the registered-name-style line. */}
           <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{t("about.appSubtitle", "Sexual Health Operating System")}</div>
         </div>
         {/* ADDED 16 Nov 2026 — the tour's About step opens THIS screen, so
@@ -55,7 +61,14 @@ export function AboutScreen({ onClose }) {
               bump would. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.build", "Build")}</span>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
+              {typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}
+              {typeof __BUILD_DATE__ !== "undefined" && (
+                <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY }}>
+                  {new Date(__BUILD_DATE__).toLocaleString()}
+                </span>
+              )}
+            </span>
           </div>
           {/* ADDED Phase 3 — streamlined download/update: install / open
               entry point. Points at the platform-aware landing page
@@ -93,15 +106,10 @@ export function AboutScreen({ onClose }) {
                {t("about.latest", "Latest")}
              </a>
            </div>
-           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.reportCrash", "Report a crash")}</span>
-             <a href={"https://github.com/drwho2001/SHOS-V2/issues/new?title=" + encodeURIComponent("Crash report - SHOS " + APP_VERSION) + "&body=" + encodeURIComponent("## What happened\n\n(describe what you were doing)\n\n## App info\n- Version: " + APP_VERSION + "\n- Build: " + (typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev") + "\n- Platform: " + (typeof navigator !== "undefined" ? navigator.userAgent : "unknown") + "\n\n## Error log\n(paste from Settings -> Developer tools -> Error log -> Copy report)\n")} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
-               {t("about.report", "Report")}
-             </a>
-           </div>
+           
          </div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginBottom: 8 }}>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.sendFeedback", "Send feedback / bug report")}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginTop: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.sendFeedback", "Report a problem / send feedback (email)")}</span>
           <a href="mailto:adminshos@gmail.com?subject=SHOS%20feedback" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
             {t("about.email", "Email")}
           </a>

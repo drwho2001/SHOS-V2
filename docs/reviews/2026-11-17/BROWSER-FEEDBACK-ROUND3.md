@@ -31,6 +31,15 @@ Note: from `https://drwho2001.github.io/SHOS-V2/` (deployed), so some items may 
 | C1 | "Testing interval trending shorter" insight is not useful: the inverse (trending longer) isn't flagged, and clusters of tests (positive → TOC → C&S) push the average below 90 days, making it feel like a directive to get tested when asymptomatic and within window. Shouldn't imply that. | Stats insight | **CHALLENGE + redesign** — this is clinical framing, must be neutral/informational |
 | C2 | "+ PEP" — wrong unless HIV PEP; DoxyPEP ≠ PEP. ART is separate — have we done enough for HIV+ users tracking ART at the same importance as PrEP/doxy/PEP? | Protection registry / encounter form / medication | **CHALLENGE + brainstorm** — clarify labels, assess HIV+ tracking |
 
+## Owner decisions (popup, 17–18 Nov)
+- **PEP → REMOVED entirely** (owner superseded the relabel answer): HIV PEP is clinic-administered, not routinely logged against an encounter; the label was confusable with DoxyPEP. Seed is now `Condom/PrEP/None`. Owner confirmed **no real PEP entries exist**, so the old add-PEP migration and its App.jsx call were deleted outright (no new migration for state that never existed).
+- **About reports → email only** (owner superseded "keep both"): the GitHub "Report a crash" row was removed; the single "Report a problem / send feedback (email)" route remains.
+- **HIV / ART**: Medication module is enough — ART tracked as a normal medication. No new module; glossary note if useful.
+- **"No barrier method"**: keep the single STI-barrier tag (option 1) — do not conflate with contraception/HIV meds, which are separate domains.
+- **About reports**: keep both ("Report a crash" = GitHub issue with log, "Send feedback" = email); keep Error log but clarify/shorten copy.
+- **About polish**: add app icon above SHOS; show build SHA + release date/time from version.json.
+- **Home polish**: all three — desktop-only "X's Home" greeting, reorder recent activity (Newest contact above Last encounter), add a last-DoxyPEP-dose row.
+
 ## Status (17 Nov)
 - **C1 DONE** — removed the "trending shorter/longer" and "gap vs personal average" insights from Stats. Owner's critique is correct: test intervals are clinically driven (positive → TOC → C&S clusters), so averaging them into a cadence is misleading and the red/alert framing implies a directive to test. The two factual StatRows (Average interval, Within BASHH interval) remain. Pure function kept in statsCalculations.js with a note, in case a purely descriptive presentation is wanted later.
 - **B3/B4 DONE** — "Loads during this encounter" now revealed only once a cum location is recorded (or a value already exists); "Fisting acts" revealed only when a fisting kink is tagged (or a value exists).

@@ -28,7 +28,6 @@ import { bootUnlock, unlockWithPin, unlockWithBiometric, isDuressPin, hasBiometr
 // this file's own bootReady gate could ever resolve, failing every
 // single cold boot once App Lock is on. See each file's own comment.
 import { runKinkExpansionMigration } from "./registries/kinkRegistry";
-import { runProtectionPepMigration } from "./registries/protectionRegistry";
 import { runSampleTypeMigration } from "./repositories/customOptionListsRepository";
 import { runSeedIdMigration } from "./storage/seedIdMigration";
 import { syncDarkModePreferenceFromStorage } from "./calculations/darkModePreference";
@@ -1193,7 +1192,9 @@ export default function App() {
       // failing (or a corrupted flag) can't block the others or boot
       // itself — same "don't lock the user out of their own app over
       // this" reasoning as the eager-migration catch above.
-      for (const migration of [runKinkExpansionMigration, runProtectionPepMigration, runSampleTypeMigration, runSeedIdMigration]) {
+      // 18 Nov 2026 — runProtectionPepMigration removed with PEP itself (no
+      // real PEP entries existed, so nothing to migrate).
+      for (const migration of [runKinkExpansionMigration, runSampleTypeMigration, runSeedIdMigration]) {
         try {
           await migration();
         } catch (err) {

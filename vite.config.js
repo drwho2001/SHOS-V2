@@ -35,6 +35,10 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
+    // 18 Nov 2026 — owner asked for the release date/time alongside the build
+    // SHA on About. Compiled at build time so it is always present (no fetch,
+    // no version.json dependency, works offline). ISO 8601, shown as-is.
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
   },
   build: {
     rollupOptions: {
