@@ -15,6 +15,7 @@
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import QuickExitButton from "../components/QuickExitButton";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
 import { FormTabs } from "../components/FormTabs";
@@ -26,7 +27,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, SignOutIcon as SignOut, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star } from "@phosphor-icons/react";
+import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -1552,7 +1553,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
-          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
         </div>
       </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}

@@ -11,7 +11,8 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, reso
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { SkeletonList } from "../components/Skeleton";
 import { useTranslation } from "../i18n/index.js";
-import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar } from "@phosphor-icons/react";
+import QuickExitButton from "../components/QuickExitButton";
 import { TestingRepository } from "../repositories/testingRepository";
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -315,7 +316,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcare, pointerEvents: "none" }} />
           <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
-          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
           </div>
         </div>
         <div style={{ padding: "8px 16px 8px" }}>

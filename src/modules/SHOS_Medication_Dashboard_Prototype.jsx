@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, TrendUpIcon as TrendUp, TrendDownIcon as TrendDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon, SignOutIcon as SignOut } from "@phosphor-icons/react";
+import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, TrendUpIcon as TrendUp, TrendDownIcon as TrendDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon } from "@phosphor-icons/react";
 // The dashboard no longer owns its own medication/log data — it reads and
 // writes through these two repositories instead. Nothing about how the UI
 // looks or behaves changes; this just moves WHERE the facts actually live.
 import { MedicationRepository, DOSE_UNIT_OPTIONS } from "../repositories/medicationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import QuickExitButton from "../components/QuickExitButton";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
@@ -2479,7 +2480,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                 reminders), so this is wired up for real — was
                 deliberately a visual-only stub until this existed. */}
             <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
-            {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} />}
+            {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
           </div>
           </div>
           <div style={{ background: T.bg, padding: "6px 16px 0" }}>

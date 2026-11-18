@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import QuickExitButton from "../components/QuickExitButton";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
 import { FormTabs } from "../components/FormTabs";
@@ -11,7 +12,7 @@ import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2, ShieldIcon as Shield,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
-  CrosshairIcon as Crosshair, SignOutIcon as SignOut, EnvelopeSimpleIcon as Envelope, TreeEvergreenIcon as TreeEvergreen,
+  CrosshairIcon as Crosshair, EnvelopeSimpleIcon as Envelope, TreeEvergreenIcon as TreeEvergreen,
   // ADDED 10 Sep 2026 — real ask: a single "how we'd meet" icon ranked
   // Car (Drives) > Cycle > Public transport > Walk, plus a distinct
   // icon for "will travel to you" now that MapPin is used for the
@@ -3611,7 +3612,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               screen (see ContactsSettingsScreen's own comment above),
               matching Medication Dashboard's own gear-icon placement. */}
           {onOpenContactsSettings && <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
-          {onQuickExit && <SignOut size={24} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onQuickExit} aria-label="Quick exit" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickExit(); } }} title="Quick exit" />}
+          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
         </div>
       </div>
 
