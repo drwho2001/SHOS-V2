@@ -91,4 +91,28 @@ describe("buildSafetyShareMessage", () => {
     expect(msg).not.toContain("Phone:");
     expect(msg).not.toContain("Address:");
   });
+
+  it("R11: omits ticked fields that have no value instead of 'not provided'", () => {
+    const msg = buildSafetyShareMessage({
+      ...base,
+      contact: { name: "Alex" },
+      fields: { name: true, phone: true, address: true, vehicle: true, photo: false },
+    });
+    expect(msg).toContain("Name: Alex");
+    expect(msg).not.toContain("Phone:");
+    expect(msg).not.toContain("Address:");
+    expect(msg).not.toContain("Vehicle:");
+    expect(msg).not.toContain("not provided");
+  });
+
+  it("R11: still includes ticked fields that DO have a value", () => {
+    const msg = buildSafetyShareMessage({
+      ...base,
+      contact: { name: "Alex", phone: "07700 900123", address: "London", vehicle: "Blue car" },
+      fields: { name: true, phone: true, address: true, vehicle: true, photo: false },
+    });
+    expect(msg).toContain("Phone: 07700 900123");
+    expect(msg).toContain("Address: London");
+    expect(msg).toContain("Vehicle: Blue car");
+  });
 });

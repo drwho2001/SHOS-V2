@@ -79,9 +79,13 @@ export function buildSafetyShareMessage({
 
   const lines = [];
   if (fields?.name) lines.push(`Name: ${name}`);
-  if (fields?.phone) lines.push(`Phone: ${contact?.phone || "not provided"}`);
-  if (fields?.address) lines.push(`Address: ${contact?.address || "not provided"}`);
-  if (fields?.vehicle) lines.push(`Vehicle: ${contact?.vehicle || "not provided"}`);
+  // R11 (18 Nov) — the owner's beta finding: "Address: not provided" in a
+  // message being shared in a hurry reads as broken. Omit a ticked field that
+  // has no value rather than printing a placeholder; the recipient simply
+  // doesn't get a line for it. Unticked fields behave exactly as before.
+  if (fields?.phone && contact?.phone) lines.push(`Phone: ${contact.phone}`);
+  if (fields?.address && contact?.address) lines.push(`Address: ${contact.address}`);
+  if (fields?.vehicle && contact?.vehicle) lines.push(`Vehicle: ${contact.vehicle}`);
   if (fields?.photo) lines.push(`Photo: ${contact?.profilePicture ? "they have a profile photo on their SHOS record" : "no photo on file"}`);
   if (includeCurrentLocation) {
     lines.push(locationPin && !locationPin.unavailable

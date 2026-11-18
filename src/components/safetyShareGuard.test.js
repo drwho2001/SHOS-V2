@@ -95,11 +95,12 @@ describe("BACKLOG 58 — hardware back closes the sheet", () => {
   });
 });
 
-describe("BACKLOG 59 — ticked-but-empty fields are not silently dropped", () => {
-  it("phone/address/vehicle render a 'not provided' line when the record is empty", () => {
-    expect(FIELDS).toMatch(/`Phone: \$\{contact\?\.phone \|\| "not provided"\}`/);
-    expect(FIELDS).toMatch(/`Address: \$\{contact\?\.address \|\| "not provided"\}`/);
-    expect(FIELDS).toMatch(/`Vehicle: \$\{contact\?\.vehicle \|\| "not provided"\}`/);
+describe("R11 (18 Nov) — ticked-but-empty fields are omitted, not 'not provided'", () => {
+  it("phone/address/vehicle only render when the contact actually has a value", () => {
+    expect(FIELDS).toMatch(/fields\?\.phone && contact\?\.phone/);
+    expect(FIELDS).toMatch(/fields\?\.address && contact\?\.address/);
+    expect(FIELDS).toMatch(/fields\?\.vehicle && contact\?\.vehicle/);
+    expect(FIELDS).not.toMatch(/\|\| "not provided"/);
   });
 });
 
