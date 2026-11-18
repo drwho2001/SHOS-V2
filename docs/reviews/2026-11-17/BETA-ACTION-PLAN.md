@@ -100,9 +100,10 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 - **Fix:** show skeleton/spinner or hide counts until loaded.
 - **Evidence:** AUDIT O/P.
 
-### R9 — 🟠 Two simultaneous "ongoing" periods allowed  [EFFORT S–M · RISK MEDIUM · ⚠️ confirm intent]
+### R9 — 🟠 Two simultaneous "ongoing" periods allowed  [SHIPPED 18 Nov 2026]
 - Created a 17 Nov ongoing period while the DEMO 16 Nov ongoing period existed; both displayed. No overlap guard.
-- **Fix:** allow at most one in-progress period (auto-close previous on new start, or warn). ⚠️ Confirm intended behaviour first.
+- **Owner decision (not auto-close):** attempting to log a new period while one is open opens that first record's edit sheet with a plain explanation ("A new period can't start until the previous one has ended — add the date it stopped"), then resumes the new-period form once saved. An "I don't remember — estimate duration" escape derives an end date from a remembered duration, flagged `endDateApproximate` and correctable on the detail view. Guard re-checks at save time and waits for the async list load (quick-add previously raced the read).
+- **Verification:** `src/modules/menstrualOverlapGuard.test.js` (8 tests), 47 targeted tests pass, eslint clean.
 - **Evidence:** AUDIT G.
 
 ### R10 — 🟡 Onboarding polish  [EFFORT S · RISK LOW · D4]

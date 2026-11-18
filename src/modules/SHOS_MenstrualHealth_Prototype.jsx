@@ -49,6 +49,10 @@ import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelp
 import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+// R9 — stable empty list so the "not loaded yet" null fallback above is
+// indistinguishable downstream from the old [] fallback (no re-render churn
+// in the useLoadedMemo deps that read `cycles`).
+const EMPTY_CYCLES = [];
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { daysForUnit, INTERVAL_UNITS, CONTRACEPTION_INTERVAL_UNITS } from "../calculations/contraceptionCalculations";
@@ -413,8 +417,13 @@ function useDeleteUndo(repo, moduleKey) {
 // ═══════════════════════════════════════════════════════════════════
 // CYCLE
 // ═══════════════════════════════════════════════════════════════════
-function CycleSheet({ cycle, onSave, onClose, T, tr }) {
+function CycleSheet({ cycle, onSave, onClose, T, tr, overlapNotice }) {
   const isNew = !cycle;
+  // R9 (18 Nov 2026): the "I don't remember" escape hatch. Shown only when
+  // this sheet was opened by the overlap guard — closing an ongoing period
+  // so a new one can start. Reveals a small duration picker instead of
+  // blocking the user who genuinely cannot recall the exact date.
+  const [showEstimate, setShowEstimate] = useState(false);
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
   // CHECKED 26 Sep 2026, deliberately left as-is. The unused `setFlowOptions`
@@ -439,12 +448,55 @@ function CycleSheet({ cycle, onSave, onClose, T, tr }) {
   const [flowOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("menstrualFlow"), [], []);
   const [form, setForm] = useState(() => cycle ? { ...cycle } : { ...DEFAULT_CYCLE, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
+  // R9: derive an end date from a remembered *duration*, not the other way
+  // round. + (days - 1) matches getAveragePeriodLengthDays()'s inclusive
+  // count (end - start + 1), so picking "5" really does read as a 5-day
+  // period in the averages. setUTCDate avoids the BST/GMT shift that a
+  // plain setDate() would introduce on a stored "YYYY-MM-DD" string.
+  const estimateEnd = (days) => {
+    if (!form.startDate) return;
+    const d = new Date(form.startDate);
+    d.setUTCDate(d.getUTCDate() + (days - 1));
+    setForm((f) => ({ ...f, endDate: d.toISOString().slice(0, 10), endDateApproximate: true }));
+  };
   const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
-  const canSave = !!form.startDate;
+  // R9: when closing an ongoing period under the overlap guard, an end date
+  // is required so the overlap actually resolves. This is not a block — the
+  // "I don't remember" duration picker above always produces one (flagged
+  // as approximate). Without this, saving a blank end would leave two open
+  // periods and send the save-time guard straight back into a loop.
+  const canSave = !!form.startDate && (!overlapNotice || !!form.endDate);
   return (
     <BottomSheet title={isNew ? "Log period" : "Edit period"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
+      {/* R9 (18 Nov 2026) — plain, non-clinical explanation for why this
+          existing record was opened instead of the new-period form. No
+          auto-close: the user enters the end date themselves. */}
+      {overlapNotice && (
+        <div style={{ marginBottom: 12, padding: 12, borderRadius: radius.md, border: `1px solid ${T.menstrualPurple}`, background: `${T.menstrualPurple}12`, fontSize: 12, color: T.textPrimary, lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>A new period can't start until the previous one has ended — add the date it stopped.</div>
+          <div style={{ color: T.textSecondary }}>Your last period is still marked as ongoing. Enter when it ended below, then the new period form will open.</div>
+          {!showEstimate ? (
+            <button type="button" onClick={() => setShowEstimate(true)} style={{ marginTop: 8, padding: 0, border: 0, background: "transparent", color: T.menstrualPurple, fontFamily: FONT_FAMILY, fontSize: 12, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>
+              I don't remember — estimate duration
+            </button>
+          ) : (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ color: T.textSecondary, marginBottom: 6 }}>Roughly how many days did it last?</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <button key={n} type="button" onClick={() => estimateEnd(n)} aria-label={`About ${n} days`}
+                    style={{ padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.menstrualPurple}`, background: form.endDateApproximate && form.endDate ? `${T.menstrualPurple}22` : "transparent", color: T.menstrualPurple, fontFamily: FONT_FAMILY, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {form.endDate && <div style={{ marginTop: 6, color: T.textSecondary }}>Estimated end: {formatDate(form.endDate)} — marked as an estimate you can correct later.</div>}
+            </div>
+          )}
+        </div>
+      )}
       <TextField label="Start date" value={form.startDate} onChange={set("startDate")} T={T} type="date" />
-      <TextField label="End date (optional — leave blank if ongoing)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
+      <TextField label="End date (optional — leave blank if ongoing)" value={form.endDate} onChange={(v) => setForm((f) => ({ ...f, endDate: v, endDateApproximate: false }))} T={T} type="date" />
       <SelectField label="Flow" value={form.flow} onChange={set("flow")} options={flowOptions} listName="menstrualFlow" T={T} />
       <SelectField label="Clot size" value={form.clotSize || ""} onChange={set("clotSize")} options={["", "None", "Small", "Medium", "Large"]} T={T} />
       <div style={{ padding: "8px 0" }}>
@@ -490,10 +542,15 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
   // width" — same fix as Contacts/Testing/etc., see this file's own
   // list-wrapper comments below.
   const isDesktopWidth = useIsDesktopWidth();
-  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : openAddOnMount ? { name: "add" } : { name: "list" });
+  // R9: a quick-add is held as a pending request until the period list has
+  // actually loaded. The old code set "add" straight away, which raced the
+  // repo read and meant the overlap guard would see an empty list and miss
+  // the ongoing period every time (quick-add effect runs before the loader).
+  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : { name: "list" });
+  const [pendingAdd, setPendingAdd] = useState(false);
   useEffect(() => {
     if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
-    else if (openAddOnMount) { setScreen({ name: "add" }); onConsumedQuickAdd?.(); }
+    else if (openAddOnMount) { setPendingAdd(true); onConsumedQuickAdd?.(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRecordId, openAddOnMount]);
   // CHANGED — Phase 2 encryption groundwork: MenstrualCycleRepository
@@ -514,10 +571,43 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
   const refresh = () => force((v) => v + 1);
-  const cycles = useLoadedMemo(
+  // R9: null fallback is a real "not loaded yet" signal. Everything below
+  // still sees a stable [] (EMPTY_CYCLES) so the existing .map/.filter/.length
+  // code is untouched, but the overlap guard can wait for the first real
+  // read instead of racing it — the quick-add effect runs BEFORE this
+  // loader resolves, so checking cycles there would see an empty list and
+  // miss an ongoing period every time.
+  const rawCycles = useLoadedMemo(
     () => MenstrualCycleRepository.getAll().then((all) => all.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))),
-    [force], []
+    [force], null
   );
+  const cycles = rawCycles || EMPTY_CYCLES;
+  const cyclesReady = rawCycles !== null;
+
+  // R9 (18 Nov 2026) — the overlap guard. A new period cannot start while an
+  // existing one is still open. Rather than silently creating a second
+  // "ongoing" record (or auto-closing the first), open that first record's
+  // edit sheet so the person enters the end date themselves. If several are
+  // open, resolve them one at a time; after the end date is saved we resume
+  // the original "log a new period" intent. No auto-close, no blocking.
+  const requestAdd = () => {
+    if (!cyclesReady) return;
+    const ongoing = cycles
+      .filter((c) => !c.endDate)
+      .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0];
+    if (ongoing) setScreen({ name: "edit", id: ongoing.id, overlapGuard: true, resumeAdd: true });
+    else setScreen({ name: "add" });
+  };
+  // Resolve a quick-add only once the list is loaded (see pendingAdd above).
+  useEffect(() => {
+    if (!pendingAdd || !cyclesReady) return;
+    setPendingAdd(false);
+    requestAdd();
+    // requestAdd is a fresh closure each render but reads only cycles/cyclesReady;
+    // re-running on either of those changing is exactly the intent here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAdd, cyclesReady]);
+
   const byId = useLoadedMemo(() => (screen.id ? MenstrualCycleRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
   const editUndo = useEditUndo(MenstrualCycleRepository, onDataChanged);
@@ -531,13 +621,32 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
   // by the detail view's symptomNames.
   const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
-  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); onDataChanged?.(); setScreen({ name: "list" }); await updateCycleWidget(); };
+  const create = async (data) => {
+    // R9 defense-in-depth: re-check the repository at save time, not just
+    // when the form opened. Covers a stale cached list and the case where
+    // several periods are open — after closing one, you cannot create a new
+    // one until the rest are closed either. Reads fresh (the in-memory cache
+    // is cheap) rather than trusting `cycles`, which refresh() has only just
+    // scheduled a reload for.
+    const open = (await MenstrualCycleRepository.getAll())
+      .filter((c) => !c.isArchived && !c.endDate)
+      .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0];
+    if (open) {
+      setScreen({ name: "edit", id: open.id, overlapGuard: true, resumeAdd: true });
+      return;
+    }
+    await MenstrualCycleRepository.create(data);
+    refresh(); onDataChanged?.(); setScreen({ name: "list" }); await updateCycleWidget();
+  };
   const save = async (data) => {
     await editUndo.captureBeforeEdit(screen.id);
     await MenstrualCycleRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
     refresh();
-    setScreen({ name: "detail", id: screen.id });
+    // R9: if this edit was opened by the overlap guard, the person's actual
+    // intent was to log a NEW period — resume that now that the old one is
+    // closed. Otherwise the normal edit flow returns to the detail view.
+    setScreen(screen.resumeAdd ? { name: "add" } : { name: "detail", id: screen.id });
     await updateCycleWidget();
   };
 
@@ -554,6 +663,7 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
             <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</h1>
           </div>
+          {c.endDateApproximate && <div style={{ margin: "0 0 8px 26px", fontSize: 11, color: T.textDisabled }}>End date was estimated — edit this record to correct it.</div>}
           <SectionCard title="Details" T={T}>
             {c.flow && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
@@ -642,7 +752,7 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
         );
       })()}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Log period" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcare, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        <div onClick={requestAdd} role="button" tabIndex={0} aria-label="Log period" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); requestAdd(); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcare, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -660,7 +770,7 @@ function CycleTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAdd, openR
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="period" />
       {screen.name === "add" && <CycleSheet cycle={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} tr={tr} />}
-      {screen.name === "edit" && <CycleSheet cycle={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} tr={tr} />}
+      {screen.name === "edit" && <CycleSheet cycle={byId} onSave={save} onClose={() => setScreen({ name: screen.overlapGuard ? "list" : "detail", id: screen.id })} T={T} tr={tr} overlapNotice={!!screen.overlapGuard} />}
     </div>
   );
 }

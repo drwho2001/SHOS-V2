@@ -28,6 +28,13 @@ export const DEFAULT_CYCLE = {
   isDemo: false,
   startDate: null,
   endDate: null,
+  // ADDED 18 Nov 2026 (R9) — when a user genuinely cannot remember when a
+  // period stopped, they can choose an approximate duration and the end
+  // date is derived from it. This flag keeps that honesty on the record:
+  // the detail view says the date is an estimate and can be corrected.
+  // It is NOT a clinical value and never feeds an interval calculation
+  // differently — it only changes how the date is presented back.
+  endDateApproximate: false,
   flow: "",
   // ADDED 13 Nov 2026 - period details for clinical relevance
   clotSize: "",           // None/Small/Medium/Large
