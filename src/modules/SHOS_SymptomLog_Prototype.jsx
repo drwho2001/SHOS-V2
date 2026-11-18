@@ -4,6 +4,7 @@ import { SymptomLogRepository, DEFAULT_SYMPTOM_ENTRY, SEVERITY_OPTIONS } from ".
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
+import SymptomSelfCareNote from "../components/SymptomSelfCareNote";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -490,9 +491,9 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
   // async — same hoisted-above-the-guard treatment as encounterNames/
   // testNames above.
   const symptomNames = useLoadedMemo(async () => {
-    if (!entry?.symptomIds?.length) return "";
-    return (await Promise.all(entry.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name).join(", ");
-  }, [entry], "");
+    if (!entry?.symptomIds?.length) return [];
+    return (await Promise.all(entry.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name);
+  }, [entry], []);
   if (!entry) return null;
   const isActive = !entry.dateResolved;
 
@@ -525,6 +526,7 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
 
         <SectionCard title="Overview" T={T} accent={T.healthcare}>
           <ReadRow label="Symptoms" value={symptomNames} T={T} />
+          {symptomNames.map((name) => <SymptomSelfCareNote key={name} T={T} symptom={name} compact />)}
           <ReadRow label="Severity" value={entry.severity} T={T} alert={entry.severity === "Severe"} />
           <ReadRow label="Started" value={formatDate(entry.dateStarted)} T={T} />
           {entry.cyclePhase ? <ReadRow label="Cycle phase" value={entry.cyclePhase} T={T} /> : null}

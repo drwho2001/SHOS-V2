@@ -35,6 +35,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
+import SymptomSelfCareNote from "../components/SymptomSelfCareNote";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";
 import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS, SAMPLE_TYPE_OPTIONS, HCG_UNIT } from "../repositories/pregnancyRepository";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -517,6 +518,7 @@ function CycleSheet({ cycle, onSave, onClose, T, tr, overlapNotice }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
         <input type="checkbox" checked={form.spotting || false} onChange={(e) => set("spotting")(e.target.checked)} id="spotting" />
         <label htmlFor="spotting" style={{ fontSize: 12, color: T.textSecondary }}>Spotting between periods</label>
+        <SymptomSelfCareNote T={T} symptom="Spotting between periods" />
         {form.spotting && (
           <input type="date" value={form.spottingDate || ""} onChange={(e) => set("spottingDate")(e.target.value)} aria-label="Spotting date"
             style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />

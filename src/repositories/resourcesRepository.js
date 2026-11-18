@@ -100,6 +100,31 @@ const SEED_ENTRIES = {
     { name: "Wellbeing of Women", link: "https://www.wellbeingofwomen.org.uk/", notes: "" },
     { name: "Women's Health Concern (British Menopause Society)", link: "https://www.womens-health-concern.org/", notes: "" },
     { name: "The Menopause Society", link: "https://www.thebms.org.uk/", notes: "British Menopause Society" },
+    // ADDED 18 Nov 2026 — one link per menstrual symptom, matching the patient
+    // labels in calculations/symptomSelfCare.js so a symptom's info dot and its
+    // "read more" point at the SAME key. Every URL below was opened and checked
+    // live on 18 Nov 2026; several symptoms share a page because that NHS page
+    // genuinely covers them. Nothing is a guessed URL. "Feeling sick" has no
+    // dedicated verified page, so its link is deliberately left blank — the
+    // Resources screen already tells the user to add a current verified one
+    // rather than trust a guess.
+    { name: "Spotting between periods", link: "https://www.nhs.uk/conditions/periods/", notes: "Bleeding between periods" },
+    { name: "Very heavy periods", link: "https://www.nhs.uk/conditions/heavy-periods/", notes: "" },
+    { name: "Light periods", link: "https://www.nhs.uk/conditions/periods/", notes: "" },
+    { name: "Period pain or cramps", link: "https://www.nhs.uk/conditions/period-pain/", notes: "" },
+    { name: "Irregular periods", link: "https://www.nhs.uk/conditions/irregular-periods/", notes: "" },
+    { name: "No periods", link: "https://www.nhs.uk/conditions/periods/", notes: "Stopped or missed periods" },
+    { name: "Premenstrual symptoms (PMS)", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "" },
+    { name: "Strong premenstrual mood changes", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "PMDD section" },
+    { name: "Clots in your period", link: "https://www.nhs.uk/conditions/heavy-periods/", notes: "" },
+    { name: "Bloating", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "" },
+    { name: "Tender breasts", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "" },
+    { name: "Mood changes", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "" },
+    { name: "Tiredness", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "" },
+    { name: "Headaches", link: "https://www.nhs.uk/conditions/premenstrual-syndrome/", notes: "" },
+    { name: "Feeling sick", link: "", notes: "" },
+    { name: "Lower back ache", link: "https://www.nhs.uk/conditions/period-pain/", notes: "" },
+    { name: "Pelvic pain", link: "https://www.nhs.uk/conditions/period-pain/", notes: "" },
   ],
   abortionPregnancyLoss: [
     { name: "NHS — Abortion", link: "https://www.nhs.uk/tests-and-treatments/abortion/", notes: "" },

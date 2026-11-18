@@ -17,6 +17,8 @@
 - F3 episode-scoped stop-reminding (FIGO consecutive-day rule); Maps handoff improved with Google's verified menu path (no direct live-share URL exists — both candidates 404).
 - M4 follow-up: compact 2-row Healthcare tab bar + "More ▾" overflow, genuine per-tab stats, pregnancy link under the tab row, Testing "Other" free text.
 - Long chip rows condensed app-wide via one `chipVisibility.js` rule (chosen first, cap 8, `more +N`/`less`) across all five `MultiSelectChips` copies.
+- Symptom self-care bank BUILT (was deferred): `calculations/symptomSelfCare.js` is the single owner of plain label + explanation + holistic self-care + source per menstrual symptom; the approved "sooner" line is one exported constant. `components/SymptomSelfCareNote.jsx` is a keyed tap-to-reveal info dot (same disclosure pattern as JargonNote/HivStatusNote; unknown keys render nothing) wired into Symptom Log detail and the cycle form. Resources gained one per-symptom entry under Menstruation & menopause using only links opened and verified live 18 Nov (two missed/no-period candidates 404'd and were dropped; "Feeling sick" left blank honestly). No per-condition repositories. 16 new tests pass.
+- Verify/close audit: 0al, 0ao, 0ae, 0u, 0v, 0z all confirmed already fixed in code — no rebuild needed.
 - Device verification: A2 rows, F1 rename, F4 cards, F2 pregnancy→Testing prefill, Maps handoff, Testing "Other", 2-row tabs, per-tab stats, pregnancy link all confirmed on the phone. Device-only bug found and fixed: Healthcare's local `T` had no `textPrimary`, making the More menu text near-invisible.
 
 ## Decisions (all recorded; no undeclared changes)
@@ -26,11 +28,14 @@
 - **Maps:** open Google Maps + on-screen steps (no URL opens the live-share interface).
 - **Chip rows:** cap 8, chosen chips first, `more +N`; selected tag chips / searchable pickers / short filter rows deliberately left visible.
 - **Healthcare tabs:** shrink pills + More overflow; full per-tab stats; pregnancy link under the tab row. Header standardisation (0b) deferred.
-- **Deferred by owner:** symptom self-care bank. Design in `PATIENT-TEXT-ARCHITECTURE.md` (challenge → brainstorm → challenge): no per-condition repositories; one keyed words module + existing info dots; Resources keeps links.
+- **Symptom self-care bank:** BUILT 18 Nov (see above). Owner chose "bank + Resources entries" over deferring. Design rationale in `PATIENT-TEXT-ARCHITECTURE.md` still holds: no per-condition repositories, one keyed words module, Resources keeps links.
+- **BACKLOG 0b (header icon-set standardisation):** owner chose "do it now" — NEXT task after this commit.
+- **P0 recovery checks (phone):** owner's chosen first device group when the phone is available — fresh-install import, locked-vault cold start, old-backup migration, storage quota.
 - Earlier decisions: A1 bump, A4 shrink+reserve, B1 investigate-first, contacts sort within-Incomplete, Testing↔Measurements link, measurement bank, F3 copy approved, R9 first.
 
-## Remaining work (nothing approved-and-ready to code)
-- **Deferred by owner:** symptom self-care bank; BACKLOG 0b header standardisation.
+## Remaining work
+- **Next, approved:** BACKLOG 0b header icon-set standardisation (Home/Encounter/Healthcare) with guard coverage.
+- **Needs a phone:** P0 recovery A1–A4 (first priority), accessibility AX1–4, responsive RS1–3, platform parity PP1–3, final on-device check of the `more +N` chip and the new info dots.
 - **Needs a phone / real data:** P0 recovery A1–A4 (fresh-install import, locked-vault cold start, old-backup migration, storage quota); accessibility AX1–4; responsive RS1–3; platform parity PP1–3.
 - **Device-audit tail (0p–0av):** Contacts 0p/0q/**0r save-bar overlap (HIGH)**/0s/0t/0aa–0ab; Safety Share **0y checkbox double-toggle (HIGH)** (0u/0v/0z likely covered — verify); Encounters 0ac/0ad/0ae; Stats/Calendar 0af–0ai; Settings 0aj/0ak/0al/0am (0al likely already fixed); Lists 0an/0ao (likely already present); Design 0ap rejected, 0aq–0av FAB overlaps.
 - **Verify/close rather than rebuild:** 0al, 0ao, 0ae, 0u, 0v, 0z.
