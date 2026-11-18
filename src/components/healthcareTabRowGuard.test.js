@@ -59,6 +59,23 @@ describe("Embedded sub-module sticky detail headers clear the Healthcare header"
     expect(detail).not.toMatch(/top: "var\(--shos-top-banner-h, 0px\)"/);
     expect(detail).toMatch(OFFSET);
   });
+
+  it("the sticky bar is a compact single line, not a padded top-level banner", () => {
+    // Embedded under Healthcare the notch is already handled by the outer
+    // header, so the detail bar must NOT re-apply safe-area padding/negative
+    // margin (that produced a thick black block above Edit/Delete on device).
+    const COMPACT = 'padding: "10px 16px 4px"';
+    for (const f of EMBEDDED) {
+      const src = read(`src/modules/${f}`);
+      expect(src.includes(COMPACT), `${f} detail bar should use compact padding`).toBe(true);
+    }
+    const t = read("src/modules/SHOS_Testing_Prototype.jsx");
+    const start = t.indexOf("function TestDetail(");
+    const nextFn = t.indexOf("\nfunction ", start + 10);
+    const detail = t.slice(start, nextFn === -1 ? t.length : nextFn);
+    expect(detail).not.toMatch(/calc\(16px \+ env\(safe-area-inset-top\)\)/);
+    expect(detail).not.toMatch(/marginTop: "calc\(-1 \* env\(safe-area-inset-top\)\)"/);
+  });
 });
 
 describe("Reproductive health tab row", () => {
