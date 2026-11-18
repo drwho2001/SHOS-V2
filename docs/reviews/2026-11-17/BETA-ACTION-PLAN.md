@@ -82,7 +82,9 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 
 ### R5 — 🟠 hCG / pregnancy logging gap  [EFFORT M · RISK MEDIUM · needs D3]
 - Pregnancy form has only Test date / Result / Notes — no sample type, no quantitative value, no brand. Testing's "New test" form **already has a "Sample type" chip row including Blood**.
-- **Fix:** `sampleType` + optional `hcgValue` (mIU/mL) + brand on pregnancy entries; reuse Testing's chip pattern; repository defaults, `backupService` export/import, `backupMigrations` version bump, i18n en.json + en-US.json, list/detail render, round-trip tests.
+- **SHIPPED 18 Nov 2026.** `sampleType` (Urine default / Blood) + optional `hcgValue` (mIU/mL, Blood only) + `brand` on pregnancy entries; chip pattern in the form, shown on detail. `shapeForSave` clears a stale serum value when switching back to Urine. Additive fields only: `getAll()`'s DEFAULT_PREGNANCY merge means legacy backups read as urine tests, and backup export/import (`getAll` → `replaceAll`/`append`) round-trips them unchanged — no schema-version bump or migration needed. i18n keys in en.json + en-US.json.
+- **Scope note:** this is the bounded field fix. The FSRH "Testing is single owner / Pregnancy as projection" refactor remains a separate later item and was NOT done here.
+- **Verification:** `pregnancyHcgFields.test.js` (6 tests — defaults, urine/blood, stale-value clearing, legacy record, backup round-trip) pass; jsx guard + eslint + vite build clean.
 - **Evidence:** AUDIT Q; `pregnancyRepository.js`, `backupService.js`.
 
 ### R6 — 🟠 Dialog-stack accumulation  [EFFORT S–M · RISK MEDIUM · ⚠️ confirm intent]

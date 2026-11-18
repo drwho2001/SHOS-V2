@@ -45,6 +45,12 @@ const STORAGE_KEY = "shos_pregnancies";
 
 export const TEST_RESULT_OPTIONS = ["Positive", "Negative", "Inconclusive"];
 export const OUTCOME_OPTIONS = ["Live birth", "Miscarriage", "Abortion", "Ectopic", "Other"];
+// R5 (18 Nov 2026) — urine is the DEFAULT. A home pregnancy test is a
+// qualitative urine test; blood is the quantitative serum lab test. The
+// feature must NOT be blood-only. Reuses the same labels Testing already
+// offers in its own sample-type chips.
+export const SAMPLE_TYPE_OPTIONS = ["Urine", "Blood"];
+export const HCG_UNIT = "mIU/mL";
 const SENSITIVE_BY_DEFAULT = ["Miscarriage", "Abortion", "Ectopic"];
 
 // CHANGED — real bug found in testing, and a real redundancy the user
@@ -60,6 +66,12 @@ export const DEFAULT_PREGNANCY = {
   isDemo: false,
   testDate: null,
   testResult: "",
+  // R5 — sample type + optional extras. Additive fields: old backups read
+  // through getAll()'s DEFAULT_PREGNANCY merge, so no schema-version bump
+  // or data migration is needed (a legacy record simply reads as Urine).
+  sampleType: "Urine",
+  hcgValue: null,        // quantitative serum hCG, only meaningful for Blood
+  brand: "",             // optional test brand (e.g. Clearblue)
   estimatedDueDate: null,
   // ADDED 13 Nov 2026 - gestational tracking (calculated from estimatedDueDate)
   gestationalWeeks: null,  // calculated, not stored manually
@@ -171,6 +183,12 @@ async function persist() {
 // the rarer direct-creation-with-an-outcome path).
 function shapeForSave(existing, changes) {
   const shaped = { ...DEFAULT_PREGNANCY, ...existing, ...changes, isDemo: existing.isDemo };
+  // R5 — a serum value only means something on a blood test. If someone
+  // switches back to Urine (or a legacy record carries a stray number),
+  // drop it rather than silently showing a serum result against a urine
+  // sample. Same "one canonical fact" discipline as the status/outcome
+  // collapse above.
+  if (shaped.sampleType !== "Blood") shaped.hcgValue = null;
   if (shaped.testResult === "Positive" && !shaped.status) shaped.status = "Ongoing";
   if (shaped.testResult !== "Positive") { shaped.status = ""; shaped.outcomeDate = null; }
   // Real default, not a lock — see file-level comment. Only applies

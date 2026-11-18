@@ -36,7 +36,7 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";
-import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS } from "../repositories/pregnancyRepository";
+import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS, SAMPLE_TYPE_OPTIONS, HCG_UNIT } from "../repositories/pregnancyRepository";
 import { TrashRepository } from "../repositories/trashRepository";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -1071,6 +1071,28 @@ function PregnancySheet({ pregnancy, onSave, onClose, T, tr }) {
     <BottomSheet title={isNew ? "Log pregnancy test" : "Edit pregnancy entry"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
       <TextField label="Test date" value={form.testDate} onChange={set("testDate")} T={T} type="date" />
       <SelectField label="Result" value={form.testResult} onChange={set("testResult")} options={TEST_RESULT_OPTIONS} T={T} />
+      {/* R5 — sample type, urine first (the standard home test). A blood test
+          is the quantitative serum lab test; only then does a number make
+          sense. Plain chips, same pattern Testing already uses. */}
+      <div style={{ padding: "8px 0" }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("pregnancy.sampleType", "Sample type")}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SAMPLE_TYPE_OPTIONS.map((s) => {
+            const active = (form.sampleType || "Urine") === s;
+            return (
+              <div key={s} role="button" tabIndex={0} aria-pressed={active} onClick={() => set("sampleType")(s)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set("sampleType")(s); } }}
+                style={{ padding: "7px 14px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, border: `1px solid ${active ? T.healthcare : T.border}`, background: active ? `${T.healthcare}15` : T.surface, color: active ? T.healthcare : T.textSecondary, cursor: "pointer" }}>
+                {s}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 4 }}>{tr("pregnancy.sampleTypeHint", "Urine is the usual home test. Blood is a lab test with a measured hCG level.")}</div>
+      </div>
+      {form.sampleType === "Blood" && (
+        <TextField label={tr("pregnancy.hcgValue", "Quantitative serum hCG")} value={form.hcgValue ?? ""} onChange={(v) => set("hcgValue")(v === "" ? null : Number(v))} T={T} type="number" placeholder={`mIU/mL`} />
+      )}
+      <TextField label={tr("pregnancy.brand", "Test brand (optional)")} value={form.brand || ""} onChange={set("brand")} T={T} placeholder="e.g. Clearblue" />
       {isPositive && (
         <>
           <TextField label="Estimated due date (optional)" value={form.estimatedDueDate} onChange={set("estimatedDueDate")} T={T} type="date" />
@@ -1175,6 +1197,11 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
             <>
               <SectionCard title="Details" T={T}>
                 <ReadRow label="Test result" value={p.testResult} T={T} />
+                <ReadRow label={tr("pregnancy.sampleType", "Sample type")} value={p.sampleType || "Urine"} T={T} />
+                {/* R5 — a serum number is only shown for a blood sample and
+                    only when one was actually entered (no fake "0"). */}
+                {p.sampleType === "Blood" && p.hcgValue != null && <ReadRow label={tr("pregnancy.hcgValue", "Quantitative serum hCG")} value={`${p.hcgValue} ${HCG_UNIT}`} T={T} />}
+                {p.brand ? <ReadRow label={tr("pregnancy.brandLabel", "Brand")} value={p.brand} T={T} /> : null}
                 <ReadRow label="Estimated due date" value={p.estimatedDueDate ? formatDate(p.estimatedDueDate) : ""} T={T} />
                 {p.estimatedDueDate ? <ReadRow label="Gestational weeks" value={(() => { const due = new Date(p.estimatedDueDate); const now = new Date(); const weeks = Math.floor((280 - Math.ceil((due - now) / 86400000)) / 7); return weeks > 0 && weeks <= 42 ? `${weeks} weeks` : ""; })()} T={T} /> : null}
                 {p.estimatedDueDate ? <ReadRow label="Trimester" value={(() => { const due = new Date(p.estimatedDueDate); const now = new Date(); const weeks = Math.floor((280 - Math.ceil((due - now) / 86400000)) / 7); return weeks <= 13 ? "1st" : weeks <= 26 ? "2nd" : weeks <= 42 ? "3rd" : ""; })()} T={T} /> : null}

@@ -849,6 +849,13 @@
     "imperial": "Imperial",
     "clinicNamePlaceholder": "e.g. 56 Dean Street"
   },
+  "pregnancy": {
+    "sampleType": "Sample type",
+    "sampleTypeHint": "Urine is the usual home test. Blood is a lab test with a measured hCG level.",
+    "hcgValue": "Quantitative serum hCG",
+    "brand": "Test brand (optional)",
+    "brandLabel": "Brand"
+  },
   "menstrual": {
     "cycle": "Cycle",
     "contraception": "Contraception",
