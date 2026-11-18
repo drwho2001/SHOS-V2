@@ -3,8 +3,8 @@
 **Purpose:** everything needed to resume with no lost context. Read this file first, then the specific docs referenced.
 
 ## Current state (updated 18 Nov — ALL REMAINING WORK COMPLETE)
-- Working tree **clean**; HEAD = `5faccc0` ("Tokenise 13px..."), pushed to `main`. Every item in the handoff build list has now been actioned.
-- CI: Web Alpha + Build Android APK were GREEN on the 03:20:33 run (covers R2/R4/R8/R10/R11); the final two pushes (F3 spotting prompt, 13px tokenisation) were still running at this update. Local gate is equivalent and green: **67 guard files / 418 tests pass, eslint clean across all of src, `vite build` success.** If CI is red on resume, `gh run view <id> --log-failed` before editing.
+- Working tree **clean**; HEAD = `fbdc002` ("P3 hygiene..."), pushed to `main`. Every item in the handoff build list AND the wider backlog has now been actioned except device/owner-dependent work (listed below).
+- CI: Web Alpha + Build Android APK GREEN on the latest run; Smoke in flight. Local gate is equivalent and green: **71 guard files / 433 tests pass, eslint clean across all of src, `vite build` success.** If CI is red on resume, `gh run view <id> --log-failed` before editing.
 - Lesson that kept CI green: **run all `*Guard/*Coverage` test files locally before pushing.** This session caught four gate failures that way (build-date allowlist, frozen seed snapshot, style colours, stored-date arithmetic) before they could land.
 - No policy questions outstanding. No code work remains from this audit.
 
