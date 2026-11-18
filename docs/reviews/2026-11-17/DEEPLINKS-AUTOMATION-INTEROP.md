@@ -53,4 +53,13 @@ Reasoning:
 - Approve LOINC-code field as optional future-proofing (C).
 - Confirm the My Profile storage decision (I recommend it as above).
 
-*No code changed. No clinical advice. Nothing built.*
+## Import v1 — SHIPPED 18 Nov 2026
+
+- `periodCsvImport.js` + `PeriodCsvImportSheet.jsx` (reached from Settings → Backup & Export → "Import periods from CSV…").
+- Accepts SHOS's own menstrual-cycles CSV (round-trip: raw `startDate`/`endDate` columns) and Clue-style CSV (`Cycle Start Date`/`Cycle End Date`/`Flow`). Format detected from headers; no silent guessing.
+- On-device only (file input + `file.text()`), no cloud. **Preview before save** — `buildPeriodImportPreview()` never writes; `savePeriodImport()` is the only write path, called on confirm.
+- Explicit UK (DD/MM/YYYY) vs US (MM/DD/YYYY) choice; ISO accepted first as unambiguous; impossible dates rejected (no rollover); changing the choice rebuilds the preview.
+- Dedupes by start date against existing records AND within the file; never overwrites. Unreadable rows reported with their row number.
+- i18n keys in en.json + en-US.json; synthetic Clue sample only in tests (`periodCsvImport.test.js`, 9 tests).
+
+*No clinical advice.*

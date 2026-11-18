@@ -7,6 +7,7 @@ import { ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { countSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
 import { useTranslation } from "../../i18n/index.js";
+import PeriodCsvImportSheet from "./PeriodCsvImportSheet.jsx";
 
 export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
   const { t } = useTranslation();
@@ -14,6 +15,9 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
   // ADDED 27 Sep 2026 - how many sample records an export would still carry.
   // See the warning row below for why this belongs on THIS screen.
   const [sampleDataCount, setSampleDataCount] = useState(0);
+  // Import v1 — on-device period CSV import, previewed before saving.
+  const [showPeriodImport, setShowPeriodImport] = useState(false);
+  const [importStatus, setImportStatus] = useState("");
   useEffect(() => {
     let cancelled = false;
     const refresh = () => { countSampleData().then((r) => { if (!cancelled) setSampleDataCount(r.total); }).catch(() => {}); };
@@ -120,12 +124,22 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
             sending a backup somewhere less trusted than this device. */}
         <SettingsRow icon={Lock} label={t("backup.exportEncrypted", "Export encrypted backup…")} onClick={onEncryptedExport} />
         <SettingsRow icon={Download} label={t("backup.restore", "Restore from backup")} onClick={onImportClick} />
+        {/* Import v1 — a CSV of period dates (SHOS's own export or a Clue-style
+            file), on-device only, previewed before anything is written. */}
+        <SettingsRow icon={FileCsv} label={t("backup.importPeriodsCsv", "Import periods from CSV…")} onClick={() => { setImportStatus(""); setShowPeriodImport(true); }} />
+        {importStatus && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "0 16px 10px", textAlign: "center" }}>{importStatus}</div>}
         {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
             setting belongs next to the other backup controls, not
             bundled with an unrelated Contacts-display setting under a
             generic "Preferences" label. */}
         <SettingsRow icon={Clock} label={t("backup.automaticBackups", "Automatic backups")} onClick={onAutoBackupSettings} />
       </div>
+      {showPeriodImport && (
+        <PeriodCsvImportSheet
+          onClose={() => setShowPeriodImport(false)}
+          onImported={(n) => setImportStatus(t("backup.importPeriodsDone", "Added {count} period(s).").replace("{count}", String(n)))}
+        />
+      )}
     </div>
   );
 }

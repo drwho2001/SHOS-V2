@@ -555,7 +555,16 @@
     "exportCsv": "Export as CSV…",
     "exportEncrypted": "Export encrypted backup…",
     "restore": "Restore from backup",
+    "importPeriodsCsv": "Import periods from CSV…",
+    "importPeriodsDone": "Added {count} period(s).",
     "automaticBackups": "Automatic backups"
+  },
+  "importPeriod": {
+    "title": "Import periods from CSV",
+    "intro": "Picks a CSV file on this device only. Nothing is uploaded. Review the rows, then choose what to add — existing periods are never overwritten.",
+    "choose": "Choose CSV file",
+    "dateFormat": "Date format in the file",
+    "confirm": "Add {count} periods"
   },
   "guide": {
     "title": "Guide",

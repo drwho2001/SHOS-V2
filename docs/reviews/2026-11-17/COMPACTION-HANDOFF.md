@@ -17,6 +17,7 @@
 - Measurement-type suggestion bank built (`measurementTypeBank.js`): local fuzzy bank with aliases, confirm-before-apply; manual kind prompt retained.
 - R5 hCG: pregnancy entries now have sampleType (Urine default / Blood), optional serum hCG mIU/mL (Blood only), and brand; additive schema so no migration; FSRH Testing-ownership refactor still separate.
 - R7 (D1=B): Vaginal health tab removed; one-time `vaginalHealthMigration.js` copies real records to Symptom Log losslessly; repository kept as read-only backup shim; old UI module retained unimported/deprecated.
+- Import v1: `periodCsvImport.js` + `PeriodCsvImportSheet.jsx` (Settings → Backup & Export). SHOS round-trip + Clue CSV, on-device, preview-before-save, explicit UK/US dates, dedupe by start date.
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
