@@ -69,7 +69,8 @@ These are **open, device-found, owner-confirmed** — not duplicates of the beta
 - **Safety Share:** 0u native share targets (HIGH), 0v editable combined message, 0w real live-location link (HIGH), 0x empty-field handling + photo note (my R11 covers the empty-field part), 0y checkbox double-toggle (HIGH), 0z back closes sheet.
 - **Encounters:** 0ac attendee a11y/empty sections, 0ad custom date/time + card styling, 0ae protection duplicate label (my R13 canonical label addresses the "duplicated protection label" symptom — verify overlap).
 - **Stats/Calendar:** 0af filter-chip contrast, 0ag "(XXX)" placeholder, 0ah insight box clipped, 0ai unique partners, 0aa Calendar filter contrast.
-- **Settings:** 0aj Widgets 8th clipped, 0ak Resources duplicates, 0al Anonymise missing toggle (⚠️ I SAW the toggle live — likely already fixed; verify), 0am kinks toggle gating.
+- **Settings:** 0aj/0ak/0al/0am — ALL RESOLVED 14–15 Nov per BACKLOG.md findings 81–84 (safe-area padding, dedup, explicit Anonymise "Turn on" control, gated kinks toggle). 
+- **⚠️ STATUS OF THIS WHOLE SECTION (verified 18 Nov):** every item 0p–0av (= findings 51–103) is marked "Resolved" in BACKLOG.md. This §7 summary predates those fixes and is stale — do NOT rebuild. PP1 (calendar sync on web) was the one genuinely open code item and is now fixed in CalendarScreen.jsx.
 - **Lists:** 0an Vaccinations delete/archive, 0ao Symptoms detail view (⚠️ I exercised a Symptom detail view live — verify/close).
 - **Design:** 0ap glassmorphism (❌ REJECT — DESIGN-MANUAL principle #7 "solid surfaces only" explicitly rules it out; the aspirational notes were wrong), 0aq-0av FAB overlap/padding/dividers/left-edge artifacts across Healthcare/Medication/MyProfile.
 

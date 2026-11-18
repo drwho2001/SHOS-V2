@@ -35,11 +35,14 @@
 - Earlier decisions: A1 bump, A4 shrink+reserve, B1 investigate-first, contacts sort within-Incomplete, Testing↔Measurements link, measurement bank, F3 copy approved, R9 first.
 
 ## Remaining work (all device/owner-dependent)
-- **Needs a phone — P0 first:** P0 recovery A1–A4 (fresh-install import, locked-vault cold start, old-backup migration, storage quota); accessibility AX1–4; responsive RS1–3; platform parity PP1–3; final on-device check of the `more +N` chip, the new symptom info dots and the standardised Quick Exit button.
-- All code items in this audit, the wider backlog and the owner's four interactive decisions are now built. Nothing is waiting for a code pass.
-- **Needs a phone / real data:** P0 recovery A1–A4 (fresh-install import, locked-vault cold start, old-backup migration, storage quota); accessibility AX1–4; responsive RS1–3; platform parity PP1–3.
-- **Device-audit tail (0p–0av):** Contacts 0p/0q/**0r save-bar overlap (HIGH)**/0s/0t/0aa–0ab; Safety Share **0y checkbox double-toggle (HIGH)** (0u/0v/0z likely covered — verify); Encounters 0ac/0ad/0ae; Stats/Calendar 0af–0ai; Settings 0aj/0ak/0al/0am (0al likely already fixed); Lists 0an/0ao (likely already present); Design 0ap rejected, 0aq–0av FAB overlaps.
-- **Verify/close rather than rebuild:** 0al, 0ao, 0ae, 0u, 0v, 0z.
+- **Needs a phone — P0 first:** P0 recovery A1–A4 (fresh-install import, locked-vault cold start, old-backup migration, storage quota); accessibility AX1–4; responsive RS1–3; final on-device check of the `more +N` chip, the new symptom info dots, the standardised Quick Exit button and the PP1 calendar-sync gate.
+- **Nothing is waiting for a code pass.** Every code-fixable item is built.
+
+## Challenge pass 18 Nov (part 2) — do NOT rebuild these
+- **Whole device-audit tail 0p–0av = findings 51–103 in BACKLOG.md are ALL "Resolved" (14–15 Nov).** The CONSOLIDATED-BACKLOG §7 summary is stale. Verified in code: 0y (checkbox separated handlers), 0r (Settings/MyProfile now full screens), 0aj/0ak (safe-area padding + dedup), 0af–0ai (chip contrast, real insight count, nav padding, unique partners), 0an/0ao (vaccination select-mode delete/archive, SymptomLog EntryDetail), 0aq–0av (FAB padding/dividers/artifact), 0p pronouns (creatable `SuggestField` + `CustomOptionListsRepository`). Design 0ap rejected per design manual #7.
+- **P0 A4 storage quota:** already coded — `storageAdapter.save()` dispatches `shos:storage-save-failed`, App.jsx has a single unmissable top-level banner + durable error-log entry. **P0 A3 migrations:** `backupMigrations.js`, `seedIdMigration.js`, `vaginalHealthMigration.js`, `pregnancyTestOwnershipMigration.js` all present with tests. Both need *device* verification only, not new code.
+- **PP2 (screenshots/biometrics):** already gated on web via `isScreenSecurityAvailable()` / `checkBiometryAvailable()`.
+- **PP1 (calendar sync on web):** FIXED 18 Nov — the sync icon was reachable on web and offered four no-op toggles. `CalendarScreen.jsx` now detects native (async `@capacitor/core` import) and renders the icon + sheet only on native; an enabled setting shows a read-only web note (same rule as biometrics). Guard `calendarSyncPlatformGuard.test.js`. RS3 (calendar fit-to-viewport) deliberately NOT forced — `overflow:hidden` would hide event data; needs a real responsive pass.
 
 ## Conventions (from CLAUDE.md — obey)
 - Any `src/` change must also touch CLAUDE.md or docs/. One home per truth.

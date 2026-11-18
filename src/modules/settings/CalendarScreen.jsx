@@ -417,6 +417,20 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
   // entry. Re-read fresh each render (not memoized) so the icon's own
   // on/off look stays honest immediately after the sheet changes it.
   const [showSyncSheet, setShowSyncSheet] = useState(false);
+  // PLATFORM PARITY (PP1): phone-calendar sync uses @capacitor/calendar, which
+  // has no web/PWA equivalent. The sync icon was previously rendered on every
+  // platform, so a browser user could open a sheet whose four toggles all
+  // no-op with "not available in this environment" — the exact "advertised
+  // but fails on tap" pattern the owner rejected for biometrics. Detect native
+  // the same way fileExportHelper.js does (async dynamic import, safe on web).
+  const [isNative, setIsNative] = useLoadedState(async () => {
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      return Capacitor.isNativePlatform();
+    } catch {
+      return false;
+    }
+  }, [], false);
   // CHANGED — Phase 2 encryption groundwork: AppPreferencesRepository
   // went async, so the old plain "re-read fresh every render" call
   // (safe only while getPreferences() was synchronous) needed a real
@@ -494,12 +508,22 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
               icon rather than a settings-menu entry — filled/green
               when on, outline/grey when off, so the icon's own look
               says what state it's in at a glance, not just what it
-              does. */}
-          <div onClick={() => setShowSyncSheet(true)} role="button" tabIndex={0} aria-label={t("calendar.phoneSync", "Phone calendar sync")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSyncSheet(true); } }} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title={t("calendar.phoneSync", "Phone calendar sync")}>
-            {syncEnabled
-              ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
-              : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />}
-          </div>
+              does.
+              PP1: only offer it on native; a web user cannot write to a
+              phone calendar, so advertising the icon there is a dead end. */}
+          {isNative && (
+            <div onClick={() => setShowSyncSheet(true)} role="button" tabIndex={0} aria-label={t("calendar.phoneSync", "Phone calendar sync")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSyncSheet(true); } }} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title={t("calendar.phoneSync", "Phone calendar sync")}>
+              {syncEnabled
+                ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
+                : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />}
+            </div>
+          )}
+          {/* If sync was set up on the Android app, a web user opening the same
+              data should still SEE that it's on, just read-only — same rule as
+              the biometrics web note. Never silently make the setting vanish. */}
+          {!isNative && syncEnabled && (
+            <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{t("calendar.syncWebNote", "Phone calendar sync is set up in the installed Android app.")}</span>
+          )}
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? ACCENTS.medication : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
             {t("calendar.filter", "Filter")}{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
           </span>
@@ -643,7 +667,7 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
           </div>
         )}
       </div>
-      {showSyncSheet && <CalendarSyncSheet onClose={() => setShowSyncSheet(false)} />}
+      {showSyncSheet && isNative && <CalendarSyncSheet onClose={() => setShowSyncSheet(false)} />}
     </div>
   );
 }

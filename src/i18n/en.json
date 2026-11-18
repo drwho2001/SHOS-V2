@@ -662,6 +662,7 @@
   "calendar": {
     "title": "Calendar",
     "phoneSync": "Phone calendar sync",
+    "syncWebNote": "Phone calendar sync is set up in the installed Android app.",
     "closeSync": "Close calendar sync settings",
     "filter": "Filter",
     "weekStartsOn": "Week starts on",
