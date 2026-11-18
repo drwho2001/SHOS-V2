@@ -31,7 +31,8 @@
 - P3 hygiene: 7 genuinely-dead exports removed (`deadExportsGuard`); mockup radius 12→13 + frosted-glass removed (`mockupHygieneGuard`); contactMerge verified wired (stale note closed).
 - F3 episode-scoped stop-reminding: persistent acknowledgement keyed to the FIRST day of the current FIGO bleeding episode (consecutive days; a bleeding-free day starts a new one). `spottingEpisodeGuard.test.js`. Maps handoff button improved with Google's verified menu path — no direct live-share URL exists (both candidates 404; Google documents app-only start).
 - Deferred by owner: the symptom self-care bank. Design recorded in `PATIENT-TEXT-ARCHITECTURE.md` (challenge → brainstorm → challenge): no per-condition repositories; one keyed words module + existing info-dot mechanism; Resources keeps links. Wording decided: "worth mentioning to a clinician sooner". F4 research doc corrected: FIGO prolonged is >8 days, not ≥14.
-- ADB recon attempted: daemon started but **no devices/emulators found** — device work still needs the phone connected/authorised.
+- ADB recon: device connected over wireless ADB (Redmi Note 13, Android 15, 1080x2400, com.shos.app). Verified on device: A2 rows, F1 rename, F4 cards, F2 pregnancy→Testing prefill, Maps handoff with menu path, Testing "Other" text field, compact 2-row tab bar with More menu, per-tab stats, pregnancy link placement. Found and fixed a device-only bug: Healthcare's screen-local `T` lacked `textPrimary`, making the More menu text near-invisible.
+- M4 follow-up built: compact sub-tab pills + More overflow (M4.2), genuine per-tab stats (M4.1), pregnancy link under tab row (M4.3), Testing "Other" free text. 73 guard files / 441 tests pass. BACKLOG 0b header standardisation deferred by owner.
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
