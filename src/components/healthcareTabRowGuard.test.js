@@ -27,6 +27,40 @@ describe("Healthcare tab row", () => {
   });
 });
 
+describe("Embedded sub-module sticky detail headers clear the Healthcare header", () => {
+  // Found on device: opening a Test detail then scrolling left its sticky
+  // title bar pinned at the SAME top as Healthcare's own sticky header, so it
+  // covered the Episodes/Calendar/Clinic Card/Attachments shortcut row. Every
+  // embedded detail header must offset by the measured Healthcare header height.
+  const EMBEDDED = [
+    "SHOS_Testing_Prototype.jsx",
+    "SHOS_ClinicVisits_Prototype.jsx",
+    "SHOS_Vaccinations_Prototype.jsx",
+    "SHOS_Measurements_Prototype.jsx",
+    "SHOS_SymptomLog_Prototype.jsx",
+    "SHOS_MenstrualHealth_Prototype.jsx",
+  ];
+  const OFFSET = 'top: "calc(var(--shos-top-banner-h, 0px) + var(--shos-sticky-header-h, 0px))"';
+
+  it("every embedded module offsets its sticky header past the Healthcare stack", () => {
+    for (const f of EMBEDDED) {
+      const src = read(`src/modules/${f}`);
+      expect(src.includes(OFFSET), `${f} sticky header must offset by --shos-sticky-header-h`).toBe(true);
+    }
+  });
+
+  it("no embedded module's detail header sticks at the bare banner height", () => {
+    // The edit SHEET's own banner legitimately sticks at top: 0 (it is a
+    // full-screen dialog). Only the in-flow detail header must be offset.
+    const t = read("src/modules/SHOS_Testing_Prototype.jsx");
+    const start = t.indexOf("function TestDetail(");
+    const nextFn = t.indexOf("\nfunction ", start + 10);
+    const detail = t.slice(start, nextFn === -1 ? t.length : nextFn);
+    expect(detail).not.toMatch(/top: "var\(--shos-top-banner-h, 0px\)"/);
+    expect(detail).toMatch(OFFSET);
+  });
+});
+
 describe("Reproductive health tab row", () => {
   it("keeps the pregnancy link under the tabs, not over the empty state", () => {
     const row = mh.slice(mh.indexOf("Reproductive health</span>"), mh.indexOf("Reproductive health</span>") + 1600);
