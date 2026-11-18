@@ -1,6 +1,6 @@
 // F3 — neutral post-menopause spotting prompt. Copy boundaries are safety.
 import { describe, it, expect } from "vitest";
-import { menopauseSpottingPrompt } from "./menopauseSpottingPrompt.js";
+import { menopauseSpottingPrompt, bleedingEpisodeKey, bleedingDatesFrom } from "./menopauseSpottingPrompt.js";
 
 const base = {
   menopauseStatus: "Post-menopause",
@@ -58,5 +58,31 @@ describe("menopause spotting prompt", () => {
     for (const banned of ["urgent", "2-week", "two week", "cancer", "referral", "diagnos"]) {
       expect(all.toLowerCase()).not.toContain(banned);
     }
+  });
+});
+
+describe("FIGO-aligned bleeding episodes", () => {
+  const log = (date) => ({ title: "Spotting", dateStarted: date, symptomIds: [] });
+
+  it("collects bleeding days from symptoms and cycle spotting, de-duplicated", () => {
+    const days = bleedingDatesFrom(
+      [log("2026-11-01"), log("2026-11-01")],
+      [{ spotting: true, spottingDate: "2026-11-02" }],
+      new Map()
+    );
+    expect(days).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
+  it("one episode = consecutive days; key is the first day", () => {
+    expect(bleedingEpisodeKey([log("2026-11-01"), log("2026-11-02"), log("2026-11-03")], [], new Map())).toBe("2026-11-01");
+  });
+
+  it("a bleeding-free day starts a NEW episode (FIGO definition)", () => {
+    // 3 and 4 Nov had no bleeding -> 5 Nov is a separate episode.
+    expect(bleedingEpisodeKey([log("2026-11-01"), log("2026-11-02"), log("2026-11-05")], [], new Map())).toBe("2026-11-05");
+  });
+
+  it("returns null with no bleeding records", () => {
+    expect(bleedingEpisodeKey([], [], new Map())).toBeNull();
   });
 });

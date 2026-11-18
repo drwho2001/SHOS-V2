@@ -550,7 +550,7 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
           {includeLiveLink && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
               <div style={{ fontSize: 12, color: T.textSecondary }}>
-                In Google Maps, start Live location sharing with your safety contact, copy the link it gives you, then paste it below. The link stops working when you stop sharing in Maps.
+                Open Google Maps, then: profile picture → Location sharing → New share → choose how long → Copy link. Paste that link below. The link stops working when you stop sharing in Maps.
               </div>
               <button onClick={() => {
                 const url = "https://www.google.com/maps/";
@@ -561,7 +561,7 @@ function SafetyShareSheet({ contact, T, tr, onClose }) {
                   }
                 } catch (e) { /* fall through to the web fallback */ }
                 window.open(url, "_blank");
-              }} style={{ padding: "10px 14px", borderRadius: 999, border: `1px solid ${T.contactsTeal}`, background: "transparent", color: T.contactsTeal, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>Open Google Maps</button>
+              }} style={{ padding: "10px 14px", borderRadius: 999, border: `1px solid ${T.contactsTeal}`, background: "transparent", color: T.contactsTeal, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>Open Google Maps → start Live location sharing</button>
               <input type="url" value={mapsLiveLink} onChange={(e) => setMapsLiveLink(e.target.value)} placeholder="Paste the Google Maps link here" aria-label="Google Maps live location link"
                 style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 14, boxSizing: "border-box" }} />
               {mapsLiveLink.trim() && !isMapsLiveLink(mapsLiveLink) && (

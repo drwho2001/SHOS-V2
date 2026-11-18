@@ -48,7 +48,11 @@ import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate, realTimestampFromStored } from "../calculations/dateInputHelpers";
 import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
 import { cycleVariabilityAdvisory, hormonalContextNote } from "../calculations/cycleStatContext";
-import { menopauseSpottingPrompt } from "../calculations/menopauseSpottingPrompt";
+import { menopauseSpottingPrompt, bleedingEpisodeKey } from "../calculations/menopauseSpottingPrompt";
+import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// One key only: the first day of the bleeding episode the user asked to stop
+// being reminded about. No per-symptom flags to drift out of sync.
+const SPOTTING_PROMPT_ACK_KEY = "shos_spotting_prompt_ack_episode";
 import { pregnancyTests, projectPregnancyTest } from "../calculations/pregnancyTestProjection";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -1382,7 +1386,14 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
       activeHrt: meds.some((m) => !m.isArchived && ((m.category || []).includes("HRT") || /hrt|hormone replacement/i.test(m.name || ""))),
     };
   }, [subTab], { logs: [], cycles: [], nameById: new Map(), activeHrt: false });
-  const [promptDismissed, setPromptDismissed] = useState(false);
+  // F3 — "stop reminding me" is persistent but scoped to ONE episode:
+  // acknowledging stores the first day of the current run of bleeding days.
+  // A later, separate episode (after a bleeding-free day) gets a fresh prompt.
+  const [ackedEpisode, setAckedEpisode] = useLoadedState(
+    () => storage.load(SPOTTING_PROMPT_ACK_KEY, null), [], null
+  );
+  const episodeKey = bleedingEpisodeKey(spottingData.logs, spottingData.cycles, spottingData.nameById);
+  const episodeAcknowledged = !!episodeKey && ackedEpisode === episodeKey;
   const spottingPrompt = menopauseSpottingPrompt({
     menopauseStatus: profileMenopause.status,
     menopauseConfirmedAt: profileMenopause.since,
@@ -1448,14 +1459,14 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
         </div>
       )}
       {/* F3 — neutral informational prompt, never a triage or referral rule.
-          Dismiss is per-mount/session only; it reappears on the next visit. */}
-      {spottingPrompt && !promptDismissed && (
+          "Stop reminding me" is persistent but lasts only for THIS episode. */}
+      {spottingPrompt && !episodeAcknowledged && (
         <div role="status" style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: `1px solid ${T.healthcare}`, background: `${T.healthcare}11`, fontSize: 12, color: T.textPrimary, lineHeight: 1.5 }}>
           <div>{spottingPrompt.text}</div>
           {spottingPrompt.hrtText && <div style={{ marginTop: 6 }}>{spottingPrompt.hrtText}</div>}
           <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
             <a href="https://www.nhs.uk/conditions/menopause/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcare, fontWeight: 700 }}>Read more (NHS)</a>
-            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPromptDismissed(true); } }} onClick={() => setPromptDismissed(true)} style={{ color: T.textSecondary, cursor: "pointer" }}>Not relevant / dismiss</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (episodeKey) { storage.save(SPOTTING_PROMPT_ACK_KEY, episodeKey); setAckedEpisode(episodeKey); } } }} onClick={() => { if (episodeKey) { storage.save(SPOTTING_PROMPT_ACK_KEY, episodeKey); setAckedEpisode(episodeKey); } }} style={{ color: T.textSecondary, cursor: "pointer" }}>I've discussed this — stop reminding me</span>
           </div>
         </div>
       )}

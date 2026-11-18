@@ -11,12 +11,50 @@
 //  - the 12-month definition and the HRT qualifier are included verbatim;
 //  - if gender-affirming hormone therapy is recorded, suppress the guideline
 //    framing and show a plain clinician-only note (NG23 excludes GAHT).
+import { calendarDaysBetween } from "./dateInputHelpers.js";
+
 const BLEEDING = /bleed|spot/i;
 
 function isBleedingSymptom(symptom, symptomNameById) {
   const ids = symptom.symptomIds || [];
   const names = ids.map((id) => symptomNameById.get(id) || "").join(" ");
   return BLEEDING.test(`${symptom.title || ""} ${names}`);
+}
+
+/** Every stored day with bleeding/spotting, oldest first, de-duplicated. */
+export function bleedingDatesFrom(symptomLogs = [], cycles = [], symptomNameById = new Map()) {
+  const days = new Set();
+  for (const s of symptomLogs) {
+    if (isBleedingSymptom(s, symptomNameById) && s.dateStarted) {
+      const key = String(s.dateStarted).slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) days.add(key);
+    }
+  }
+  for (const c of cycles) {
+    if (c.spotting) {
+      const key = String(c.spottingDate || c.startDate || "").slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) days.add(key);
+    }
+  }
+  return [...days].sort();
+}
+
+/**
+ * FIGO-aligned episode key (18 Nov, owner decision): a bleeding/spotting
+ * episode is consecutive days of bleeding; a bleeding-free day ends it.
+ * The key is the FIRST day of the current run, so acknowledging one episode
+ * cannot silence a later, separate one. Uses the canonical day primitive so
+ * the stored-date arithmetic guard stays satisfied.
+ */
+export function bleedingEpisodeKey(symptomLogs, cycles, symptomNameById) {
+  const days = bleedingDatesFrom(symptomLogs, cycles, symptomNameById);
+  if (!days.length) return null;
+  let start = days[days.length - 1];
+  for (let i = days.length - 1; i > 0; i--) {
+    if (calendarDaysBetween(days[i - 1], days[i]) !== 1) break;
+    start = days[i - 1];
+  }
+  return start;
 }
 
 /**
