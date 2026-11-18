@@ -48,6 +48,8 @@ import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate, realTimestampFromStored } from "../calculations/dateInputHelpers";
 import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
 import { cycleVariabilityAdvisory, hormonalContextNote } from "../calculations/cycleStatContext";
+import { menopauseSpottingPrompt } from "../calculations/menopauseSpottingPrompt";
+import { MedicationRepository } from "../repositories/medicationRepository";
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 // R9 — stable empty list so the "not loaded yet" null fallback above is
@@ -1349,9 +1351,35 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   // F3 — read-only projection of the user's own menopause status. The profile
   // is the single owner; this view never writes and never infers a stage.
   const [profileMenopause] = useLoadedState(
-    () => MyProfileRepository.getProfile().then((p) => ({ status: p.menopauseStatus || "Not recorded", since: p.menopauseConfirmedAt || null, noUterus: !!p.noUterus })),
-    [subTab], { status: "Not recorded", since: null, noUterus: false }
+    () => MyProfileRepository.getProfile().then((p) => ({ status: p.menopauseStatus || "Not recorded", since: p.menopauseConfirmedAt || null, noUterus: !!p.noUterus, gender: p.gender || "" })),
+    [subTab], { status: "Not recorded", since: null, noUterus: false, gender: "" }
   );
+  // F3 spotting prompt — one cached read of the three things the pure helper
+  // needs: bleeding symptoms, cycle spotting records, and active HRT meds.
+  const spottingData = useLoadedMemo(async () => {
+    const [logs, cycles, meds, symptomNames] = await Promise.all([
+      SymptomLogRepository.getAll(),
+      MenstrualCycleRepository.getAll(),
+      MedicationRepository.getAll(),
+      SymptomsRegistry.getAll(),
+    ]);
+    return {
+      logs,
+      cycles,
+      nameById: new Map(symptomNames.map((s) => [s.id, s.name])),
+      activeHrt: meds.some((m) => !m.isArchived && ((m.category || []).includes("HRT") || /hrt|hormone replacement/i.test(m.name || ""))),
+    };
+  }, [subTab], { logs: [], cycles: [], nameById: new Map(), activeHrt: false });
+  const [promptDismissed, setPromptDismissed] = useState(false);
+  const spottingPrompt = menopauseSpottingPrompt({
+    menopauseStatus: profileMenopause.status,
+    menopauseConfirmedAt: profileMenopause.since,
+    gender: profileMenopause.gender,
+    symptomLogs: spottingData.logs,
+    cycles: spottingData.cycles,
+    symptomNameById: spottingData.nameById,
+    activeHrt: spottingData.activeHrt,
+  });
   // A deep-linked Pregnancy record must be reachable even for a
   // gender that hides the tab by default — same "never a hard block"
   // rule as the "Show pregnancy tracking anyway" link itself.
@@ -1402,6 +1430,18 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
           {profileMenopause.since ? <div style={{ marginTop: 2 }}>Since {formatStoredDate(profileMenopause.since)}</div> : null}
           {profileMenopause.noUterus ? <div style={{ marginTop: 2 }}>No uterus recorded</div> : null}
           <div style={{ marginTop: 4, fontStyle: "italic" }}>Your own record — SHOS never guesses this. Change it in My Profile → Clinical & emergency info.</div>
+        </div>
+      )}
+      {/* F3 — neutral informational prompt, never a triage or referral rule.
+          Dismiss is per-mount/session only; it reappears on the next visit. */}
+      {spottingPrompt && !promptDismissed && (
+        <div role="status" style={{ margin: "12px 16px 0", padding: 12, borderRadius: radius.md, border: `1px solid ${T.healthcare}`, background: `${T.healthcare}11`, fontSize: 12, color: T.textPrimary, lineHeight: 1.5 }}>
+          <div>{spottingPrompt.text}</div>
+          {spottingPrompt.hrtText && <div style={{ marginTop: 6 }}>{spottingPrompt.hrtText}</div>}
+          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+            <a href="https://www.nhs.uk/conditions/menopause/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcare, fontWeight: 700 }}>Read more (NHS)</a>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPromptDismissed(true); } }} onClick={() => setPromptDismissed(true)} style={{ color: T.textSecondary, cursor: "pointer" }}>Not relevant / dismiss</span>
+          </div>
         </div>
       )}
       {!pregnancyReachable && !pregnancyTrackingHidden && subTab !== "pregnancy" && (
