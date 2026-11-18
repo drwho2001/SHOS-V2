@@ -49,7 +49,10 @@ import { nowAsDateString, formatStoredDate, realTimestampFromStored } from "../c
 import { getNextPeriodDayKey, getDaysUntilNextPeriod, formatDayKeyForDisplay, getCycleSymptomCorrelation } from "../calculations/menstrualCalculations";
 import { cycleVariabilityAdvisory, hormonalContextNote } from "../calculations/cycleStatContext";
 import { menopauseSpottingPrompt } from "../calculations/menopauseSpottingPrompt";
+import { pregnancyTests, projectPregnancyTest } from "../calculations/pregnancyTestProjection";
 import { MedicationRepository } from "../repositories/medicationRepository";
+import { TestingRepository } from "../repositories/testingRepository";
+import { ResultsRegistry } from "../registries/resultsRegistry";
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent  } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 // R9 — stable empty list so the "not loaded yet" null fallback above is
@@ -1089,39 +1092,35 @@ function ContraceptionTab({ T, tr, isPregnant, openAddOnMount, onConsumedQuickAd
 // ═══════════════════════════════════════════════════════════════════
 // PREGNANCY
 // ═══════════════════════════════════════════════════════════════════
-function PregnancySheet({ pregnancy, onSave, onClose, T, tr }) {
+function PregnancySheet({ pregnancy, onSave, onClose, T, tr, linkedTest }) {
   const isNew = !pregnancy;
-  const [form, setForm] = useState(() => pregnancy ? { ...pregnancy } : { ...DEFAULT_PREGNANCY, testDate: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState(() => pregnancy ? { ...pregnancy } : { ...DEFAULT_PREGNANCY });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
-  const canSave = !!form.testDate && !!form.testResult;
-  const isPositive = form.testResult === "Positive";
+  // F2 — the test itself is owned by Testing; this sheet only edits pregnancy
+  // state, so there are no required test fields any more.
+  const canSave = true;
+  // Legacy records may not have a linked Test yet; fall back to the stored
+  // result so their due-date/outcome fields stay reachable.
+  const isPositive = (linkedTest?.resultLabel || form.testResult) === "Positive";
   const isResolved = OUTCOME_OPTIONS.includes(form.status);
   return (
-    <BottomSheet title={isNew ? "Log pregnancy test" : "Edit pregnancy entry"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
-      <TextField label="Test date" value={form.testDate} onChange={set("testDate")} T={T} type="date" />
-      <SelectField label="Result" value={form.testResult} onChange={set("testResult")} options={TEST_RESULT_OPTIONS} T={T} />
-      {/* R5 — sample type, urine first (the standard home test). A blood test
-          is the quantitative serum lab test; only then does a number make
-          sense. Plain chips, same pattern Testing already uses. */}
-      <div style={{ padding: "8px 0" }}>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("pregnancy.sampleType", "Sample type")}</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {SAMPLE_TYPE_OPTIONS.map((s) => {
-            const active = (form.sampleType || "Urine") === s;
-            return (
-              <div key={s} role="button" tabIndex={0} aria-pressed={active} onClick={() => set("sampleType")(s)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set("sampleType")(s); } }}
-                style={{ padding: "7px 14px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, border: `1px solid ${active ? T.healthcare : T.border}`, background: active ? `${T.healthcare}15` : T.surface, color: active ? T.healthcare : T.textSecondary, cursor: "pointer" }}>
-                {s}
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 4 }}>{tr("pregnancy.sampleTypeHint", "Urine is the usual home test. Blood is a lab test with a measured hCG level.")}</div>
+    <BottomSheet title="Edit pregnancy entry" onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
+      {/* F2 — TEST READ-ONLY PROJECTION. Log/edit the test in Testing; this
+          entry only holds pregnancy-specific state and links to it. */}
+      <div style={{ padding: "8px 0 12px" }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Pregnancy test (managed in Testing)</div>
+        {linkedTest ? (
+          <div style={{ padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
+            <div style={{ fontWeight: 700 }}>{linkedTest.title || "Pregnancy test"} · {formatDate(linkedTest.date)}</div>
+            {linkedTest.resultLabel ? <div style={{ marginTop: 2 }}>Result: {linkedTest.resultLabel}</div> : null}
+            {linkedTest.sampleLabel ? <div style={{ marginTop: 2 }}>Sample: {linkedTest.sampleLabel}</div> : null}
+            {linkedTest.hcg ? <div style={{ marginTop: 2 }}>{linkedTest.hcg}</div> : null}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: "italic" }}>No linked test yet — log one in Testing → pregnancy test.</div>
+        )}
+        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 4 }}>The test record is owned by Testing. Log or edit it there; this entry just tracks your pregnancy.</div>
       </div>
-      {form.sampleType === "Blood" && (
-        <TextField label={tr("pregnancy.hcgValue", "Quantitative serum hCG")} value={form.hcgValue ?? ""} onChange={(v) => set("hcgValue")(v === "" ? null : Number(v))} T={T} type="number" placeholder={`mIU/mL`} />
-      )}
-      <TextField label={tr("pregnancy.brand", "Test brand (optional)")} value={form.brand || ""} onChange={set("brand")} T={T} placeholder="e.g. Clearblue" />
       {isPositive && (
         <>
           <TextField label="Estimated due date (optional)" value={form.estimatedDueDate} onChange={set("estimatedDueDate")} T={T} type="date" />
@@ -1144,7 +1143,7 @@ function PregnancySheet({ pregnancy, onSave, onClose, T, tr }) {
   );
 }
 
-function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
+function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged, onQuickAddWithPrefill }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see this file's own list-wrapper comments above.
   const isDesktopWidth = useIsDesktopWidth();
@@ -1183,6 +1182,15 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
   // edit sheet below — one loader, keyed on screen.id, reused for both
   // since they always read the same record.
   const byId = useLoadedMemo(() => (screen.id ? PregnancyRepository.getById(screen.id) : null), [screen.id, force], null);
+  // F2 — Testing owns the test records; this tab is a read-only projection.
+  const testData = useLoadedMemo(async () => {
+    const [tests, results] = await Promise.all([TestingRepository.getAll(), ResultsRegistry.getAll()]);
+    return { tests: pregnancyTests(tests), resultNames: new Map(results.map((r) => [r.id, r.name])) };
+  }, [force], { tests: [], resultNames: new Map() });
+  const linkedTestFor = (p) => {
+    const linked = p?.testId ? testData.tests.find((t) => t.id === p.testId) : testData.tests.find((t) => t.date === p?.testDate);
+    return projectPregnancyTest(linked, testData.resultNames);
+  };
   const deleteUndo = useDeleteUndo(PregnancyRepository, "pregnancies");
   const editUndo = useEditUndo(PregnancyRepository, onDataChanged);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1201,7 +1209,7 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
     if (isMasked(p)) return "Tap to reveal";
     if (OUTCOME_OPTIONS.includes(p.status)) return p.status;
     if (p.status === "Ongoing") return "Ongoing";
-    return p.testResult;
+    return linkedTestFor(p)?.resultLabel || p.testResult || "Test logged";
   };
 
   if (screen.name === "detail") {
@@ -1215,7 +1223,7 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcare} weight="fill" />
-            <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{formatDate(p.testDate)}</h1>
+            <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{formatDate(linkedTestFor(p)?.date || p.testDate)}</h1>
           </div>
           {masked ? (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"}}>
@@ -1225,12 +1233,14 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
           ) : (
             <>
               <SectionCard title="Details" T={T}>
-                <ReadRow label="Test result" value={p.testResult} T={T} />
-                <ReadRow label={tr("pregnancy.sampleType", "Sample type")} value={p.sampleType || "Urine"} T={T} />
-                {/* R5 — a serum number is only shown for a blood sample and
-                    only when one was actually entered (no fake "0"). */}
-                {p.sampleType === "Blood" && p.hcgValue != null && <ReadRow label={tr("pregnancy.hcgValue", "Quantitative serum hCG")} value={`${p.hcgValue} ${HCG_UNIT}`} T={T} />}
-                {p.brand ? <ReadRow label={tr("pregnancy.brandLabel", "Brand")} value={p.brand} T={T} /> : null}
+                {/* F2 — the test facts come from the Testing-owned record;
+                    legacy stored fields are the fallback for unmigrated rows. */}
+                <ReadRow label="Test result" value={linkedTestFor(p)?.resultLabel || p.testResult} T={T} />
+                <ReadRow label={tr("pregnancy.sampleType", "Sample type")} value={linkedTestFor(p)?.sampleLabel || p.sampleType || "Urine"} T={T} />
+                {(linkedTestFor(p)?.hcg || (p.sampleType === "Blood" && p.hcgValue != null && `${p.hcgValue} ${HCG_UNIT}`)) ? (
+                  <ReadRow label={tr("pregnancy.hcgValue", "Quantitative serum hCG")} value={linkedTestFor(p)?.hcg || `${p.hcgValue} ${HCG_UNIT}`} T={T} />
+                ) : null}
+                {(linkedTestFor(p)?.brand || p.brand) ? <ReadRow label={tr("pregnancy.brandLabel", "Brand")} value={linkedTestFor(p)?.brand || p.brand} T={T} /> : null}
                 <ReadRow label="Estimated due date" value={p.estimatedDueDate ? formatDate(p.estimatedDueDate) : ""} T={T} />
                 {p.estimatedDueDate ? <ReadRow label="Gestational weeks" value={(() => { const due = new Date(p.estimatedDueDate); const now = new Date(); const weeks = Math.floor((280 - Math.ceil((due - now) / 86400000)) / 7); return weeks > 0 && weeks <= 42 ? `${weeks} weeks` : ""; })()} T={T} /> : null}
                 {p.estimatedDueDate ? <ReadRow label="Trimester" value={(() => { const due = new Date(p.estimatedDueDate); const now = new Date(); const weeks = Math.floor((280 - Math.ceil((due - now) / 86400000)) / 7); return weeks <= 13 ? "1st" : weeks <= 26 ? "2nd" : weeks <= 42 ? "3rd" : ""; })()} T={T} /> : null}
@@ -1254,7 +1264,9 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
   return (
     <div>
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
-        <div onClick={() => setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Add pregnancy entry" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcare, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
+        {/* F2 — the test is logged in Testing (single owner). Pregnancy only
+            holds the state around it, so "+" opens Testing prefilled. */}
+        <div onClick={() => onQuickAddWithPrefill ? onQuickAddWithPrefill("healthcare", "testing", { testingFor: ["Pregnancy"] }) : setScreen({ name: "add" })} role="button" tabIndex={0} aria-label="Log pregnancy test in Testing" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onQuickAddWithPrefill ? onQuickAddWithPrefill("healthcare", "testing", { testingFor: ["Pregnancy"] }) : setScreen({ name: "add" }); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcare, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", minHeight: 44, boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
@@ -1278,14 +1290,14 @@ function PregnancyTab({ T, tr, openRecordId, onConsumedRecordOpen, registerModul
                 {masked && <EyeSlash size={13} color={T.textSecondary} />}
                 <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, fontStyle: masked ? "italic" : "normal" }}>{summaryLabel(p)}</span>
               </div>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{formatDate(p.testDate)}</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{formatDate(linkedTestFor(p)?.date || p.testDate)}</div>
             </ListRow>
           );
         })}
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
       {screen.name === "add" && <PregnancySheet pregnancy={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} tr={tr} />}
-      {screen.name === "edit" && <PregnancySheet pregnancy={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} tr={tr} />}
+      {screen.name === "edit" && <PregnancySheet pregnancy={byId} linkedTest={linkedTestFor(byId)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} tr={tr} />}
     </div>
   );
 }
@@ -1320,7 +1332,7 @@ function tabForRecordId(id) {
   return null;
 }
 
-export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
+export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler, onQuickAddWithPrefill } = {}) {
   const { t: tr } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
@@ -1454,7 +1466,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
       )}
       {subTab === "cycle" && <CycleTab T={T} tr={tr} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
       {subTab === "contraception" && <ContraceptionTab T={T} tr={tr} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
-      {subTab === "pregnancy" && <PregnancyTab T={T} tr={tr} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
+      {subTab === "pregnancy" && <PregnancyTab T={T} tr={tr} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} onQuickAddWithPrefill={onQuickAddWithPrefill} />}
     </div>
   );
 }

@@ -31,6 +31,7 @@ import { runKinkExpansionMigration } from "./registries/kinkRegistry";
 import { runSampleTypeMigration } from "./repositories/customOptionListsRepository";
 import { runSeedIdMigration } from "./storage/seedIdMigration";
 import { runVaginalHealthMigration } from "./repositories/vaginalHealthMigration";
+import { runPregnancyTestOwnershipMigration } from "./repositories/pregnancyTestOwnershipMigration";
 import { syncDarkModePreferenceFromStorage } from "./calculations/darkModePreference";
 import { AppPreferencesRepository } from "./repositories/appPreferencesRepository";
 // ADDED 3 Sep 2026 — real ask: "clear notification awareness" — a
@@ -1202,7 +1203,7 @@ export default function App() {
       // this" reasoning as the eager-migration catch above.
       // 18 Nov 2026 — runProtectionPepMigration removed with PEP itself (no
       // real PEP entries existed, so nothing to migrate).
-      for (const migration of [runKinkExpansionMigration, runSampleTypeMigration, runSeedIdMigration, runVaginalHealthMigration]) {
+      for (const migration of [runKinkExpansionMigration, runSampleTypeMigration, runSeedIdMigration, runVaginalHealthMigration, runPregnancyTestOwnershipMigration]) {
         try {
           await migration();
         } catch (err) {

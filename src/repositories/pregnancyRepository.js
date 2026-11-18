@@ -66,6 +66,11 @@ export const DEFAULT_PREGNANCY = {
   isDemo: false,
   testDate: null,
   testResult: "",
+  // F2 — Testing is the single owner of test records. This links the
+  // pregnancy's state (due date/outcome/mask) to the real Test record.
+  // Existing testDate/testResult stay on the record as read-only legacy
+  // facts; no history is deleted by the migration.
+  testId: null,
   // R5 — sample type + optional extras. Additive fields: old backups read
   // through getAll()'s DEFAULT_PREGNANCY merge, so no schema-version bump
   // or data migration is needed (a legacy record simply reads as Urine).
