@@ -21,6 +21,7 @@ import {
   TestingRepository, DEFAULT_TEST,
   TESTING_FOR_OPTIONS,
 } from "../repositories/testingRepository";
+import { hasTestingForOther, testingForOtherValue, setTestingForOther } from "../calculations/testingOtherHelpers";
 // ADDED 5 Nov 2026 — B7: Setting's stable keys, display labels and legacy-value
 // migration. Imported from the pure module rather than re-exported through the
 // repository, so this screen cannot drift from seedDivergence.js's copy of the
@@ -891,6 +892,13 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
             icon={isHomeSetting(form.setting) ? <House size={13} color={T.healthcare} aria-hidden="true" /> : isClinicSetting(form.setting) ? <FirstAid size={13} color={T.healthcare} aria-hidden="true" /> : null} />
           <MultiSelectChips label={tr("testing.sampleType", "Sample type")} value={form.sampleType} onChange={set("sampleType")} options={sampleTypeOptions} listName="sampleType" T={T} />
           <MultiSelectChips label={tr("testing.testingFor", "Testing for?")} value={form.testingFor} onChange={set("testingFor")} options={TESTING_FOR_OPTIONS} T={T} />
+          {/* 18 Nov — "Other" used to be a dead end. The typed text replaces the
+              placeholder in testingFor, so it shows in read views, search and
+              backups without a second field to keep in sync. */}
+          {hasTestingForOther(form.testingFor) && (
+            <TextField label={tr("testing.testingForOther", "Other — what was it tested for?")} value={testingForOtherValue(form.testingFor)}
+              onChange={(v) => set("testingFor")(setTestingForOther(form.testingFor, v))} T={T} placeholder="e.g. Mycoplasma" />
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
             <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{tr("testing.mostRecent", "Most recent")}</span>
             <ToggleSwitch T={T} value={form.mostRecent} onChange={set("mostRecent")} />

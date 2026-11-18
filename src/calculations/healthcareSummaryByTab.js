@@ -1,33 +1,35 @@
 // healthcareSummaryByTab.js
 //
-// R4 (18 Nov) — the same three summary cards (Active symptoms / Overdue
-// vaccinations / Tests this year) used to sit identically above EVERY
-// Healthcare sub-tab. Make them context-aware: the stat relevant to the open
-// tab comes first, with one supporting stat. No new data — these are the
-// same three already-computed global counts — and SummaryStat stays shared.
-const LABELS = {
-  activeSymptoms: "Active symptoms",
-  overdueVaccinations: "Overdue vaccinations",
-  testsThisYear: "Tests this year",
-};
-const LABEL_KEYS = {
-  activeSymptoms: "healthcare.activeSymptoms",
-  overdueVaccinations: "healthcare.overdueVaccinations",
-  testsThisYear: "healthcare.testsThisYear",
-};
-const ALERT = { activeSymptoms: true, overdueVaccinations: true, testsThisYear: false };
-
-// Relevant stat first; one supporting stat so the row is never a lone card.
-const BY_TAB = {
-  testing: ["testsThisYear", "activeSymptoms"],
-  symptomLog: ["activeSymptoms", "testsThisYear"],
-  clinicVisits: ["testsThisYear", "activeSymptoms"],
-  vaccinations: ["overdueVaccinations", "testsThisYear"],
-  measurements: ["testsThisYear", "activeSymptoms"],
-  menstrualHealth: ["activeSymptoms", "testsThisYear"],
-};
+// M4.1 (18 Nov) — genuine per-tab summary sets, not the same three global
+// counts relabelled. Each tab shows the facts relevant to that tab; tabs with
+// no relevant fact show no row at all. All values come from repositories the
+// Healthcare screen already loads. Reuses the shared SummaryStat component.
+const stat = (key, label, value, alert = false) => ({ key, label, value: value ?? 0, alert });
 
 export function summaryStatsForTab(subTab, summary = {}) {
-  const keys = BY_TAB[subTab] || ["activeSymptoms", "overdueVaccinations", "testsThisYear"];
-  return keys.map((key) => ({ key, labelKey: LABEL_KEYS[key], label: LABELS[key], value: summary[key] ?? 0, alert: ALERT[key] }));
+  switch (subTab) {
+    case "symptomLog":
+      return [
+        stat("activeSymptoms", "Active symptoms", summary.activeSymptoms, true),
+        stat("openEpisodes", "Open episodes", summary.openEpisodes),
+      ];
+    case "testing":
+      return [stat("testsThisYear", "Tests this year", summary.testsThisYear)];
+    case "clinicVisits":
+      return [
+        stat("upcomingVisits", "Upcoming visits", summary.upcomingVisits),
+        stat("openEpisodes", "Open episodes", summary.openEpisodes),
+      ];
+    case "vaccinations":
+      return [stat("overdueVaccinations", "Vaccines due", summary.overdueVaccinations, true)];
+    case "measurements":
+      return [stat("measurementsCount", "Measurements logged", summary.measurementsCount)];
+    case "menstrualHealth":
+      return [
+        stat("cycleLength", "Average cycle", summary.cycleLength ? `${summary.cycleLength} days` : "—"),
+        stat("daysSincePeriod", "Since last period", summary.daysSincePeriod != null ? `${summary.daysSincePeriod} days` : "—"),
+      ];
+    default:
+      return [];
+  }
 }

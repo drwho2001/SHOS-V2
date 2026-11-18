@@ -1432,13 +1432,17 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
             "Reproductive health" with Cycle / Contraception / Pregnancy
             sections inside it (already the three inner tabs below). */}
         <span style={{ ...TYPE.sectionLabel, color: T.healthcare }}>Reproductive health</span>
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+        <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
           {tabs.map((t) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t.key} onClick={() => setSubTab(t.key)}
               style={{ padding: "5px 12px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcare : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcare : T.border}`}}>
               {t.label}
             </div>
           ))}
+          {/* M4.3 — under the tab row, not floating over the empty state. */}
+          {!pregnancyReachable && !pregnancyTrackingHidden && (
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowPregnancyAnyway(true); } }} onClick={() => setShowPregnancyAnyway(true)} style={{ marginLeft: "auto", fontSize: 12, color: T.textDisabled, cursor: "pointer", textDecoration: "underline" }}>Show pregnancy tracking anyway</span>
+          )}
         </div>
       </div>
       {activePregnancy && (
@@ -1468,11 +1472,6 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
             <a href="https://www.nhs.uk/conditions/menopause/" target="_blank" rel="noopener noreferrer" style={{ color: T.healthcare, fontWeight: 700 }}>Read more (NHS)</a>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (episodeKey) { storage.save(SPOTTING_PROMPT_ACK_KEY, episodeKey); setAckedEpisode(episodeKey); } } }} onClick={() => { if (episodeKey) { storage.save(SPOTTING_PROMPT_ACK_KEY, episodeKey); setAckedEpisode(episodeKey); } }} style={{ color: T.textSecondary, cursor: "pointer" }}>I've discussed this — stop reminding me</span>
           </div>
-        </div>
-      )}
-      {!pregnancyReachable && !pregnancyTrackingHidden && subTab !== "pregnancy" && (
-        <div style={{ margin: "10px 16px 0", textAlign: "right" }}>
-          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 12, color: T.textDisabled, cursor: "pointer", textDecoration: "underline"}}>Show pregnancy tracking anyway</span>
         </div>
       )}
       {subTab === "cycle" && <CycleTab T={T} tr={tr} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}

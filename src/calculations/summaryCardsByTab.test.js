@@ -1,40 +1,29 @@
-// R4 (18 Nov) — context-aware summary cards on Healthcare and Medication.
+// M4.1 (18 Nov) — genuine per-tab stats, not the same three counts relabelled.
 import { describe, it, expect } from "vitest";
 import { summaryStatsForTab } from "./healthcareSummaryByTab.js";
-import { medicationStatsForTab } from "./medicationSummaryByTab.js";
+
+const summary = {
+  activeSymptoms: 2, overdueVaccinations: 1, testsThisYear: 8,
+  upcomingVisits: 3, measurementsCount: 12, cycleLength: 29, daysSincePeriod: 14, openEpisodes: 1,
+};
 
 describe("Healthcare summary cards per sub-tab", () => {
-  const summary = { activeSymptoms: 2, overdueVaccinations: 1, testsThisYear: 7 };
-
-  it("puts the relevant stat first for each tab", () => {
-    expect(summaryStatsForTab("testing", summary)[0].key).toBe("testsThisYear");
-    expect(summaryStatsForTab("symptomLog", summary)[0].key).toBe("activeSymptoms");
-    expect(summaryStatsForTab("vaccinations", summary)[0].key).toBe("overdueVaccinations");
+  it("gives each tab its own relevant facts", () => {
+    expect(summaryStatsForTab("symptomLog", summary).map((s) => s.key)).toEqual(["activeSymptoms", "openEpisodes"]);
+    expect(summaryStatsForTab("testing", summary).map((s) => s.key)).toEqual(["testsThisYear"]);
+    expect(summaryStatsForTab("clinicVisits", summary).map((s) => s.key)).toEqual(["upcomingVisits", "openEpisodes"]);
+    expect(summaryStatsForTab("vaccinations", summary).map((s) => s.key)).toEqual(["overdueVaccinations"]);
+    expect(summaryStatsForTab("measurements", summary).map((s) => s.key)).toEqual(["measurementsCount"]);
+    expect(summaryStatsForTab("menstrualHealth", summary).map((s) => s.key)).toEqual(["cycleLength", "daysSincePeriod"]);
   });
 
-  it("keeps one supporting stat and the real value", () => {
-    const stats = summaryStatsForTab("testing", summary);
-    expect(stats).toHaveLength(2);
-    expect(stats[0].value).toBe(7);
-    expect(stats[0].labelKey).toBe("healthcare.testsThisYear");
+  it("uses real values, with a dash when there is no cycle data", () => {
+    expect(summaryStatsForTab("testing", summary)[0].value).toBe(8);
+    expect(summaryStatsForTab("menstrualHealth", summary)[0].value).toBe("29 days");
+    expect(summaryStatsForTab("menstrualHealth", { cycleLength: null, daysSincePeriod: null })[0].value).toBe("—");
   });
 
-  it("falls back to the original three for an unknown tab", () => {
-    expect(summaryStatsForTab("unknown", summary).map((s) => s.key)).toEqual(["activeSymptoms", "overdueVaccinations", "testsThisYear"]);
-  });
-});
-
-describe("Medication summary cards per sub-tab", () => {
-  it("re orders and relabels rather than repeating the identical pair", () => {
-    expect(medicationStatsForTab("Registry")[0].label).toBe("Active medications");
-    expect(medicationStatsForTab("Log")[0].label).toBe("Medications to log");
-    expect(medicationStatsForTab("Inventory")[0].label).toBe("Refill / low stock");
-  });
-
-  it("still shows both real counts on every tab", () => {
-    for (const tab of ["Registry", "Log", "Inventory"]) {
-      const stats = medicationStatsForTab(tab);
-      expect(stats.map((s) => s.key).sort()).toEqual(["action", "active"]);
-    }
+  it("returns no row for tabs with no relevant stat", () => {
+    expect(summaryStatsForTab("unknown", summary)).toEqual([]);
   });
 });

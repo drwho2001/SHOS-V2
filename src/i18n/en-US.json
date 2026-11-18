@@ -181,6 +181,7 @@
     "setting": "Setting",
     "sampleType": "Sample type",
     "testingFor": "Testing for?",
+    "testingForOther": "Other — what was it tested for?",
     "mostRecent": "Most recent",
     "result": "Result",
     "resultPlaceholder": "e.g. Positive, Negative",

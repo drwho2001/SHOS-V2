@@ -28,6 +28,11 @@ const MenstrualHealthModule = lazy(() => import("./SHOS_MenstrualHealth_Prototyp
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useLoadedState } from "../calculations/loadedRepositoryState";
 import { isVaccinationOverdue } from "../calculations/vaccinationCalculations";
+import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
+import { MeasurementRepository } from "../repositories/measurementRepository";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
+import { EpisodeRepository } from "../repositories/episodeRepository";
+import { calendarDaysBetween, localDayKey } from "../calculations/dateInputHelpers";
 import { summaryStatsForTab } from "../calculations/healthcareSummaryByTab";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 const AttachmentsScreen = lazy(() => import("./SHOS_Attachments_Prototype"));
@@ -46,6 +51,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // (row 1), Symptoms/Measurements/Menstrual & Contraception (row 2) —
   // the grid below (not flex-wrap) is what actually guarantees the
   // 3-per-row layout regardless of label length.
+  // M4.2 — overflow control for the sub-tab row (BACKLOG 0b decision).
+  const [showMoreTabs, setShowMoreTabs] = useState(false);
   const [subTab, setSubTab] = useState(
     quickAddTarget === "clinicVisits" ? "clinicVisits" :
     quickAddTarget === "symptomLog" ? "symptomLog" :
@@ -174,7 +181,11 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // shows (Last test / Next clinic visit) rather than repeating it —
   // active symptoms, overdue vaccinations, and this year's real test
   // count are all real Healthcare-specific facts Home doesn't cover.
-  const [summary, setSummary] = useState({ activeSymptoms: 0, overdueVaccinations: 0, testsThisYear: 0 });
+  // M4.1 — genuine per-tab stats, not the same three counts relabelled.
+  const [summary, setSummary] = useState({
+    activeSymptoms: 0, overdueVaccinations: 0, testsThisYear: 0,
+    upcomingVisits: 0, measurementsCount: 0, cycleLength: null, daysSincePeriod: null, openEpisodes: 0,
+  });
   // CHANGED 26 Aug 2026 — real bug fix: this only ever ran once on
   // mount, so e.g. resolving a symptom (adding an end date) didn't
   // update "Active symptoms" until you left and re-entered Healthcare.
@@ -199,7 +210,20 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       const overdue = (await VaccinationRepository.getAll()).filter((v) => isVaccinationOverdue(v, today)).length;
       const thisYear = new Date().getFullYear();
       const tests = (await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date).getFullYear() === thisYear).length;
-      setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
+      const [visits, measurements, cycles, episodes] = await Promise.all([
+        ClinicVisitsRepository.getAll(),
+        MeasurementRepository.getAll(),
+        MenstrualCycleRepository.getAll(),
+        EpisodeRepository.getAll(),
+      ]);
+      const todayKey = localDayKey(new Date());
+      const upcomingVisits = visits.filter((v) => !v.isArchived && v.date && String(v.date).slice(0, 10) >= todayKey).length;
+      const measurementsCount = measurements.filter((m) => !m.isArchived).length;
+      const openEpisodes = episodes.filter((e) => !e.isArchived && !e.resolvedDate).length;
+      const completed = cycles.filter((c) => !c.isArchived && c.startDate).sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+      const daysSincePeriod = completed.length ? calendarDaysBetween(String(completed[0].startDate).slice(0, 10), todayKey) : null;
+      const cycleLength = await MenstrualCycleRepository.getAverageCycleLengthDays();
+      setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests, upcomingVisits, measurementsCount, cycleLength, daysSincePeriod, openEpisodes });
     })();
   }, [dataVersion]);
 
@@ -221,6 +245,25 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{label}</div>
     </div>
   );
+
+  // M4.2 — cap the sub-tab row so it can never push into the shortcut row
+  // below it. The active tab is always in the visible set; the rest go behind
+  // "More". With the smaller pills this keeps the row to two lines max.
+  const allTabs = [
+    { key: "symptomLog", label: tr("healthcare.symptoms", "Symptoms") },
+    { key: "testing", label: tr("healthcare.testing", "Testing") },
+    { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
+    { key: "vaccinations", label: tr("healthcare.vaccinations", "Vaccinations") },
+    { key: "measurements", label: tr("healthcare.measurements", "Measurements") },
+    ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Reproductive health") }] : []),
+  ];
+  const MAX_VISIBLE_TABS = 5;
+  const activeIndex = allTabs.findIndex((t) => t.key === subTab);
+  const orderedTabs = activeIndex >= MAX_VISIBLE_TABS
+    ? [allTabs[activeIndex], ...allTabs.filter((_, i) => i !== activeIndex)]
+    : allTabs;
+  const visibleTabs = orderedTabs.slice(0, MAX_VISIBLE_TABS);
+  const moreTabs = orderedTabs.slice(MAX_VISIBLE_TABS);
 
   return (
     <div style={{ fontFamily: FONT_FAMILY, width: "100%", minWidth: 0 }}>
@@ -281,21 +324,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               own content width, which keeps the 44dp tap height but
               makes the row read as a set of chips rather than a block
               of buttons. */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {[
-            { key: "symptomLog", label: tr("healthcare.symptoms", "Symptoms") },
-            { key: "testing", label: tr("healthcare.testing", "Testing") },
-            { key: "clinicVisits", label: tr("healthcare.clinicVisits", "Clinic Visits") },
-            { key: "vaccinations", label: tr("healthcare.vaccinations", "Vaccinations") },
-            { key: "measurements", label: tr("healthcare.measurements", "Measurements") },
-            // ADDED �?" real ask: gated behind Settings' own toggle, not
-            // shown at all otherwise �?" same "opt-in, off by default"
-            // treatment as every other feature area in this app.
-            ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Reproductive health") }] : []),
-             // R7 — the vaginal health tab was removed (diagnosis-led, and
-             // Symptoms/Testing/Episodes now cover the same facts). Data is
-             // migrated to Symptom Log once at boot; no UI entry remains.
-          ].map((tab) => (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {visibleTabs.map((tab) => (
             // CHANGED — real audit finding (exhaustive screen-reader
             // audit): these sub-tab pills were 100% unreachable via
             // keyboard (confirmed via a real Tab-key trace — focus
@@ -304,10 +334,28 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // is the only way to switch Healthcare's own sub-tab.
             <div key={tab.key} onClick={() => setSubTab(tab.key)} role="tab" tabIndex={0} aria-selected={subTab === tab.key} aria-label={tab.label}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(tab.key); } }}
-              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 44, flex: "0 0 auto", background: subTab === tab.key ? T.healthcare : "transparent", color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcare : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ padding: "4px 9px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 34, flex: "0 0 auto", background: subTab === tab.key ? T.healthcare : "transparent", color: subTab === tab.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === tab.key ? T.healthcare : T.border}`, textAlign: "center", lineHeight: 1.2, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {tab.label}
             </div>
           ))}
+          {moreTabs.length > 0 && (
+            <div style={{ position: "relative" }}>
+              <div role="button" tabIndex={0} aria-expanded={showMoreTabs} aria-label="More Healthcare sections" onClick={() => setShowMoreTabs((v) => !v)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMoreTabs((v) => !v); } }}
+                style={{ padding: "4px 9px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", minHeight: 34, color: T.textSecondary, border: `1px solid ${T.border}`, display: "flex", alignItems: "center" }}>
+                More ▾
+              </div>
+              {showMoreTabs && (
+                <div role="menu" style={{ position: "absolute", right: 0, top: 38, zIndex: 20, minWidth: 150, background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm }}>
+                  {moreTabs.map((t) => (
+                    <div key={t.key} role="menuitem" tabIndex={0} onClick={() => { setSubTab(t.key); setShowMoreTabs(false); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(t.key); setShowMoreTabs(false); } }}
+                      style={{ padding: "10px 12px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center" }}>
+                      {t.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           </div>
         </div>
       </div>
@@ -361,13 +409,14 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
-        {/* R4 — context-aware per sub-tab: the relevant stat first, one
-            supporting stat. Same three real counts, shared SummaryStat. */}
-        <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
-          {summaryStatsForTab(subTab, summary).map((s) => (
-            <SummaryStat key={s.key} label={tr(s.labelKey, s.label)} value={s.value} alert={s.alert} />
-          ))}
-        </div>
+        {/* M4.1 — per-tab facts only; no row at all on tabs with no stat. */}
+        {summaryStatsForTab(subTab, summary).length > 0 && (
+          <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
+            {summaryStatsForTab(subTab, summary).map((s) => (
+              <SummaryStat key={s.key} label={s.label} value={s.value} alert={s.alert} />
+            ))}
+          </div>
+        )}
       <Suspense fallback={<SkeletonList T={{ surfaceVariant: N.surfaceVariant }} rows={6} />}>
     {subTab === "testing" ? (
         <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
