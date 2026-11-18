@@ -75,7 +75,10 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 - **Fix per D2(b):** clear = snapshot kept in reversible storage; "Restore sample data" button beside "Clear sample data" in **both** surfaces, reusing `ConfirmDeleteCard` semantics. Guard rails (non-negotiable): only restore into empty collections or pure-append of `isSeed` records; never overwrite non-empty user collections; sequential repository writes (per `clearSampleData.test.js`); id-collision check against `seedIdMigration`; tests for user-data-present and partial-restore.
 - **Evidence:** AUDIT O; `clearSampleData.js`, `seedIdMigration.js`, `storageAdapter.js:43-101`.
 
-### R4 — 🟠 Repeated summary cards / chrome across tabs  [EFFORT M · RISK MEDIUM]
+### R4 — 🟠 Repeated summary cards / chrome across tabs  [SHIPPED 18 Nov 2026]
+- Healthcare: the three real summary counts are now ordered/labelled per sub-tab via `healthcareSummaryByTab.js` (relevant stat first + one supporting stat; i18n keys preserved). Medication: the two stat tiles are reordered/relabelled per Registry/Log/Inventory via `medicationSummaryByTab.js`. Same underlying counts, shared SummaryStat/StatTile — no new data, no stale cross-tab facts.
+- Allergies: NKDA/None/N/A/not recorded is now a positive clear (green) state on the Medication bar, Clinic Card chips and the Clinic Card PDF; only real allergies use alert styling. Shared `allergyDisplay.js` + 5 tests.
+- Verification: `summaryCardsByTab.test.js` (5), `allergyDisplay.test.js` (5), PDF + style guards pass, eslint clean.
 - Healthcare: "Active symptoms / Overdue vaccinations / Tests this year" identical on every sub-tab, confirmed with live data (new test bumped 7→8 on all). Medication: "Allergies" bar + summary cards repeat across Register/Log/Inventory. `SummaryStat` is shared (`SHOS_Healthcare_Prototype.jsx:358`).
 - **Fix:** per-sub-tab stat sets (e.g. Menstrual → cycle stats already in `calculations/`; Vaccinations → doses due). Align with BACKLOG 0b (header/toolbar standardisation). Owner note: also reduce title-banner + sticky-tab + nav vertical footprint app-wide (documented, no immediate fix).
 - **Evidence:** AUDIT K/M/N; BACKLOG 0b.

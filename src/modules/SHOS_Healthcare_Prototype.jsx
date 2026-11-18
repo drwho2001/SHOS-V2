@@ -28,6 +28,7 @@ const MenstrualHealthModule = lazy(() => import("./SHOS_MenstrualHealth_Prototyp
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useLoadedState } from "../calculations/loadedRepositoryState";
 import { isVaccinationOverdue } from "../calculations/vaccinationCalculations";
+import { summaryStatsForTab } from "../calculations/healthcareSummaryByTab";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 const AttachmentsScreen = lazy(() => import("./SHOS_Attachments_Prototype"));
 const TimelineModule = lazy(() => import("./SHOS_Timeline_Prototype"));
@@ -360,10 +361,12 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
+        {/* R4 — context-aware per sub-tab: the relevant stat first, one
+            supporting stat. Same three real counts, shared SummaryStat. */}
         <div style={{ display: "flex", gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
-          <SummaryStat label={tr("healthcare.activeSymptoms", "Active symptoms")} value={summary.activeSymptoms} alert />
-          <SummaryStat label={tr("healthcare.overdueVaccinations", "Overdue vaccinations")} value={summary.overdueVaccinations} alert />
-          <SummaryStat label={tr("healthcare.testsThisYear", "Tests this year")} value={summary.testsThisYear} />
+          {summaryStatsForTab(subTab, summary).map((s) => (
+            <SummaryStat key={s.key} label={tr(s.labelKey, s.label)} value={s.value} alert={s.alert} />
+          ))}
         </div>
       <Suspense fallback={<SkeletonList T={{ surfaceVariant: N.surfaceVariant }} rows={6} />}>
     {subTab === "testing" ? (

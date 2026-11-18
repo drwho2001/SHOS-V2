@@ -41,6 +41,7 @@ import { exportBinaryFile } from "./fileExportHelper";
 import { getVaccinationNextDue } from "../calculations/vaccinationCalculations.js";
 import { ContactRepository } from "../repositories/contactRepository";
 import { getExportIncludeRecentContacts } from "../calculations/clinicCardVisibilityPreference";
+import { hasNoAllergies, noAllergyLabel } from "../calculations/allergyDisplay";
 
 const MARGIN = 44;
 const PAGE_WIDTH = 595.28; // A4 in points
@@ -49,6 +50,8 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
 const TEAL = rgb(11 / 255, 127 / 255, 121 / 255); // ACCENTS.healthcare-adjacent, print-safe
 const RED = rgb(214 / 255, 69 / 255, 80 / 255);
+// R4 — a recorded "NKDA / None" reads as a clear state, not an alert.
+const GREEN = rgb(17 / 255, 120 / 255, 26 / 255);
 const INK = rgb(27 / 255, 27 / 255, 31 / 255);
 const GREY = rgb(91 / 255, 91 / 255, 98 / 255);
 const LINE = rgb(220 / 255, 220 / 255, 220 / 255);
@@ -253,11 +256,11 @@ class PageCursor {
     this.page.drawLine({ start: { x: MARGIN, y: this.y }, end: { x: PAGE_WIDTH - MARGIN, y: this.y }, thickness: 0.75, color: LINE });
     this.y -= 16;
   }
-  row(title, subtitle, alert) {
+  row(title, subtitle, alert, clear) {
     const titleLines = wrapText(title, this.fonts.bold, 11, CONTENT_WIDTH);
     this.ensureSpace(titleLines.length * 13 + (subtitle ? 12 : 0) + 8);
     titleLines.forEach((line) => {
-      this.text(line, { size: 11, font: this.fonts.bold, color: alert ? RED : INK });
+      this.text(line, { size: 11, font: this.fonts.bold, color: clear ? GREEN : alert ? RED : INK });
       this.y -= 13;
     });
     if (subtitle) {
@@ -322,7 +325,8 @@ export async function generateClinicCardPdf(visibility) {
   section("medications", "Current medications", data.medications, "No active medications logged.", data.medications.length);
   if (!visibility || visibility.allergies !== false) {
     cursor.sectionHeading("Allergies");
-    if (data.allergies.length === 0) cursor.empty("None recorded.");
+    // R4 — NKDA/None/N/A is a positive "checked, none" state.
+    if (hasNoAllergies(data.allergies)) cursor.row(noAllergyLabel(data.allergies), null, false, true);
     else cursor.row(data.allergies.join(", "), null, true);
   }
   if (data.menstrualTrackingEnabled) {

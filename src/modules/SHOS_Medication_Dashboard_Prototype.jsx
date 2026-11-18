@@ -38,6 +38,8 @@ import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositor
 import { computeStock, computeAdherence, computeAdherenceTrend, nextDoseEstimate, 
 isDoseLockedOut,   lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, doseTimingAdvisory, latestLogOfType, 
 formatDoseComponents } from "../calculations/medicationCalculations";
+import { hasNoAllergies, noAllergyLabel } from "../calculations/allergyDisplay";
+import { medicationStatsForTab } from "../calculations/medicationSummaryByTab";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
 // it after" case. Same shared "Now" helper and plain-string-slicing
@@ -2028,6 +2030,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // Timeline reading EncounterRepository). Allergies is edited on My
   // Profile, not here.
   const [allergies, setAllergies] = useLoadedState(async () => (await MyProfileRepository.getProfile()).allergies, [], []);
+  // R4 — NKDA/None/N/A is a clear state (green outline), not a missing one.
+  const hasRealAllergy = !hasNoAllergies(allergies);
   // Called after every write to either repository — re-reads both and
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.
@@ -2532,16 +2536,16 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <button
             type="button"
             onClick={() => setShowMyProfile(true)}
-            aria-label={allergies.length ? `Edit allergies: ${allergies.join(", ")}` : "Add allergy information"}
-            style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: radius.md, background: allergies.length ? `${T.actionRed}14` : T.surfaceVariant, border: `1px solid ${allergies.length ? `${T.actionRed}40` : T.border}`, display: "flex", alignItems: "center", gap: 8, textAlign: "left", cursor: "pointer" }}
+            aria-label={hasRealAllergy ? `Edit allergies: ${allergies.join(", ")}` : `Edit allergies (${noAllergyLabel(allergies)})`}
+            style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: radius.md, background: hasRealAllergy ? `${T.actionRed}14` : `${T.actionGreen}14`, border: `1px solid ${hasRealAllergy ? `${T.actionRed}40` : `${T.actionGreen}55`}`, display: "flex", alignItems: "center", gap: 8, textAlign: "left", cursor: "pointer" }}
           >
-            {allergies.length > 0
+            {hasRealAllergy
               ? <AlertTriangle size={15} color={T.actionRed} style={{ flexShrink: 0 }} />
-              : <Plus size={15} color={T.textSecondary} style={{ flexShrink: 0 }} />}
-            <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: allergies.length ? T.actionRedText : T.textSecondary, fontWeight: 600 }}>
-              Allergies: {allergies.length ? allergies.join(", ") : "None recorded"}
+              : <Check size={15} color={T.actionGreen} style={{ flexShrink: 0 }} />}
+            <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: hasRealAllergy ? T.actionRedText : T.actionGreenText, fontWeight: 600 }}>
+              Allergies: {noAllergyLabel(allergies)}
             </span>
-            <span style={{ fontSize: 11, color: T.textSecondary }}>{allergies.length ? "Edit" : "Add"}</span>
+            <span style={{ fontSize: 11, color: T.textSecondary }}>Edit</span>
           </button>
         </div>
 
@@ -2602,15 +2606,16 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             other module with a stat/summary row directly under its
             banner (Healthcare, Encounters) has some top breathing
             room, this was the one at a flat 0. */}
+        {/* R4 — context-aware per sub-tab: the relevant stat comes first and
+            carries a tab-appropriate label. Same two real counts; no stale
+            cross-tab data. */}
         <div style={{ display: "flex", gap: 10, padding: "0 16px 16px" }}>
-          {/* FIXED — live audit Finding 10: "Active medications" looked
-              identical to "Needs action" (a role="button" that navigates to
-              Registry) but had no onClick, so it was a dead control. Give it
-              the same affordance: tapping switches to the Registry tab. */}
-          <StatTile T={T} label="Active medications" value={activeMeds.length} tint={T.medsBlue} onClick={() => setTab("Registry")} />
-          <StatTile T={T} label="Needs action" value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
-            subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
-            onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
+          {medicationStatsForTab(tab).map((s) => s.key === "active"
+            ? <StatTile key={s.key} T={T} label={s.label} value={activeMeds.length} tint={T.medsBlue} onClick={() => setTab("Registry")} />
+            : <StatTile key={s.key} T={T} label={s.label} value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
+                subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
+                onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
+          )}
         </div>
 
 

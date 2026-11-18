@@ -33,6 +33,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { getVaccinationNextDue, getVaccinationDate } from "../calculations/vaccinationCalculations";
 import { isWithinClinicCardTimeframe } from "../calculations/clinicCardCalculations";
+import { isNoAllergyValue } from "../calculations/allergyDisplay";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useTranslation } from "../i18n/index.js";
 
@@ -628,9 +629,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           // here at all. Same target (My Profile's edit form) as the
           // empty-state link right above.
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6, cursor: "pointer" }}>
-            {profile.allergies.map((a) => (
-              <span key={a} style={{ fontSize: 12, fontWeight: 700, color: T.actionRedText, background: `${T.actionRed}1A`, padding: "4px 10px", borderRadius: 999 }}>{a}</span>
-            ))}
+            {profile.allergies.map((a) => {
+              // R4 — NKDA/None/N/A is a clear state, not a warning.
+              const clear = isNoAllergyValue(a);
+              return <span key={a} style={{ fontSize: 12, fontWeight: 700, color: clear ? T.actionGreenText : T.actionRedText, background: `${clear ? T.actionGreen : T.actionRed}1A`, padding: "4px 10px", borderRadius: 999 }}>{a}</span>;
+            })}
           </div>
         )}
       </SectionCard>
