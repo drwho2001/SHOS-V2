@@ -1,6 +1,6 @@
 # F3 — Menopause status + spotting prompt: DRAFT COPY FOR OWNER REVIEW
 
-**Status: DRAFT — NOT approved, NOT built. Owner must sign off (ideally clinical review) before any of this ships.**
+**Status: APPROVED by owner 17 Nov 2026; built 18 Nov. Owner is a clinician and reviewed the wording. Wording of line B updated 18 Nov: "consider mentioning it to a doctor or nurse" → "it's worth mentioning to a clinician sooner" (a time reference implying slightly more weight, with no alarm word).**
 **⚠️ This draft is SUPERSEDED in part by `F3-RESEARCH-CHALLENGE.md` (4-body check). Its known corrections, folded in below: (1) 12-month rule must say "and not using hormonal contraception"; (2) HRT timeframes are 6 months from starting / 3 months from a change — or omit timeframes; (3) add a GAHT-exclusion caveat; (4) trigger the prompt on spotting symptoms as well as period logs; (5) never imply the app diagnoses menopause.**
 
 ## Constraint (from the owner's decisions + repo rules)
@@ -25,7 +25,7 @@
 > "This is your own record — SHOS never guesses your stage from your age. You can change this any time."
 
 **B. Neutral prompt shown when a bleeding/spotting symptom is logged AND status = Post-menopause:**
-> "You've recorded bleeding or spotting after menopause. Bleeding more than 12 months after your periods stopped — and when you are not using hormonal contraception — is usually checked by a clinician, even if it is light. If this is new for you, consider mentioning it to a doctor or nurse and bring the dates you've logged here."
+> "You've recorded bleeding or spotting after menopause. Bleeding more than 12 months after your periods stopped — and when you are not using hormonal contraception — is usually checked by a clinician, even if it is light. If this is new for you, it's worth mentioning to a clinician sooner — bring the dates you've logged here."
 >
 > [Read more (Resources)](link) · [Not relevant / dismiss]
 >

@@ -24,7 +24,7 @@ describe("menopause spotting prompt", () => {
     expect(p).not.toBeNull();
     expect(p.text).toMatch(/more than 12 months after your periods stopped/);
     expect(p.text).toMatch(/not using hormonal contraception/);
-    expect(p.text).toMatch(/consider mentioning it to a doctor or nurse/);
+    expect(p.text).toMatch(/worth mentioning to a clinician sooner/);
   });
 
   it("resolves symptom names through the registry", () => {

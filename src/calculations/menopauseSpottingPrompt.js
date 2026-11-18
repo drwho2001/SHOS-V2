@@ -91,7 +91,7 @@ export function menopauseSpottingPrompt({
   }
 
   return {
-    text: "You've recorded bleeding or spotting after menopause. Bleeding more than 12 months after your periods stopped — and when you are not using hormonal contraception — is usually checked by a clinician, even if it is light. If this is new for you, consider mentioning it to a doctor or nurse and bring the dates you've logged here.",
+    text: "You've recorded bleeding or spotting after menopause. Bleeding more than 12 months after your periods stopped — and when you are not using hormonal contraception — is usually checked by a clinician, even if it is light. If this is new for you, it's worth mentioning to a clinician sooner — bring the dates you've logged here.",
     hrtText: activeHrt
       ? "If you are taking HRT, some bleeding can be expected — commonly within the first 6 months of starting, or within 3 months of changing your dose or preparation. If bleeding is new, heavy, or continues beyond that, discuss it with your prescriber."
       : null,
