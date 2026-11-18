@@ -2,10 +2,11 @@
 
 **Purpose:** everything needed to resume with no lost context. Read this file first, then the specific docs referenced.
 
-## Current state
-- Working tree **clean**; HEAD = `4ae7962` ("Remove PEP protection entirely; About email-only + icon/build date; encounter field gating"), pushed to `main`.
-- CI on `4ae7962` (and the handoff-doc commit `533f3c4`): **Web Alpha + Build Android APK are RED**, Smoke was in flight at handoff. Cause is known and mechanical: I added `__BUILD_DATE__` (Vite `define` + eslint global) for the About build date, but the repo's `src/components/jsxIdentifierBindingGuard.test.js:40` has its own `ALLOWED_GLOBALS` set (contains `__BUILD_SHA__`, `__APP_VERSION__`) and does not include `__BUILD_DATE__`, so the guard fails. **FIRST ACTION ON RESUME (no decision needed):** add `"__BUILD_DATE__"` to that set (same place as `__BUILD_SHA__`), run `npx vitest run src/components/jsxIdentifierBindingGuard.test.js`, commit + push. Then re-check CI. No other policy decisions are pending — all were answered in the last popup and recorded below. Prior smoke failures were root-caused and fixed (styleColourGuard, healthcareCalendarShortcutGuard, PWA auto-update dismiss flag, flow-2 timing race).
-- Local verification at handoff: eslint clean, 44 targeted tests pass, `vite build` success, negative-status + encoding guards pass. Full local smoke is memory-starved; CI is the gate.
+## Current state (updated 18 Nov, end of the long build session)
+- Working tree **clean**; HEAD = `3a892b3` ("F4 cycle-stat context; fix CI guards flagged after the import v1 push"), pushed to `main`. All previous handoff decisions were actioned; no pending policy question.
+- CI was still running on `3a892b3` at this update. **FIRST ACTION ON RESUME: `gh run list --branch main --limit 4` and confirm Web Alpha + Build Android APK are green.** If red, `gh run view <id> --log-failed` before editing. Three CI failures were found and fixed this session (in order): (1) `__BUILD_DATE__` missing from `jsxIdentifierBindingGuard.test.js` allowlist; (2) frozen pregnancy seed snapshot lacked R5's new non-empty `sampleType: "Urine"` default; (3) `styleColourGuard` flagged the new import sheet's raw colours. A fourth (`storedDateArithmeticGuard` on the F4 settling-in window) was caught locally before push. Lesson: **run all 63 `*Guard/*Coverage` test files locally before pushing** — it takes ~4 min but catches what CI catches.
+- Local verification at this update: 405 guard-test assertions pass, eslint clean on every changed file, `vite build` success. Full local smoke is memory-starved; CI is the gate.
+- All popup decisions are recorded below and were implemented; no further policy questions are needed to resume.
 
 ## SHIPPED THIS SESSION (18 Nov, on top of the list below)
 - CI fix: `__BUILD_DATE__` added to `jsxIdentifierBindingGuard.test.js` ALLOWED_GLOBALS.
