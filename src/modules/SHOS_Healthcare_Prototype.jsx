@@ -159,7 +159,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // green" default fails badly reused unmodified against the dark
   // surface (2.13:1, checked). Same resolveDarkAccent + hand-picked
   // companion every other Healthcare-tab file now uses.
-  const T = { healthcare: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
+  // Device finding (18 Nov): this screen's T had no textPrimary, so any
+  // element using it (e.g. the More menu) fell back to a near-invisible
+  // default colour in dark mode. All other uses here use textSecondary.
+  const T = { healthcare: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, border: N.border, textPrimary: N.textPrimary, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
   // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
   // Known Issues / the Notion Development log): useLoadedState instead
   // of a plain useState lazy initializer, one of the ~100 real sites
