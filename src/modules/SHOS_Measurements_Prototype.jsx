@@ -26,6 +26,7 @@ import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
+import { findBankMatch } from "../calculations/measurementTypeBank";
 import { compareKeysAreEqual } from "../calculations/textCanonicalisation";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -161,8 +162,11 @@ function ReadRow({ label, value, T, alert }) {
 // is locked read-only when editing an existing BP entry (can't switch
 // out of it either) — both sides of the "excluded from the picker, not
 // forced into a mismatched edit form" fix agreed during design.
-function MeasurementTypeField({ value, onChange, options, rankedOptions, listName, onAddNew, onNewTypeCreated, T, locked }) {
+function MeasurementTypeField({ value, onChange, options, rankedOptions, listName, onAddNew, onNewTypeCreated, onBankPick, T, locked }) {
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
+  // B2 (18 Nov) — suggestion from the local standard bank, shown at commit
+  // time so it cannot be missed by someone typing fast. Never auto-applied.
+  const [pendingBankSuggestion, setPendingBankSuggestion] = useState(null);
   const typed = (value || "").trim();
   // rankedOptions (newest-added + most-frequently-picked first) drives
   // what's actually SHOWN while typing; options (the raw curated list,
@@ -182,12 +186,17 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
     // The option already on file keeps its own spelling: canonicalisation here
     // is for COMPARISON only and never rewrites what the user typed.
     const exactMatch = options.find((o) => compareKeysAreEqual(o, trimmed));
-    if (exactMatch) { if (listName) CustomOptionListsRepository.recordUsage(listName, exactMatch); setPendingSuggestion(null); return; }
+    if (exactMatch) { if (listName) CustomOptionListsRepository.recordUsage(listName, exactMatch); setPendingSuggestion(null); setPendingBankSuggestion(null); return; }
     const close = findClosestMatch(options, trimmed);
-    if (close) { setPendingSuggestion(close); return; }
+    if (close) { setPendingSuggestion(close); setPendingBankSuggestion(null); return; }
+    // B2: only offer the bank when nothing in the user's own list fits —
+    // their own spelling/history wins. Accepting is the confirmation.
+    const bankHit = findBankMatch(trimmed, options);
+    if (bankHit) { setPendingBankSuggestion(bankHit); setPendingSuggestion(null); return; }
     onAddNew(trimmed);
     onNewTypeCreated?.(trimmed);
     setPendingSuggestion(null);
+    setPendingBankSuggestion(null);
   };
 
   if (locked) {
@@ -210,6 +219,15 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onAddNew(value.trim()); onNewTypeCreated?.(value.trim()); setPendingSuggestion(null); }} style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.textSecondary, cursor: "pointer"}}>No, add new</span>
         </div>
       )}
+      {pendingBankSuggestion && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcare}`, background: `${T.healthcare}11` }}>
+          <span style={{ fontSize: 12, color: T.textPrimary, flex: 1 }}>
+            Did you mean <strong>{pendingBankSuggestion.name}</strong>? <span style={{ color: T.textSecondary }}>Suggested unit: {pendingBankSuggestion.unit}</span>
+          </span>
+          <span role="button" tabIndex={0} aria-label={`Use suggested type ${pendingBankSuggestion.name}`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onBankPick?.(pendingBankSuggestion); setPendingBankSuggestion(null); }} style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.healthcare, cursor: "pointer" }}>Use it</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onAddNew(value.trim()); onNewTypeCreated?.(value.trim()); setPendingBankSuggestion(null); }} style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add new</span>
+        </div>
+      )}
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((v) => (
@@ -220,7 +238,7 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
           ))}
         </div>
       )}
-      <input value={value ?? ""} onChange={(e) => { onChange(e.target.value); setPendingSuggestion(null); }}
+      <input value={value ?? ""} onChange={(e) => { onChange(e.target.value); setPendingSuggestion(null); setPendingBankSuggestion(null); }}
         onBlur={() => commit(value || "")}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(value || ""); e.target.blur(); } }}
         placeholder="e.g. Testosterone, Weight, CD4 count"
@@ -476,6 +494,21 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   // was just created (see MeasurementTypeField's onNewTypeCreated).
   const [newTypeNeedingKind, setNewTypeNeedingKind] = useState(null);
 
+  // B2 (18 Nov) — accepting a bank suggestion. The bank already knows the
+  // kind and a sensible unit, so this does what the manual kind prompt
+  // would have done (register the type + store its kind + pick the unit)
+  // in one confirmed step. Nothing is applied until the user taps "Use it"
+  // in MeasurementTypeField; the manual "What kind?" prompt stays as the
+  // fallback for types outside the bank.
+  const acceptBankMatch = async (entry) => {
+    const updated = await CustomOptionListsRepository.add("measurementType", entry.name);
+    setTypeOptions(updated);
+    setRankedTypeOptions(await CustomOptionListsRepository.getRanked("measurementType"));
+    setPrefs(await MeasurementPreferencesRepository.setTypeKind(entry.name, entry.kind));
+    setForm((f) => ({ ...f, type: entry.name, unit: entry.unit, value: null }));
+    setNewTypeNeedingKind(null);
+  };
+
   // Real "memory": switching type on a NEW entry prefills that type's
   // last-used unit, else its preference-aware default, same reasoning
   // as the presetType path above.
@@ -523,7 +556,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions} rankedOptions={rankedEditableOptions} listName="measurementType"
             onAddNew={(v) => { CustomOptionListsRepository.add("measurementType", v).then((updated) => { setTypeOptions(updated); CustomOptionListsRepository.getRanked("measurementType").then(setRankedTypeOptions); }); }}
-            onNewTypeCreated={(v) => v !== BLOOD_PRESSURE_TYPE && setNewTypeNeedingKind(v)} T={T} locked={!isNew && measurement.type === BLOOD_PRESSURE_TYPE} />
+            onNewTypeCreated={(v) => v !== BLOOD_PRESSURE_TYPE && setNewTypeNeedingKind(v)} onBankPick={acceptBankMatch} T={T} locked={!isNew && measurement.type === BLOOD_PRESSURE_TYPE} />
           {newTypeNeedingKind && (
             <TypeKindPrompt typeName={newTypeNeedingKind} T={T}
               onPick={async (kind) => {

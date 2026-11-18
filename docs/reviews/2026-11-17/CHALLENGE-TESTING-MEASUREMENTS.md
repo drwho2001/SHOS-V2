@@ -45,6 +45,11 @@ But there's a subtlety: the existing type picker already lists eGFR (it was seen
 
 **Decision needed:** build the standard bank + fuzzy suggestion (medium effort, high usability value)?
 
+## RESOLVED 18 Nov 2026 (challenge before build)
+
+- **B1 link — ALREADY BUILT, do not rebuild.** Code inspection (and the new `testingMeasurementLinkGuard.test.js`) confirms the exact option-1 design is already shipped: `Measurement.linkedTestId` stores the link, Testing's detail lists linked measurements with "+ Add measurement" → `InlineMeasurementSheet(presetLink={{ linkedTestId: testId }})`, Measurement's form/detail show the source test, test delete calls `MeasurementRepository.unlinkTest()` (clears the link, keeps the trend), and `orphanReferenceCheck.js` covers `linkedTestId`. The owner's approval was based on the round-3 claim that no link existed — that claim was wrong. **No code change.** The guard locks the contract so it cannot regress.
+- **B2 bank — BUILT.** `src/calculations/measurementTypeBank.js` + `findBankMatch()`: a local, on-device bank (eGFR mL/min/1.73m², creatinine µmol/L, glucose mmol/L, HbA1c mmol/mol, TSH, cholesterol, CRP, haemoglobin, vitamin D, ferritin, prolactin, cortisol) with aliases and shared fuzzy matching. Shown at commit time as "Did you mean eGFR? Suggested unit: …" with **Use it / No, add new** — never silently applied. Accepting registers the type, stores its kind and picks the unit in one confirmed step; the manual "What kind?" prompt remains the escape hatch for anything outside the bank. No cloud, no ranges, no interpretation. UK-first units.
+
 ## Note
 A3 (Medications horizontal scroll), A4 (INFERRED single line — DONE), A5 (stray · — DONE), A6 (end time — already shown when data exists), A7 (Ash sort-first — needs an owner decision on default sort vs a "needs attention" filter), A8 (reorder — DONE) are tracked in BROWSER-FEEDBACK-ROUND2.md.
 

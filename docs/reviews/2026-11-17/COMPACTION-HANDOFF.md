@@ -13,6 +13,8 @@
 - R9 period overlap guard (open prior record to add end date, estimate escape, save-time re-check).
 - Contacts "Incomplete" sort: mandatory-missing contacts now precede optional-only ones; default sort untouched.
 - B1 investigated (`B1-ORPHAN-INVESTIGATION.md`): raw `seed_contact_9008` ID is CORRECT diagnostic behaviour for a genuinely hard-deleted contact; no code change warranted (owner asked investigate-first).
+- Testing↔Measurements link: CHALLENGE FINDING — already fully built (`linkedTestId`, inline add from Testing, unlink on delete, orphan check). No rebuild; `testingMeasurementLinkGuard.test.js` locks it.
+- Measurement-type suggestion bank built (`measurementTypeBank.js`): local fuzzy bank with aliases, confirm-before-apply; manual kind prompt retained.
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
