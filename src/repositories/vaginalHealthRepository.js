@@ -5,8 +5,10 @@
 // Single owner of the user's vaginal-health records: a dated entry per
 // episode, with the condition that was recorded and optional notes. The
 // urgency tier is NOT stored — it is derived from the condition every time it
-// is displayed (see SHOS_VaginalHealth_Prototype.jsx's tierFor()), so a later
-// clinical decision about a tier cannot leave old records showing a stale one.
+// is displayed by the now-removed SHOS_VaginalHealth_Prototype.jsx's tierFor(),
+// so a later clinical decision about a tier could not leave old records showing
+// a stale one. R7 (18 Nov): this repository is now a READ-ONLY backup shim —
+// write paths are no longer reachable from the UI.
 //
 // WHY A REPOSITORY AND NOT RAW localStorage. The module's first slice wrote
 // `shos_vaginal_health` directly. That works on screen but puts the data

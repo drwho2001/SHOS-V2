@@ -94,7 +94,9 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 
 ### R7 — 🟠 Vaginal health: diagnosis-led + redundancy  [EFFORT L · RISK HIGH · needs D1]
 - Add flow offers diagnoses (PID, Trichomoniasis, BV, Thrush, Pregnancy) with urgency badges — diagnosis belongs in Episodes/Testing, symptoms in Symptoms. Conflicts with the 13 Nov "keep + enrich with treatment/outcome/recurrenceCount" decision.
-- **Fix per D1:** A reframe (observation-first + treatment/outcome fields), B full removal with data migration map (Symptoms/Testing/Episodes/Medication), repository read-only for one release for export safety, backup schema version bump, seed/i18n/resetAllData/backupService cleanup, migration test, or C freeze.
+- **SHIPPED 18 Nov 2026, D1=B (remove + migrate).** Healthcare no longer offers the Vaginal health sub-tab. `vaginalHealthMigration.js` runs once at boot and copies each real record into a **Symptom Log** entry (condition as title, date, and notes/treatment/outcome preserved verbatim) — deliberately NOT fabricating Testing/Medication/Clinic Visit records from free text. The source repository is kept as a **read-only backup shim** for one release: no records deleted, old backups still import/export, and a one-time flag + per-record marker make re-runs/backup-restores duplicate-safe. Old UI module retained (unimported, marked deprecated) for one release. No seed data existed, so a fresh install loses nothing.
+- **Scope note:** the finer condition→Testing/Episodes split is left to the person who knows the facts; the migration choices losslessness over guessing. No schema-version bump needed (the shim still accepts the old `vaginalHealth` backup key).
+- **Verification:** `vaginalHealthMigration.test.js` (5 tests — fresh install, lossless copy, source retained, idempotent, partial-failure recovery) pass; jsx guard + healthcare guards + eslint + vite build clean.
 - **Evidence:** main report M8; AUDIT M; `vaginalHealthRepository.js`, `backupService.js`, BACKLOG 13 Nov decisions.
 
 ### R8 — 🟠 Transient all-zero counts on load  [EFFORT S · RISK LOW]

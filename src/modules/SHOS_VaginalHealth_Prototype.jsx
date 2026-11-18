@@ -1,3 +1,10 @@
+// DEPRECATED 18 Nov 2026 (R7 / D1=B) — this module is NO LONGER IMPORTED or
+// rendered. The Vaginal health sub-tab was removed from Healthcare; its real
+// records are copied once into Symptom Log by vaginalHealthMigration.js. The
+// file is retained for one release only as a readable record of the old UI;
+// nothing should import it. The repository remains as a read-only backup shim
+// so old backups still restore.
+//
 // SHOS_VaginalHealth_Prototype.jsx — Vaginal health module (BACKLOG 6).
 //
 // SCOPE. A short list of vaginal-health episodes with a clinician-approved

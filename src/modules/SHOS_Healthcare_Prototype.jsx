@@ -22,7 +22,9 @@ const SymptomLogModule = lazy(() => import("./SHOS_SymptomLog_Prototype"));
 const VaccinationsModule = lazy(() => import("./SHOS_Vaccinations_Prototype"));
 const MeasurementsModule = lazy(() => import("./SHOS_Measurements_Prototype"));
 const MenstrualHealthModule = lazy(() => import("./SHOS_MenstrualHealth_Prototype"));
-const VaginalHealthModule = lazy(() => import("./SHOS_VaginalHealth_Prototype"));
+// R7 (18 Nov) — VaginalHealthModule removed. Its data is migrated once into
+// Symptom Log by vaginalHealthMigration.js; the repository remains only as a
+// read-only backup shim so old backups still import.
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useLoadedState } from "../calculations/loadedRepositoryState";
 import { isVaccinationOverdue } from "../calculations/vaccinationCalculations";
@@ -289,7 +291,9 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // shown at all otherwise �?" same "opt-in, off by default"
             // treatment as every other feature area in this app.
             ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Menstrual & Contraception") }] : []),
-             ...(menstrualTrackingEnabled ? [{ key: "vaginalHealth", label: tr("healthcare.vaginalHealth", "Vaginal health") }] : []),
+             // R7 — the vaginal health tab was removed (diagnosis-led, and
+             // Symptoms/Testing/Episodes now cover the same facts). Data is
+             // migrated to Symptom Log once at boot; no UI entry remains.
           ].map((tab) => (
             // CHANGED — real audit finding (exhaustive screen-reader
             // audit): these sub-tab pills were 100% unreachable via
@@ -372,8 +376,6 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "measurements" ? (
         <MeasurementsModule openAddOnMount={openAddOnMount && quickAddTarget === "measurements"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
-      ) : subTab === "vaginalHealth" ? (
-        <VaginalHealthModule />
       ) : (
         <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}

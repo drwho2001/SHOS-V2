@@ -16,6 +16,7 @@
 - Testing↔Measurements link: CHALLENGE FINDING — already fully built (`linkedTestId`, inline add from Testing, unlink on delete, orphan check). No rebuild; `testingMeasurementLinkGuard.test.js` locks it.
 - Measurement-type suggestion bank built (`measurementTypeBank.js`): local fuzzy bank with aliases, confirm-before-apply; manual kind prompt retained.
 - R5 hCG: pregnancy entries now have sampleType (Urine default / Blood), optional serum hCG mIU/mL (Blood only), and brand; additive schema so no migration; FSRH Testing-ownership refactor still separate.
+- R7 (D1=B): Vaginal health tab removed; one-time `vaginalHealthMigration.js` copies real records to Symptom Log losslessly; repository kept as read-only backup shim; old UI module retained unimported/deprecated.
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
