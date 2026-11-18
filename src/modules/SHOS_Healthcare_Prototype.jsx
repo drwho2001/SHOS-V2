@@ -345,10 +345,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
                 More ▾
               </div>
               {showMoreTabs && (
-                <div role="menu" style={{ position: "absolute", right: 0, top: 38, zIndex: 20, minWidth: 150, background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm }}>
+                <div role="menu" style={{ position: "absolute", right: 0, top: 38, zIndex: 30, minWidth: 150, backgroundColor: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm, opacity: 1 }}>
                   {moreTabs.map((t) => (
                     <div key={t.key} role="menuitem" tabIndex={0} onClick={() => { setSubTab(t.key); setShowMoreTabs(false); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(t.key); setShowMoreTabs(false); } }}
-                      style={{ padding: "10px 12px", fontSize: TYPE.control.fontSize, color: T.textPrimary, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center" }}>
+                      style={{ padding: "10px 12px", fontSize: TYPE.control.fontSize, color: T.textPrimary, backgroundColor: T.surface, opacity: 1, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center" }}>
                       {t.label}
                     </div>
                   ))}
