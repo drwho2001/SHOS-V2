@@ -111,7 +111,8 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 - **Verification:** `src/modules/menstrualOverlapGuard.test.js` (8 tests), 47 targeted tests pass, eslint clean.
 - **Evidence:** AUDIT G.
 
-### R10 — 🟡 Onboarding polish  [EFFORT S · RISK LOW · D4]
+### R10 — 🟡 Onboarding polish  [SHIPPED 18 Nov 2026]
+- Progress dots now have their own non-shrinking row (gap 8, marginTop 12) so they can't be squeezed into the slide text on short viewports, plus a `role="group"` label and `aria-current="step"`. The DoxyPEP slide now says notifications are requested when a reminder is first set up, with a Settings → Notifications route. The abrupt Get-started transition stays out (D4) and "Replay tour" is not rebuilt (already in Guide). `onboardingPolishGuard.test.js` (4 tests) locks it.
 - Dots tight on short viewports (`App.jsx:829-833`); DoxyPEP promises "real notifications" but onboarding never calls `Notification.requestPermission()` (`notificationService.js:586` does, elsewhere) — add a sub-note; abrupt Get-started transition (**drop** per D4). "Replay tour" is **already built** (Settings → Guide → Take the interactive tour) — falsified, do not build.
 - **Evidence:** AUDIT B/Q; `GuideScreen.jsx:72`, `SHOS_Settings_Prototype.jsx:522,1031`.
 

@@ -759,7 +759,11 @@ const ONBOARDING_SLIDES = [
     onAnswer: (yes) => (yes ? AppPreferencesRepository.update({ menstrualTrackingEnabled: true }) : Promise.resolve()),
   },
   { title: "Start with My Profile", body: "Settings → My Profile lets you record your own details, testing status, and preferences — it's also what gets shared if you ever export a profile to someone else." },
-  { title: "DoxyPEP & reminders", body: "If it's relevant to you, SHOS can track the 72-hour DoxyPEP window after a qualifying activity, and remind you about daily medication doses — both real notifications, not just in-app banners." },
+  // R10 — the promise of "real notifications" used to have no way to turn
+  // them on from this slide. The app asks for permission when a reminder is
+  // first set up, but saying so here avoids a user waiting for a prompt that
+  // only appears later (and gives them an explicit Settings route).
+  { title: "DoxyPEP & reminders", body: "If it's relevant to you, SHOS can track the 72-hour DoxyPEP window after a qualifying activity, and remind you about daily medication doses — both real notifications, not just in-app banners. You'll be asked to allow notifications when a reminder is first set up, or you can enable them any time in Settings → Notifications." },
   // FIXED 27 Sep 2026 — said "Settings → Design", but no screen by that name
   // has existed since the 16 Sep global-settings reorg: the row is
   // "Colour scheme". A new user's very first instructions sent them to a
@@ -827,9 +831,12 @@ function OnboardingScreen({ onFinish }) {
         </h1>
         <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>{slide.body}</div>
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
+      {/* R10 — give the dots their own space so they can't be squeezed into
+          the slide text on a short viewport; role=group + label so a screen
+          reader announces what they represent instead of four empty divs. */}
+      <div role="group" aria-label="Onboarding progress" style={{ display: "flex", flexShrink: 0, justifyContent: "center", gap: 8, marginTop: 12, paddingBottom: 20 }}>
         {ONBOARDING_SLIDES.map((_, i) => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: 999, background: i === step ? "#FFFFFF" : "rgba(255,255,255,0.35)" }} />
+          <div key={i} aria-current={i === step ? "step" : undefined} style={{ width: 6, height: 6, borderRadius: 999, background: i === step ? "#FFFFFF" : "rgba(255,255,255,0.35)" }} />
         ))}
       </div>
       {isQuestion ? (
