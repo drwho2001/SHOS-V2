@@ -90,9 +90,9 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
       {expanded && (
         <div style={{ marginTop: 10 }}>
           <input value={link} onChange={(e) => setLink(e.target.value)} placeholder={t("resources.linkPlaceholder", "Link or phone number")} aria-label={t("resources.linkAria", "Resource link")}
-            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", marginBottom: 8 }} />
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", marginBottom: 8 }} />
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("resources.notesPlaceholder", "Notes (optional)")} rows={2} aria-label={t("resources.notesAria", "Resource notes")}
-            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", resize: "vertical", marginBottom: 8 }} />
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", resize: "vertical", marginBottom: 8 }} />
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={remove} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${ACTION.red}`, background: "transparent", color: ACTION.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t("resources.remove", "Remove")}</button>
             <button onClick={save} style={{ flex: 1, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("resources.save", "Save")}</button>
@@ -161,7 +161,7 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>{t("resources.nothingAdded", "Nothing added yet.")}</div>
+          <div style={{ padding: 16, fontSize: TYPE.control.fontSize, color: T.textDisabled }}>{t("resources.nothingAdded", "Nothing added yet.")}</div>
         ) : filtered.map((entry) => (
           <ResourceEntryRow key={entry.id} entry={entry} categoryKey={categoryKey} onChanged={refresh} darkMode={darkMode} />
         ))}
@@ -169,7 +169,7 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
           <div style={{ display: "flex", gap: 8, padding: 12 }}>
             <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder={t("resources.addYourOwn", "+ Add your own")}
               onKeyDown={(e) => { if (e.key === "Enter") addEntry(); }}
-              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box" }} />
+              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
             <button onClick={addEntry} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("resources.add", "Add")}</button>
           </div>
         )}
@@ -204,7 +204,7 @@ function ClinicalJustificationsCategory({ darkMode }) {
         </div>
         {items.map((item) => (
           <div key={item.title} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 3 }}>{item.title}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, marginBottom: 3 }}>{item.title}</div>
             <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{item.body}</div>
             {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, marginTop: 4, display: "inline-block" }}>{item.link}</a>}
           </div>
@@ -246,7 +246,7 @@ export function ResourcesScreen({ onClose }) {
             to 11 categories and ~30 entries after the real URL
             population pass. Matches name, link, or notes. */}
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("resources.search", "Search resources")} aria-label={t("resources.search", "Search resources")}
-          style={{ width: "100%", padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: 13, boxSizing: "border-box", minHeight: 44, marginBottom: 16 }} />
+          style={{ width: "100%", padding: "8px 12px", borderRadius: RADIUS.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44, marginBottom: 16 }} />
         <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
           {hasMatch ? `Results found${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No resources match" : "No query"}
         </div>
@@ -257,7 +257,7 @@ export function ResourcesScreen({ onClose }) {
           {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
         </div>
         {query.trim() && !hasMatch && (
-          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>{t("resources.noMatch", "No resources match your search.")}</div>
+          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: TYPE.control.fontSize }}>{t("resources.noMatch", "No resources match your search.")}</div>
         )}
       </div>
     </div>

@@ -431,8 +431,8 @@ export function DeveloperToolsScreen({ onClose }) {
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>{t("devTools.storageOverview", "Storage overview")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowStorageBreakdown((s) => !s)} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Local storage used{storageUsage.byKey.length > 0 ? (showStorageBreakdown ? " ▲" : " ▼") : ""}</span>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: FONT_FAMILY }}>{formatBytes(storageUsage.totalBytes)}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Local storage used{storageUsage.byKey.length > 0 ? (showStorageBreakdown ? " ▲" : " ▼") : ""}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: FONT_FAMILY }}>{formatBytes(storageUsage.totalBytes)}</span>
         </div>
         {showStorageBreakdown && (
           <div style={{ padding: "6px 0 9px" }}>
@@ -453,10 +453,10 @@ export function DeveloperToolsScreen({ onClose }) {
         )}
         {counts.map((c) => (
           <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{c.label}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{c.label}</span>
             {/* R8 — show a loading mark, not a misleading 0, until the async
                 repository read has actually landed. */}
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: FONT_FAMILY }}>{c.value === null ? "…" : c.value}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: FONT_FAMILY }}>{c.value === null ? "…" : c.value}</span>
           </div>
         ))}
       </div>
@@ -481,13 +481,13 @@ export function DeveloperToolsScreen({ onClose }) {
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} role={orphans.length > 0 ? "button" : undefined} tabIndex={orphans.length > 0 ? 0 : undefined} aria-label="Toggle broken references" aria-expanded={showOrphans} onKeyDown={orphans.length > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowOrphans((s) => !s); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
           <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.brokenReferences", "Broken references")}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.brokenReferences", "Broken references")}</span>
           <span onClick={recheckOrphans} role="button" tabIndex={0} aria-label="Check again"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckOrphans(e); } }}
             style={{ fontSize: 11, fontWeight: 700, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
             {orphanChecking ? "Checking…" : "Check again"}
           </span>
-          <span style={{ fontSize: 13, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
+          <span style={{ fontSize: TYPE.control.fontSize, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
             {orphans.length === 0 ? "None found" : `${orphans.length}${showOrphans ? " ▲" : " ▼"}`}
           </span>
         </div>
@@ -518,13 +518,13 @@ export function DeveloperToolsScreen({ onClose }) {
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => anomaly.total > 0 && setShowAnomalies((s) => !s)} role={anomaly.total > 0 ? "button" : undefined} tabIndex={anomaly.total > 0 ? 0 : undefined} aria-label="Toggle records worth a look" aria-expanded={showAnomalies} onKeyDown={anomaly.total > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAnomalies((s) => !s); } } : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: anomaly.total > 0 ? "pointer" : "default" }}>
           <WarningDiamond size={15} color={anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.recordsWorthLook", "Records worth a look")}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.recordsWorthLook", "Records worth a look")}</span>
           <span onClick={recheckAnomalies} role="button" tabIndex={0} aria-label="Check records again"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckAnomalies(e); } }}
             style={{ fontSize: 11, fontWeight: 700, color: darkMode ? resolveDarkAccent("home", ACCENTS.home, deriveDarkAccent(ACCENTS.home)) : ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
             {anomalyChecking ? "Checking…" : "Check again"}
           </span>
-          <span style={{ fontSize: 13, color: anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
+          <span style={{ fontSize: TYPE.control.fontSize, color: anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
             {anomaly.total === 0 ? "None found" : `${anomaly.total}${showAnomalies ? " ▲" : " ▼"}`}
           </span>
         </div>
@@ -541,7 +541,7 @@ export function DeveloperToolsScreen({ onClose }) {
                   <div style={{ ...TYPE.sectionLabel, fontSize: 10, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, paddingBottom: "4px" }}>{ANOMALY_KIND_LABELS[kind]} · {group.length}</div>
                   {group.map((f, i) => (
                     <div key={`${f.kind}|${f.recordId}|${i}`} style={{ padding: "7px 0", borderTop: i === 0 ? "none" : "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+                      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
                         {f.recordType}: {f.recordLabel}
                       </div>
                       <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, paddingTop: "2px", lineHeight: 1.45 }}>
@@ -577,8 +577,8 @@ export function DeveloperToolsScreen({ onClose }) {
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowErrorLog(true)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: "pointer" }}>
           <Bug size={15} color={errorCount > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.errorLog", "Error log")}</span>
-          <span style={{ fontSize: 13, color: errorCount > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.errorLog", "Error log")}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: errorCount > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
             {errorCount === null ? "…" : errorCount === 0 ? "None" : errorCount}
           </span>
           <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
@@ -595,7 +595,7 @@ export function DeveloperToolsScreen({ onClose }) {
           // because a partial reset that silently claims success is the exact
           // failure this button already had.
           <div>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+            <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
               {resetResult?.failed?.length
                 ? `Cleared ${resetResult.ok.length} of ${resetResult.ok.length + resetResult.failed.length} stores. Some could not be cleared.`
                 : `All app data cleared (${resetResult?.ok.length ?? 0} stores). Reload the app to see the fresh-start state.`}
@@ -610,7 +610,7 @@ export function DeveloperToolsScreen({ onClose }) {
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <AlertTriangle size={16} color={ACTION.red} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes EVERYTHING on this device — your contacts, encounters, medications, logs, tests, clinic visits, the sample data, and every preference, including your App Lock PIN. There's no undo — export a backup first if you're not sure. To remove only the made-up example data, cancel and use “Clear demo data” instead.</div>
+              <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes EVERYTHING on this device — your contacts, encounters, medications, logs, tests, clinic visits, the sample data, and every preference, including your App Lock PIN. There's no undo — export a backup first if you're not sure. To remove only the made-up example data, cancel and use “Clear demo data” instead.</div>
             </div>
             {/* ADDED 26 Aug 2026 — real ask: warn explicitly if there
                 are genuinely unbacked-up changes, not just a generic
@@ -652,7 +652,7 @@ export function DeveloperToolsScreen({ onClose }) {
                 loss, with no way to tell the two situations apart. */}
             {sampleDataCount > 0 && (
               <div style={{ marginBottom: 12, padding: "12px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
+                <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
                   {sampleDataCount} sample records are still here
                 </div>
                 <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.45, marginBottom: 10 }}>
@@ -661,7 +661,7 @@ export function DeveloperToolsScreen({ onClose }) {
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSampleClearConfirm(); } }} onClick={openSampleClearConfirm}
                   aria-label="Clear the demo data"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
                   {clearingSample ? t("devTools.clearing", "Clearing…") : t("devTools.clearDemoData", "Clear demo data")}
                 </div>
                 {sampleList && (
@@ -682,7 +682,7 @@ export function DeveloperToolsScreen({ onClose }) {
             {/* 17 Nov 2026 — Restore demo data (reversible clear). */}
             {canRestoreDemo && sampleDataCount === 0 && (
               <div style={{ marginBottom: 12, padding: "12px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
+                <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
                   Demo data can be restored
                 </div>
                 <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.45, marginBottom: 10 }}>
@@ -690,7 +690,7 @@ export function DeveloperToolsScreen({ onClose }) {
                 </div>
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleRestoreDemo(); } }} onClick={handleRestoreDemo}
                   aria-label="Restore demo data"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: restoringDemo ? "default" : "pointer", opacity: restoringDemo ? 0.6 : 1 }}>
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: restoringDemo ? "default" : "pointer", opacity: restoringDemo ? 0.6 : 1 }}>
                   {restoringDemo ? "Restoring…" : "Restore demo data"}
                 </div>
               </div>

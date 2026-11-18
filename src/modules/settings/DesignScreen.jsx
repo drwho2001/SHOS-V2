@@ -244,13 +244,13 @@ function ColorInputRow({ colorKey, currentValue, displayValue, isOverridden, onS
             <>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Hex</div>
               <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB" aria-label="Hex colour value"
-                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontFamily: "'JetBrains Mono', monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontFamily: "'JetBrains Mono', monospace", fontSize: TYPE.control.fontSize, marginBottom: 10, boxSizing: "border-box" }} />
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>RGB</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {["r", "g", "b"].map((channel) => (
                   <input key={channel} type="number" min="0" max="255" value={rgb[channel]} aria-label={`${channel.toUpperCase()} (0-255)`}
                     onChange={(e) => commitRgbChannel(channel, e.target.value)}
-                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box" }} />
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
                 ))}
               </div>
             </>
@@ -429,7 +429,7 @@ export function DesignScreen({ onClose }) {
           })}
         </div>
         {Object.keys(overrides).length > 0 && (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={resetAll} style={{ marginTop: 14, fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textDecoration: "underline", cursor: "pointer", textAlign: "center" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={resetAll} style={{ marginTop: 14, fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textDecoration: "underline", cursor: "pointer", textAlign: "center" }}>
             Reset all to defaults
           </div>
         )}

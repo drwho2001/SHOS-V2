@@ -182,7 +182,7 @@ export function ErrorLogScreen({ darkMode, onClose }) {
             placeholder={t("errorLog.placeholder", "What happened, and what did you expect instead?")}
             rows={2}
             aria-label={t("errorLog.reportProblem", "Report a problem")}
-            style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT_FAMILY, fontSize: 13, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, resize: "vertical" }}
+            style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, resize: "vertical" }}
           />
           <div
             role="button"
@@ -211,7 +211,7 @@ export function ErrorLogScreen({ darkMode, onClose }) {
         {entries.map((e, i) => (
           <div key={i} style={isDesktopWidth ? { padding: "10px 0", breakInside: "avoid" } : { padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>{e.source === "user-report" ? "Your note" : e.source}</span>
+              <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>{e.source === "user-report" ? "Your note" : e.source}</span>
               <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
                 {new Date(e.occurredAt).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(e.occurredAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
               </span>

@@ -41,7 +41,7 @@ function StatRow({ label, value, explanation, sourceUrl }) {
     <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{label}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{label}</span>
           <InfoIcon onClick={() => setShowInfo((s) => !s)} />
         </div>
         <span style={{ fontSize: 15, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700 }}>{value}</span>
@@ -249,7 +249,7 @@ export function StatsScreen({ onClose }) {
           </div>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Encounters per month</span>
+              <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Encounters per month</span>
             </div>
             {/* ADDED — real ask: bars had no visible value, unreadable
                 on mobile touch (no hover). Raw count printed above each
@@ -266,13 +266,13 @@ export function StatsScreen({ onClose }) {
             </div>
           </div>
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Top kinks/roles logged</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Top kinks/roles logged</div>
             {topKinks.length === 0 ? (
               <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>
             ) : topKinks.map((k) => (
               <div key={k.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{k.name}</span>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{k.count}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{k.name}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{k.count}</span>
               </div>
             ))}
           </div>
@@ -310,7 +310,7 @@ export function StatsScreen({ onClose }) {
               organism and by-sample-site breakdowns. */}
           <div style={{ padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Positive results by organism</span>
+              <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Positive results by organism</span>
               <InfoIcon onClick={() => setShowOrganismInfo((s) => !s)} />
             </div>
             {showOrganismInfo && (
@@ -322,19 +322,19 @@ export function StatsScreen({ onClose }) {
               <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>None logged yet.</div>
             ) : positiveByOrganism.map((o) => (
               <div key={o.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{o.name}</span>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{o.count}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{o.name}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{o.count}</span>
               </div>
             ))}
           </div>
           <div style={{ padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Tests by sample site</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Tests by sample site</div>
             {testsBySite.length === 0 ? (
               <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>None logged yet.</div>
             ) : testsBySite.map((s) => (
               <div key={s.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{s.name}</span>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{s.count}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{s.name}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{s.count}</span>
               </div>
             ))}
           </div>
@@ -346,13 +346,13 @@ export function StatsScreen({ onClose }) {
         <div style={{ ...TYPE.sectionLabel, color: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, padding: "0 0 6px" }}>Symptoms</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Most logged symptoms</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Most logged symptoms</div>
             {topSymptoms.length === 0 ? (
               <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>
             ) : topSymptoms.map((s) => (
               <div key={s.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{s.name}</span>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{s.count}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{s.name}</span>
+                <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{s.count}</span>
               </div>
             ))}
           </div>
@@ -365,7 +365,7 @@ export function StatsScreen({ onClose }) {
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Visits per month</span>
+              <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Visits per month</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {clinicVisitMonths.map((b) => (
@@ -398,7 +398,7 @@ export function StatsScreen({ onClose }) {
               above (see getAdherenceTrend's own comment) — labelled
               honestly as such, not presented as the same number. */}
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Adherence trend (days with a dose logged, per month)</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Adherence trend (days with a dose logged, per month)</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 10 }}>A simpler month-by-month measure than the precise 7-day figure above — useful for spotting a trend, not a like-for-like comparison.</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {adherenceTrend.map((b) => (
@@ -420,7 +420,7 @@ export function StatsScreen({ onClose }) {
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Contacts added per month</span>
+              <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Contacts added per month</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {contactMonths.map((b) => (

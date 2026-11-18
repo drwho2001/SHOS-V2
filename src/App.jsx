@@ -538,7 +538,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
       <div style={{ ...TYPE.subScreenTitle, color: "#FFFFFF", marginBottom: 16 }}>Enter PIN to unlock</div>
       {biometricAvailable && (
         <button onClick={tryBiometric} disabled={biometricAttempting}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: biometricAttempting ? "default" : "pointer", marginBottom: 16, opacity: biometricAttempting ? 0.6 : 1 }}>
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: TYPE.control.fontSize, cursor: biometricAttempting ? "default" : "pointer", marginBottom: 16, opacity: biometricAttempting ? 0.6 : 1 }}>
           <Fingerprint size={16} /> {biometricAttempting ? "Checking…" : "Unlock with biometrics"}
         </button>
       )}
@@ -626,7 +626,7 @@ function DecoyHome({ onLockNow, darkMode }) {
   const tabContent = {
     home: (
       <>
-        <div style={{ fontSize: 13, fontWeight: 700, color: N.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
+        <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: N.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
         <Row title="Coffee date" sub="3 weeks ago" />
         <Row title="Vitamin D3 logged" sub="Today" />
       </>
@@ -955,7 +955,7 @@ function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose 
             { scope: ACK_SCOPE.BOTH, label: "In the app and on my device", note: "Also stops this reminder's scheduled phone notification while it stays the same." },
           ].map((option) => (
             <button key={option.scope} onClick={() => onConfirm(option.scope)} style={{ width: "100%", textAlign: "left", padding: 12, borderRadius: 12, border: `1px solid ${scopeDefault === option.scope ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : (darkMode ? DARK.border : NEUTRAL.border)}`, background: scopeDefault === option.scope ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer" }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>{option.label}{scopeDefault === option.scope ? " (your default)" : ""}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700 }}>{option.label}{scopeDefault === option.scope ? " (your default)" : ""}</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{option.note}</div>
             </button>
           ))}
@@ -3011,7 +3011,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: ACTION.red, color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: FONT_FAMILY }}>
           <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Your last change may not have saved</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700 }}>Your last change may not have saved</div>
             <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your device may be low on storage. Check the Storage section in Settings → Developer tools, and try freeing up space.</div>
           </div>
           <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setSaveFailedBanner(null)} aria-label="Dismiss storage save-failed banner" />
@@ -3030,7 +3030,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: "#8A2D2D", color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: FONT_FAMILY }}>
           <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Some of your records could not be read</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700 }}>Some of your records could not be read</div>
             <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your existing records have been left alone — nothing has been written over them. Saving new entries is paused until this is sorted, so check Settings → Developer tools → Error log for the detail before clearing sample data or resetting anything.</div>
           </div>
           <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setReadFailedBanner(null)} aria-label="Dismiss storage read-failed banner" />
@@ -3063,7 +3063,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: "#FFFFFF" }}>
                     {dueMeds.length === 1 ? `${dueMeds[0].name} — due now` : `${dueMeds.length} medications due now`}
                   </div>
                   {/* ADDED — real ask: "group if say daily meds all due,
@@ -3189,7 +3189,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: "#FFFFFF" }}>
                     {refillDue.length === 1 ? `${refillDue[0].name} — refill needed` : `${refillDue.length} medications need a refill`}
                   </div>
                   {refillDue.length > 1 && (
@@ -3227,7 +3227,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <TestTube size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>Testing due</div>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: "#FFFFFF" }}>Testing due</div>
                   <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)", marginTop: 2 }}>Routine retest suggested around now</div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                     <button onClick={onTestingLogTest} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.healthcare, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Log a test</button>
@@ -3248,7 +3248,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Hospital size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: "#FFFFFF" }}>
                     {clinicVisitDue.visit?.title || "Appointment"} — coming up
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -3271,7 +3271,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Syringe size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: "#FFFFFF" }}>
                     {vaccinationDue.vaccination?.vaccine || vaccinationDue.vaccination?.title || "Vaccination"} — due
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -3289,7 +3289,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       )}
 
       {notifToast && (
-        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis", fontFamily: FONT_FAMILY }}>
+        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: TYPE.control.fontSize, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis", fontFamily: FONT_FAMILY }}>
           {notifToast}
         </div>
       )}
@@ -3381,7 +3381,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: FONT_FAMILY }}>
             <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{activeTab.label} isn't built yet</div>
-            <div style={{ fontSize: 13 }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>
+            <div style={{ fontSize: TYPE.control.fontSize }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>
           </div>
         )}
       </main>
@@ -3565,7 +3565,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
             background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary,
             border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRadius: 999,
             padding: "9px 16px", boxShadow: "0 4px 16px rgba(0,0,0,.14)", zIndex: 100,
-            fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer" }}>
           <ChevronLeft size={15} weight="bold" style={{ flexShrink: 0 }} />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             Back to search results
@@ -3602,7 +3602,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // it to a screen reader at all. role="status" is a live region
         // (polite by default) — it gets announced without stealing
         // focus, the correct semantics for a transient toast.
-        <div role="status" style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300 }}>
+        <div role="status" style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: TYPE.control.fontSize, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300 }}>
           Press back again to exit
         </div>
       )}
@@ -3612,7 +3612,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           Rendered as full-screen replacements for the active tab content.
           Lazy-loaded with Suspense so first-open chunk fetch doesn't
           throw React #426 (found live 24 Sep 2026). */}
-      <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY, fontSize: 13 }}>Loading...</div>}>
+      <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize }}>Loading...</div>}>
       {settingsScreen === "settings" && (
         <SettingsScreen
           // ADDED 16 Nov 2026 — the tour opens several DIFFERENT settings

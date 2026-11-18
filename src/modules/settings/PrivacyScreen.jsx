@@ -422,7 +422,7 @@ useEffect(() => {
             which already states this split. */}
         {/* §49b — colour-indent/backfill: tinted background + coloured left border. */}
         <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), padding: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
             {t("privacy.lockScreenDetail", "Lock screen & notification detail")}
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
@@ -489,7 +489,7 @@ useEffect(() => {
             {settings.anonymiseModeActive ? (
               <span style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 999, background: ACCENTS.home, color: "#FFFFFF", fontSize: 12, fontWeight: 700 }}>ON</span>
             ) : (
-              <span style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 999, background: ACCENTS.home, color: "#FFFFFF", fontSize: 13, fontWeight: 700 }}>Turn on</span>
+              <span style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 999, background: ACCENTS.home, color: "#FFFFFF", fontSize: TYPE.control.fontSize, fontWeight: 700 }}>Turn on</span>
             )}
           </div>
           <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginTop: 6 }}>
@@ -521,7 +521,7 @@ useEffect(() => {
 
         {settings.anonymiseModeActive && (
         <div style={{ background: `${ACCENTS.home}08`, borderLeft: `4px solid ${ACCENTS.home}`, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), padding: 16, marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               {settings.hasAppLockPin ? "Enter your PIN to turn it back off" : "Turn it back off"}
             </div>
             {settings.hasAppLockPin && (
@@ -551,7 +551,7 @@ useEffect(() => {
             onKeyDown={settings.anonymiseModeActive ? async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.hideKinks", "Also hide kinks & physical attributes")}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.hideKinks", "Also hide kinks & physical attributes")}</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
                 {settings.anonymiseModeActive
                   ? "Stated kinks, limits, length/girth, and ejaculation stats — hidden in addition to the base fields above, only while Anonymise mode is on."
@@ -578,7 +578,7 @@ useEffect(() => {
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAppLock(); } }}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.appLock", "App Lock")}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.appLock", "App Lock")}</div>
               {/* FIXED 27 Sep 2026 - the description implied App Lock is what
                   protects the data, and that without it the records sit
                   readable. They don't: at-rest encryption is always on (see
@@ -646,7 +646,7 @@ useEffect(() => {
               role="switch" tabIndex={0} aria-checked={settings.biometricUnlockEnabled} aria-label="Unlock with biometrics"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleBiometric(); } }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.biometrics", "Unlock with biometrics")}</div>
+                <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.biometrics", "Unlock with biometrics")}</div>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Fingerprint or face unlock as a shortcut for the PIN above — the PIN still works any time this is on, off, or unavailable.</div>
                 {biometricError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{biometricError}</div>}
               </div>
@@ -668,7 +668,7 @@ useEffect(() => {
                 onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, cursor: "pointer" }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.skipReverify", "Skip re-verification briefly")}</div>
+                  <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.skipReverify", "Skip re-verification briefly")}</div>
                   <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>
                 </div>
                 <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
@@ -681,7 +681,7 @@ useEffect(() => {
                   <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
                     onChange={async (e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); await PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
                     aria-label="Grace period (minutes)"
-                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
+                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: TYPE.control.fontSize, textAlign: "center" }} />
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>minutes</span>
                 </div>
               )}
@@ -693,7 +693,7 @@ useEffect(() => {
             neighbours" — moved to sit directly below App Lock now,
             since they share the exact same PIN. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.revertPin", "Revert PIN")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.revertPin", "Revert PIN")}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
             {settings.hasAppLockPin ? "A PIN is set — used for both Anonymise mode's revert and App Lock above." : "No PIN set yet — anyone can turn Anonymise mode back off right now, and App Lock can't be turned on. Set one so both actually protect you."}
           </div>
@@ -744,7 +744,7 @@ useEffect(() => {
             on in the first place. */}
         {settings.appLockEnabled && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.duressPin", "Duress PIN (optional)")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.duressPin", "Duress PIN (optional)")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
               {settings.hasDuressPin
                 ? "Set. Entering this PIN on the App Lock screen — instead of your real one — opens a convincing but empty, fake version of the app. Your real data stays completely untouched, just not shown. There's no way back to real data from inside a decoy session — close and reopen the app, then enter your REAL PIN."
@@ -816,7 +816,7 @@ useEffect(() => {
             otherwise. */}
         {settings.appLockEnabled && (
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.recoveryString", "Recovery string (optional)")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("privacy.recoveryString", "Recovery string (optional)")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
               {hasRecoveryString()
                 ? "Set. If you ever forget your PIN, \"Forgot PIN?\" on the lock screen lets you unlock with this instead and set a new PIN in the same step — your real data stays exactly as it is."
@@ -863,7 +863,7 @@ useEffect(() => {
         {screenshotsToggleAvailable && (
           <div data-tour="screenshots-toggle" style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.allowScreenshots", "Allow screenshots")}</span>
+              <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("privacy.allowScreenshots", "Allow screenshots")}</span>
               <div onClick={toggleScreenshots} role="switch" tabIndex={0} aria-checked={settings.allowScreenshots} aria-label="Allow screenshots"
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleScreenshots(); } }}
                 style={{ width: 44, height: 26, borderRadius: 999, background: settings.allowScreenshots ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: reducedMotion ? "none" : "background 0.15s", flexShrink: 0 }}>

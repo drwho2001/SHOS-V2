@@ -45,11 +45,11 @@ export function AboutScreen({ onClose }) {
             opens — the ring landed on an empty box with nothing in it. */}
         <div data-tour="about-screen" style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.version", "Version")}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.version", "Version")}</span>
             {/* CHANGED — real ask: was hardcoded placeholder, now reads
                 the actual version from package.json rather than a
                 second, easy-to-forget copy of the same number. */}
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600 }}>{APP_VERSION}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600 }}>{APP_VERSION}</span>
           </div>
           {/* ADDED — real ask: "getting version back to fixes already
               done" — package.json's version had genuinely never been
@@ -60,8 +60,8 @@ export function AboutScreen({ onClose }) {
               never goes stale the way a manually-remembered version
               bump would. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.build", "Build")}</span>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.build", "Build")}</span>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
               {typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}
               {typeof __BUILD_DATE__ !== "undefined" && (
                 <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: FONT_FAMILY }}>
@@ -77,8 +77,8 @@ export function AboutScreen({ onClose }) {
               a direct "go get it" route from Settings > About. Debug builds
               stay off this page by design (direct releases link only). */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.install", "Install / open on this device")}</span>
-            <a href="https://drwho2001.github.io/SHOS-V2/landing.html" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.install", "Install / open on this device")}</span>
+            <a href="https://drwho2001.github.io/SHOS-V2/landing.html" target="_blank" rel="noreferrer" style={{ fontSize: TYPE.control.fontSize, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
               {t("about.installCta", "Get the app")}
             </a>
           </div>
@@ -86,8 +86,8 @@ export function AboutScreen({ onClose }) {
               project moved off of — the public repo everyone's actual
               builds/releases now come from is SHOS-V2. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.repository", "Repository")}</span>
-            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
+            <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.repository", "Repository")}</span>
+            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: TYPE.control.fontSize, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
               {t("about.github", "GitHub")}
             </a>
           </div>
@@ -95,22 +95,22 @@ export function AboutScreen({ onClose }) {
               the native app's own version/repo info, for anyone on iOS
               or a computer who can't install the APK. */}
            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
-             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.webApp", "Web app (iPhone / computer)")}</span>
-             <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
+             <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.webApp", "Web app (iPhone / computer)")}</span>
+             <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: TYPE.control.fontSize, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
                {t("about.open", "Open")}
              </a>
            </div>
            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.checkUpdates", "Check for updates")}</span>
-             <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
+             <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.checkUpdates", "Check for updates")}</span>
+             <a href="https://github.com/drwho2001/SHOS-V2/releases/latest" target="_blank" rel="noreferrer" style={{ fontSize: TYPE.control.fontSize, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
                {t("about.latest", "Latest")}
              </a>
            </div>
            
          </div>
         <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginTop: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.sendFeedback", "Report a problem / send feedback (email)")}</span>
-          <a href="mailto:adminshos@gmail.com?subject=SHOS%20feedback" style={{ fontSize: 13, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
+          <span style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{t("about.sendFeedback", "Report a problem / send feedback (email)")}</span>
+          <a href="mailto:adminshos@gmail.com?subject=SHOS%20feedback" style={{ fontSize: TYPE.control.fontSize, color: darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : ACCENTS.medication, fontWeight: 600 }}>
             {t("about.email", "Email")}
           </a>
         </div>

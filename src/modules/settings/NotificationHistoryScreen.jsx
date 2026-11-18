@@ -72,7 +72,7 @@ export function NotificationHistoryScreen({ darkMode, onClose }) {
         {entries.map((e, i) => (
           <div key={i} style={isDesktopWidth ? { padding: "10px 0", breakInside: "avoid" } : { padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{e.title}</span>
+              <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{e.title}</span>
               <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
                 {new Date(e.firedAt).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(e.firedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
               </span>

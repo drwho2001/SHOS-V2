@@ -262,7 +262,7 @@ function CalendarSyncSheet({ onClose }) {
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCalendarSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncToPhone", "Sync to phone calendar")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncToPhone", "Sync to phone calendar")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               Booked appointments appear in your phone's real calendar app. Defaults to its own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes everything this app put there.
             </div>
@@ -283,7 +283,7 @@ function CalendarSyncSheet({ onClose }) {
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleVaccinationSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncVaccinations", "Also sync vaccination doses")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncVaccinations", "Also sync vaccination doses")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               Each dose becomes its own event, dated the day it was given — so a four-week course is four events. Off by default. Turning it off removes the dose events this app put there.
             </div>
@@ -301,7 +301,7 @@ function CalendarSyncSheet({ onClose }) {
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlannedSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncPlanned", "Also sync planned events")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.syncPlanned", "Also sync planned events")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               A scheduled retest, and a vaccination dose that is still due — each as an event on the day it is planned for. Off by default. Turning it off removes the planned events this app put there.
             </div>
@@ -375,12 +375,12 @@ function CalendarSyncSheet({ onClose }) {
             on first open. Always offers the private default first. */}
         {showCalendarPicker && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("calendar.syncAppointmentsTo", "Sync appointments to")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("calendar.syncAppointmentsTo", "Sync appointments to")}</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>Only calendars already on this device — nothing new is ever created except the private option below.</div>
             <div onClick={() => !calendarSyncing && selectCalendarTarget(null)} role="radio" tabIndex={0} aria-checked={!appPrefs.calendarSyncTargetName}
               onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(null); } }}
               style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${!appPrefs.calendarSyncTargetName ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: !appPrefs.calendarSyncTargetName ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.privateRecommended", "SHOS (private) \u2014 recommended")}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("calendar.privateRecommended", "SHOS (private) \u2014 recommended")}</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{t("calendar.privateDesc", "On-device only, structurally can't sync or be shared.")}</div>
             </div>
             {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>{t("calendar.loadingCalendars", "Loading calendars…")}</div>}
@@ -391,7 +391,7 @@ function CalendarSyncSheet({ onClose }) {
               <div key={cal.id} onClick={() => !calendarSyncing && selectCalendarTarget(cal.name)} role="radio" tabIndex={0} aria-checked={appPrefs.calendarSyncTargetName === cal.name}
                 onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(cal.name); } }}
                 style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${appPrefs.calendarSyncTargetName === cal.name ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: appPrefs.calendarSyncTargetName === cal.name ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{cal.displayName || cal.name}</div>
+                <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{cal.displayName || cal.name}</div>
                 <div style={{ fontSize: 11, color: ACTION.gold, marginTop: 2 }}>{t("calendar.notPrivate", "Not private by default — its own sharing settings apply.")}</div>
               </div>
             ))}
@@ -625,7 +625,7 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {selectedEvents.length === 0 ? (
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>{t("calendar.nothingLogged", "Nothing logged this day.")}</div>
+              <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>{t("calendar.nothingLogged", "Nothing logged this day.")}</div>
             ) : (
               <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
                 {selectedEvents.map((ev, i) => (
@@ -633,7 +633,7 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` : "none", cursor: "pointer" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: calendarModuleAccent(ev.moduleKey), flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+                      <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
                       <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
                     </div>
                   </div>

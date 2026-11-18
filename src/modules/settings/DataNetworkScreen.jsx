@@ -40,7 +40,7 @@ export function DataNetworkScreen({ onClose }) {
   const row = (label, enabled, onToggle, description) => (
     <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
+        <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
         <div onClick={onToggle} role="switch" tabIndex={0} aria-checked={enabled} aria-label={label}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
           style={{ width: 44, height: 26, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: reducedMotion ? "none" : "background 0.15s", flexShrink: 0 }}>
@@ -74,7 +74,7 @@ export function DataNetworkScreen({ onClose }) {
           t("dataNetwork.updateCheckDesc", "On the installed Android app only, checks GitHub's public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen.")
         )}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("dataNetwork.sendReports", "Send problem reports")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>{t("dataNetwork.sendReports", "Send problem reports")}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
             {t("dataNetwork.sendReportsDesc", "Settings > Developer tools > Error log's own \"Report a problem\" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly \u2014 no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.")}
           </div>

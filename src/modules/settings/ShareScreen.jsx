@@ -48,7 +48,7 @@ export function ShareScreen({ onClose }) {
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("share.title", "Share SHOS")}</h1>
       </div>
       <div style={isDesktopWidth ? { padding: 16, maxWidth: 480, margin: "0 auto" } : { padding: 16 }}>
-        <p style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>
+        <p style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>
           {t("share.intro", "Share SHOS with someone: scan a code or send the link. Everything stays on the device — no accounts, no cloud.")}
         </p>
         <div style={{ display: "grid", gap: 12 }}>

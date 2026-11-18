@@ -96,7 +96,7 @@ export default function PeriodCsvImportSheet({ onClose, onImported }) {
 
           {preview && (
             <div style={{ marginTop: 16, padding: 12, borderRadius: RADIUS.md, border: `1px solid ${border}`, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: textColor }}>
+              <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: textColor }}>
                 {FORMAT_LABELS[preview.format] || preview.format} · {preview.rows.length} period{preview.rows.length === 1 ? "" : "s"} to add
               </div>
               {preview.duplicates > 0 && <div style={{ fontSize: 12, color: secondary, marginTop: 4 }}>{preview.duplicates} duplicate(s) skipped — already logged or repeated in the file.</div>}

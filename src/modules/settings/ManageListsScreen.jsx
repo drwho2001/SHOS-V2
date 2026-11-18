@@ -34,7 +34,7 @@ function LocationExtraFields({ entry, refresh, T, color }) {
   const commitPostcode = async () => { await LocationsRepository.update(entry.id, { postcode: postcode.trim() }); refresh(); };
   const commitNotes = async () => { await LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
   const setRelatedContact = async (id) => { await LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
-  const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: FONT_FAMILY, boxSizing: "border-box", marginBottom: 8 };
+  const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: TYPE.control.fontSize, fontFamily: FONT_FAMILY, boxSizing: "border-box", marginBottom: 8 };
   return (
     <div style={{ paddingTop: 4 }}>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Type</div>
@@ -111,7 +111,7 @@ export function ManageListsScreen({ onClose }) {
       <div style={{ display: "flex", gap: 8, padding: "12px 16px 0" }}>
         {[["registries", t("manageLists.tabRegistries", "Registries")], ["options", t("manageLists.tabOptions", "Option lists")]].map(([key, label]) => (
           <div key={key} onClick={() => setTab(key)} role="button" tabIndex={0} aria-pressed={tab === key} aria-label={label} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTab(key); } }}
-            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary) }}>
+            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: TYPE.control.fontSize, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary) }}>
             {label}
           </div>
         ))}

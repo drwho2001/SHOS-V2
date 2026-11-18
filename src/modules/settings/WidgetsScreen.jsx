@@ -152,7 +152,7 @@ export function WidgetsScreen({ onClose }) {
                       border: `1px solid ${T.border}`,
                       background: T.bg,
                       color: T.textPrimary,
-                      fontSize: 13,
+                      fontSize: TYPE.control.fontSize,
                       fontFamily: FONT_FAMILY,
                       cursor: "pointer",
                       minWidth: 160,

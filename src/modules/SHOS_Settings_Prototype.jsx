@@ -830,7 +830,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
         <div style={{ padding: "0 16px 8px" }}>
           <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "8px 0 6px" }}>Search results</div>
           {searchResults.length === 0 ? (
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "8px 4px 16px" }}>No settings match “{settingsQuery}”.</div>
+            <div style={{ fontSize: TYPE.control.fontSize, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "8px 4px 16px" }}>No settings match “{settingsQuery}”.</div>
           ) : (
             <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
               {searchResults.map((r) => (

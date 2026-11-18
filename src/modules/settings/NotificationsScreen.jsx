@@ -32,7 +32,7 @@ function NotificationToggleRow({ label, description, enabled, onToggle, darkMode
         onClick={onToggle} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{description}</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
@@ -151,7 +151,7 @@ function NotificationPermissionBanner({ darkMode }) {
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACTION.red, flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notifications need SHOS added to your Home Screen</span>
+          <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notifications need SHOS added to your Home Screen</span>
         </div>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
           iOS Safari can't show notifications from a page opened in a regular browser tab, no matter what's allowed here. Tap the Share icon, choose <strong>Add to Home Screen</strong>, then open SHOS from that new icon instead of Safari — this banner will offer the real permission prompt once you do.
@@ -186,7 +186,7 @@ function NotificationPermissionBanner({ darkMode }) {
     <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${isGranted ? ACTION.green : ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: isGranted ? ACTION.green : ACTION.red, flexShrink: 0 }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+        <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
           {isGranted ? "Notifications are allowed" : isDenied ? "Notifications are blocked" : isError ? "Couldn't check notification status" : "Notifications not yet allowed"}
         </span>
       </div>
@@ -335,7 +335,7 @@ function InstallPwaNudge({ darkMode }) {
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface }}>
       <Download size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.installNudge", "Install SHOS for more reliable reminders")}</div>
+        <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.installNudge", "Install SHOS for more reliable reminders")}</div>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           Installed as its own app (not just a browser tab), SHOS keeps its background notification handling registered more reliably.
         </div>
@@ -445,7 +445,7 @@ export function NotificationsScreen({ onClose }) {
       <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Hours before:</span>
       <input type="number" min={1} max={168} value={value} aria-label="Hours before"
         onChange={(e) => onChange(Math.max(1, Math.min(168, Number(e.target.value) || 1)))}
-        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
+        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: TYPE.control.fontSize, textAlign: "center" }} />
     </div>
   );
 
@@ -475,7 +475,7 @@ export function NotificationsScreen({ onClose }) {
             that is switched off is a control that visibly does nothing, which
             is worse than not offering it. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stop reminding me</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stop reminding me</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
             Whether tapping &quot;Don&apos;t remind me&quot; on a reminder banner does anything at all. Off means banners always
             show and your phone keeps its own notifications — the two are silenced together, not separately.
@@ -505,7 +505,7 @@ export function NotificationsScreen({ onClose }) {
 
         {suppressionEnabled && (
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>When I tap &quot;Don&apos;t remind&quot;</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>When I tap &quot;Don&apos;t remind&quot;</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
             Which of the two options is preselected. Either way the item stays outstanding and
             a dot marks the tab, and it starts speaking up again if it changes.
@@ -546,7 +546,7 @@ export function NotificationsScreen({ onClose }) {
             single medication's own "skip until tomorrow" (only covers
             one medication, one day). */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.pauseEverything", "Pause everything")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.pauseEverything", "Pause everything")}</div>
           {pausedActive ? (
             <>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
@@ -578,12 +578,12 @@ export function NotificationsScreen({ onClose }) {
             <div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
               <input type="time" value={notifPrefs.quietHoursStart} onChange={(e) => setQuietHours({ quietHoursStart: e.target.value })}
-                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: TYPE.control.fontSize }} />
             </div>
             <div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
               <input type="time" value={notifPrefs.quietHoursEnd} onChange={(e) => setQuietHours({ quietHoursEnd: e.target.value })}
-                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: TYPE.control.fontSize }} />
             </div>
           </div>
         </NotificationToggleRow>
@@ -603,7 +603,7 @@ export function NotificationsScreen({ onClose }) {
             they're the same real feature (a booked appointment), just
             two independently-timed alerts about it. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 10 }}>{t("notifications.clinicAppointment", "Clinic appointment reminders")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 10 }}>{t("notifications.clinicAppointment", "Clinic appointment reminders")}</div>
           <NotificationToggleRow bare darkMode={darkMode} label={t("notifications.firstReminder", "First reminder")} enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
             description={t("notifications.firstReminderDesc", "Defaults to 24 hours before the appointment.")}>
             {hoursInput(notifPrefs.clinicVisitReminderAHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
@@ -619,7 +619,7 @@ export function NotificationsScreen({ onClose }) {
             nothing anywhere previously recorded that a real
             notification had delivered. */}
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowHistory(true)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.history", "Notification history")}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{t("notifications.history", "Notification history")}</span>
           <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
         </div>
         </div>

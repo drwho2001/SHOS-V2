@@ -141,11 +141,11 @@ export function GuideScreen({ onClose, onStartTour }) {
           {GUIDE_SECTIONS.map((s) => (
             <div key={s.heading} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 14 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 6 }}>{s.heading}</div>
-              {s.intro && <div style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.5, marginBottom: s.bullets ? 6 : 0 }}>{s.intro}</div>}
+              {s.intro && <div style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary, lineHeight: 1.5, marginBottom: s.bullets ? 6 : 0 }}>{s.intro}</div>}
               {s.bullets && (
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {s.bullets.map((b, i) => (
-                    <li key={i} style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.5, marginBottom: i < s.bullets.length - 1 ? 4 : 0 }}>{b}</li>
+                    <li key={i} style={{ fontSize: TYPE.control.fontSize, color: T.textSecondary, lineHeight: 1.5, marginBottom: i < s.bullets.length - 1 ? 4 : 0 }}>{b}</li>
                   ))}
                 </ul>
               )}

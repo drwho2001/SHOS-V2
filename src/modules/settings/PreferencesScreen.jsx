@@ -27,7 +27,7 @@ function MenstrualTrackingToggleCard({ T }) {
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("preferences.menstrualTracking", "Menstrual & contraception tracking")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{t("preferences.menstrualTracking", "Menstrual & contraception tracking")}</div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.menstrualTrackingDesc", "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.")}</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
@@ -48,7 +48,7 @@ function MenstrualTrackingToggleCard({ T }) {
           onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("preferences.hidePregnancy", "Hide Pregnancy tab")}</div>
+            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{t("preferences.hidePregnancy", "Hide Pregnancy tab")}</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.hidePregnancyDesc", "Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.")}</div>
           </div>
           <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
@@ -89,13 +89,13 @@ function TabOrderCard({ T, onChanged }) {
 
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>{t("preferences.tabOrder", "Bottom nav tab order")}</div>
+      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>{t("preferences.tabOrder", "Bottom nav tab order")}</div>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
         {t("preferences.tabOrderDesc", "Reorder Contacts, Encounter, Medication, and Healthcare \u2014 Home always stays fixed in the centre.")}
       </div>
       {order.map((key, i) => (
         <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none" }}>
-          <span style={{ fontSize: 13, color: T.textPrimary }}>{NON_HOME_TAB_LABELS[key]}</span>
+          <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{NON_HOME_TAB_LABELS[key]}</span>
           {/* FIXED 5 Nov 2026 — A3 pointer-only audit: these two chevrons were
               role="button" with only onClick — no tabIndex and no key handler,
               so a keyboard or switch user could not reach or operate them at
@@ -144,7 +144,7 @@ function LocaleToggleCard({ T }) {
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t("preferences.locale", "Spelling (en-GB / en-US)")}</div>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{t("preferences.locale", "Spelling (en-GB / en-US)")}</div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.localeDesc", "Choose British or American English spelling. Applies app-wide.")}</div>
         </div>
         <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.locale === "en-US" ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
