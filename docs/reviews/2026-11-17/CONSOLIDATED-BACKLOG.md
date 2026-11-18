@@ -36,7 +36,7 @@
 | R3 | Restore demo data (snapshot-on-clear, D2=B) beside Clear in Home + Developer tools | M–L | Owner's #1 ask; guard-rail tests mandatory (never overwrite user data). |
 | R5 | hCG fields on pregnancy form (urine default + serum value, D3) | M | Schema/backup migration; Testing already has sample type. |
 | R7 | Remove vaginal health + migrate (D1=B) with read-only backup shim | L | Overrides 13 Nov decision; migration test required. |
-| R4 | Repeated summary cards across Healthcare/Medication tabs + allergies green outline for NKDA/none/N/A | M | Confirmed live; BKGD 0b overlaps — align with header standardisation. |
+| R4 | Repeated summary cards across Healthcare/Medication tabs + allergies green outline for NKDA/none/N/A | M | **SHIPPED 18 Nov** incl. M4.1 genuine per-tab stats, M4.2 compact 2-row tabs + More, M4.3 pregnancy link placement, Testing "Other" text, app-wide chip collapse. BKGD 0b header standardisation explicitly deferred by owner. |
 | R6 | Multiple mounted dialogs (stack of `display:block` dialogs) | S–M | ⚠️ confirm intent — may be deliberate back-stack. |
 | R9 | Two simultaneous "ongoing" periods allowed | S–M | ⚠️ confirm intent — real data integrity concern. |
 | R8 | Transient all-zero counts in Developer tools / Stats on load | S | Misleading skeleton state. |

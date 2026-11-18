@@ -76,7 +76,11 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 - **Evidence:** AUDIT O; `clearSampleData.js`, `seedIdMigration.js`, `storageAdapter.js:43-101`.
 
 ### R4 — 🟠 Repeated summary cards / chrome across tabs  [SHIPPED 18 Nov 2026]
-- Healthcare: the three real summary counts are now ordered/labelled per sub-tab via `healthcareSummaryByTab.js` (relevant stat first + one supporting stat; i18n keys preserved). Medication: the two stat tiles are reordered/relabelled per Registry/Log/Inventory via `medicationSummaryByTab.js`. Same underlying counts, shared SummaryStat/StatTile — no new data, no stale cross-tab facts.
+- **M4.1 completed properly after device review:** the first pass only relabelled the same three counts. Now `healthcareSummaryByTab.js` returns GENUINE per-tab facts (symptoms→active+open episodes; testing→tests this year; clinic visits→upcoming+open episodes; vaccinations→doses due; measurements→count; reproductive health→average cycle + days since period); tabs with no fact show no row. Medication tiles reordered/relabelled per Registry/Log/Inventory. Shared SummaryStat/StatTile, no new components.
+- **M4.2:** compact pills + max 5 visible + "More ▾" dropdown, so the tab row stays two lines and no longer overlaps the shortcut row. Verified on device.
+- **M4.3:** "Show pregnancy tracking anyway" moved under the reproductive-health tab row.
+- Testing "Other" now has a free-text field (`testingOtherHelpers.js`); the typed value replaces the placeholder in `testingFor` so read views and search show it.
+- Long chip/tag rows condensed app-wide with one `chipVisibility.js` rule (chosen first, cap 8, `more +N`/`less`) across all five MultiSelectChips copies. Selected tag chips, searchable pickers and short filter rows deliberately left visible.
 - Allergies: NKDA/None/N/A/not recorded is now a positive clear (green) state on the Medication bar, Clinic Card chips and the Clinic Card PDF; only real allergies use alert styling. Shared `allergyDisplay.js` + 5 tests.
 - Verification: `summaryCardsByTab.test.js` (5), `allergyDisplay.test.js` (5), PDF + style guards pass, eslint clean.
 - Healthcare: "Active symptoms / Overdue vaccinations / Tests this year" identical on every sub-tab, confirmed with live data (new test bumped 7→8 on all). Medication: "Allergies" bar + summary cards repeat across Register/Log/Inventory. `SummaryStat` is shared (`SHOS_Healthcare_Prototype.jsx:358`).
