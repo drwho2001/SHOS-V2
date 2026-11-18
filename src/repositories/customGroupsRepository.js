@@ -91,19 +91,6 @@ export const CustomGroupsRepository = {
     return current;
   },
 
-  async removeMemberFromAllGroups(domain, member) {
-    const all = await loadAll();
-    const current = (all[domain] || []).map((g) => ({ ...g, members: g.members.filter((m) => m !== member) }));
-    await saveAll({ ...all, [domain]: current });
-    return current;
-  },
-
-  // Real convenience for a grouped view: which group (if any) a given
-  // member currently belongs to.
-  async getGroupForMember(domain, member) {
-    return (await this.get(domain)).find((g) => g.members.includes(member)) || null;
-  },
-
   async getAllForBackup() {
     return await loadAll();
   },

@@ -74,11 +74,11 @@ These are **open, device-found, owner-confirmed** — not duplicates of the beta
 - **Design:** 0ap glassmorphism (❌ REJECT — DESIGN-MANUAL principle #7 "solid surfaces only" explicitly rules it out; the aspirational notes were wrong), 0aq-0av FAB overlap/padding/dividers/left-edge artifacts across Healthcare/Medication/MyProfile.
 
 ## 8. P3 — consistency / hygiene (from BACKLOG "Recorded (not fixed)")
-- 13px untokenised (516 sites) + 15 font sizes vs 7 tokens — highest-leverage consistency win.
-- Dead exports (list in BACKLOG.md:1845) — delete in one PR.
-- `contactMerge.js` fate — ⚠️ repo history says WIRED (duplicateCandidatePanel); the "not fixed" line is stale — verify then close.
-- Mockup radius 12 vs RADIUS.md 13 (23 files) — recorded divergence.
-- CI guard for mockup hygiene.
+- 13px untokenised — **SHIPPED 18 Nov**: 137 raw sites → `TYPE.control.fontSize` + `fontSizeTokenGuard.test.js`.
+- Dead exports — **SHIPPED 18 Nov**: re-verified each name in BACKLOG.md:1845; only the seven genuinely definition-only ones removed (`REDACTED_COPY`, `FONT_FAMILY_MONO`, `CONTACT_REQUIRED_FIELD_GROUPS`, `getOpen`, `removeMemberFromAllGroups`, `getGroupForMember`, `applyDisclosure`); `deadExportsGuard.test.js` locks it. Names now live (e.g. `DEFAULT_VAGINAL_HEALTH_ENTRY`, `TOUR_STEPS`) deliberately kept.
+- `contactMerge.js` — **VERIFIED/CLOSED**: `duplicateCandidatePanel` is imported and used in SHOS_Contacts_Prototype.jsx:75,3370; the "unwired" note was stale. No change.
+- Mockup radius 12 vs 13 — **SHIPPED 18 Nov**: 56 occurrences across 21 tracked mockups → 13px; live `public/` pages deliberately left alone. Two frosted-glass cards converted to solid surfaces (design manual #7).
+- CI guard for mockup hygiene — **SHIPPED**: `mockupHygieneGuard.test.js` (4 tests) locks radius + no glassmorphism.
 
 ## 9. ❌ Rejected / closed (do not rebuild)
 - Glassmorphism/frosted-glass (design manual #7).

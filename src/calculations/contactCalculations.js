@@ -144,16 +144,12 @@ export function getCompletenessScore(contact) {
   return filled / FIELDS_COUNTED_FOR_COMPLETENESS.length;
 }
 
-// The same mandatory groups drive the list warning, detail view and editor
-// highlighting. Name/nickname is one alternative group; Role and Position are
-// separate axes, each of which may be explicitly recorded as unknown.
-export const CONTACT_REQUIRED_FIELD_GROUPS = [
-  { key: "identity", label: "Name or nickname" },
-  { key: "age", label: "Age" },
-  { key: "city", label: "City" },
-  { key: "role", label: "Role" },
-  { key: "position", label: "Position" },
-];
+// The mandatory groups drive the list warning, detail view and editor
+// highlighting: identity / age / city / role / position. Name/nickname is one
+// alternative group; Role and Position are separate axes, each of which may
+// be explicitly recorded as unknown. Formerly an exported array, but only
+// getMissingRequiredContactFields() below used it — the labels live at their
+// real call site, so the dead export was removed (P3 hygiene, 18 Nov).
 
 function hasRequiredText(value) {
   if (Array.isArray(value)) return value.some((item) => typeof item === "string" && item.trim().length > 0);

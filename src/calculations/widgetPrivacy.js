@@ -132,18 +132,6 @@ export const ALLOWED_AT_REDACTED = {
   liveSession: ["category", "state"],
 };
 
-/** Coarse, non-identifying state text, used when a widget is redacted. */
-export const REDACTED_COPY = {
-  nextDose: "Medication",
-  refillDue: "Refills",
-  lastTest: "Testing",
-  doxyPepWindow: "DoxyPEP",
-  cycle: "Tracking",
-  clinicCard: "Clinic card",
-  vaccination: "Vaccination",
-  liveSession: "Live session",
-};
-
 /** True for a tier this code understands. */
 export function isValidTier(value) {
   return TIERS.includes(value);

@@ -506,7 +506,6 @@ export const RADIUS = { sm: 8, md: 13, lg: 24, full: 999 };
 // should set this explicitly rather than assume it inherits correctly
 // from a parent.
 export const FONT_FAMILY = "'Inter', sans-serif";
-export const FONT_FAMILY_MONO = "'JetBrains Mono', monospace";
 
 /**
  * FIXED 2 Oct 2026 (real device) — where a sub-module's own sticky sub-heading

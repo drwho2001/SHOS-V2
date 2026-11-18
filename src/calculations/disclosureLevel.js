@@ -104,11 +104,3 @@ export function resolveDisclosure(level, { title, body, kind, maskedTitle, maske
   };
 }
 
-/**
- * Convenience wrapper for the common case: read the stored level and resolve
- * against it. Callers that already hold the settings object should call
- * resolveDisclosure directly rather than paying for a second read.
- */
-export async function applyDisclosure(text) {
-  return resolveDisclosure(await getDisclosureLevel(), text);
-}

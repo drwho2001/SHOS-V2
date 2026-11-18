@@ -88,9 +88,7 @@
       padding: 16px;
       border: 1px solid rgba(58, 58, 63, 0.4);
       border-radius: 8px;
-      background: rgba(28, 28, 31, 0.5);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: #1C1C1F;
       overflow-wrap: break-word;
     }
     .card.superseded { opacity: 0.55; }
@@ -377,7 +375,7 @@
 
     /* -- In-app confirmation dialog (replaces native browser dialogs) -- */
     .dialog-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    .dialog { width: min(320px, 90%); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+    .dialog { width: min(320px, 90%); background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
     .dialog .dialog-title { font-size: 15px; font-weight: 700; margin: 0 0 8px; color: var(--primary); }
     .dialog .dialog-body { font-size: 13px; color: var(--secondary); margin: 0 0 16px; line-height: 1.4; }
     .dialog .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }

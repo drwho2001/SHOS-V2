@@ -93,9 +93,7 @@
       padding: 16px;
       border: 1px solid rgba(58, 58, 63, 0.4);
       border-radius: 8px;
-      background: rgba(28, 28, 31, 0.5);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: #1C1C1F;
       overflow-wrap: break-word;
     }
 .mod-sti .card.superseded { opacity: 0.55; }
@@ -355,7 +353,7 @@
     .annotation { margin-top: 14px; border-left: 2px solid var(--healthcare); padding-left: 10px; font-size: 12px; line-height: 1.5; color: var(--secondary); font-style: italic; }
 .mod-sti /* -- In-app confirmation dialog (replaces native browser dialogs) -- */
     .dialog-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-.mod-sti .dialog { width: min(320px, 90%); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+.mod-sti .dialog { width: min(320px, 90%); background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
 .mod-sti .dialog .dialog-title { font-size: 15px; font-weight: 700; margin: 0 0 8px; color: var(--primary); }
 .mod-sti .dialog .dialog-body { font-size: 13px; color: var(--secondary); margin: 0 0 16px; line-height: 1.4; }
 .mod-sti .dialog .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
@@ -381,10 +379,10 @@
 }
 .mod-testing .device {width: min(393px, 100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-testing /* ── CURRENT (shipped) row ── */
-  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px}
 .mod-testing .dot {width:8px;height:8px;border-radius:50%;flex:0 0 8px}
 .mod-testing /* ── PROPOSED (§10.2.1 card) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
 .mod-testing .name-line {display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .mod-testing .name {font-size:15px;line-height:1.3;font-weight:600}
 .mod-testing .menu {position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
@@ -436,7 +434,7 @@
 .mod-testing-render [hidden] {display:none!important}
 .mod-testing-render .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-testing-render /* ── Card (§10.2.1 anatomy — STI/testing reference grammar) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-testing-render .card.superseded {opacity:0.55}
 .mod-testing-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-testing-render .card.older .name, .mod-testing-render .card.older .summary, .mod-testing-render .card.older .chip, .mod-testing-render .card.older .ctx-title, .mod-testing-render .card.older .byline span {color:var(--disabled)}
@@ -581,7 +579,7 @@
     width: 100%;
     padding: 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 13px;
     background: var(--surface);
     margin-bottom: 10px;
     overflow-wrap: break-word;
@@ -682,7 +680,7 @@
     width: 100%;
     padding: 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 13px;
     background: var(--surface);
     margin-bottom: 10px;
     overflow-wrap: break-word;
@@ -774,7 +772,7 @@
 .mod-medication-render [hidden] {display:none!important}
 .mod-medication-render .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-medication-render /* ── Card (§10.2.1 anatomy) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-medication-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-medication-render .card.older .name, .mod-medication-render .card.older .chip, .mod-medication-render .card.older .ctx-title, .mod-medication-render .card.older .byline span {color:var(--disabled)}
 .mod-medication-render .card.older .dot {background:var(--disabled)}
@@ -867,10 +865,10 @@
 }
 .mod-clinicvisit .device {width: min(393px, 100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-clinicvisit /* ── CURRENT (shipped) row — VisitRow, .mod-clinicvisit SHOS_ClinicVisits_Prototype.jsx:1916 ── */
-  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px}
 .mod-clinicvisit .cal {width:13px;height:13px;color:var(--hc)}
 .mod-clinicvisit /* ── PROPOSED (§10.2.1 card) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
 .mod-clinicvisit .name-line {display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding-right:30px}
 .mod-clinicvisit /* clears corner menu button */
   .dot {width:8px;height:8px;border-radius:50%;flex:0 0 8px}
@@ -926,7 +924,7 @@
 .mod-clinicvisit-render /* Device frame: fits narrow panes, .mod-clinicvisit-render never overflows its container */
   .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-clinicvisit-render /* ── Card (§10.2.1 anatomy: title row → byline → summary → chip groups → context groups) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-clinicvisit-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-clinicvisit-render .card.older .name, .mod-clinicvisit-render .card.older .summary, .mod-clinicvisit-render .card.older .chip, .mod-clinicvisit-render .card.older .ctx-title, .mod-clinicvisit-render .card.older .byline span {color:var(--disabled)}
 .mod-clinicvisit-render .card.older .dot {background:var(--disabled)}
@@ -1016,10 +1014,10 @@
 }
 .mod-vaccination .device {width: min(393px, 100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-vaccination /* ── CURRENT (shipped) row — VaccinationRow, .mod-vaccination SHOS_Vaccinations_Prototype.jsx:1034 ── */
-  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px}
 .mod-vaccination .dot {width:8px;height:8px;border-radius:50%;flex:0 0 8px}
 .mod-vaccination /* ── PROPOSED (§10.2.1 card) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
 .mod-vaccination .name-line {display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .mod-vaccination .name {font-size:15px;line-height:1.3;font-weight:600}
 .mod-vaccination .menu {position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
@@ -1073,7 +1071,7 @@
 .mod-vaccination-render [hidden] {display:none!important}
 .mod-vaccination-render .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-vaccination-render /* ── Card (§10.2.1 anatomy) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-vaccination-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-vaccination-render .card.older .name, .mod-vaccination-render .card.older .summary, .mod-vaccination-render .card.older .chip, .mod-vaccination-render .card.older .ctx-title, .mod-vaccination-render .card.older .byline span {color:var(--disabled)}
 .mod-vaccination-render .card.older .dot {background:var(--disabled)}
@@ -1162,10 +1160,10 @@
 }
 .mod-symptom .device {width: min(393px, 100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-symptom /* ── CURRENT (shipped) row — Row, .mod-symptom SHOS_SymptomLog_Prototype.jsx:641 ── */
-  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+  .now {display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px}
 .mod-symptom .dot {width:8px;height:8px;border-radius:50%;flex:0 0 8px}
 .mod-symptom /* ── PROPOSED (§10.2.1 card) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:10px;overflow-wrap:break-word}
 .mod-symptom .name-line {display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .mod-symptom .name {font-size:15px;line-height:1.3;font-weight:600}
 .mod-symptom .menu {position:absolute;top:10px;right:10px;width:18px;height:18px;color:var(--disabled)}
@@ -1214,7 +1212,7 @@
 .mod-symptom-render [hidden] {display:none!important}
 .mod-symptom-render .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-symptom-render /* ── Card (§10.2.1 anatomy) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-symptom-render .card.active.severe {border-color:var(--red)}
 .mod-symptom-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-symptom-render .card.older .name, .mod-symptom-render .card.older .summary, .mod-symptom-render .card.older .chip, .mod-symptom-render .card.older .ctx-title, .mod-symptom-render .card.older .byline span {color:var(--disabled)}
@@ -1335,7 +1333,7 @@
     max-width: 100%;
     padding: 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 13px;
     background: var(--card-bg);
     margin-bottom: 10px;
     overflow-wrap: break-word;
@@ -1412,7 +1410,7 @@
 .mod-encounters-render [hidden] {display:none!important}
 .mod-encounters-render .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-encounters-render /* ── Card (§10.2.1 anatomy — encounters: metadata summary instead of state vocab) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-encounters-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-encounters-render .card.older .name, .mod-encounters-render .card.older .chip, .mod-encounters-render .card.older .ctx-title, .mod-encounters-render .card.older .byline span {color:var(--disabled)}
 .mod-encounters-render .card.older .dot {background:var(--disabled)}
@@ -1475,7 +1473,7 @@
 .mod-encounters-render /* �� In-app modal form (add/log encounter) �� */
   .modal-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .mod-encounters-render .modal-overlay.show { display: flex; }
-.mod-encounters-render .modal { width: min(420px, 92%); max-height: 85vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+.mod-encounters-render .modal { width: min(420px, 92%); max-height: 85vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
 .mod-encounters-render .modal .modal-title { font-size: 15px; font-weight: 700; margin: 0 0 12px; color: var(--primary); }
 .mod-encounters-render .modal .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .mod-encounters-render .modal .field label { font-size: 11px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: .04em; }
@@ -1548,7 +1546,7 @@
     width: 100%;
     padding: 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 13px;
     background: var(--surface);
   }
 .mod-contacts .star { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; color: var(--disabled); }
@@ -1631,7 +1629,7 @@
 .mod-contacts .platform img { width: 36px; height: 36px; flex: 0 0 36px; object-fit: cover; border-radius: 9px; background: transparent; }
 .mod-contacts .fab-logo { background: #fff !important; }
 .mod-contacts .theme-checks { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-.mod-contacts .theme-case { min-width: 0; padding: 12px; border: 1px solid; border-radius: 12px; }
+.mod-contacts .theme-case { min-width: 0; padding: 12px; border: 1px solid; border-radius: 13px; }
 .mod-contacts .theme-case.dark { background: #1c1c1f; color: #f5f5f6; border-color: #3a3a3f; }
 .mod-contacts .theme-case.light { background: #fff; color: #242429; border-color: #d7d7de; }
 .mod-contacts .theme-label { font-size: 11px; font-weight: 700; }
@@ -1646,7 +1644,7 @@
 .mod-contacts .filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .mod-contacts .filter-chip { border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; color: var(--secondary); font-size: 10px; font-weight: 600; white-space: nowrap; }
 .mod-contacts .filter-chip.selected { border-color: var(--teal); background: #4cf0f019; color: var(--teal); }
-.mod-contacts .schedule-panel { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--primary); }
+.mod-contacts .schedule-panel { padding: 14px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); color: var(--primary); }
 .mod-contacts .schedule-heading { margin-bottom: 2px; font-size: 12px; font-weight: 700; }
 .mod-contacts .schedule-zone { margin-bottom: 8px; color: var(--secondary); font-size: 9px; }
 .mod-contacts .schedule-rule { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 9px 0; border-top: 1px solid var(--border); }
@@ -1689,7 +1687,7 @@
 .mod-contacts-render [hidden] {display:none!important}
 .mod-contacts-render .device {width:min(393px,100%);max-width:100%;margin:0 auto;padding:14px 16px 24px;border:1px solid #303034;border-radius:24px;background:var(--page);box-shadow:0 12px 36px #0008}
 .mod-contacts-render /* ── Card (§10.2.1 anatomy — contacts: detail screen, .mod-contacts-render no state vocab) ── */
-  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
+  .card {position:relative;display:flex;flex-direction:column;gap:4px;width:100%;padding:16px 32px 16px 16px;border:1px solid var(--border);border-radius: 13px;background:var(--surface);margin-bottom:12px;overflow-wrap:break-word}
 .mod-contacts-render .card.older {background:var(--variant);color:var(--secondary)}
 .mod-contacts-render .card.older .name, .mod-contacts-render .card.older .chip, .mod-contacts-render .card.older .ctx-title, .mod-contacts-render .card.older .byline span {color:var(--disabled)}
 .mod-contacts-render .card.older .dot {background:var(--disabled)}
@@ -1751,7 +1749,7 @@
 .mod-contacts-render /* �� In-app modal form (add/log contact) �� */
   .modal-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .mod-contacts-render .modal-overlay.show { display: flex; }
-.mod-contacts-render .modal { width: min(420px, 92%); max-height: 85vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+.mod-contacts-render .modal { width: min(420px, 92%); max-height: 85vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px; color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,.4); }
 .mod-contacts-render .modal .modal-title { font-size: 15px; font-weight: 700; margin: 0 0 12px; color: var(--primary); }
 .mod-contacts-render .modal .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .mod-contacts-render .modal .field label { font-size: 11px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: .04em; }
@@ -1803,7 +1801,7 @@
 }
 .mod-vaginal-health-render [hidden] {display:none!important}
 .mod-vaginal-health-render .device {width:min(393px,100%);margin:0 auto;background:var(--page);border:1px solid var(--border);border-radius:14px;padding:14px 14px 20px}
-.mod-vaginal-health-render .card {background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;position:relative}
+.mod-vaginal-health-render .card {background:var(--surface);border:1px solid var(--border);border-radius: 13px;padding:12px 14px;margin-bottom:10px;position:relative}
 .mod-vaginal-health-render .card.empty {border-style:dashed}
 .mod-vaginal-health-render .card.urgent {border-color:var(--red);background:var(--red-tint)}
 .mod-vaginal-health-render .name-line {display:flex;align-items:center;gap:6px;margin-bottom:6px}

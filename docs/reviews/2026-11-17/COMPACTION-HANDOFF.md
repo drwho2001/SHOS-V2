@@ -25,7 +25,10 @@
 - Clinic Card doctor summary: CHALLENGE FINDING — already built (`clinicCardPdfService.js` generates a print-clean clinician-facing PDF of exactly what Clinic Card shows, honouring section visibility + recent-contacts opt-in). No new module needed; do not rebuild.
 - F3 spotting prompt: `menopauseSpottingPrompt.js` builds the approved neutral copy when a bleeding/spotting symptom or cycle-spotting record is logged under a user-entered Post-menopause status; precise HRT qualifier; GAHT recorded → clinician-only wording (NG23 exclusion). Banner in Menstrual & Contraception with NHS link + dismiss. 8 tests assert copy boundaries.
 - R2/R4/R8/R10/R11/R12 all actioned (see BETA-ACTION-PLAN): icon BASE_URL + email guard; allergies green clear state + context-aware summary cards; loading marks; onboarding dots/note; omit empty Safety Share fields; R12 reviewed as already-fixed/deliberate.
-- 13px tokenisation: 137 raw `fontSize: 13`/`"13px"` sites across 23 files replaced with `TYPE.control.fontSize`; `fontSizeTokenGuard.test.js` keeps the scale in one place (designTokens.js). 67 guard files / 418 tests pass, vite build success.
+- 13px tokenisation: 137 raw `fontSize: 13`/`"13px"` sites across 23 files replaced with `TYPE.control.fontSize`; `fontSizeTokenGuard.test.js` keeps the scale in one place (designTokens.js).
+- F1: Healthcare sub-tab renamed "Reproductive health" (3 inner sections already present; no 6th tab). `reproductiveHealthClusterGuard.test.js`.
+- F2: Testing owns pregnancy tests; records link via `testId`; one-time migration creates Testing records from legacy data without deleting it; "+" opens Testing prefilled. `pregnancyTestOwnershipGuard.test.js`.
+- P3 hygiene: 7 genuinely-dead exports removed (`deadExportsGuard`); mockup radius 12→13 + frosted-glass removed (`mockupHygieneGuard`); contactMerge verified wired (stale note closed).
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).

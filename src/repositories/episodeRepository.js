@@ -159,14 +159,6 @@ export const EpisodeRepository = {
     return found ? structuredClone({ ...DEFAULT_EPISODE, ...found }) : null;
   },
 
-  // Real, derived-only read — "open" just means no resolvedDate yet.
-  // Same "store facts, derive state" principle as Testing's own
-  // Follow-up Actioned Date logic — resolution is a real timestamp,
-  // never a separate boolean that could drift out of sync with it.
-  async getOpen() {
-    return (await this.getAll()).filter((e) => !e.isArchived && !e.resolvedDate);
-  },
-
   async create(data) {
     await ensureLoaded();
     const newEpisode = {
