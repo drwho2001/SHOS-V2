@@ -79,6 +79,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { collapseChips } from "../calculations/chipVisibility";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -293,6 +294,9 @@ function KinkDetailEditor({ detail, kinkName, role = "", contacts, onChange, T, 
 }
 
 function MultiSelectChips({ label, value, onChange, options, T }) {
+  // Long chip sets collapse behind "more"; chosen chips stay visible.
+  const [showAllChips, setShowAllChips] = useState(false);
+  const { shown, hiddenCount } = collapseChips(options, value, 8, showAllChips, optionValue);
   // optionValue/optLabel on EVERY use of `opt`, not only on the render.
   //
   // Rendering an object as a React child throws React error #31, which is at
@@ -310,7 +314,7 @@ function MultiSelectChips({ label, value, onChange, options, T }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {options.map((opt) => {
+        {shown.map((opt) => {
           const active = value.includes(optionValue(opt));
           return (
             <div key={optionValue(opt)} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
@@ -320,6 +324,12 @@ function MultiSelectChips({ label, value, onChange, options, T }) {
             </div>
           );
         })}
+        {(hiddenCount > 0 || showAllChips) && (
+          <div role="button" tabIndex={0} aria-expanded={showAllChips} onClick={() => setShowAllChips((v) => !v)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAllChips((v) => !v); } }}
+            style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${T.border}`, color: T.textSecondary }}>
+            {showAllChips ? "less" : `more +${hiddenCount}`}
+          </div>
+        )}
       </div>
     </div>
   );

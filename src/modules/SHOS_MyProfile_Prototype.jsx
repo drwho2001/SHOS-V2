@@ -92,6 +92,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { collapseChips } from "../calculations/chipVisibility";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -458,6 +459,9 @@ function CummerRow({ T, label, form, set, options }) {
 
 function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
   const [newValue, setNewValue] = useState("");
+  // Long chip sets collapse behind "more"; chosen chips stay visible.
+  const [showAllChips, setShowAllChips] = useState(false);
+  const { shown, hiddenCount } = collapseChips(options, value, 8, showAllChips);
   const toggle = (opt) => {
     const has = value.includes(opt);
     onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
@@ -478,7 +482,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {options.map((opt) => {
+        {shown.map((opt) => {
           const active = value.includes(opt);
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
@@ -488,6 +492,12 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
             </div>
           );
         })}
+        {(hiddenCount > 0 || showAllChips) && (
+          <div role="button" tabIndex={0} aria-expanded={showAllChips} onClick={() => setShowAllChips((v) => !v)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAllChips((v) => !v); } }}
+            style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", border: `1px solid ${T.border}`, color: T.textSecondary }}>
+            {showAllChips ? "less" : `more +${hiddenCount}`}
+          </div>
+        )}
       </div>
       {onAddNew && (
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>

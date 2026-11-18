@@ -92,6 +92,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // system already used elsewhere (Vaccine, Reason for visit, etc.).
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getMissingRequiredContactFields, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar, displayableAge, dedupeContactMethods, extractUkPostcode, toggleMultiSelectValue } from "../calculations/contactCalculations";
+import { collapseChips } from "../calculations/chipVisibility";
 import { formatAvailabilitySummary, getContactTimeZone, getDeviceTimeZone, hasWeeklyAvailability, isContactAvailableAt, isContactAvailableSoon, isValidAvailabilityWindow, isValidTimeZone, localDateTimeInputValue } from "../calculations/contactAvailability";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useOverlayBackHandler } from "../components/useOverlayBackHandler";
@@ -969,6 +970,9 @@ function CummerRow({ T, label, form, set, options }) {
 
 function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listName, requiredMissing = false, exclusiveOption = null }) {
   const [newValue, setNewValue] = useState("");
+  // Long chip sets collapse behind "more"; chosen chips stay visible.
+  const [showAllChips, setShowAllChips] = useState(false);
+  const { shown, hiddenCount } = collapseChips(options, value, 8, showAllChips);
   const toggle = (opt) => {
     const has = value.includes(opt);
     onChange(toggleMultiSelectValue(value, opt, exclusiveOption));
@@ -995,7 +999,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
       <div style={{ fontSize: 12, color: requiredMissing ? T.actionRed : T.textSecondary, marginBottom: 6 }}>{requiredMissing && <span aria-hidden="true" style={{ color: T.actionRed, fontWeight: 800 }}>* </span>}{label}</div>
       <div role="group" aria-label={requiredMissing ? `${label}, required` : label} aria-invalid={requiredMissing || undefined}
         style={{ display: "flex", flexWrap: "wrap", gap: 6, border: `1px solid ${requiredMissing ? T.actionRed : "transparent"}`, borderRadius: radius.sm, padding: requiredMissing ? 5 : 0 }}>
-        {options.map((opt) => {
+        {shown.map((opt) => {
           const active = value.includes(opt);
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
@@ -1005,6 +1009,12 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
             </div>
           );
         })}
+        {(hiddenCount > 0 || showAllChips) && (
+          <div role="button" tabIndex={0} aria-expanded={showAllChips} onClick={() => setShowAllChips((v) => !v)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAllChips((v) => !v); } }}
+            style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer", border: `1px solid ${T.border}`, color: T.textSecondary }}>
+            {showAllChips ? "less" : `more +${hiddenCount}`}
+          </div>
+        )}
       </div>
       {onAddNew && (
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
