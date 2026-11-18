@@ -278,7 +278,7 @@ export function DeveloperToolsScreen({ onClose }) {
   // ADDED — real ask: "allow error reporting" — see ErrorLogScreen's
   // own header for the full reasoning (a local, on-device log, not a
   // real third-party crash reporter).
-  const errorCount = useLoadedMemo(() => ErrorLogRepository.getAll().then((l) => l.length), [], 0);
+  const errorCount = useLoadedMemo(() => ErrorLogRepository.getAll().then((l) => l.length), [], null);
   const [showErrorLog, setShowErrorLog] = useState(false);
   // ADDED — real groundwork for encryption at rest: hasUnbackedChanges()
   // is now async (see backupService.js's own comment), so this can no
@@ -291,32 +291,32 @@ export function DeveloperToolsScreen({ onClose }) {
   // read straight inline in the `counts` array below like every other
   // (still-synchronous) repository here — loaded separately via
   // useLoadedMemo and substituted in.
-  const locationsCount = useLoadedMemo(() => LocationsRepository.getAll().then((l) => l.length), [], 0);
+  const locationsCount = useLoadedMemo(() => LocationsRepository.getAll().then((l) => l.length), [], null);
   // CHANGED — Phase 2 encryption groundwork: ContactRepository went
   // async too — same treatment as locationsCount above.
-  const contactsCount = useLoadedMemo(() => ContactRepository.getAll().then((l) => l.length), [], 0);
+  const contactsCount = useLoadedMemo(() => ContactRepository.getAll().then((l) => l.length), [], null);
   // CHANGED — Phase 2 encryption groundwork: LogRepository/
   // EpisodeRepository went async too — same treatment as
   // locationsCount/contactsCount above.
-  const logsCount = useLoadedMemo(() => LogRepository.getAll().then((l) => l.length), [], 0);
-  const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], 0);
-  const symptomLogCount = useLoadedMemo(() => SymptomLogRepository.getAll().then((l) => l.length), [], 0);
-  const vaccinationsCount = useLoadedMemo(() => VaccinationRepository.getAll().then((l) => l.length), [], 0);
-  const encountersCount = useLoadedMemo(() => EncounterRepository.getAll().then((l) => l.length), [], 0);
-  const testsCount = useLoadedMemo(() => TestingRepository.getAll().then((l) => l.length), [], 0);
-  const medicationsCount = useLoadedMemo(() => MedicationRepository.getAll().then((l) => l.length), [], 0);
-  const clinicVisitsCount = useLoadedMemo(() => ClinicVisitsRepository.getAll().then((l) => l.length), [], 0);
+  const logsCount = useLoadedMemo(() => LogRepository.getAll().then((l) => l.length), [], null);
+  const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], null);
+  const symptomLogCount = useLoadedMemo(() => SymptomLogRepository.getAll().then((l) => l.length), [], null);
+  const vaccinationsCount = useLoadedMemo(() => VaccinationRepository.getAll().then((l) => l.length), [], null);
+  const encountersCount = useLoadedMemo(() => EncounterRepository.getAll().then((l) => l.length), [], null);
+  const testsCount = useLoadedMemo(() => TestingRepository.getAll().then((l) => l.length), [], null);
+  const medicationsCount = useLoadedMemo(() => MedicationRepository.getAll().then((l) => l.length), [], null);
+  const clinicVisitsCount = useLoadedMemo(() => ClinicVisitsRepository.getAll().then((l) => l.length), [], null);
   // CHANGED — Phase 2 encryption groundwork: the six simpleRegistry.js-
   // based registries are now async — same useLoadedMemo treatment as
   // every other repository count above (previously read inline in the
   // counts array below, direct render-body calls that broke once these
   // registries went async).
-  const kinkCount = useLoadedMemo(() => KinkRegistry.getAll().then((l) => l.length), [], 0);
-  const chemsCount = useLoadedMemo(() => ChemsRegistry.getAll().then((l) => l.length), [], 0);
-  const protectionCount = useLoadedMemo(() => ProtectionRegistry.getAll().then((l) => l.length), [], 0);
-  const symptomsRegistryCount = useLoadedMemo(() => SymptomsRegistry.getAll().then((l) => l.length), [], 0);
-  const organismCount = useLoadedMemo(() => OrganismRegistry.getAll().then((l) => l.length), [], 0);
-  const resultsCount = useLoadedMemo(() => ResultsRegistry.getAll().then((l) => l.length), [], 0);
+  const kinkCount = useLoadedMemo(() => KinkRegistry.getAll().then((l) => l.length), [], null);
+  const chemsCount = useLoadedMemo(() => ChemsRegistry.getAll().then((l) => l.length), [], null);
+  const protectionCount = useLoadedMemo(() => ProtectionRegistry.getAll().then((l) => l.length), [], null);
+  const symptomsRegistryCount = useLoadedMemo(() => SymptomsRegistry.getAll().then((l) => l.length), [], null);
+  const organismCount = useLoadedMemo(() => OrganismRegistry.getAll().then((l) => l.length), [], null);
+  const resultsCount = useLoadedMemo(() => ResultsRegistry.getAll().then((l) => l.length), [], null);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: encountersCount },
@@ -454,7 +454,9 @@ export function DeveloperToolsScreen({ onClose }) {
         {counts.map((c) => (
           <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{c.label}</span>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: FONT_FAMILY }}>{c.value}</span>
+            {/* R8 — show a loading mark, not a misleading 0, until the async
+                repository read has actually landed. */}
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: FONT_FAMILY }}>{c.value === null ? "…" : c.value}</span>
           </div>
         ))}
       </div>
@@ -577,7 +579,7 @@ export function DeveloperToolsScreen({ onClose }) {
           <Bug size={15} color={errorCount > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>{t("devTools.errorLog", "Error log")}</span>
           <span style={{ fontSize: 13, color: errorCount > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
-            {errorCount === 0 ? "None" : errorCount}
+            {errorCount === null ? "…" : errorCount === 0 ? "None" : errorCount}
           </span>
           <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
         </div>

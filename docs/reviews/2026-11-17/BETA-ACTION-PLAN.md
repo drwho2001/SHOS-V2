@@ -99,7 +99,8 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 - **Verification:** `vaginalHealthMigration.test.js` (5 tests — fresh install, lossless copy, source retained, idempotent, partial-failure recovery) pass; jsx guard + healthcare guards + eslint + vite build clean.
 - **Evidence:** main report M8; AUDIT M; `vaginalHealthRepository.js`, `backupService.js`, BACKLOG 13 Nov decisions.
 
-### R8 — 🟠 Transient all-zero counts on load  [EFFORT S · RISK LOW]
+### R8 — 🟠 Transient all-zero counts on load  [SHIPPED 18 Nov 2026]
+- Developer tools' 17 async counts used `useLoadedMemo(..., 0)`, so every row read "0" for the few frames before the read resolved. All now use a `null` fallback and render `…` until loaded (error count renders `…` then "None"/number). `developerToolsCountsGuard.test.js` locks it.
 - Developer tools first opens showing "0 B" and every store 0, then async-loads 4.8 KB / real counts. Stats shows "Loading…". Misleading skeleton state.
 - **Fix:** show skeleton/spinner or hide counts until loaded.
 - **Evidence:** AUDIT O/P.
@@ -118,9 +119,12 @@ Recognise **NKDA / None / N/A / not recorded** as a *positive* state: render the
 - Toggled-but-empty fields appear as "Address: not provided / Vehicle: not provided" in the shared message — looks broken to a user sharing in a hurry. Consider omitting empty selected fields or labelling them clearly. Actual OS share button not triggered in testing.
 - **Evidence:** AUDIT N.
 
-### R12 — 🟡 Consistency nits  [EFFORT S · RISK LOW]
-- aria-label "Color-blind friendly palette" (US) vs heading "Colour-blind" (GB); Anonymise uses "Turn on/off" buttons while every other setting uses `role=switch`; Home top bar has 4 icons vs Encounter 2 vs Healthcare 1 (BACKLOG 0b).
-- **Evidence:** AUDIT A/L/Q.
+### R12 — 🟡 Consistency nits  [REVIEWED 18 Nov — mostly already fixed / deliberate]
+- Colour-blind aria-label: ALREADY UK spelling in both `en.json` and `en-US.json`, matching the heading. No change.
+- Anonymise "Turn on/off" card: DELIBERATE — `anonymiseToggleGuard.test.js` requires the visible "Turn on" pill for discoverability, and turning OFF is PIN-gated, so `role="switch"` would falsely promise a two-way toggle on one control. No change (would break the guard and mislead).
+- Home 4 header icons vs Encounter 2 vs Healthcare 1: different screens have genuinely different actions; all carry `role="button"` + `aria-label` from the earlier a11y pass. Not a defect. No change.
+- Sticky offsets: ALREADY unified behind `--shos-top-banner-h` / `--shos-sticky-header-h` CSS vars plus the `STICKY_SUBHEADING_TOP` token, both locked by `stickySubheadingGuard.test.js` and `settingsStickyHeaderGuard.test.js`. The design-review note predates those guards. No change.
+- **Evidence:** AUDIT A/L/Q; DESIGN-TEMPLATE-REVIEW §4.
 
 ### R13 — 🟠 "No barrier method" tag not searchable/filterable  [EFFORT S–M · RISK LOW] — NEW (owner Challenge B)
 - Keep the auto-derived "No barrier method" tag (`protectionBarrier.js:34`, `Encounters:1250-1251`) — it is correct and never stored. Make it **searchable + filterable**: include `hasBarrierMethod(protectionNames)` in the Encounter search index (`Encounters:1428` currently indexes title/type/notes/attendees/kinks only) and add a "No barrier method" filter chip. Do NOT remove the "No condom" negated-string logic (`protectionBarrier.js:31-32`) — it prevents false positives on user-added entries. Do not replace with "bareback" (colloquial/narrower/off-tone).
