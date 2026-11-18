@@ -45,6 +45,7 @@ const ALLOWED_GLOBALS = new Set([
   // Compile-time defines injected by Vite (see vite.config.js `define`).
   "__APP_VERSION__",
   "__BUILD_SHA__",
+  "__BUILD_DATE__",
 ]);
 
 function walk(dir, out = []) {
