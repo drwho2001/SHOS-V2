@@ -12,6 +12,7 @@
 - Home polish A1–A4 (card text, activity reorder + DoxyPEP row, desktop greeting, calendar shrink).
 - R9 period overlap guard (open prior record to add end date, estimate escape, save-time re-check).
 - Contacts "Incomplete" sort: mandatory-missing contacts now precede optional-only ones; default sort untouched.
+- B1 investigated (`B1-ORPHAN-INVESTIGATION.md`): raw `seed_contact_9008` ID is CORRECT diagnostic behaviour for a genuinely hard-deleted contact; no code change warranted (owner asked investigate-first).
 
 ## SHIPPED (do not rebuild)
 - Update banner dismiss fix (one encrypted cooldown key/format) + APK link removed on web; banner raised above FAB (CI flow 21).
