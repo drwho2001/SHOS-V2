@@ -4,7 +4,7 @@
 
 ## Current state
 - Working tree **clean**; HEAD = `4ae7962` ("Remove PEP protection entirely; About email-only + icon/build date; encounter field gating"), pushed to `main`.
-- CI on `4ae7962` was still running at handoff (Session Bus green; Smoke/Web Alpha/APK in flight). **Check `gh run list --branch main --limit 4` on resume.** Prior smoke failures were root-caused and fixed (styleColourGuard, healthcareCalendarShortcutGuard, PWA auto-update dismiss flag, flow-2 timing race); if CI is red again, read `gh run view <id> --log-failed` before changing code.
+- CI on `4ae7962` (and the handoff-doc commit `533f3c4`): **Web Alpha + Build Android APK are RED**, Smoke was in flight at handoff. Cause is known and mechanical: I added `__BUILD_DATE__` (Vite `define` + eslint global) for the About build date, but the repo's `src/components/jsxIdentifierBindingGuard.test.js:40` has its own `ALLOWED_GLOBALS` set (contains `__BUILD_SHA__`, `__APP_VERSION__`) and does not include `__BUILD_DATE__`, so the guard fails. **FIRST ACTION ON RESUME (no decision needed):** add `"__BUILD_DATE__"` to that set (same place as `__BUILD_SHA__`), run `npx vitest run src/components/jsxIdentifierBindingGuard.test.js`, commit + push. Then re-check CI. No other policy decisions are pending — all were answered in the last popup and recorded below. Prior smoke failures were root-caused and fixed (styleColourGuard, healthcareCalendarShortcutGuard, PWA auto-update dismiss flag, flow-2 timing race).
 - Local verification at handoff: eslint clean, 44 targeted tests pass, `vite build` success, negative-status + encoding guards pass. Full local smoke is memory-starved; CI is the gate.
 
 ## SHIPPED (do not rebuild)
@@ -36,16 +36,26 @@
 8. **Menopause status** — My Profile + NEVER_SHARED + read-only FSRH view + optional neutral hysterectomy/no-uterus field; patient-facing copy needs sign-off.
 9. Other queued: R2 icon 404s/CSP, R4 summary cards + allergies green outline, R8 transient zero counts, R10 onboarding polish, R11 Safety Share empty fields, R12 consistency nits, 13px tokenisation (after this batch, with the new guard).
 
-## OPEN DECISIONS (presented via popup — answers not yet known at handoff)
-- A1 Home status-card description text size (bump for legibility/space-fill?)
-- A4 Calendar grid shrink + reserve space for selected-day detail
-- B1 `seed_contact_9008` row (orphan diagnostic showing dangling id — expected behaviour?)
-- B2 verify fists/loads kink wiring actually works
-- A7 contacts sort — "needs attention" default vs a filter option
-- Testing↔Measurements `sourceTestId` link (e.g. eGFR result → measurement)
-- Measurement-type suggestion bank (fuzzy match standard units instead of "what kind is eGFR?")
-- F3 menopause patient-facing copy sign-off (draft in F3-MENOPAUSE-COPY-DRAFT.md)
-- Overall next-build order / scope for the next session
+## DECISIONS — ALL ANSWERED in the final popup (no pending policy questions)
+- **A1 Home card text:** BUMP the description font size. ✅ approved.
+- **A4 Calendar:** SHRINK cells AND reserve space for selected-day detail. ✅ approved.
+- **B1 `seed_contact_9008`:** INVESTIGATE FIRST (not auto-change) — confirm whether this dangling reference should be repaired; raw ID may be correct diagnostic behaviour. ⏳ task.
+- **Contacts sort (A7 clarified):** owner does NOT want a sort change — keep newest-first. The point was about the INCOMPLETE badge/order *within* incomplete records: those missing **mandatory** details must be listed before those missing only **non-mandatory** details. Treat as a presentation/order-within-incomplete fix, not a global sort change. ⏳ task.
+- **Testing↔Measurements:** ADD the optional link (`sourceTestId` on measurements + "record as measurement" on results), keeping both modules separate. ✅ approved.
+- **Measurement-type suggestions:** ADD the local bank + fuzzy match, manual entry retained. ✅ approved.
+- **F3 menopause copy:** APPROVED as drafted (F3-MENOPAUSE-COPY-DRAFT.md). ✅ approved.
+- **Next build after Home polish A2/A3:** **R9 period overlap** first. ✅ decided.
+
+## BUILD ORDER for next session (after the CI fix above)
+1. CI fix (`__BUILD_DATE__` allowlist) — mechanical, do first.
+2. Approved Home polish: A1 bump card text; A2 reorder recent activity + DoxyPEP row; A3 desktop "X's Home"; A4 Calendar shrink + detail space.
+3. R9 period overlap (open first record to enter end date, no auto-close, "I don't remember → estimate duration" escape).
+4. Contacts incomplete-ordering fix (mandatory-missing first among incomplete).
+5. B1 investigate orphan `seed_contact_9008`.
+6. Testing↔Measurements link + measurement-unit suggestion bank.
+7. Then the rest of the approved-not-built list above (R5, R7, import, Clinic Card, menopause status).
+
+## NO FURTHER QUESTIONS NEEDED — the owner asked "any other qs first?" and all policy decisions are now captured above.
 
 ## KEY CONVENTIONS (from CLAUDE.md — obey)
 - Docs gate: any `src/` change must also touch CLAUDE.md or docs/. One home per truth (state map at top of CLAUDE.md).
