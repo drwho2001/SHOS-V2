@@ -1023,7 +1023,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1, paddingTop: 1 }}>
           <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: color, lineHeight: 1.2, letterSpacing: "-0.005em" }}>{caption}</span>
           {info && <>
-            <RingSummary text={summary || info} fontSize={isDesktopWidth ? 12 : 8.5}>
+            <RingSummary text={summary || info} fontSize={isDesktopWidth ? 13 : 10}>
               <button type="button" aria-label={`${caption} information`} aria-expanded={showInfo} onClick={(e) => { e.stopPropagation(); setShowInfo(value => !value); }} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "-2px", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={isDesktopWidth ? 13 : 10} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
             </RingSummary>
             {showInfo && <span style={{ fontSize: isDesktopWidth ? 12 : 8.5, color: descTextColor, lineHeight: 1.32 }}>{info}</span>}
@@ -1129,7 +1129,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Dashboard, rolled out here for consistency. */}
       <div style={{ width: "100%", padding: "20px 16px", fontFamily: FONT_FAMILY, boxSizing: "border-box" }}>
       <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{tr("home.title", "Home")}</span>
+        {/* CHANGED 18 Nov 2026 (owner, A3) — on a wide screen there is room
+            for a personalised title, so use the profile nickname already
+            loaded above ("[name]'s Home"). On a phone keep the bare
+            translated "Home" — "Alex's Home" crowds the four header
+            icons on a narrow bar. Falls back to "Home" when no nickname
+            has been set, so it never reads "'s Home". */}
+        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{isDesktopWidth && profileName ? `${profileName}'s Home` : tr("home.title", "Home")}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
               which points to no manual relock button... also for real
@@ -1401,7 +1407,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1, paddingTop: 1 }}>
                 <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: encountersColor, lineHeight: 1.2, letterSpacing: "-0.005em" }}>At-Risk Encounters</span>
-                <RingSummary text="Exposures too recent for your last test to clear, plus encounters since it." fontSize={isDesktopWidth ? 12 : 8.5}>
+                <RingSummary text="Exposures too recent for your last test to clear, plus encounters since it." fontSize={isDesktopWidth ? 13 : 10}>
                   <button type="button" aria-label="At-risk encounter colors and counting" aria-expanded={showEncounterRiskInfo} onClick={() => setShowEncounterRiskInfo(value => !value)} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "-2px", padding: 4, margin: "-4px 0 -4px 1px", border: 0, borderRadius: 999, background: "transparent", cursor: "pointer" }}><InfoIcon size={isDesktopWidth ? 13 : 10} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} /></button>
                 </RingSummary>
               </div>
@@ -1453,7 +1459,6 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>{tr("home.recentActivity", "Recent activity")}</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
-        <SummaryRow label={tr("home.lastEncounter", "Last encounter")} moduleColor={encountersColor} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         {/* ADDED 26 Sep 2026 — this row's query has existed since the
             "Recent activity" list was first built (lastContact is set from
             ContactRepository further up this same effect) but was never
@@ -1464,9 +1469,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             nothing instead.
             Sorts by CREATED date, so this reads "newest contact added" and
             not "most recently seen" — deliberately not re-sorted to
-            last-encounter, because the row directly above already reports
-            the most recent encounter and duplicating it here would be the
-            kind of redundant entry point this list exists to avoid. */}
+            last-encounter, because the Last encounter row below already
+            reports the most recent encounter and duplicating it here would be
+            the kind of redundant entry point this list exists to avoid.
+            CHANGED 18 Nov 2026 (owner, A2) — moved ABOVE Last encounter; the
+            person is the more durable anchor than the single encounter. */}
         {/* FIXED 30 Sep 2026 (audit) — real leak. This row prints a contact's
             REAL NAME while Anonymise mode is on, and this module had no
             reference to the flag whatsoever (grep: 0 hits), so it was not an
@@ -1485,6 +1492,17 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             two hand-duplicated placeholders drifting apart, and a third local
             copy here would rebuild exactly that. */}
         <SummaryRow label={tr("home.newestContact", "Newest contact")} moduleColor={contactsColor} value={lastContact ? `${anonymise ? ANONYMISED : lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
+        {/* CHANGED 18 Nov 2026 (owner, A2) — Last encounter moved below
+            Newest contact. No logic change: same record, same navigation. */}
+        <SummaryRow label={tr("home.lastEncounter", "Last encounter")} moduleColor={encountersColor} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
+        {/* ADDED 18 Nov 2026 (owner, A2) — last DoxyPEP dose, above the
+            general "Last medication dose" row. Uses doxyStatus.lastDoseAt,
+            which getDoxyPepStatus() already returns on every branch (the
+            newest non-voided dose log for the DoxyPEP medication), so this
+            is the same value the 72h countdown/DoxyPEP banner derives from —
+            one owner, no second repository read. "None yet" when no dose has
+            ever been logged, matching the neighbouring rows. */}
+        <SummaryRow label={tr("home.lastDoxyPepDose", "Last DoxyPEP dose")} moduleColor={medsBlue} value={doxyStatus.lastDoseAt ? formatDoseTime(doxyStatus.lastDoseAt) : "None yet"} onClick={() => onNavigateToRecord("medication", doxyStatus.medicationId)} />
         <SummaryRow label={tr("home.lastMedicationDose", "Last medication dose")} moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label={tr("home.lastTest", "Last test")} moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
         <SummaryRow label={tr("home.nextClinicVisit", "Next clinic visit")} moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : <>No future visit booked — BASHH advises 3/12 monthly testing <span style={{ display: "inline-flex", verticalAlign: "middle" }}><JargonNote theme={darkMode ? DARK : NEUTRAL} noteKey="bashh" label="BASHH guidance" onOpen={onOpenGlossary} /></span></>} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />

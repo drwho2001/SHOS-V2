@@ -559,7 +559,7 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
           {WEEKDAY_LABELS.map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontWeight: 700, padding: "4px 0" }}>{d}</div>
+            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontWeight: 700, padding: "2px 0" }}>{d}</div>
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
@@ -582,9 +582,14 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
                 return acc;
               }, {})
             ).slice(0, 3);
+            // CHANGED 18 Nov 2026 (owner, A4) — day cells used to be square
+            // (aspectRatio "1"), which made a 6-row month tall enough to push
+            // the selected-day detail below the fold and force scrolling. A
+            // slightly wider-than-tall cell (~23% shorter) keeps the same
+            // date + event dots but leaves real room for the detail panel.
             return (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={i} onClick={() => setSelectedDay(isSelected ? null : day)}
-                style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", gap: 2 }}>
+                style={{ aspectRatio: "1.3", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", gap: 2 }}>
                 {/* FIXED 1 Sep 2026 — real bug found during a light/dark
                     sweep: every day number was hardcoded to #1B1B1F
                     (near-black) regardless of theme — nearly invisible
@@ -612,7 +617,10 @@ export function CalendarScreen({ onClose, onNavigateToRecord }) {
         </div>
 
         {selectedDay && (
-          <div style={{ marginTop: 20 }}>
+          // CHANGED 18 Nov 2026 (owner, A4) — reserve a stable area for this
+          // day's detail so tapping between days doesn't jump the layout,
+          // and the shorter grid above leaves room for it in the viewport.
+          <div style={{ marginTop: 14, minHeight: 90 }}>
             <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 8 }}>
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>

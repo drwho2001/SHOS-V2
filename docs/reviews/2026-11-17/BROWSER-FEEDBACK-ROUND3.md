@@ -5,10 +5,10 @@ Note: from `https://drwho2001.github.io/SHOS-V2/` (deployed), so some items may 
 ## A. Concrete visual / layout fixes
 | # | Comment | Area | Action |
 |---|---|---|---|
-| A1 | Home "7-day adherence" card: lots of empty space; increase description text size for legibility/space-filling | Home status cards | Investigate; bump description font-size |
-| A2 | Recent activity order: add "last DoxyPEP dose" above "Last medication dose"; move "Newest contact" above "Last encounter" | Home recent activity | Reorder + add DoxyPEP row |
-| A3 | Home h1: in web view there's enough space for "X's Home", but not in app | Home title | Use `useIsDesktopWidth` → "X's Home" on wide, "Home" on narrow |
-| A4 | Calendar: shrink a little to mitigate scrolling; when a day is selected, account for the detail panel needing space | Settings Calendar | Reduce cell size; reserve space for selected-day detail |
+| A1 | Home "7-day adherence" card: lots of empty space; increase description text size for legibility/space-filling | Home status cards | **SHIPPED 18 Nov** — RingSummary summary 12/8.5 → 13/10px (all status cards share it) |
+| A2 | Recent activity order: add "last DoxyPEP dose" above "Last medication dose"; move "Newest contact" above "Last encounter" | Home recent activity | **SHIPPED 18 Nov** — Newest contact first; new DoxyPEP row (value = `doxyStatus.lastDoseAt`, the same value the 72h banner derives from) above Last medication dose |
+| A3 | Home h1: in web view there's enough space for "X's Home", but not in app | Home title | **SHIPPED 18 Nov** — `isDesktopWidth && profileName` → "[name]'s Home" on wide, translated "Home" on narrow; falls back to "Home" with no nickname |
+| A4 | Calendar: shrink a little to mitigate scrolling; when a day is selected, account for the detail panel needing space | Settings Calendar | **SHIPPED 18 Nov** — day cells aspectRatio 1 → 1.3 (~23% shorter), weekday padding 4→2px, detail `marginTop:14, minHeight:90` for a stable area |
 | A5 | "Send feedback / bug report — Email" needs ~6-8px above | About screen | Add margin-top |
 | A6 | About: add app icon adjacent to or above "SHOS" | About screen | Add `pwa-512.png` image |
 | A7 | Build "204550d": include release date/time? | About screen | Investigate available build metadata (`version.json` has `releasedAt`) |
@@ -43,7 +43,7 @@ Note: from `https://drwho2001.github.io/SHOS-V2/` (deployed), so some items may 
 ## Status (17 Nov)
 - **C1 DONE** — removed the "trending shorter/longer" and "gap vs personal average" insights from Stats. Owner's critique is correct: test intervals are clinically driven (positive → TOC → C&S clusters), so averaging them into a cadence is misleading and the red/alert framing implies a directive to test. The two factual StatRows (Average interval, Within BASHH interval) remain. Pure function kept in statsCalculations.js with a note, in case a purely descriptive presentation is wanted later.
 - **B3/B4 DONE** — "Loads during this encounter" now revealed only once a cum location is recorded (or a value already exists); "Fisting acts" revealed only when a fisting kink is tagged (or a value exists).
-- **A5/A6/A7/A9/A10, A1–A4, B1, B2, B5, C2** — still OPEN, need owner decisions or visual re-diagnosis (see popup).
+- **A5/A6/A7/A9/A10, B1, B2, B5, C2** — still OPEN, need owner decisions or visual re-diagnosis (see popup). A1–A4 SHIPPED 18 Nov; A6/A7/A10 were resolved earlier (icon, build date, email-only).
 - **CI** — full suite flow 2 race fixed (clear now writes a snapshot, so the result text appears a beat later; smoke now waits for the text). Flow 12 (App Lock) failed locally once with an empty page after reload — likely a machine flake, CI will re-verify.
 
 ## Decisions needed (popup)
