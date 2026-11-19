@@ -79,10 +79,16 @@ const opensAFilteredLoad = (line) =>
   (line.includes("const tests =") || line.includes("sortByDateDesc("));
 
 describe("the most recent test: one definition of 'recent'", () => {
-  it("the repository enforces the rule it owns", () => {
+  it("the repository no longer stores a hand-typed most-recent flag", () => {
+    // 19 Nov 2026: the old `mostRecent` boolean was a hand-typed copy of a
+    // derivable fact (see mostRecentTest.js). It is kept in DEFAULT_TEST only
+    // so old backups merge to a full shape, but create/update must not write
+    // it: "which test is current" is derived from dates, never stored.
     const repo = read("src/repositories/testingRepository.js");
-    expect(repo).toMatch(/isFuture\s*=/);
-    expect(repo).toMatch(/mostRecent:\s*isFuture\s*\?\s*false/);
+    expect(repo).not.toMatch(/mostRecent:\s*isFuture\s*\?\s*false/);
+    expect(repo).not.toMatch(/_supersedeOlderMostRecent/);
+    const calc = read("src/calculations/mostRecentTest.js");
+    expect(calc).toMatch(/export function isMostRecentTest/);
   });
 
   it("every filtered test load excludes future-dated tests", () => {

@@ -10,7 +10,7 @@
 //
 // Every test here fails on the old implementation, except where noted.
 import { describe, it, expect } from "vitest";
-import { mostRecentTestDate, testCoversInfection } from "./mostRecentTest.js";
+import { mostRecentTestDate, testCoversInfection, isMostRecentTest } from "./mostRecentTest.js";
 
 const HIV_TEST = { id: "t_hiv", date: "2026-03-01T09:00:00.000Z", testingFor: ["HIV"] };
 const CHLAMYDIA_TEST = { id: "t_ch", date: "2026-09-01T09:00:00.000Z", testingFor: ["Chlamydia"] };
@@ -126,5 +126,26 @@ describe("the rules this helper inherited, now in one place", () => {
     const t = { id: "t_c", date: "2026-06-01T09:00:00.000Z", testingFor: ["HIV"] };
     expect(mostRecentTestDate([t], { infection: "HIV", todayIsoDay: "2026-05-31" })).toBeNull();
     expect(mostRecentTestDate([t], { infection: "HIV", todayIsoDay: "2026-06-01" })).toBe(t.date);
+  });
+});
+
+describe("isMostRecentTest — derived replacement for the stored flag", () => {
+  it("marks the newest completed test as current and the older one as not", () => {
+    const tests = [HIV_TEST, CHLAMYDIA_TEST];
+    expect(isMostRecentTest(CHLAMYDIA_TEST, tests)).toBe(true);
+    expect(isMostRecentTest(HIV_TEST, tests)).toBe(false);
+  });
+  it("two same-day tests both read as current", () => {
+    const a = { id: "a", date: "2026-09-01T09:00:00.000Z", testingFor: ["HIV"] };
+    const b = { id: "b", date: "2026-09-01T17:00:00.000Z", testingFor: ["Syphilis"] };
+    expect(isMostRecentTest(a, [a, b])).toBe(true);
+    expect(isMostRecentTest(b, [a, b])).toBe(true);
+  });
+  it("never marks a plan, a future date, or a dateless test as current", () => {
+    const future = { id: "f", date: "2099-01-01T09:00:00.000Z", testingFor: ["HIV"] };
+    const plan = { id: "p", isRoutineRetestPlan: true, date: "2026-09-01T09:00:00.000Z", testingFor: ["HIV"] };
+    expect(isMostRecentTest(future, [future])).toBe(false);
+    expect(isMostRecentTest(plan, [plan])).toBe(false);
+    expect(isMostRecentTest({ id: "x" }, [HIV_TEST])).toBe(false);
   });
 });

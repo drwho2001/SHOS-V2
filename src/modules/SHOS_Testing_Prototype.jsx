@@ -19,9 +19,20 @@ import { PartnerNotificationRepository } from "../repositories/partnerNotificati
 import { nowAsDateString, nowAsStoredDateTime, formatStoredDate, formatInstantDate, localDayKey } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
-  TESTING_FOR_OPTIONS,
+  TESTING_FOR_OPTIONS, TEST_REASON_OPTIONS,
 } from "../repositories/testingRepository";
 import { hasTestingForOther, testingForOtherValue, setTestingForOther } from "../calculations/testingOtherHelpers";
+// Plain-English labels for the single-select reason chips. Separate from the
+// stable stored keys in TEST_REASON_OPTIONS so storage and display can change
+// independently; the i18n key is testing.reason_<key> with this as fallback.
+const REASON_LABELS = {
+  symptoms: "Symptoms",
+  routine: "Routine",
+  exposure: "Exposure",
+  positive_contact: "Positive contact",
+  partner_notification: "Partner notification",
+  other: "Other",
+};
 import { collapseChips } from "../calculations/chipVisibility";
 // ADDED 5 Nov 2026 — B7: Setting's stable keys, display labels and legacy-value
 // migration. Imported from the pure module rather than re-exported through the
@@ -58,6 +69,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { MeasurementRepository } from "../repositories/measurementRepository";
 import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
 import { findAffectedRoutineRetestPlans, isCompletedTestRecord, isPlannedTest, hasResultForPlannedDate, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
+import { isMostRecentTest } from "../calculations/mostRecentTest";
 // ADDED — real ask: proactive "due for retest" notification, built on
 // top of suggestedRoutineRetestDate's already-real calculation above.
 import { syncTestingReminder } from "../calculations/testingReminderSync";
@@ -742,21 +754,35 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
   // field), this just adds a second EDITABLE entry point into it,
   // exactly like Clinic Visits' linkedTestIds already has.
   const [symptomLinkVersion, setSymptomLinkVersion] = useState(0);
-  const linkedSymptoms = useLoadedMemo(async () => (testId ? (await SymptomLogRepository.getAll()).filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion], []);
+  // 19 Nov 2026 — a NEW test can select symptom entries to link before it has
+  // been saved (no id yet). Held in local state and applied in save() once the
+  // test exists, so "note the symptoms that drove you to test" works on the new
+  // form, not only after saving. For an existing test the repo stays the source
+  // of truth via relatedTestIds.
+  const [newSymptomIds, setNewSymptomIds] = useState([]);
+  const linkedSymptoms = useLoadedMemo(async () => {
+    const all = await SymptomLogRepository.getAll();
+    return isNew
+      ? all.filter((s) => newSymptomIds.includes(s.id))
+      : all.filter((s) => (s.relatedTestIds || []).includes(testId));
+  }, [testId, symptomLinkVersion, isNew, newSymptomIds], []);
   const unlinkedSymptoms = useLoadedMemo(async () => {
-    if (!testId) return [];
-    return (await SymptomLogRepository.getAll())
-      .filter((s) => !(s.relatedTestIds || []).includes(testId))
+    const all = await SymptomLogRepository.getAll();
+    const linked = isNew ? newSymptomIds : all.filter((s) => (s.relatedTestIds || []).includes(testId)).map((s) => s.id);
+    return all
+      .filter((s) => !linked.includes(s.id))
       .sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
-       .map((s) => ({ id: s.id, name: `${s.title || tr("testing.symptomEntry", "Symptom entry")} · ${formatDate(s.dateStarted)}`, searchText: "" }));
-  }, [testId, symptomLinkVersion], []);
+      .map((s) => ({ id: s.id, name: `${s.title || tr("testing.symptomEntry", "Symptom entry")} · ${formatDate(s.dateStarted)}`, searchText: "" }));
+  }, [testId, symptomLinkVersion, isNew, newSymptomIds], []);
   const linkSymptom = async (symptomId) => {
+    if (isNew) { setNewSymptomIds((ids) => [...ids, symptomId]); return; }
     const entry = await SymptomLogRepository.getById(symptomId);
     if (!entry) return;
     await SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), testId] });
     setSymptomLinkVersion((v) => v + 1);
   };
   const unlinkSymptom = async (symptomId) => {
+    if (isNew) { setNewSymptomIds((ids) => ids.filter((id) => id !== symptomId)); return; }
     const entry = await SymptomLogRepository.getById(symptomId);
     if (!entry) return;
     await SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
@@ -835,6 +861,14 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
       clearDraft(draftKey);
       if (isNew) {
         const created = await TestingRepository.create(form);
+        // Apply symptom entries selected on the new form now that the test has
+        // an id. relatedTestIds on the Symptom Log entry stays the one owner.
+        for (const symptomId of newSymptomIds) {
+          const entry = await SymptomLogRepository.getById(symptomId);
+          if (entry && !(entry.relatedTestIds || []).includes(created.id)) {
+            await SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), created.id] });
+          }
+        }
         onSaved(created.id);
       } else {
         // ADDED — real undo/redo extension.
@@ -909,9 +943,43 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
             <TextField label={tr("testing.testingForOther", "Other — what was it tested for?")} value={testingForOtherValue(form.testingFor)}
               onChange={(v) => set("testingFor")(setTestingForOther(form.testingFor, v))} T={T} placeholder="e.g. Mycoplasma" />
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
-            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{tr("testing.mostRecent", "Most recent")}</span>
-            <ToggleSwitch T={T} value={form.mostRecent} onChange={set("mostRecent")} />
+        </SectionCard>
+
+        {/* 19 Nov 2026 — "note the symptoms that drove you to test, before you
+            report the result". Sits above Result, deliberately independent of
+            Setting: a home symptomatic test is still a real thing the owner may
+            do, so it must be recordable. No clinical advice or "not recommended"
+            wording — this only records what the user already noticed. */}
+        <SectionCard title={tr("testing.whyTested", "Why tested")} accent={T.healthcare} T={T}>
+          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{tr("testing.reason", "Reason")}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {TEST_REASON_OPTIONS.map((key) => {
+              const active = form.reason === key;
+              return (
+                <div key={key} onClick={() => set("reason")(active ? "" : key)} role="button" tabIndex={0} aria-pressed={active}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set("reason")(active ? "" : key); } }}
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: TYPE.control.fontSize, fontWeight: 600, cursor: "pointer", minHeight: 34, border: `1px solid ${active ? T.healthcare : T.border}`, color: active ? T.healthcare : T.textSecondary, background: active ? `${T.healthcare}15` : "transparent" }}>
+                  {tr(`testing.reason_${key}`, REASON_LABELS[key])}
+                </div>
+              );
+            })}
+          </div>
+          <TextField label={tr("testing.symptomsReported", "Symptoms reported")} value={form.symptomsReported || ""} onChange={set("symptomsReported")} T={T}
+            placeholder={tr("testing.symptomsReportedPlaceholder", "e.g. burning when peeing, bleeding between periods")} />
+          <div style={{ padding: "8px 0" }}>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("testing.relatedSymptoms", "Linked symptom entries")}</div>
+            {linkedSymptoms.length > 0 ? (
+              linkedSymptoms.map((s) => (
+                <div key={s.id} onClick={() => { onNavigateToRecord?.("healthcare", s.id, "symptomLog"); onClose(); }} role="button" tabIndex={0} aria-label={tr("testing.openLinkedSymptom", "Open linked symptom entry")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord?.("healthcare", s.id, "symptomLog"); onClose(); } }}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcare}`, background: `${T.healthcare}11`, cursor: "pointer", minHeight: 44, marginBottom: 6, gap: 8 }}>
+                  <span style={{ fontSize: TYPE.control.fontSize, color: T.healthcare, fontWeight: 600 }}>{s.title || tr("testing.symptomEntry", "Symptom entry")} · {formatDate(s.dateStarted)}</span>
+                  <X size={20} color={T.healthcare} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ cursor: "pointer", flexShrink: 0 }} />
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("testing.notLinkedSymptom", "Not linked to a symptom entry yet.")}</div>
+            )}
+            {unlinkedSymptoms.length > 0 && <LinkPicker items={unlinkedSymptoms} onPick={linkSymptom} T={T} placeholder={tr("testing.searchSymptomTitle", "Search by title…")} />}
           </div>
         </SectionCard>
 
@@ -954,32 +1022,6 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
                 <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("testing.notLinkedClinicVisit", "Not linked to a clinic visit yet.")}</div>
               )}
               {unlinkedVisits.length > 0 && <LinkPicker items={unlinkedVisits} onPick={linkVisit} T={T} placeholder={tr("testing.searchClinicVisit", "Search by name or clinician…")} />}
-            </div>
-          )}
-          {/* ADDED — real ask, upgrading the earlier read-only version:
-              link/unlink Symptom Log entries directly from here, same
-              shape as "Linked clinic visit" above. Symptom Log's own
-              relatedTestIds stays the one place this relationship is
-              actually stored — this only adds a second editable
-              entry point into it. */}
-          {!isNew && (
-            <div style={{ padding: "8px 0" }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{tr("testing.relatedSymptoms", "Related symptom entries")}</div>
-              {linkedSymptoms.length > 0 ? (
-                linkedSymptoms.map((s) => (
-                  <div key={s.id} onClick={() => { onNavigateToRecord?.("healthcare", s.id, "symptomLog"); onClose(); }} role="button" tabIndex={0} aria-label={tr("testing.openLinkedSymptom", "Open linked symptom entry")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigateToRecord?.("healthcare", s.id, "symptomLog"); onClose(); } }}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcare}`, background: `${T.healthcare}11`, cursor: "pointer", minHeight: 44, marginBottom: 6, gap: 8 }}>
-                    <span style={{ fontSize: TYPE.control.fontSize, color: T.healthcare, fontWeight: 600 }}>{s.title || tr("testing.symptomEntry", "Symptom entry")} · {formatDate(s.dateStarted)}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <X size={20} color={T.healthcare} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} title={tr("testing.removeLink", "Remove link")} aria-label={tr("testing.removeLink", "Remove link")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-                      <ChevronRight size={14} color={T.healthcare} />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("testing.notLinkedSymptom", "Not linked to a symptom entry yet.")}</div>
-              )}
-              {unlinkedSymptoms.length > 0 && <LinkPicker items={unlinkedSymptoms} onPick={linkSymptom} T={T} placeholder={tr("testing.searchSymptomTitle", "Search by title…")} />}
             </div>
           )}
           {/* ADDED 19 Aug 2026 — real feedback batch: a free-text
@@ -1266,7 +1308,9 @@ function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, 
             icon={isHomeSetting(test.setting) ? <House size={13} color={T.healthcare} aria-hidden="true" /> : isClinicSetting(test.setting) ? <FirstAid size={13} color={T.healthcare} aria-hidden="true" /> : null} />
           <ReadRow label={tr("testing.sampleType", "Sample type")} value={test.sampleType} T={T} />
           <ReadRow label={tr("testing.testingFor", "Testing for?")} value={test.testingFor} T={T} />
-          <ReadRow label={tr("testing.mostRecent", "Most recent")} value={test.mostRecent ? tr("common.yes", "Yes") : ""} T={T} />
+          <ReadRow label={tr("testing.reason", "Reason")} value={test.reason ? tr(`testing.reason_${test.reason}`, REASON_LABELS[test.reason] || test.reason) : ""} T={T} />
+          <ReadRow label={tr("testing.symptomsReported", "Symptoms reported")} value={test.symptomsReported} T={T} />
+          <ReadRow label={tr("testing.current", "Current")} value={isMostRecentTest(test, allTests) ? tr("common.yes", "Yes") : ""} T={T} />
         </SectionCard>
 
         <SectionCard title={tr("testing.result", "Result")} accent={T.healthcare} T={T}>
@@ -1776,7 +1820,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block", opacity: isOlder ? 0.5 : 1 }} />
         <span style={{ fontSize: 15, fontWeight: 600, color: isOlder ? T.textSecondary : T.textPrimary }}>{t.title || tr("testing.untitledTest", "Untitled test")}</span>{t.isDemo && <span style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF", background: T.textDisabled, borderRadius: 4, padding: "1px 4px", marginLeft: 6, verticalAlign: "middle" }}>{tr("common.demo", "DEMO")}</span>}
         {isOlder && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>{tr("testing.olderTest", "Older test")}</span>}
-{t.mostRecent && <Check size={13} color={T.healthcare} />}
+{isMostRecentTest(t, tests) && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Check size={13} color={T.healthcare} /><span style={{ fontSize: 10, fontWeight: 700, color: T.healthcare }}>{tr("testing.current", "Current")}</span></span>}
         {/* A plan must never read as a result from a glance at the list either.
             Without this it sorts among completed tests, shows its future date,
             and looks like a test already taken. */}

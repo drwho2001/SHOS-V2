@@ -69,11 +69,22 @@ export { SETTING_OPTIONS };
 // stays last per this list's own established convention above.
 export const TESTING_FOR_OPTIONS = ["Gonorrhoea", "HIV", "Syphilis", "Chlamydia", "Hepatitis A", "Hepatitis B", "Hepatitis C", "Mpox", "MGen", "HPV", "Herpes (HSV)", "Trichomoniasis", "Bacterial vaginosis", "C&S (symptomatic/treatment)", "Pregnancy", "Thrush", "Other"];
 
+// ADDED 19 Nov 2026 — surfacing the previously-dormant `reason` field as a
+// single-select chip row above Results. Values are stable keys; labels live in
+// i18n. "symptoms" is deliberately independent of Setting (Home or Clinic) —
+// the owner may still do a symptomatic test at home and must be able to record
+// it. No clinical advice or "not recommended" wording anywhere in this set.
+export const TEST_REASON_OPTIONS = ["symptoms", "routine", "exposure", "positive_contact", "partner_notification", "other"];
+
 export const DEFAULT_TEST = {
   isDemo: false,
   title: "",
   // ADDED — structured reason for testing (mockup alignment)
   reason: "",       // "symptoms" | "routine" | "positive_contact" | "partner_notification" | "exposure" | ""
+  // ADDED 19 Nov 2026 — optional free-text: what symptoms drove the test.
+  // Independent of Setting so a home symptomatic test can be recorded honestly
+  // (the app does not advise on whether testing at home is appropriate).
+  symptomsReported: "",
   date: null,
   // ADDED 19 Aug 2026 — real feedback batch: Result Date, separate
   // from the specimen/test date above — the date the RESULT actually
@@ -375,48 +386,23 @@ export const TestingRepository = {
     return found ? structuredClone({ ...DEFAULT_TEST, ...found, setting: normaliseSetting(found.setting) }) : null;
   },
 
-  // ADDED — real ask: "mostRecent" was a plain manual checkbox with no
-  // logic behind it at all — nothing prevented a future-dated test
-  // from being flagged, and nothing un-flagged an older test once a
-  // newer one genuinely covered the same ground. Real definition used
-  // here, matching the user's own: two tests on the SAME DAY can both
-  // stay "most recent" (different sample sites, same visit) — this
-  // only un-flags an test that's both OLDER (different, earlier date)
-  // AND tests for at least one of the SAME infections as the new one,
-  // since that's genuinely what "superseded" means — a test for
-  // something completely different isn't superseded by this one.
-  _supersedeOlderMostRecent(newTest) {
-    if (!newTest.mostRecent || !newTest.date) return;
-    const newDay = newTest.date.slice(0, 10);
-    tests = tests.map((t) => {
-      if (t.id === newTest.id || !t.mostRecent || !t.date) return t;
-      const sameDay = t.date.slice(0, 10) === newDay;
-      if (sameDay) return t; // same-day tests can coexist as most recent
-      const isOlder = new Date(t.date) < new Date(newTest.date);
-      const overlaps = (t.testingFor || []).some((x) => (newTest.testingFor || []).includes(x));
-      if (isOlder && overlaps) return { ...t, mostRecent: false };
-      return t;
-    });
-  },
-
   async create(data) {
     await ensureLoaded();
-    // CHANGED — real ask: "future tests are not recent" — a test
-    // dated in the future can never be marked most recent, regardless
-    // of what was passed in.
-    const isFuture = data.date && new Date(data.date) > new Date();
+    // 19 Nov 2026 — `mostRecent` is no longer stored. It was a hand-typed copy
+    // of a fact the app now derives from dates (mostRecentTest.js's
+    // isMostRecentTest). The field stays in DEFAULT_TEST only so old backups
+    // merged on load still get a shape; create() never writes it.
     const newTest = {
       ...DEFAULT_TEST,
       ...data,
       setting: normaliseSetting(data.setting),
       isDemo: false,
-      mostRecent: isFuture ? false : data.mostRecent,
+      mostRecent: false,
       id: generateTestId(),
       createdAt: new Date().toISOString(),
       isArchived: false,
     };
     tests = [...tests, newTest];
-    this._supersedeOlderMostRecent(newTest);
     await persist();
     return newTest;
   },
@@ -489,7 +475,6 @@ async updateRoutineRetestPlan(id, { title, date }) {
       // as a normal test, say) would otherwise keep a record claiming to be an
       // intention while carrying a result.
       isRoutineRetestPlan: true,
-      mostRecent: false,
     });
   },
 
@@ -505,12 +490,10 @@ async updateRoutineRetestPlan(id, { title, date }) {
       // check logic — per the user's own clarification, an edit isn't the
       // same thing as a logged encounter.
       const merged = { ...t, ...changes, setting: normaliseSetting("setting" in changes ? changes.setting : t.setting), updatedAt: new Date().toISOString(), isSeed: false, isDemo: t.isDemo };
-      // Same future-date guard as create().
-      const isFuture = merged.date && new Date(merged.date) > new Date();
-      updated = isFuture ? { ...merged, mostRecent: false } : merged;
+      // mostRecent is derived now (mostRecentTest.js); never re-written here.
+      updated = merged;
       return updated;
     });
-    if (updated) this._supersedeOlderMostRecent(updated);
     await persist();
     return updated ? structuredClone({ ...DEFAULT_TEST, ...updated }) : null;
   },

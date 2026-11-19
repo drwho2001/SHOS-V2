@@ -108,3 +108,22 @@ export function mostRecentTestDate(tests, options = {}) {
   matching.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return matching[0].date;
 }
+
+/**
+ * Is THIS test the current one? Derived replacement for the old hand-maintained
+ * `mostRecent` flag. A test is current when its (completed, non-future) date is
+ * the newest date returned by mostRecentTestDate — which means same-day tests
+ * (different sample sites on one visit) all read as current, the exact rule the
+ * stored flag used to try to enforce by hand. Plans and future dates are
+ * excluded by the shared owner, so they can never read as current here.
+ *
+ * @param {object} test
+ * @param {object[]} tests full set (not search-filtered)
+ * @returns {boolean}
+ */
+export function isMostRecentTest(test, tests, options = {}) {
+  if (!test?.date || !isCompletedTestRecord(test)) return false;
+  const latest = mostRecentTestDate(tests, options);
+  if (!latest) return false;
+  return String(test.date).slice(0, 10) === String(latest).slice(0, 10);
+}
