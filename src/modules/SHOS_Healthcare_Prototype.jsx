@@ -354,6 +354,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               makes the row read as a set of chips rather than a block
               of buttons. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {/* The tablist wraps ONLY the tabs — the "More" button below is a
+              button, not a tab, and an aria-required-children violation is
+              raised if it sits inside a tablist. */}
+          <div role="tablist" aria-label={tr("healthcare.tabsLabel", "Healthcare sections")} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {visibleTabs.map((tab) => (
             // CHANGED — real audit finding (exhaustive screen-reader
             // audit): these sub-tab pills were 100% unreachable via
@@ -367,6 +371,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
               {tab.label}
             </div>
           ))}
+          </div>
           {moreTabs.length > 0 && (
             <div style={{ position: "relative" }}>
               <div role="button" tabIndex={0} aria-expanded={showMoreTabs} aria-label="More Healthcare sections" onClick={() => setShowMoreTabs((v) => !v)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMoreTabs((v) => !v); } }}

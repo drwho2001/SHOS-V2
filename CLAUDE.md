@@ -250,7 +250,7 @@ reason**. Update that list in the test; do not edit prose to match reality.
 ## Verification and shipping
 
 **The gate is `npm run verify` = `scripts/verify-changes.mjs`: build → lint →
-unit tests → encoding → inherited-instructions → smoke suite → a docs check.**
+unit tests → encoding → inherited-instructions → smoke suite → an a11y ratchet → a docs check.** The a11y ratchet (`scripts/a11y-gate.cjs`, skipped by `verify:fast`) accepts today's axe findings from `a11y-baseline.json` with reasons and fails only on NEW rules, count increases, or a stale baseline after a fix — shrink the baseline with `node scripts/a11y-gate.cjs --update-baseline`.**
 Both a local and a CI gate, and because they run the same file, a gate added
 locally is a gate that runs in CI automatically. That is not tidiness: the
 previous CI job hand-copied each step, and when the two lists differed nothing

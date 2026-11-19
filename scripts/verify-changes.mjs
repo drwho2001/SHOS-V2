@@ -597,6 +597,20 @@ if (!FAST && !DOCS_ONLY) {
   }
 }
 
+// --- gate 5.5: accessibility ratchet --------------------------------------
+// ADVISORY WITH A BASELINE, not a hard pass/fail. axe-core has been in
+// devDependencies since the 17 Nov audit but was never run; the current
+// backlog (colour contrast + nested-interactive) is recorded in
+// a11y-baseline.json with reasons. The gate fails on a NEW rule, a count
+// increase, or a stale baseline when a rule is fixed. `verify:fast` skips it
+// the same way it skips the browser-based smoke suite.
+if (!FAST && !DOCS_ONLY) {
+  gate("a11y ratchet", () => {
+    const r = run("node", ["scripts/a11y-gate.cjs"]);
+    return { ok: r.status === 0, note: r.status === 0 ? "" : lastLines((r.stdout || "") + (r.stderr || "")) };
+  });
+}
+
 // --- gate 6: docs in sync --------------------------------------------------
 // Deliberately a QUESTION, not an assertion. The failure mode here is a commit
 // that changes behaviour and leaves CLAUDE.md describing the old behaviour, and

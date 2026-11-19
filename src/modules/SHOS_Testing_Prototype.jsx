@@ -1755,7 +1755,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
               style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44 }} />
           </div>
           <div style={{ minWidth: 180 }}>
-            <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
+            <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} aria-label={tr("testing.dateFilter", "Filter tests by date")}
               style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }}>
               <option value="all">{tr("testing.allTime", "All time")}</option>
               <option value="30">{tr("testing.last30Days", "Last 30 days")}</option>

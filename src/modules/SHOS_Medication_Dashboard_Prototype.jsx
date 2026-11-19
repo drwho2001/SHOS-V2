@@ -2484,7 +2484,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           </div>
           </div>
           <div style={{ background: T.bg, padding: "6px 16px 0" }}>
-          <div style={{ display: "flex", gap: 20, padding: "0 16px" }}>
+          <div role="tablist" aria-label={tr("medication.tabs", "Medication sections")} style={{ display: "flex", gap: 20, padding: "0 16px" }}>
             {["Registry", "Log", "Inventory"].map((t) => (
               <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: TYPE.control.fontSize, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer"}}>{t}</div>
             ))}
