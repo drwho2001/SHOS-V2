@@ -204,8 +204,12 @@ export const ACCENTS = { ...DEFAULT_ACCENTS, ...overrides };
 // still clears red's own 4.59:1 white-text contrast, not a literal
 // numeric match to red's saturation/lightness.
 const DEFAULT_ACTION_COLORS = {
-  red: "#D93838",
-  green: "#148A1E",
+  // 19 Nov 2026 — darkened slightly from #D93838/#148A1E after the first
+  // real axe run: on the app's own light tinted surfaces the old values
+  // measured 3.61:1 and 4.30:1, below the WCAG AA 4.5:1 text threshold.
+  // Still unmistakably red (critical/deletion) and green (ok/done).
+  red: "#C02020",
+  green: "#11781A",
 };
 // ADDED — real ask: make the semantic pass/fail pair genuinely
 // editable too, not just the 5 module identity colours — arguably the
@@ -299,8 +303,8 @@ export const ACCENT_TEXT_SAFE = {
   locations: "#D3237F",
 };
 export const ACTION_TEXT_SAFE = {
-  red: "#C52626",
-  green: "#11781A",
+  red: "#C02020",
+  green: "#0F6A17",
   // ADDED — amber warning chip text (Incomplete badge, duplicate
   // confidence chip). Hand-tuned stand-in, not derived from
   // ACTION.amber (#F59E0B) — deriveLightAccent leaves #F59E0B

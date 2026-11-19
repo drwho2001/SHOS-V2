@@ -1,6 +1,6 @@
 {
   "color-contrast|serious": {
-    "count": 51,
+    "count": 12,
     "reason": "Accepted at baseline 19 Nov 2026 — see docs/reviews/2026-11-17/COMPACTION-HANDOFF.md. Ratchet: fix to shrink, never grow."
   },
   "nested-interactive|serious": {

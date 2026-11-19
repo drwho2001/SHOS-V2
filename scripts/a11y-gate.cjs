@@ -23,7 +23,15 @@ const VIEWPORTS = [
   { name: "mobile-390x844", width: 390, height: 844 },
   { name: "desktop-1280x800", width: 1280, height: 800 },
 ];
-const SCREENS = ["Home", "Encounter", "Medication", "Healthcare"];
+// The nav click is a React state change, not a navigation — axe must wait for
+// the target screen's OWN text before measuring, or counts swing run to run
+// and the ratchet cries wolf.
+const SCREENS = [
+  { name: "Home", marker: "Recent activity" },
+  { name: "Encounter", marker: "Select" },
+  { name: "Medication", marker: "Active medications" },
+  { name: "Healthcare", marker: "Healthcare" },
+];
 
 function startServer() {
   const port = 5600 + Math.floor(Math.random() * 300);
@@ -56,15 +64,21 @@ function startServer() {
       await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Skip")?.click());
       await page.waitForTimeout(1500);
       for (const screen of SCREENS) {
-        if (screen !== "Home") {
-          await page.evaluate(lbl => [...document.querySelectorAll("[aria-label]")].find(e => e.getAttribute("aria-label") === lbl)?.click(), screen);
-          await page.waitForTimeout(500);
+        if (screen.name !== "Home") {
+          await page.evaluate(lbl => [...document.querySelectorAll("[aria-label]")].find(e => e.getAttribute("aria-label") === lbl)?.click(), screen.name);
         }
+        await page.waitForFunction(
+          marker => (document.body.innerText || "").includes(marker),
+          screen.marker,
+          { timeout: 10000 }
+        ).catch(() => {});
+        await page.waitForTimeout(400);
         if (!(await page.evaluate(() => typeof window.axe !== "undefined"))) await page.addScriptTag({ url: `${url}/__axe.min.js` });
         const violations = await page.evaluate(async () => {
           const r = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } });
           return r.violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.length }));
         });
+        console.log(`  ${vp.name}/${screen.name}: ${violations.map(v => `${v.id}=${v.nodes}`).join(", ") || "clean"}`);
         for (const v of violations) {
           const key = `${v.id}|${v.impact}`;
           counts[key] = (counts[key] || 0) + v.nodes;

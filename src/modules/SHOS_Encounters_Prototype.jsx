@@ -632,7 +632,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             Protection's "No barrier method"). Rendered as a dashed outline so
             it never reads as a stored selection the user could un-tap. */}
         {derivedChips.map((chip) => (
-          <div key={chip.label} style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12` }}>
+          <div key={chip.label} style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 12, fontWeight: 700, border: `1px dashed ${ACTION.amber}`, color: ACTION_TEXT_SAFE.amber, background: `${ACTION.amber}12` }}>
               {chip.label}
           </div>
         ))}
@@ -1141,11 +1141,11 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   // name; multi shows initials, matching the mockup's P/K/A/J pattern.
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
-  // CHANGED — real audit finding: the solid amber fill put white text on a
-  // light amber ground (~2:1), so attendee names were genuinely hard to
-  // read. Matches the mockup's intended treatment and every other chip in
-  // this card: a translucent amber tint + amber border + white text.
-  const attendeePillStyle = { padding: "2px 8px", borderRadius: "999px", background: "rgba(224, 161, 102, 0.15)", border: "1px solid #e0a166", color: "#fff", fontSize: attendeeNames.length === 1 ? 10 : 9, fontWeight: 700, whiteSpace: "nowrap" };
+  // CHANGED — real axe finding: white text on this light amber tint measured
+  // ~1.1:1. Now uses T.textPrimary (dark ink on light tint, light ink in dark
+  // mode) with the translucent tint + amber border unchanged — same semantic
+  // amber chip, just legible.
+  const attendeePillStyle = { padding: "2px 8px", borderRadius: "999px", background: "rgba(224, 161, 102, 0.15)", border: "1px solid #e0a166", color: T.textPrimary, fontSize: attendeeNames.length === 1 ? 10 : 9, fontWeight: 700, whiteSpace: "nowrap" };
   const attendeeChips = shown.map((name, i) => (
     <span key={i} style={attendeePillStyle}>{attendeeNames.length === 1 ? name : name[0]}</span>
   ));
@@ -1253,7 +1253,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
               <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginBottom: 3 }}>Position (me)</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {(encounter.myPosition || []).map((p, i) => (
-                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.home}15`, border: `1px solid ${ACCENTS.home}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{p}</span>
+                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.home}15`, border: `1px solid ${ACCENTS.home}`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{p}</span>
                 ))}
               </div>
             </>
@@ -1265,7 +1265,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
               <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 3 }}>Activities</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {kinkNames.map((name, i) => (
-                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.encounters}15`, border: `1px solid ${ACCENTS.encounters}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+                  <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.encounters}15`, border: `1px solid ${ACCENTS.encounters}`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
                 ))}
               </div>
             </>
@@ -1278,13 +1278,13 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {canonicalProtectionNames(protectionNames).map((name, i) => (
                   name === NO_BARRIER_LABEL ? (
-                    <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", border: `1px dashed ${ACTION.amber}`, color: ACTION.amber, background: `${ACTION.amber}12`, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{name}</span>
+                    <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", border: `1px dashed ${ACTION.amber}`, color: ACTION_TEXT_SAFE.amber, background: `${ACTION.amber}12`, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{name}</span>
                   ) : (
-                    <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
+                    <span key={i} style={{ padding: "2px 8px", borderRadius: "999px", background: "#5fd9a415", border: "1px solid #5fd9a4", color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{name}</span>
                   )
                 ))}
                 {encounter.myPrepCoverage && (
-                  <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
+                  <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${T.medication}15`, border: `1px solid ${T.medication}`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>PrEP</span>
                 )}
               </div>
             </>
@@ -1296,13 +1296,13 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
               <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: T.textDisabled, marginTop: 10, marginBottom: 6 }}>Cum / loads</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {(encounter.whereICame || []).map((loc, i) => (
-                  <span key={`ic-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
+                  <span key={`ic-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
                 ))}
                 {(encounter.whereHeCame || []).map((loc, i) => (
-                  <span key={`hc-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
+                  <span key={`hc-${i}`} style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{loc}</span>
                 ))}
                 {encounter.loadsCount > 0 && (
-                  <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: "#fff", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{encounter.loadsCount} {encounter.loadsCount === 1 ? "load" : "loads"}</span>
+                  <span style={{ padding: "2px 8px", borderRadius: "999px", background: `${ACCENTS.protection}15`, border: `1px solid ${ACCENTS.protection}`, color: T.textPrimary, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>{encounter.loadsCount} {encounter.loadsCount === 1 ? "load" : "loads"}</span>
                 )}
               </div>
             </>
@@ -1776,7 +1776,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             {/* CHANGED 17 Nov 2026 (owner): one continuous line of text —
                 "INFERRED — not confirmed: PrEP coverage is…" — rather than two
                 separate flex spans that left an awkward gap/wrap on narrow screens. */}
-            <span style={{ flex: "0 1 auto", minWidth: 0 }}>⚠ <strong style={{ color: "#FF7A7E" }}>INFERRED — not confirmed:</strong> PrEP coverage is estimated from your 7-day medication log and reassessed 24h post-event — not a confirmed lab result.</span>
+            <span style={{ flex: "0 1 auto", minWidth: 0 }}>⚠ <strong style={{ color: T.actionRedText }}>INFERRED — not confirmed:</strong> PrEP coverage is estimated from your 7-day medication log and reassessed 24h post-event — not a confirmed lab result.</span>
             <button onClick={() => setDismissedPrepWarning(true)} aria-label="Dismiss PrEP coverage note" style={{ flex: "0 0 auto", width: 22, height: 22, display: "grid", placeItems: "center", borderRadius: 999, border: "none", background: "transparent", color: T.textSecondary, cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0, marginLeft: 4, WebkitAppearance: "none", MozAppearance: "none", appearance: "none" }}>×</button>
           </div>
         )}

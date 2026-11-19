@@ -465,6 +465,7 @@
   },
   "healthcare": {
     "title": "Healthcare",
+    "tabsLabel": "Healthcare sections",
     "settings": "Healthcare settings",
     "settingsDesc": "Which Healthcare sections appear as buttons, and whether reproductive tracking is on.",
     "testing": "Testing",
