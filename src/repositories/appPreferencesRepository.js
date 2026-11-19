@@ -144,6 +144,13 @@ export const DEFAULT_APP_PREFERENCES = {
   // can be picked so the pill row stays on one line — a second row used
   // to overlap the Episodes/Calendar/Card/Attachments shortcut row.
   healthcareVisibleTabs: null,
+  // ADDED 19 Nov 2026 — Encounters module settings, reachable from the gear
+  // on the Encounter title banner. The three list-header toggles used to
+  // reset on every mount; these are the persisted DEFAULTS they start from,
+  // and each toggle still works as a per-session override.
+  encounterDefaultSort: "newest",           // newest | oldest
+  encounterShowSessionSummaries: false,
+  encounterShowArchived: false,
   // ADDED — real ask: "option/button to hide pregnancy tab if toggled
   // on" — the existing "Show pregnancy tracking anyway" link (see
   // SHOS_MenstrualHealth_Prototype.jsx) already covers the opposite

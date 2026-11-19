@@ -13,7 +13,7 @@
 // never writes to a Contact record; the link is one-directional storage,
 // as documented in encounterRepository.js).
 
-import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, lazy, Suspense } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import QuickExitButton from "../components/QuickExitButton";
 import EmptyState from "../components/EmptyState";
@@ -27,7 +27,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star } from "@phosphor-icons/react";
+import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star, GearIcon as SettingsIcon } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -75,6 +75,8 @@ import { SessionRepository } from "../repositories/sessionRepository";
 // reported (not location/kinks — those weren't part of the report and
 // privacySettingsRepository.js's own base tier is Contact-field-specific).
 import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
+import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../repositories/appPreferencesRepository";
+const EncountersSettingsScreen = lazy(() => import("./settings/EncountersSettingsScreen"));
 import { useEscapeToClose } from "../components/useEscapeToClose";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
@@ -1343,12 +1345,26 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
-  const [showArchived, setShowArchived] = useState(false);
-  const [encounterSort, setEncounterSort] = useState("newest"); // newest | oldest | (cycle)
+  // 19 Nov 2026 — these three list-header toggles now start from the
+  // persisted module settings (gear on the title banner) instead of always
+  // resetting on mount. The in-list controls remain per-session overrides.
+  const [encounterPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const [encounterPrefsVersion, setEncounterPrefsVersion] = useState(0);
+  const [showEncounterSettings, setShowEncounterSettings] = useState(false);
+  const [showArchived, setShowArchived] = useState(!!encounterPrefs.encounterShowArchived);
+  const [encounterSort, setEncounterSort] = useState(encounterPrefs.encounterDefaultSort === "oldest" ? "oldest" : "newest");
   const [sessionVersion, setSessionVersion] = useState(0);
   const sessions = useLoadedMemo(loadSessions, [sessionVersion], []);
   const [sessionFilter, setSessionFilter] = useState("");
-  const [showSessionSummaries, setShowSessionSummaries] = useState(false);
+  const [showSessionSummaries, setShowSessionSummaries] = useState(!!encounterPrefs.encounterShowSessionSummaries);
+  // Re-apply the stored defaults when prefs finish loading or the module
+  // settings screen writes a change. In-list toggles are local overrides and
+  // do not write prefs, so they are not clobbered by this effect.
+  useEffect(() => {
+    setShowArchived(!!encounterPrefs.encounterShowArchived);
+    setEncounterSort(encounterPrefs.encounterDefaultSort === "oldest" ? "oldest" : "newest");
+    setShowSessionSummaries(!!encounterPrefs.encounterShowSessionSummaries);
+  }, [encounterPrefsVersion, encounterPrefs.encounterDefaultSort, encounterPrefs.encounterShowArchived, encounterPrefs.encounterShowSessionSummaries]);
   const sessionSummariesRef = useRef(null);
   useEffect(() => {
     if (showSessionSummaries) sessionSummariesRef.current?.scrollIntoView({ block: "start" });
@@ -1565,6 +1581,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowEncounterSettings(true)} role="button" tabIndex={0} aria-label={tr("encounters.settings", "Encounter settings")} title={tr("encounters.settings", "Encounter settings")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowEncounterSettings(true); } }} />
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
@@ -1827,6 +1844,11 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <Plus size={24} />
         </div>
       </div>
+      {showEncounterSettings && (
+        <Suspense fallback={null}>
+          <EncountersSettingsScreen onClose={() => setShowEncounterSettings(false)} onPreferencesUpdated={() => setEncounterPrefsVersion((v) => v + 1)} />
+        </Suspense>
+      )}
     </div>
   );
 }
