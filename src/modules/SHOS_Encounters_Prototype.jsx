@@ -1562,7 +1562,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           while the title/icons stay safely below the notch. This
           outer wrapper's T.bg background is now effectively unused
           (zero height above the inner banner) but harmless to leave. */}
-      <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
@@ -1953,7 +1953,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           known top-edge clipping/repaint issues on some Android
           WebView versions. Matches the established, already-working
           pattern instead of a remote guess at the exact sticky bug. */}
-      <div style={{ background: T.bg, padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ background: T.bg, padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, borderBottom: `1px solid ${T.border}` }}>
         {/* FIXED 1 Sep 2026 — real ask: "three dots to edit not obvious"
             in dark mode, "look through app for any other similar
             instances". Neither icon here had a `color` at all, so both

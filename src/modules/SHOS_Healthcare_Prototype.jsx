@@ -11,7 +11,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, reso
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { SkeletonList } from "../components/Skeleton";
 import { useTranslation } from "../i18n/index.js";
-import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar } from "@phosphor-icons/react";
+import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar, GearIcon as SettingsIcon } from "@phosphor-icons/react";
 import QuickExitButton from "../components/QuickExitButton";
 import { TestingRepository } from "../repositories/testingRepository";
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
@@ -39,6 +39,7 @@ import { resolveVisibleTabs } from "../calculations/healthcareTabs";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 const AttachmentsScreen = lazy(() => import("./SHOS_Attachments_Prototype"));
 const TimelineModule = lazy(() => import("./SHOS_Timeline_Prototype"));
+const HealthcareSettingsScreen = lazy(() => import("./settings/HealthcareSettingsScreen"));
 
 // ADDED 10 Oct 2026 (t108) - onOpenGlossary, forwarded to ClinicCardScreen below.
 // App.jsx already hands this prop to every ActiveModule (line 2875), and
@@ -55,6 +56,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // 3-per-row layout regardless of label length.
   // M4.2 — overflow control for the sub-tab row (BACKLOG 0b decision).
   const [showMoreTabs, setShowMoreTabs] = useState(false);
+  // 19 Nov 2026 (owner): Healthcare's own settings live behind a gear on its
+  // title banner, matching Contacts/Medication, instead of in general
+  // Preferences. Same in-module overlay pattern as those two screens.
+  const [showHealthcareSettings, setShowHealthcareSettings] = useState(false);
+  // Bumped when the module settings screen writes a preference so the two
+  // values below reload without a full app restart.
+  const [healthcarePrefsVersion, setHealthcarePrefsVersion] = useState(0);
   const [subTab, setSubTab] = useState(
     quickAddTarget === "clinicVisits" ? "clinicVisits" :
     quickAddTarget === "symptomLog" ? "symptomLog" :
@@ -177,11 +185,11 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // line — meaning the Menstrual/Contraception/Pregnancy sub-tab here
   // has likely never actually appeared for any real install with the
   // toggle on, not just Home's own shortcuts.
-  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
-  // User's chosen visible Healthcare tabs (null = default). Loaded once; the
-  // Preferences card writes it, and a reload is already the established
-  // pattern here (same as tabOrder) — kept read on mount, not per render.
-  const [visibleTabsPref] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.healthcareVisibleTabs), [], null);
+  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [healthcarePrefsVersion], false);
+  // User's chosen visible Healthcare tabs (null = default). Reloads when the
+  // module's own settings screen writes a change, so the pill row updates in
+  // place instead of needing an app restart.
+  const [visibleTabsPref] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.healthcareVisibleTabs), [healthcarePrefsVersion], null);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —
   // checked and found the actual reason wasn't styling, it was that
@@ -325,12 +333,15 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           the notch. */}
       {/* One sticky stack: the blue title band remains visually distinct
           from the dark sub-tabs, while both stay attached during scrolling. */}
-      <div ref={healthcareHeaderRef} style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, marginTop: "calc(-1 * env(safe-area-inset-top))" }}>
+      <div ref={healthcareHeaderRef} style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)" }}>
         <div style={{ position: "relative", background: T.healthcare, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
           <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcare, pointerEvents: "none" }} />
           <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
-          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowHealthcareSettings(true)} role="button" tabIndex={0} aria-label={tr("healthcare.settings", "Healthcare settings")} title={tr("healthcare.settings", "Healthcare settings")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowHealthcareSettings(true); } }} />
+            {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
+          </div>
           </div>
         </div>
         <div style={{ padding: "8px 16px 8px" }}>
@@ -451,6 +462,11 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       )}
     </Suspense>
       </div>
+      {showHealthcareSettings && (
+        <Suspense fallback={null}>
+          <HealthcareSettingsScreen onClose={() => setShowHealthcareSettings(false)} onPreferencesUpdated={() => setHealthcarePrefsVersion((v) => v + 1)} />
+        </Suspense>
+      )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />}
       {showAttachments && (
         <AttachmentsScreen onClose={() => setShowAttachments(false)}

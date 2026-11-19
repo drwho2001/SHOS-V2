@@ -62,7 +62,7 @@ import { EpisodeRepository } from "../repositories/episodeRepository";
 // linkSymptom/unlinkSymptom in TestEditSheet) writes into THAT array
 // rather than adding a second, unsynced field for the same relationship
 // — exactly the linkedTestIds/linkedVisits precedent above.
-import { SymptomLogRepository } from "../repositories/symptomLogRepository";
+import { SymptomLogRepository, DEFAULT_SYMPTOM_ENTRY } from "../repositories/symptomLogRepository";
 // ADDED — Measurements inline entry point, same "one room, three
 // doors" reasoning as Clinic Visits' own — CD4/viral load from a test
 // gets a real linked Measurement, never a duplicate field here.
@@ -760,6 +760,10 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
   // form, not only after saving. For an existing test the repo stays the source
   // of truth via relatedTestIds.
   const [newSymptomIds, setNewSymptomIds] = useState([]);
+  // 19 Nov 2026 (owner): a symptom typed into the test form must become a
+  // REAL Symptom Log entry, not just free text that dies with the form. Kept
+  // local until "Add" is tapped so typing never writes anything.
+  const [newSymptomTitle, setNewSymptomTitle] = useState("");
   const linkedSymptoms = useLoadedMemo(async () => {
     const all = await SymptomLogRepository.getAll();
     return isNew
@@ -787,6 +791,30 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
     if (!entry) return;
     await SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
     setSymptomLinkVersion((v) => v + 1);
+  };
+  // 19 Nov 2026 (owner) — turning a typed symptom into a real entry. The
+  // entry is deliberately a STUB: title + start date + a note saying it was
+  // raised from a test, to be fleshed out later in Symptom Log. The two-way
+  // relation is owned by the symptom's relatedTestIds (Symptom Log's own
+  // field), exactly like linkSymptom above — for a new test the test id does
+  // not exist yet, so the save handler adds it to the created test (see the
+  // newSymptomIds loop below).
+  const createSymptomFromTest = async () => {
+    const title = newSymptomTitle.trim();
+    if (!title) return;
+    const created = await SymptomLogRepository.create({
+      ...DEFAULT_SYMPTOM_ENTRY,
+      title,
+      dateStarted: form.date || nowAsStoredDateTime(),
+      notes: tr("testing.symptomFromTestNote", "Raised while logging a test — add details in Symptom Log."),
+    });
+    if (isNew) setNewSymptomIds((ids) => [...ids, created.id]);
+    else {
+      const fresh = await SymptomLogRepository.getById(created.id);
+      await SymptomLogRepository.update(created.id, { relatedTestIds: [...(fresh?.relatedTestIds || []), testId] });
+      setSymptomLinkVersion((v) => v + 1);
+    }
+    setNewSymptomTitle("");
   };
   // ADDED 19 Aug 2026 — real in-app editable option list.
   // getRanked, not get: suggestion chips surface newly-added and
@@ -980,6 +1008,24 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
               <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>{tr("testing.notLinkedSymptom", "Not linked to a symptom entry yet.")}</div>
             )}
             {unlinkedSymptoms.length > 0 && <LinkPicker items={unlinkedSymptoms} onPick={linkSymptom} T={T} placeholder={tr("testing.searchSymptomTitle", "Search by title…")} />}
+            {/* 19 Nov 2026 (owner): "add a new symptom from here and it saves
+                as an entry to flesh out later in Testing/Symptom Log". Typing
+                here and tapping Add (or Enter) creates a real Symptom Log
+                stub and links it both ways — the old free-text field above
+                alone never created an entry. */}
+            <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
+              <input value={newSymptomTitle} onChange={(e) => setNewSymptomTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createSymptomFromTest(); } }}
+                aria-label={tr("testing.newSymptomTitle", "New symptom name")}
+                placeholder={tr("testing.newSymptomPlaceholder", "Add a symptom…")}
+                style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44 }} />
+              <div role="button" tabIndex={0} aria-label={tr("testing.addSymptom", "Add symptom entry")}
+                onClick={createSymptomFromTest}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); createSymptomFromTest(); } }}
+                style={{ padding: "8px 12px", borderRadius: radius.sm, background: newSymptomTitle.trim() ? T.healthcare : T.border, color: newSymptomTitle.trim() ? "#FFFFFF" : T.textSecondary, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: newSymptomTitle.trim() ? "pointer" : "default", minHeight: 44, display: "flex", alignItems: "center" }}>
+                {tr("testing.addSymptomShort", "Add")}
+              </div>
+            </div>
           </div>
         </SectionCard>
 

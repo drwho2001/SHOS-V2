@@ -7,70 +7,13 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens"
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
-import { HEALTHCARE_TAB_KEYS, HEALTHCARE_VISIBLE_MAX, resolveVisibleTabs } from "../../calculations/healthcareTabs";
 import { useTranslation } from "../../i18n/index.js";
 
-// Real ask 18 Nov: let the user choose which Healthcare sub-tabs show as pills
-// vs live under "More". The visible set is capped by the shared helper so the
-// pill row stays on one line — a second row overlapped the shortcut strip on
-// device. Toggling past the cap is disabled (with a one-line explanation)
-// rather than silently dropping a choice, which is the honest behaviour.
-const HEALTHCARE_TAB_LABELS = {
-  symptomLog: "Symptoms",
-  testing: "Testing",
-  clinicVisits: "Clinic Visits",
-  vaccinations: "Vaccinations",
-  measurements: "Measurements",
-  menstrualHealth: "Reproductive health",
-};
-
-function HealthcareTabsCard({ T, onChanged }) {
-  const { t } = useTranslation();
-  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const available = HEALTHCARE_TAB_KEYS.filter((k) => k !== "menstrualHealth" || prefs.menstrualTrackingEnabled);
-  const visible = resolveVisibleTabs(prefs.healthcareVisibleTabs, available);
-  const atCap = visible.length >= HEALTHCARE_VISIBLE_MAX;
-
-  const toggle = async (key) => {
-    const isVisible = visible.includes(key);
-    if (!isVisible && atCap) return; // cap keeps the row to one line
-    const next = isVisible ? visible.filter((k) => k !== key) : [...visible, key];
-    setPrefs(await AppPreferencesRepository.update({ healthcareVisibleTabs: next }));
-    onChanged();
-  };
-
-  return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>
-        {t("preferences.healthcareTabs", "Healthcare tabs shown")}
-      </div>
-      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
-        {t("preferences.healthcareTabsDesc", "Choose which sections get their own button. The rest live under “More”. Keep to {max} so the row stays on one line.", { max: HEALTHCARE_VISIBLE_MAX })}
-      </div>
-      {available.map((key) => {
-        const on = visible.includes(key);
-        const disabled = !on && atCap;
-        return (
-          <div key={key} onClick={() => toggle(key)} role="switch" tabIndex={disabled ? -1 : 0}
-            aria-checked={on} aria-disabled={disabled}
-            aria-label={t("preferences.healthcareTabToggle", "{tab} tab shown", { tab: HEALTHCARE_TAB_LABELS[key] })}
-            onKeyDown={(e) => { if (!disabled && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(key); } }}
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1, padding: "8px 0", borderTop: `1px solid ${T.border}`, minHeight: 44 }}>
-            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{HEALTHCARE_TAB_LABELS[key]}</span>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: on ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
-              <div style={{ position: "absolute", top: 2, left: on ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
-            </div>
-          </div>
-        );
-      })}
-      {atCap && (
-        <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 8 }}>
-          {t("preferences.healthcareTabsAtCap", "Three buttons is the maximum for one line — turn one off to show a different section.")}
-        </div>
-      )}
-    </div>
-  );
-}
+// 19 Nov 2026 — Healthcare's own preferences (tab choice, reproductive
+// tracking, pregnancy-tab visibility) moved to HealthcareSettingsScreen,
+// reachable from the gear on Healthcare's title banner. Same pattern as
+// Contacts/Medication, where their module-only settings are not duplicated
+// back into this general Preferences screen.
 
 // The toggle knob stays white in both themes — it is a fixed control
 // affordance sitting on the track, not a themed surface — so the literal is
@@ -79,49 +22,6 @@ function HealthcareTabsCard({ T, onChanged }) {
 // knob out of styleColourGuard's raw-colour count now that there are three
 // switches on this screen.
 const TOGGLE_KNOB_BG = "#FFFFFF";
-
-function MenstrualTrackingToggleCard({ T }) {
-  const { t } = useTranslation();
-  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
-  return (
-    <div data-tour="cycle-toggle" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.menstrualTrackingEnabled} aria-label={t("preferences.menstrualTracking", "Menstrual & contraception tracking")}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
-        <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{t("preferences.menstrualTracking", "Menstrual & contraception tracking")}</div>
-          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.menstrualTrackingDesc", "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.")}</div>
-        </div>
-        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
-          <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
-        </div>
-      </div>
-      {/* ADDED — real ask: "option/button to hide pregnancy tab if
-          toggled on, in same placeish" — persisted opt-out for the
-          Pregnancy tab specifically, distinct from this whole
-          Cycle/Contraception/Pregnancy toggle above. Only meaningful
-          while the toggle above is on, so disabled (not hidden — same
-          "why can't I tap this" clarity as PIN-gated App Lock controls
-          in Privacy) until it is.
-      */}
-      {prefs.menstrualTrackingEnabled && (
-        <div onClick={async () => setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
-          role="switch" tabIndex={0} aria-checked={prefs.pregnancyTrackingHidden} aria-label={t("preferences.hidePregnancy", "Hide Pregnancy tab")}
-          onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
-          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
-          <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>{t("preferences.hidePregnancy", "Hide Pregnancy tab")}</div>
-            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{t("preferences.hidePregnancyDesc", "Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.")}</div>
-          </div>
-          <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
-            <div style={{ position: "absolute", top: 2, left: prefs.pregnancyTrackingHidden ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ADDED 9 Sep 2026 — real ask: the "tab reorder" part of the original
 // 18 Aug 2026 Settings/Management ask (see AppPreferencesRepository's
@@ -259,16 +159,10 @@ export function PreferencesScreen({ onClose }) {
             MedicationSettingsScreen's already-established pattern —
             same reasoning that screen was never duplicated back into
             this Preferences screen either. */}
-        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>{t("preferences.healthcare", "Healthcare")}</div>
-        {/* CHANGED 15 Sep 2026 — real exception, stated explicitly by
-            the owner: this toggle can NOT move into a Menstrual Health
-            settings screen the way Contacts' own settings did, since
-            when it's off there IS no module screen to reach it from —
-            it has to live somewhere always-reachable regardless of the
-            module's own on/off state. Stays here on purpose, not an
-            oversight. */}
-        <MenstrualTrackingToggleCard T={T} />
-        <HealthcareTabsCard T={T} onChanged={() => { /* read on Healthcare mount; no reload banner needed */ }} />
+        {/* 19 Nov 2026 — the Healthcare section moved to the module's own
+            settings screen (gear on the Healthcare title banner). Keeping
+            it here as well would recreate the duplication that the
+            Contacts/Medication module settings deliberately avoid. */}
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "12px 0 6px" }}>{t("preferences.appearance", "Appearance & language")}</div>
         <LocaleToggleCard T={T} />
       </div>

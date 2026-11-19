@@ -2465,7 +2465,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             The safe-area inset moved from `top` into the banner's own
             top padding, so only the title/icons — not the colour — sit
             below the notch. */}
-        <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden", marginTop: "calc(-1 * env(safe-area-inset-top))" }}>
+        <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", overflow: "hidden", marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)" }}>
           <div style={{ background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("medication.title", "Medication")}</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
@@ -2533,7 +2533,12 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
 
         {/* Allergies remain sourced from My Profile, but this home-screen
             summary opens its editor directly so it is not a dead-end warning. */}
-        <div style={{ margin: "12px 16px", position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 5, background: T.bg, paddingBottom: 4 }}>
+        {/* 19 Nov 2026 (device): this was sticky at the SAME top offset as the
+            module banner above it, with a lower zIndex — so scrolling hid the
+            card behind the banner and left only a sliver visible above the
+            Active/Needs-action stats. It is a plain allergies summary, not a
+            navigation control, so it now scrolls normally instead of pinning. */}
+        <div style={{ margin: "12px 16px", paddingBottom: 4 }}>
           <button
             type="button"
             onClick={() => setShowMyProfile(true)}

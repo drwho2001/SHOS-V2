@@ -30,9 +30,13 @@ describe("Healthcare tab row", () => {
     const helper = read("src/calculations/healthcareTabs.js");
     expect(helper).toMatch(/HEALTHCARE_VISIBLE_MAX = 3/);
     expect(helper).toMatch(/ordered\.slice\(0, HEALTHCARE_VISIBLE_MAX\)/);
-    const prefs = read("src/modules/settings/PreferencesScreen.jsx");
+    // 19 Nov: the cap moved out of general Preferences into Healthcare's own
+    // settings screen (gear on the Healthcare banner).
+    const prefs = read("src/modules/settings/HealthcareSettingsScreen.jsx");
     expect(prefs).toMatch(/HealthcareTabsCard/);
     expect(prefs).toMatch(/atCap/);
+    const generalPrefs = read("src/modules/settings/PreferencesScreen.jsx");
+    expect(generalPrefs).not.toMatch(/HealthcareTabsCard/);
   });
 
   it("renders stats only for tabs that have them", () => {

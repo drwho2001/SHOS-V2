@@ -196,6 +196,11 @@
     "reason_other": "Other",
     "symptomsReported": "Symptoms reported",
     "symptomsReportedPlaceholder": "e.g. burning when peeing, bleeding between periods",
+    "newSymptomTitle": "New symptom name",
+    "newSymptomPlaceholder": "Add a symptom…",
+    "addSymptom": "Add symptom entry",
+    "addSymptomShort": "Add",
+    "symptomFromTestNote": "Raised while logging a test — add details in Symptom Log.",
     "result": "Result",
     "resultPlaceholder": "e.g. Positive, Negative",
     "organismIfPositive": "Organism (if positive)",
@@ -382,6 +387,7 @@
     "noHIVTestLoggedYet": "No HIV test logged yet"
   },
   "common": {
+    "generalSettings": "General settings",
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
@@ -449,6 +455,8 @@
   },
   "healthcare": {
     "title": "Healthcare",
+    "settings": "Healthcare settings",
+    "settingsDesc": "Which Healthcare sections appear as buttons, and whether reproductive tracking is on.",
     "testing": "Testing",
     "clinicVisits": "Clinic Visits",
     "vaccinations": "Vaccinations",
