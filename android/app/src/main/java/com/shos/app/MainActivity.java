@@ -1,5 +1,7 @@
 package com.shos.app;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.WindowManager;
 import com.getcapacitor.BridgeActivity;
@@ -48,6 +50,26 @@ public class MainActivity extends BridgeActivity {
   // existed, and the one line that joins them did not.
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    // COLD-START "TAKE ALL" HANDOFF (19 Nov 2026) — the medication reminder's
+    // "Take" action button posts ACTION_MAIN with the plugin's own extras
+    // (LocalNotificationManager.buildIntent(): ACTION_INTENT_KEY="TAKE_ALL").
+    // The plugin fires `localNotificationActionPerformed` for that tap, but
+    // @capacitor/local-notifications v8.3.1 has NO `url` field on a local
+    // notification (confirmed in its own LocalNotification.kt + definitions.d.ts
+    // — `url` exists only on Attachment, and buildIntent() never sets intent
+    // data), so the JS deep-link fallback can never see a tap on its own.
+    // Here, on a cold start, we give the launch intent a custom-scheme data
+    // URI so Capacitor's Bridge captures it as the launch URL; App.jsx's
+    // existing getLaunchUrl()/appUrlOpen handler then logs all due meds with
+    // its 5s dedup. This runs BEFORE super.onCreate() because BridgeActivity
+    // creates the Bridge (which snapshots getIntent().getData()) inside
+    // super.onCreate(). Setting `data` leaves the ACTION_MAIN intent shape
+    // intact, so the plugin's own action event still fires normally on a
+    // warm start — the two paths co-exist and the JS dedup absorbs a double.
+    Intent launchIntent = getIntent();
+    if (launchIntent != null && "TAKE_ALL".equals(launchIntent.getStringExtra("LocalNotificationUserAction"))) {
+      launchIntent.setData(Uri.parse("com.shos.app://medication/take-all"));
+    }
     // Plugins must be registered before super.onCreate() per Capacitor's
     // contract. Window flag operations must happen AFTER super.onCreate()
     // because super.onCreate() (BridgeActivity) fully initialises the

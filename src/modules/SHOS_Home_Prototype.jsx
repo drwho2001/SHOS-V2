@@ -1273,6 +1273,23 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 ? `${formatDoxyPepOverdueDuration(doxyStatus.msOverdue)} past the ${DOXYPEP_WINDOW_HOURS}h window`
                 : `${formatDoxyPepCountdown(doxyStatus.msRemaining)} remaining in the ${DOXYPEP_WINDOW_HOURS}h window`}
             </div>
+            {/* Owner 19 Nov 2026: a direct "Log dose" action on the countdown
+                banner. Reuses the SAME locked-out-aware write as the
+                "Take DoxyPEP now" quick-add below (logMedicationDose), so a
+                locked/nothing-due tap explains itself and a second tap is the
+                deliberate override — no new write path. Only rendered when a
+                DoxyPEP medication actually exists, so the button can never be
+                a no-op. Stops propagation so it logs instead of navigating to
+                the medication record (the rest of the card still navigates). */}
+            {doxyMed && (
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); logMedicationDose(doxyMed); }}
+                onKeyDown={(e) => { e.stopPropagation(); }}
+                aria-label="Log a DoxyPEP dose"
+                style={{ marginTop: 8, padding: "6px 12px", borderRadius: 999, border: `1px solid ${doxyStatus.overdue ? actionRedColor : medsBlue}`, background: doxyStatus.overdue ? actionRedColor : medsBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Log dose
+              </button>
+            )}
             {doxyStatus.overdue && (
               <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={(e) => { e.stopPropagation(); dismissDoxyForever(); }} style={{ fontSize: 11, fontWeight: 600, color: doxyStatus.overdue ? actionRedColor : medsBlue, marginTop: 6, cursor: "pointer", textDecoration: "underline" }}>
                 Don't warn me about this exposure again

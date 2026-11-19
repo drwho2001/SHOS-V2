@@ -2388,13 +2388,18 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // more pair of actionIds to dispatch, since both action groups fire
   // through this exact same native event regardless of which
   // notification they came from.
-  // ADDED — cold-start fallback for notification "Take" actions. Capacitor's
-  // localNotificationActionPerformed event is unreliable when the app was
-  // fully killed (it can fire before JS loads). The medication notification
-  // now carries a deep-link URL (shos://medication/take) which Android
-  // delivers to the launched activity reliably, so tapping "Take" (or the
-  // notification body) on a cold start opens the app at that URL and logs
-  // the dose without the user having to tap "Take all" in-app.
+  // Cold-start fallback for notification "Take all" actions. CONFIRMED from
+  // the installed plugin source (@capacitor/local-notifications v8.3.1):
+  // a local notification has NO `url` field — `url` exists only on Attachment
+  // (definitions.d.ts), and LocalNotificationManager.buildIntent() never sets
+  // intent data. So a `url` in scheduleNotification() is silently ignored on
+  // Android and getLaunchUrl()/appUrlOpen can never see a notification tap on
+  // their own. MainActivity.onCreate() now tags the cold-start "Take all"
+  // action intent with the com.shos.app://medication/take-all data URI before
+  // the Bridge snapshots it, which is what makes this handler actually fire.
+  // Both the original /take and the explicit /take-all are accepted so older
+  // already-scheduled notifications and the in-app shortcut keep working.
+  // The 5s dedup absorbs a double with the warm-start native action listener.
   const medicationTakeHandledAtRef = useRef(0);
   useEffect(() => {
     let handle = null;
@@ -2402,7 +2407,9 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       try {
         const { App: CapacitorApp } = await import("@capacitor/app");
         const handleUrl = (url) => {
-          if (typeof url !== "string" || !url.includes("com.shos.app://medication/take")) return;
+          if (typeof url !== "string") return;
+          const isTakeAll = url.includes("com.shos.app://medication/take-all") || url.includes("com.shos.app://medication/take");
+          if (!isTakeAll) return;
           if (Date.now() - medicationTakeHandledAtRef.current < 5000) return;
           medicationTakeHandledAtRef.current = Date.now();
           onDueMedsTakeRef.current?.().catch(() => {});

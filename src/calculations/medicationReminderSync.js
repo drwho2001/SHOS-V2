@@ -138,7 +138,12 @@ export async function syncMedicationReminders() {
       kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
-      url: "com.shos.app://medication/take",
+      // NOTE: @capacitor/local-notifications has no `url` field — this is
+      // ignored on native. The real cold-start handoff is in
+      // MainActivity.onCreate(), which tags the "Take all" action intent with
+      // this same URI so App.jsx's getLaunchUrl() handler sees it. Kept here
+      // as the documented contract and for any platform that does honour it.
+      url: "com.shos.app://medication/take-all",
     });
     await updateRefillWidget();
     return { scheduled: true, due };
@@ -155,7 +160,7 @@ export async function syncMedicationReminders() {
       kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
-      url: "com.shos.app://medication/take",
+      url: "com.shos.app://medication/take-all",
     });
     await updateRefillWidget();
     return { scheduled: true, upcoming: earliest };
