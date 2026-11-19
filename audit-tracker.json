@@ -10,7 +10,7 @@
     "contact_detail": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": false, "notes": "KINK + CONTACT METHODS empty cards (Finding 8c) — already handled by RegistryTagPicker empty state. No code change needed." },
     "encounters": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": true, "notes": "Show archived toggle verified. Date filter verified. Search pending. Dead space (8a) — already handled by conditional rendering." },
     "medication": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": true, "notes": "Registry/Log/Inventory. FAB overlap (8e) — already handled by container bottom padding. 'Needs action' card links (Finding 10 fixed)." },
-    "healthcare": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": true, "notes": "All 7 sub-tabs. Stat strip consistent." },
+    "healthcare": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": true, "notes": "6 sub-tabs (reproductive health conditional). Stat strip per-tab; module settings now behind banner gear." },
     "global_search": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": false, "notes": "BUG 11 dark-mode chip fixed. Light mode correct." },
     "my_profile": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": false, "notes": "All 3 edit tabs. Contrast intentional accents." },
     "settings_subscreens": { "dark": "complete", "light": "complete", "onboarding": "n/a", "toggles_exercised": true, "notes": "All 16 sub-screens covered." },
@@ -29,9 +29,10 @@
     "finding_11_search_chip": { "status": "fixed", "severity": "major", "file": "src/modules/SHOS_GlobalSearch_Prototype.jsx" },
     "finding_12_settings_back": { "status": "false_alarm", "severity": "low", "file": "src/modules/Settings" },
     "finding_13_plural": { "status": "fixed", "severity": "minor", "file": "src/modules/SHOS_Contacts_Prototype.jsx" },
-    "challenge_13px": { "status": "open", "severity": "medium", "file": "multiple (516 sites)" },
-    "challenge_dead_exports": { "status": "open", "severity": "low", "file": "multiple" },
-    "challenge_contact_merge": { "status": "open", "severity": "low", "file": "src/calculations/contactMerge.js" }
+    "challenge_13px": { "status": "fixed", "severity": "medium", "file": "multiple — SHIPPED 18 Nov (5faccc0), 137 sites, fontSizeTokenGuard.test.js" },
+    "challenge_dead_exports": { "status": "fixed", "severity": "low", "file": "multiple — SHIPPED 18 Nov (fbdc002), deadExportsGuard.test.js" },
+    "challenge_contact_merge": { "status": "false_alarm", "severity": "low", "file": "src/calculations/contactMerge.js — VERIFIED CLOSED 18 Nov, duplicateCandidatePanel is wired" },
+    "a11y_axe_2026_11_19": { "status": "baselined", "severity": "serious", "file": "a11y-baseline.json — 4 viewports; critical ARIA fixed; colour-contrast 51→14; nested-interactive 38 accepted; ratchet gate in scripts/a11y-gate.cjs" }
   },
   "toggles": {
     "menstrual_tracking": { "screen": "settings", "visual_flip": true, "re_render": true, "persisted": true, "restore": true, "status": "pass" },
@@ -56,11 +57,12 @@
     "onboarding_verified": 0,
     "toggles_total": 14,
     "toggles_passed": 14,
-    "open_findings": 3,
-    "fixed_findings": 7,
-    "false_alarms": 3
+    "open_findings": 0,
+    "fixed_findings": 10,
+    "false_alarms": 4,
+    "baselined_findings": 1
   },
-  "last_updated": "2026-11-13T03:15:00+00:00",
+  "last_updated": "2026-11-19T23:05:00+00:00",
   "section49b": {
     "encounters_notes_annotation": "done",
     "contacts_empty_states": "done",

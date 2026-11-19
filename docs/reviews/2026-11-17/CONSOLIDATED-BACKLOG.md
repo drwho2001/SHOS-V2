@@ -6,7 +6,7 @@
 
 ---
 
-## 0b. Built after the consolidated backlog (17 Nov, all pushed)
+## 0b. Built after the consolidated backlog (17–19 Nov, all pushed)
 - **R1** update-banner dismiss fix + APK link removed on web; **R13** No-barrier canonical label + search/filter; **R3** reversible demo-data snapshot/restore; web-biometric gating; white-on-white confirm button fix; shared theme-key hardening + guard; round-2 visual fixes (6px confirm spacing, single-line INFERRED, conditional stray ·, Healthcare order Episodes/Calendar/Clinic Card/Attachments). CI guard failures from these were fixed as they surfaced (styleColourGuard, healthcareCalendarShortcutGuard, PWA auto-update smoke).
 - **Challenged, NOT built (with evidence):** R6 dialog stack (test artifact), A2 "routine meds" (already includes BD/TDS/QDS, excludes PRN), A6 end time (already shown when data exists), deep-link gaps (no widget needs them — "doors with no keys").
 - **Awaiting owner decisions:** Testing↔Measurements `sourceTestId` link (recommended yes), measurement-type suggestion bank (recommended yes), A3 medications horizontal scroll (needs visual re-diagnosis), A7 contacts sort (needs-attention default vs filter), import v1 + Clinic Card extension + menopause fields (approved, not built).
@@ -32,23 +32,23 @@
 ## 2. P0/P1 — open ranked fixes (beta)
 | ID | Item | Effort | Challenge |
 |---|---|---|---|
-| R2 | Icon 404s (~15 `contact-platform-icons/*.png`) + CSP font/meta errors | S–M | Real console errors; broken Contacts thumbnails seen live. |
-| R3 | Restore demo data (snapshot-on-clear, D2=B) beside Clear in Home + Developer tools | M–L | Owner's #1 ask; guard-rail tests mandatory (never overwrite user data). |
-| R5 | hCG fields on pregnancy form (urine default + serum value, D3) | M | Schema/backup migration; Testing already has sample type. |
-| R7 | Remove vaginal health + migrate (D1=B) with read-only backup shim | L | Overrides 13 Nov decision; migration test required. |
+| R2 | Icon 404s + CSP font/meta errors | S–M | **SHIPPED 18 Nov** (`bc98425`) — icons on correct deploy path + email chip. |
+| R3 | Restore demo data (snapshot-on-clear, D2=B) | M–L | **SHIPPED 18 Nov** — snapshot restore beside Clear in Home + Developer tools. |
+| R5 | hCG fields on pregnancy form (urine default + serum value, D3) | M | **SHIPPED 18 Nov** (`7d3a9c8`) — sampleType + hcgValue + brand. |
+| R7 | Remove vaginal health + migrate with read-only backup shim | L | **SHIPPED 18 Nov** (`ad8dea1`) — one-shot migration to Symptom Log. |
 | R4 | Repeated summary cards across Healthcare/Medication tabs + allergies green outline for NKDA/none/N/A | M | **SHIPPED 18 Nov** incl. M4.1 genuine per-tab stats, M4.2 compact 2-row tabs + More, M4.3 pregnancy link placement, Testing "Other" text, app-wide chip collapse. BKGD 0b header standardisation explicitly deferred by owner. |
-| R6 | Multiple mounted dialogs (stack of `display:block` dialogs) | S–M | ⚠️ confirm intent — may be deliberate back-stack. |
-| R9 | Two simultaneous "ongoing" periods allowed | S–M | ⚠️ confirm intent — real data integrity concern. |
-| R8 | Transient all-zero counts in Developer tools / Stats on load | S | Misleading skeleton state. |
+| R6 | Multiple mounted dialogs (stack of `display:block` dialogs) | S–M | ❌ CHALLENGED, NOT BUILT — test artifact, not a real user-visible bug. |
+| R9 | Two simultaneous "ongoing" periods allowed | S–M | **SHIPPED 18 Nov** (`9f731cd`) — end-date guard + estimate escape. |
+| R8 | Transient all-zero counts in Developer tools / Stats on load | S | **SHIPPED 18 Nov** (`df78ac6`) — `…` until loaded. |
 
-## 3. P1 — FSRH structure (owner decisions recorded, not built)
-- **F1** Rename "Menstrual & Contraception" → "Reproductive health"; 3 inner sections; no 6th tab. (option 3)
-- **F2** Pregnancy test = Testing-owned single source; Pregnancy = projection + prefilled "+ Log test"; migrate existing entries.
-- **F3** Menopause: user-entered status + neutral NICE/FSRH/RCOG-aligned "discuss with clinician" prompt; **no referral/triage rule**; owner sign-off on copy.
-- **F4** Cycle-stats context: annotate/suppress "irregular" advisory when hormonal contraception active (owner "yes, unsure" — scope at build).
+## 3. P1 — FSRH structure (ALL SHIPPED 18 Nov)
+- **F1** Rename → "Reproductive health"; 3 inner sections; no 6th tab. **SHIPPED** (`d298f5d`).
+- **F2** Pregnancy test = Testing-owned single source; Pregnancy = read-only projection + prefilled "+ Log test". **SHIPPED** (`5e42095`).
+- **F3** Menopause status + neutral "worth mentioning to a clinician sooner" prompt; no referral/triage. **SHIPPED** (`006a8a8`, `68d809f`) with owner-approved copy.
+- **F4** Cycle-stats context when hormonal contraception active. **SHIPPED** (`3a892b3`).
 
-## 4. P1/P2 — accessibility (approved axes; only a11y-tree read so far)
-- **AX1** Run axe-core on every screen; fix contrast/labels/landmarks (repo has past axe findings).
+## 4. P1/P2 — accessibility
+- **AX1** PARTLY DONE 19 Nov: axe-core run in browser at 4 viewports across Home/Encounter/Medication/Healthcare; critical ARIA fixed (tablists, select name), accepted font-colour fixes applied (contrast 51→14), and `scripts/a11y-gate.cjs` ratchet wired into `npm run verify`. Remaining serious findings baselined with reasons; a full per-screen axe pass is still open.
 - **AX2** Keyboard/focus order in dialogs; screen-reader pass.
 - **AX3** Reduced-motion; **font-scale** (native `MainActivity` wires it — large text likely breaks dense cards).
 - **AX4** Colour-blind palette visual verification across screens; full **light-mode** re-review.
@@ -59,7 +59,7 @@
 - **RS3** Calendar fit-to-screen: grid should fit one viewport; event list is the only scroll region — do NOT `overflow:hidden` the whole view. Needs responsive rule + real-device check.
 
 ## 6. P2 — platform parity (beyond biometrics)
-- **PP1** Calendar write-sync toggles on web — confirm reachability; gate if reachable and no-op.
+- **PP1** Calendar write-sync on web — **SHIPPED 19 Nov** (`942a207`) — gated native-only.
 - **PP2** Screen-security/FLAG_SECURE "Allow screenshots" toggle availability on web.
 - **PP3** Native share/folder-export/install-prompt fallbacks on web — exercise.
 

@@ -6,7 +6,7 @@
 - `AUDIT-2026-11-17.md` (live browser audit, 28 screenshots in `audit-2026-11-17/`)
 
 **Status:** findings are from a fresh-install walkthrough (demo data) + code review. Each "didn't save / didn't toggle" observation was re-verified natively and proven to be a tooling artifact — none are real bugs.
-**Shipped since:** R13 (No barrier canonical label + search/filter) and R1 (update-banner dismiss fix + APK link removed on web; platform-parity biometric toggle gated). See `docs/HISTORY.md` 17 Nov entries. Everything else remains queued.
+**Status reconciled 19 Nov 2026 against git (older per-item "queued" notes below are superseded):** R1, R2, R3, R4, R5, R7, R8, R9, R10, R11 and R13 are all SHIPPED; R6 was challenged as a test artifact; R12 needed no change. F1–F4 (reproductive structure) also shipped. Remaining real work is P0 recovery, RS/PP responsive-platform checks, onboarding verification and audit-doc reconciliation — tracked in `COMPACTION-HANDOFF.md` + `pool list`, not here. This file is now a historical record of the findings, not a live queue.
 
 **Severity:** 🔴 broken / high · 🟠 inconsistent / medium · 🟡 polish / low · ✅ verified working (do not "fix")
 **Effort:** S ≈ 0.5 day · M ≈ 1–2 days · L ≈ 3–5 days (repo conventions: heavy comments, tests, dual i18n, axe, audit-tracker updates — treat as a floor).
