@@ -136,6 +136,14 @@ export const DEFAULT_APP_PREFERENCES = {
   // Off by default, same as every other opt-in feature area in this
   // app (App Lock, calendar sync, encrypted export).
   menstrualTrackingEnabled: false,
+  // ADDED 18 Nov 2026 — real ask: let the user choose which Healthcare
+  // sub-tabs show as pills vs live under "More". null = use the default
+  // visible set; an array of tab keys is the user's own choice. Kept as a
+  // plain list of keys (not a count) so it survives tabs being added or
+  // toggled (reproductive health is conditional). The UI clamps how many
+  // can be picked so the pill row stays on one line — a second row used
+  // to overlap the Episodes/Calendar/Card/Attachments shortcut row.
+  healthcareVisibleTabs: null,
   // ADDED — real ask: "option/button to hide pregnancy tab if toggled
   // on" — the existing "Show pregnancy tracking anyway" link (see
   // SHOS_MenstrualHealth_Prototype.jsx) already covers the opposite

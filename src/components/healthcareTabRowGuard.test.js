@@ -9,17 +9,30 @@ const hc = read("src/modules/SHOS_Healthcare_Prototype.jsx");
 const mh = read("src/modules/SHOS_MenstrualHealth_Prototype.jsx");
 
 describe("Healthcare tab row", () => {
-  it("uses compact pills and caps the visible set", () => {
+  it("uses compact pills and resolves the visible set from the user preference", () => {
     expect(hc).toMatch(/padding: "4px 9px"/);
     expect(hc).toMatch(/minHeight: 34/);
-    expect(hc).toMatch(/MAX_VISIBLE_TABS = 5/);
-    expect(hc).toMatch(/const visibleTabs = orderedTabs\.slice/);
+    expect(hc).toMatch(/resolveVisibleTabs\(visibleTabsPref, availableKeys\)/);
+    expect(hc).toMatch(/healthcareVisibleTabs/);
   });
 
   it("offers a More overflow control instead of a third row", () => {
     expect(hc).toMatch(/More ▾/);
     expect(hc).toMatch(/moreTabs\.map/);
     expect(hc).toMatch(/setShowMoreTabs/);
+  });
+
+  it("keeps the tab row to ONE line whatever the user picks", () => {
+    // The cap lives in the shared helper, enforced both when resolving the
+    // stored preference and when the Preferences card disables extra toggles.
+    // Three pills + More fit one 1080px line; four did not (row 2 overlapped
+    // the shortcut strip y561-684 on device).
+    const helper = read("src/calculations/healthcareTabs.js");
+    expect(helper).toMatch(/HEALTHCARE_VISIBLE_MAX = 3/);
+    expect(helper).toMatch(/ordered\.slice\(0, HEALTHCARE_VISIBLE_MAX\)/);
+    const prefs = read("src/modules/settings/PreferencesScreen.jsx");
+    expect(prefs).toMatch(/HealthcareTabsCard/);
+    expect(prefs).toMatch(/atCap/);
   });
 
   it("renders stats only for tabs that have them", () => {

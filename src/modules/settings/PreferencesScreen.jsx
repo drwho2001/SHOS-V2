@@ -7,7 +7,70 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens"
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
+import { HEALTHCARE_TAB_KEYS, HEALTHCARE_VISIBLE_MAX, resolveVisibleTabs } from "../../calculations/healthcareTabs";
 import { useTranslation } from "../../i18n/index.js";
+
+// Real ask 18 Nov: let the user choose which Healthcare sub-tabs show as pills
+// vs live under "More". The visible set is capped by the shared helper so the
+// pill row stays on one line — a second row overlapped the shortcut strip on
+// device. Toggling past the cap is disabled (with a one-line explanation)
+// rather than silently dropping a choice, which is the honest behaviour.
+const HEALTHCARE_TAB_LABELS = {
+  symptomLog: "Symptoms",
+  testing: "Testing",
+  clinicVisits: "Clinic Visits",
+  vaccinations: "Vaccinations",
+  measurements: "Measurements",
+  menstrualHealth: "Reproductive health",
+};
+
+function HealthcareTabsCard({ T, onChanged }) {
+  const { t } = useTranslation();
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const available = HEALTHCARE_TAB_KEYS.filter((k) => k !== "menstrualHealth" || prefs.menstrualTrackingEnabled);
+  const visible = resolveVisibleTabs(prefs.healthcareVisibleTabs, available);
+  const atCap = visible.length >= HEALTHCARE_VISIBLE_MAX;
+
+  const toggle = async (key) => {
+    const isVisible = visible.includes(key);
+    if (!isVisible && atCap) return; // cap keeps the row to one line
+    const next = isVisible ? visible.filter((k) => k !== key) : [...visible, key];
+    setPrefs(await AppPreferencesRepository.update({ healthcareVisibleTabs: next }));
+    onChanged();
+  };
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+      <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>
+        {t("preferences.healthcareTabs", "Healthcare tabs shown")}
+      </div>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
+        {t("preferences.healthcareTabsDesc", "Choose which sections get their own button. The rest live under “More”. Keep to {max} so the row stays on one line.", { max: HEALTHCARE_VISIBLE_MAX })}
+      </div>
+      {available.map((key) => {
+        const on = visible.includes(key);
+        const disabled = !on && atCap;
+        return (
+          <div key={key} onClick={() => toggle(key)} role="switch" tabIndex={disabled ? -1 : 0}
+            aria-checked={on} aria-disabled={disabled}
+            aria-label={t("preferences.healthcareTabToggle", "{tab} tab shown", { tab: HEALTHCARE_TAB_LABELS[key] })}
+            onKeyDown={(e) => { if (!disabled && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(key); } }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1, padding: "8px 0", borderTop: `1px solid ${T.border}`, minHeight: 44 }}>
+            <span style={{ fontSize: TYPE.control.fontSize, color: T.textPrimary }}>{HEALTHCARE_TAB_LABELS[key]}</span>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: on ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 2, left: on ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: TOGGLE_KNOB_BG }} />
+            </div>
+          </div>
+        );
+      })}
+      {atCap && (
+        <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 8 }}>
+          {t("preferences.healthcareTabsAtCap", "Three buttons is the maximum for one line — turn one off to show a different section.")}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // The toggle knob stays white in both themes — it is a fixed control
 // affordance sitting on the track, not a themed surface — so the literal is
@@ -205,6 +268,7 @@ export function PreferencesScreen({ onClose }) {
             module's own on/off state. Stays here on purpose, not an
             oversight. */}
         <MenstrualTrackingToggleCard T={T} />
+        <HealthcareTabsCard T={T} onChanged={() => { /* read on Healthcare mount; no reload banner needed */ }} />
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "12px 0 6px" }}>{t("preferences.appearance", "Appearance & language")}</div>
         <LocaleToggleCard T={T} />
       </div>

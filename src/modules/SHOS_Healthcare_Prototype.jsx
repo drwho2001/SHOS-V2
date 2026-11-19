@@ -35,6 +35,7 @@ import { MenstrualCycleRepository } from "../repositories/menstrualCycleReposito
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { calendarDaysBetween, localDayKey } from "../calculations/dateInputHelpers";
 import { summaryStatsForTab } from "../calculations/healthcareSummaryByTab";
+import { resolveVisibleTabs } from "../calculations/healthcareTabs";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 const AttachmentsScreen = lazy(() => import("./SHOS_Attachments_Prototype"));
 const TimelineModule = lazy(() => import("./SHOS_Timeline_Prototype"));
@@ -177,6 +178,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // has likely never actually appeared for any real install with the
   // toggle on, not just Home's own shortcuts.
   const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
+  // User's chosen visible Healthcare tabs (null = default). Loaded once; the
+  // Preferences card writes it, and a reload is already the established
+  // pattern here (same as tabOrder) — kept read on mount, not per render.
+  const [visibleTabsPref] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.healthcareVisibleTabs), [], null);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —
   // checked and found the actual reason wasn't styling, it was that
@@ -261,13 +266,22 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
     { key: "measurements", label: tr("healthcare.measurements", "Measurements") },
     ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: tr("healthcare.menstrual", "Reproductive health") }] : []),
   ];
-  const MAX_VISIBLE_TABS = 5;
+  // One-line pill row, with the user's own choice of which tabs are shown
+  // (Settings > Preferences > Healthcare). The shared helper owns the cap and
+  // the default so the Preferences card and this screen cannot drift. Three
+  // visible pills + More fit one line; a second row overlapped the shortcut
+  // strip on device. An active tab from More is always promoted into view.
+  const availableKeys = allTabs.map((t) => t.key);
+  const visibleKeys = resolveVisibleTabs(visibleTabsPref, availableKeys);
   const activeIndex = allTabs.findIndex((t) => t.key === subTab);
-  const orderedTabs = activeIndex >= MAX_VISIBLE_TABS
-    ? [allTabs[activeIndex], ...allTabs.filter((_, i) => i !== activeIndex)]
-    : allTabs;
-  const visibleTabs = orderedTabs.slice(0, MAX_VISIBLE_TABS);
-  const moreTabs = orderedTabs.slice(MAX_VISIBLE_TABS);
+  const activeInVisible = visibleKeys.includes(subTab);
+  // If the active tab is in More, show it in place of the last normally-visible
+  // pill (keeping the count fixed so the row never grows past one line).
+  const shownKeys = activeInVisible || activeIndex < 0
+    ? visibleKeys
+    : [...visibleKeys.filter((k) => k !== subTab), subTab].slice(0, visibleKeys.length);
+  const visibleTabs = allTabs.filter((t) => shownKeys.includes(t.key));
+  const moreTabs = allTabs.filter((t) => !shownKeys.includes(t.key));
 
   return (
     <div style={{ fontFamily: FONT_FAMILY, width: "100%", minWidth: 0 }}>
