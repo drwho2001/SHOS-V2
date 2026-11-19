@@ -53,4 +53,12 @@ describe("custom location types", () => {
   it("keeps legacy emoji-tagged values visible even when not in the new list", () => {
     expect(MANAGE).toMatch(/\.\.\(entry\.type \? \[entry\.type\] : \[\]\)/);
   });
+
+  it("loads typeOptions with the tuple hook (a setter is needed on add)", () => {
+    // Regression: useLoadedMemo returns ONLY a value, so destructuring
+    // [typeOptions, setTypeOptions] left both undefined -> "typeOptions is not
+    // iterable" and a broken add. The setter needs useLoadedState.
+    expect(MANAGE).toMatch(/const \[typeOptions, setTypeOptions\] = useLoadedState\(/);
+    expect(MANAGE).not.toMatch(/const \[typeOptions, setTypeOptions\] = useLoadedMemo\(/);
+  });
 });

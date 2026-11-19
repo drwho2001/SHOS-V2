@@ -588,7 +588,13 @@ async function testLocationsExtraFields(page) {
   await goHomeThenOpenSettings(page);
   await page.locator("text=Manage lists").click({ timeout: 5000 });
   await page.waitForTimeout(600);
-  await page.locator("text=Locations").click({ timeout: 5000 });
+  // 19 Nov — a top-level Settings > Locations row now exists too, so a bare
+  // text=Locations matches two elements (strict-mode violation). Scope to the
+  // Manage lists dialog and target the registry ROW (a labelled button), not
+  // a text node — the row is what opens the detail list.
+  const manageDialog = page.getByRole("dialog", { name: "Manage lists" });
+  await manageDialog.waitFor({ state: "visible", timeout: 10000 });
+  await manageDialog.getByRole("button", { name: /^Locations$/ }).click({ timeout: 8000 });
   await page.waitForTimeout(600);
   const chevron = page.locator('[title="Details"]').first();
   await chevron.click({ timeout: 5000, force: true });

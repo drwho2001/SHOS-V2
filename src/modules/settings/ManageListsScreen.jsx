@@ -6,7 +6,7 @@ import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ListCheck
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
-import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
+import { useLoadedMemo, useLoadedState } from "../../calculations/loadedRepositoryState";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { LocationsRepository } from "../../repositories/locationsRepository";
 import { KinkRegistry } from "../../registries/kinkRegistry";
@@ -22,7 +22,7 @@ import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } fr
 function LocationExtraFields({ entry, refresh, T, color }) {
   // 19 Nov — location types are now user-editable (e.g. "His caravan").
   // Seeded from the old fixed list; new values save straight to the record.
-  const [typeOptions, setTypeOptions] = useLoadedMemo(() => CustomOptionListsRepository.getRanked("locationType"), [], []);
+  const [typeOptions, setTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("locationType"), [], []);
   const addType = async (value) => { await CustomOptionListsRepository.add("locationType", value); setTypeOptions(await CustomOptionListsRepository.getRanked("locationType")); };
   const [newType, setNewType] = useState("");
   const [address, setAddress] = useState(entry.address || "");
