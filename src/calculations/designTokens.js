@@ -204,12 +204,12 @@ export const ACCENTS = { ...DEFAULT_ACCENTS, ...overrides };
 // still clears red's own 4.59:1 white-text contrast, not a literal
 // numeric match to red's saturation/lightness.
 const DEFAULT_ACTION_COLORS = {
-  // 19 Nov 2026 — darkened slightly from #D93838/#148A1E after the first
-  // real axe run: on the app's own light tinted surfaces the old values
-  // measured 3.61:1 and 4.30:1, below the WCAG AA 4.5:1 text threshold.
-  // Still unmistakably red (critical/deletion) and green (ok/done).
-  red: "#C02020",
-  green: "#11781A",
+  // FILL/icon colours — deliberately UNCHANGED on 19 Nov 2026. The owner
+  // accepted FONT-colour fixes only: red still means critical/deletion and
+  // green still means OK/done at their original strength. Text contrast is
+  // handled by ACTION_TEXT_SAFE below, which paletteContrast.test.js guards.
+  red: "#D93838",
+  green: "#148A1E",
 };
 // ADDED — real ask: make the semantic pass/fail pair genuinely
 // editable too, not just the 5 module identity colours — arguably the

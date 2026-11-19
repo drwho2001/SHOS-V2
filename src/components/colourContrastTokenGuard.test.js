@@ -11,9 +11,11 @@ const read = (f) => readFileSync(path.join(process.cwd(), f), "utf8");
 describe("accepted contrast token changes", () => {
   const tokens = read("src/calculations/designTokens.js");
 
-  it("keeps semantic red/red-text and green/green-text dark but recognisable", () => {
-    expect(tokens).toMatch(/red: "#C02020"/);
-    expect(tokens).toMatch(/green: "#11781A"/);
+  it("keeps semantic FILL colours untouched; only text-safe variants darkened", () => {
+    // Owner approved FONT changes only — red must still read as critical/
+    // deletion and green as OK/done at their original fill strength.
+    expect(tokens).toMatch(/red: "#D93838"/);
+    expect(tokens).toMatch(/green: "#148A1E"/);
     expect(tokens).toMatch(/red: "#C02020",\s*green: "#0F6A17"/);
   });
 
