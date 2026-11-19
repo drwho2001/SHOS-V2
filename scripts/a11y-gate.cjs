@@ -43,7 +43,7 @@ function startServer() {
   const probe = () => spawnSync(process.execPath,
     ["-e", `require("http").get(${JSON.stringify(url)},r=>process.exit(r.statusCode===200?0:1)).on("error",()=>process.exit(1))`],
     { stdio: "ignore", timeout: 5000 }).status === 0;
-  for (let i = 0; i < 30; i++) { if (probe()) return { url, server }; spawnSync(process.execPath, ["-e", "setTimeout(()=>{},1000)"], { timeout: 2000 }); }
+  for (let i = 0; i < 30; i++) { if (probe()) return { url, server, port }; spawnSync(process.execPath, ["-e", "setTimeout(()=>{},1000)"], { timeout: 2000 }); }
   try { process.kill(server.pid, "SIGTERM"); } catch {}
   throw new Error("a11y gate: preview server never came up");
 }
@@ -51,7 +51,8 @@ function startServer() {
 (async () => {
   let url = process.env.A11Y_TEST_URL;
   let server = null;
-  if (!url) { const s = startServer(); url = s.url; server = s.server; }
+  let serverPort = null;
+  if (!url) { const s = startServer(); url = s.url; server = s.server; serverPort = s.port; }
   const browser = await chromium.launch();
   const counts = {};
   try {
@@ -88,7 +89,18 @@ function startServer() {
     }
   } finally {
     await browser.close();
-    if (server) { try { process.kill(server.pid, "SIGTERM"); } catch {} }
+    if (server) {
+      // Same trap verify-changes.mjs already documents: killing the npx
+      // PARENT leaves the vite GRANDCHILD holding the port (observed here as
+      // stale previews on 5789/5845). Kill the whole tree on Windows.
+      try { process.kill(server.pid, "SIGTERM"); } catch {}
+      if (process.platform === "win32") {
+        spawnSync("powershell", ["-NoProfile", "-Command",
+          `Get-NetTCPConnection -LocalPort ${serverPort} -State Listen -ErrorAction SilentlyContinue | ForEach-Object { taskkill /F /T /PID $_.OwningProcess 2>$null | Out-Null }`],
+          { stdio: "ignore", timeout: 30000 });
+      }
+    }
+
   }
 
   if (UPDATE) {
