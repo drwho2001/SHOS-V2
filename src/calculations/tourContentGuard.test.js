@@ -39,7 +39,7 @@ describe("interactive tour content", () => {
     expect(cycle).toBeTruthy();
     expect(cycle.settingsScreen).toBe("preferences");
     expect(cycle.target).toBe("cycle-toggle");
-    expect(cycle.body).toMatch(/General → Preferences/);
+    expect(cycle.body).toMatch(/Healthcare → gear icon → Healthcare settings/);
     // Both are opt-in: the copy must say they are off/on by default honestly.
     expect(cycle.body).toMatch(/Off by default/);
     expect(screenshots.body).toMatch(/On by default/);

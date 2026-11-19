@@ -161,8 +161,17 @@ export function PreferencesScreen({ onClose }) {
             this Preferences screen either. */}
         {/* 19 Nov 2026 — the Healthcare section moved to the module's own
             settings screen (gear on the Healthcare title banner). Keeping
-            it here as well would recreate the duplication that the
-            Contacts/Medication module settings deliberately avoid. */}
+            the actual toggles here as well would recreate the duplication
+            that Contacts/Medication deliberately avoid. This is only a
+            pointer for the tour and for someone looking in the old place. */}
+        <div data-tour="cycle-toggle" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.textPrimary }}>
+            {t("preferences.reproductiveTrackingMoved", "Reproductive tracking")}
+          </div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 4 }}>
+            {t("preferences.reproductiveTrackingMovedDesc", "Now in Healthcare → gear icon → Healthcare settings. Off by default — turn it on there to add Cycle/Contraception/Pregnancy.")}
+          </div>
+        </div>
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "12px 0 6px" }}>{t("preferences.appearance", "Appearance & language")}</div>
         <LocaleToggleCard T={T} />
       </div>
