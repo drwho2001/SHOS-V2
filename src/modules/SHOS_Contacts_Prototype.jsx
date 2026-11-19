@@ -2247,6 +2247,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
   const [relationshipTypeOptions, setRelationshipTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipType"), [], []);
   const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
   const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
+  const [ethnicityOptions, setEthnicityOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("ethnicity"), [], []);
+  const [buildOptions, setBuildOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("build"), [], []);
   const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   // ADDED 11 Sep 2026 — real gap found (a demographics audit): the
   // Contraception field's own gender gate below is an exact match
@@ -2524,6 +2526,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
               Trans-female, since anatomy varies enough there that
               presuming it away could hide something genuinely
               relevant. Nothing here is deleted, just not shown. */}
+          {/* 19 Nov — body descriptors. NOT gender-gated: these apply to
+              everyone, unlike the penis-specific fields in the block below. */}
+          <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 4 }}>{tr("contacts.bodyDetails", "Body details")}</div>
+          <SuggestField T={T} label="Ethnicity" value={form.ethnicity || ""} onChange={set("ethnicity")} options={ethnicityOptions} onAddNew={(v) => CustomOptionListsRepository.add("ethnicity", v).then(setEthnicityOptions)} placeholder="Optional" />
+          <SuggestField T={T} label="Build" value={form.build || ""} onChange={set("build")} options={buildOptions} onAddNew={(v) => CustomOptionListsRepository.add("build", v).then(setBuildOptions)} placeholder="e.g. Athletic" />
+          <div style={{ display: "flex", gap: 8 }}>
+            <TextField T={T} label="Height" value={form.height || ""} onChange={set("height")} placeholder="e.g. 5'11 / 180cm" />
+            <TextField T={T} label="Weight" value={form.weight || ""} onChange={set("weight")} placeholder="e.g. 75kg" />
+          </div>
+
           {(form.gender?.trim().toLowerCase() !== "female" || revealPhysicalAnyway || hasPhysicalDetail(form)) && (
           <>
           <SelectField T={T} label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} />
@@ -3079,6 +3091,10 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Travels" value={contact.travels} />
           <ReadRow T={T} label="Travel mode" value={contact.travelMode} />
           <ReadRow T={T} label="Outdoor/public meetups" value={contact.outdoorMeetup ? "Yes" : "No"} />
+          <ReadRow T={T} label="Ethnicity" value={anonymise ? MASKED : contact.ethnicity} />
+          <ReadRow T={T} label="Build" value={anonymise ? MASKED : contact.build} />
+          <ReadRow T={T} label="Height" value={anonymise ? MASKED : contact.height} />
+          <ReadRow T={T} label="Weight" value={anonymise ? MASKED : contact.weight} />
           <ReadRow T={T} label="Address" value={anonymise ? MASKED : contact.address} />
           <ReadRow T={T} label="City" value={anonymise ? MASKED : contact.city} />
 <ReadRow T={T} label="Drives" value={travelsByCar(contact) ? "Yes" : "No"} />

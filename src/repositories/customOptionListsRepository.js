@@ -111,6 +111,13 @@ const SEED_LISTS = {
   // suggestion chips via SuggestField, this one was just missed. Same
   // "no Other chip" convention as gender above.
   pronouns: ["He/him", "She/her", "They/them", "He/they", "She/they"],
+  // ADDED 19 Nov 2026 — owner ask: ethnicity + build on Contacts and My
+  // Profile. Both are editable lists like gender/pronouns. Sensitive: these
+  // values are masked by anonymise mode and must never reach widgets or
+  // notifications (both already default-deny unlisted fields). Kept as a
+  // plain list, no clinical meaning attached.
+  ethnicity: ["White", "Mixed", "Asian", "Black", "Other"],
+  build: ["Slim", "Average", "Athletic", "Muscular", "Heavy"],
   // ADDED — real ask: contraception, gated to Female/Trans-male (see
   // both edit screens' own comments on the exact gating condition).
   // Testosterone is included because it's still worth tracking for a

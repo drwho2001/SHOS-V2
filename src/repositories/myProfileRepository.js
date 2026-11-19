@@ -112,6 +112,10 @@ export const DEFAULT_PROFILE = {
   sexualPosition: [],
 
   // Physical
+  // ADDED 19 Nov 2026 — parity with Contacts: ethnicity/build/height/weight.
+  // Sensitive (ethnicity especially) — masked by anonymise mode, never sent
+  // to widgets/notifications, excluded from profile share by default-deny.
+  ethnicity: "", build: "", height: "", weight: "",
   length: "",
   thickness: "",
   foreskin: "",

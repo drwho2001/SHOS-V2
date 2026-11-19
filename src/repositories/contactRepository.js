@@ -175,6 +175,11 @@ export const DEFAULT_CONTACT = {
     gender: "",
     // ADDED 2 Nov 2026 - piercings and tattoos
     piercings: "", tattoos: "",
+    // ADDED 19 Nov 2026 — owner ask: physical descriptors. ethnicity/build
+    // use the editable custom option lists; height/weight are free text (with
+    // the unit the user types, e.g. "5'11" / "180cm"). Sensitive — masked by
+    // anonymise mode and never sent to widgets/notifications.
+    ethnicity: "", build: "", height: "", weight: "",
     // ADDED 29 Sep 2026 (t025) - HIV status as a RECORDED FACT, on Contacts as
     // well as My Profile. Partner notification already operates on the
     // assumption that someone's status matters to someone else's decisions, so

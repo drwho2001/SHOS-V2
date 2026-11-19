@@ -1056,6 +1056,8 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
   // most-frequently-picked options first (real ask, 3 Sep 2026).
   const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
   const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
+  const [ethnicityOptions, setEthnicityOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("ethnicity"), [], []);
+  const [buildOptions, setBuildOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("build"), [], []);
   const [relationshipStatusOptions, setRelationshipStatusOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipStatus"), [], []);
   const allContacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name }))), [], []);
   // FIXED 28 Sep 2026 — Anonymise mode. `RelationPicker` uses `i.name` for the
@@ -1210,6 +1212,18 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary, ini
             that presuming it away could hide something genuinely
             relevant. Nothing here is deleted, just not shown; picking
             a different Gender later brings it straight back. */}
+        {/* 19 Nov — body descriptors, NOT gender-gated (unlike the
+            penis-specific Physical block below, which applies only where
+            relevant). Sensitive: masked by anonymise, never shared. */}
+        <SectionCard accent={T.contactsTeal} title="Body details" T={T}>
+          <SuggestField T={T} label="Ethnicity" value={form.ethnicity || ""} onChange={set("ethnicity")} options={ethnicityOptions} onAddNew={(v) => CustomOptionListsRepository.add("ethnicity", v).then(setEthnicityOptions)} placeholder="Optional" />
+          <SuggestField T={T} label="Build" value={form.build || ""} onChange={set("build")} options={buildOptions} onAddNew={(v) => CustomOptionListsRepository.add("build", v).then(setBuildOptions)} placeholder="e.g. Athletic" />
+          <div style={{ display: "flex", gap: 8 }}>
+            <TextField T={T} label="Height" value={form.height || ""} onChange={set("height")} placeholder="e.g. 5'11 / 180cm" />
+            <TextField T={T} label="Weight" value={form.weight || ""} onChange={set("weight")} placeholder="e.g. 75kg" />
+          </div>
+        </SectionCard>
+
         {form.gender?.trim().toLowerCase() !== "female" || revealPhysicalAnyway || hasPhysicalDetail(form) ? (
         <SectionCard accent={T.contactsTeal} title="Physical" T={T}>
           <SelectField label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} T={T} />
@@ -1509,6 +1523,12 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
       <SectionCard accent={T.contactsTeal} title="Chems" T={T}>
         <ReadRow label="Known chems" value={chemNames.length > 0 ? chemNames : "None known"} T={T} />
       </SectionCard>
+        <SectionCard accent={T.contactsTeal} title="Body details" T={T}>
+          <ReadRow label="Ethnicity" value={profile.ethnicity} T={T} />
+          <ReadRow label="Build" value={profile.build} T={T} />
+          <ReadRow label="Height" value={profile.height} T={T} />
+          <ReadRow label="Weight" value={profile.weight} T={T} />
+        </SectionCard>
         {profile.gender?.trim().toLowerCase() !== "female" || hasPhysicalDetail(profile) ? (
         <SectionCard accent={T.contactsTeal} title="Physical" T={T}>
         <ReadRow label="Length (penis)" value={profile.length} T={T} />
