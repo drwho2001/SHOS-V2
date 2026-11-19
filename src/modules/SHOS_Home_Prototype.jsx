@@ -1286,7 +1286,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 onClick={(e) => { e.stopPropagation(); logMedicationDose(doxyMed); }}
                 onKeyDown={(e) => { e.stopPropagation(); }}
                 aria-label="Log a DoxyPEP dose"
-                style={{ marginTop: 8, padding: "6px 12px", borderRadius: 999, border: `1px solid ${doxyStatus.overdue ? actionRedColor : medsBlue}`, background: doxyStatus.overdue ? actionRedColor : medsBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ marginTop: 8, padding: "6px 12px", borderRadius: 999, border: `1px solid ${doxyStatus.overdue ? actionRedColor : medsBlue}`, background: doxyStatus.overdue ? actionRedColor : medsBlue, color: NEUTRAL.surface, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Log dose
               </button>
             )}

@@ -45,10 +45,13 @@ describe("JS routing", () => {
     expect(app).toMatch(/const isTakeAll =/);
   });
 
-  it("one dedup ref guards both routes (no double-log with the native action)", () => {
+  it("one dedup ref guards BOTH the URL route and the native action path", () => {
     const uses = app.match(/medicationTakeHandledAtRef/g) || [];
-    expect(uses.length).toBeGreaterThanOrEqual(3);
-    expect(app).toMatch(/Date\.now\(\) - medicationTakeHandledAtRef\.current < 5000/);
+    expect(uses.length).toBeGreaterThanOrEqual(5);
+    // The URL handler and the native action listener must each check + stamp
+    // the same ref, or a cold start logs the due meds twice.
+    expect(app).toMatch(/if \(Date\.now\(\) - medicationTakeHandledAtRef\.current < 5000\) return;/);
+    expect(app).toMatch(/if \(action\.actionId === MEDICATION_ACTIONS\.takeAll\) \{[\s\S]{0,400}medicationTakeHandledAtRef\.current = Date\.now\(\);/);
   });
 
   it("the medication notification carries the take-all URI", () => {

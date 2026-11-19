@@ -2440,7 +2440,15 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       // real, visible acknowledgment.
       listenerHandle = await addNotificationActionListener(async (action) => {
         try {
-          if (action.actionId === MEDICATION_ACTIONS.takeAll) await onDueMedsTakeRef.current();
+          if (action.actionId === MEDICATION_ACTIONS.takeAll) {
+            // Same 5s dedup as the cold-start URL path above: on a cold start
+            // BOTH can fire (the tagged launch URL and the plugin's retained
+            // localNotificationActionPerformed event). Without this guard the
+            // two paths would log the due meds twice.
+            if (Date.now() - medicationTakeHandledAtRef.current < 5000) return;
+            medicationTakeHandledAtRef.current = Date.now();
+            await onDueMedsTakeRef.current();
+          }
           else if (action.actionId === MEDICATION_ACTIONS.skipToday) await onDueMedsSkip();
           else if (action.actionId === MEDICATION_ACTIONS.snooze) await onDueMedsSnooze();
           else if (action.actionId === DOXYPEP_ACTIONS.takeDose) {
