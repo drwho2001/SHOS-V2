@@ -88,6 +88,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { sessionTally, chronologicalSessionEncounters } from "../calculations/sessionTally";
 import { useRegistryUsage, sortByUsage } from "../calculations/registryUsage";
 import { hasBarrierMethod, isProtectionNonAnswer, canonicalProtectionNames, NO_BARRIER_LABEL } from "../calculations/protectionBarrier";
+import { buildAnonymousContacts } from "../calculations/anonymousContacts";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -974,7 +975,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
 // chips. Now a real search-as-you-type picker; selected attendees show
 // as removable chips above the search box, matching results only show
 // while actively searching.
-function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
+function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder, onAddAnonymous }) {
   const { t: tr } = useTranslation();
   const [query, setQuery] = useState("");
   // FIXED 28 Sep 2026 — Anonymise mode. This is the Attendee picker inside the
@@ -1038,6 +1039,19 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
         </div>
       )}
       {contacts.length === 0 && <div style={{ fontSize: 12, color: T.textDisabled, fontStyle: "italic" }}>{tr("encounters.noContactsYet", "No contacts yet — start typing a name above to add one.")}</div>}
+      {/* 19 Nov — one-tap anonymous add. For group/public/sauna/cruising
+          encounters the user often has no name at all; this creates N minimal
+          contacts (pre-flagged as intentionally incomplete + one-off) and adds
+          them as attendees, no form to fill. */}
+      {onAddAnonymous && (
+        <div role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAddAnonymous(1); } }}
+          onClick={() => onAddAnonymous(1)}
+          aria-label={tr("encounters.addAnonymous", "Add an anonymous attendee")}
+          style={{ marginTop: 8, padding: "10px 12px", fontSize: TYPE.control.fontSize, fontWeight: 600, color: T.encountersPink, border: `1px solid ${T.border}`, borderRadius: radius.sm, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 15 }}>＋</span>{tr("encounters.addAnonymous", "Add an anonymous attendee")}
+        </div>
+      )}
     </div>
   );
 }
@@ -2168,6 +2182,22 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
     setPlaceholderContactIds((ids) => [...ids, created.id]);
     return created;
   };
+  // 19 Nov — one-tap anonymous attendees. buildAnonymousContacts() supplies
+  // the full contact shape pre-flagged markedComplete + excludeFromActiveTracking
+  // (already existing fields that mean exactly this). Each created contact gets
+  // pushed into the attendees list and marked as one created this session, same
+  // as the name-only placeholder path above.
+  const addAnonymousAttendee = async (count) => {
+    const records = buildAnonymousContacts(count);
+    const createdIds = [];
+    for (const data of records) {
+      const created = await ContactRepository.create(data);
+      createdIds.push(created.id);
+    }
+    setContacts(await loadContacts());
+    setPlaceholderContactIds((ids) => [...ids, ...createdIds]);
+    set("attendeeIds")([...(form.attendeeIds || []), ...createdIds]);
+  };
   // ADDED 19 Aug 2026 — draft autosave, same pattern/reasoning as
   // Contacts — see draftStorage.js.
   const draftKey = `encounterEdit_${encounterId || "new"}`;
@@ -2552,7 +2582,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
             Location moved up here from near the bottom of the form,
             merged into the same section as Attendees. */}
         <SectionCard title={tr("encounters.attendeesLocation", "Attendees & Location")} T={T}>
-          <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} />
+          <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} onAddAnonymous={addAnonymousAttendee} />
           <RegistrySinglePicker label={tr("encounters.location", "Location")} value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder={tr("encounters.locationPlaceholder", "e.g. His place, Sauna, or a written address")} showLocateButton contacts={contacts} attendeeIds={form.attendeeIds} />
         </SectionCard>
         </div>

@@ -114,6 +114,7 @@
     "removeEndTime": "Remove end time",
     "addEndTime": "Add end date & time (multi-day or long encounter)",
     "addAsNewContact": "Add \"{name}\" as a new contact",
+    "addAnonymous": "Add an anonymous attendee",
     "overview": "Overview",
     "attendees": "Attendees",
     "attendeesLocation": "Attendees & Location",
