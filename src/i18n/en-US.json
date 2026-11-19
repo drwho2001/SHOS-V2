@@ -130,6 +130,8 @@
     "encounterType": "Encounter type",
     "wouldMeetAgain": "Would meet again",
     "enjoymentRating": "Enjoyment rating (0–100)",
+    "protectionFailure": "Contraceptive failure",
+    "aftercare": "Aftercare / how it felt",
     "moreOptions": "More options",
     "deleteConfirm": "This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry.",
     "noEncountersMatch": "No encounters match",
@@ -607,6 +609,19 @@
     "empty": "No errors logged. A real uncaught error or crash will show up here automatically.",
     "copyAria": "Copy error report",
     "copy": "Copy report"
+  },
+  "locations": {
+    "title": "Locations",
+    "intro": "Saved places with their addresses. Copy an address or open it in Maps for directions. Edit them in Manage lists.",
+    "search": "Search locations",
+    "empty": "No locations saved yet.",
+    "noAddress": "No address saved",
+    "linkedContact": "Linked to",
+    "copyAddress": "Copy address",
+    "copied": "Copied",
+    "copiedStatus": "Address copied.",
+    "copyFailed": "Couldn't copy — select the address manually.",
+    "openMaps": "Open in Maps"
   },
   "manageLists": {
     "title": "Manage lists",

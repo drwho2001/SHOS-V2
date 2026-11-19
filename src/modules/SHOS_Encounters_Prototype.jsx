@@ -40,6 +40,7 @@ import {
   EncounterRepository, DEFAULT_ENCOUNTER,
   ENCOUNTER_TYPE_OPTIONS, MY_POSITION_OPTIONS, CUM_LOCATION_OPTIONS, MY_ROLE_OPTIONS,
   PREP_COVERAGE_OPTIONS, WOULD_MEET_AGAIN_OPTIONS,
+  PROTECTION_FAILURE_OPTIONS, AFTERCARE_OPTIONS,
 } from "../repositories/encounterRepository";
 import { TrashRepository } from "../repositories/trashRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
@@ -2019,6 +2020,8 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           <ReadRow label="Ends" value={encounter.dateEnd ? formatStoredDateTime(encounter.dateEnd) : null} T={T} />
           <ReadRow label="Would meet again" value={encounter.wouldMeetAgain} T={T} />
           <ReadRow label="Enjoyment rating" value={encounter.enjoymentRating} T={T} />
+          <ReadRow label={tr("encounters.protectionFailure", "Contraceptive failure")} value={encounter.protectionFailure} T={T} />
+          <ReadRow label={tr("encounters.aftercare", "Aftercare / how it felt")} value={encounter.aftercare} T={T} />
         </SectionCard>
 
         <SectionCard title={tr("encounters.attendees", "Attendees")} T={T}>
@@ -2576,6 +2579,12 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
             </div>
           )}
           <TextField label={tr("encounters.enjoymentRating", "Enjoyment rating (0–100)")} value={form.enjoymentRating} onChange={set("enjoymentRating")} T={T} type="number" />
+          {/* 19 Nov — separate axes from the 0-100 number above: what
+              protection FAILED (condom or medication) and what aftercare
+              happened. Kissing/cuddling/groping already live in myPosition;
+              these capture the rest without overloading the rating. */}
+          <MultiSelectChips label={tr("encounters.protectionFailure", "Contraceptive failure")} value={form.protectionFailure || []} onChange={set("protectionFailure")} options={PROTECTION_FAILURE_OPTIONS} T={T} />
+          <MultiSelectChips label={tr("encounters.aftercare", "Aftercare / how it felt")} value={form.aftercare || []} onChange={set("aftercare")} options={AFTERCARE_OPTIONS} T={T} />
         </SectionCard>
 
         {/* CHANGED 26 Aug 2026 — real ask: "who and where" together —

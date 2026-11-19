@@ -107,6 +107,18 @@ export const CUM_LOCATION_OPTIONS = [
 // lowercase.
 export const MY_ROLE_OPTIONS = ["Dom", "Switch", "sub", "Vanilla", "N/A"];
 
+// ADDED 19 Nov 2026 — contraceptive failure (barrier OR medication, since the
+// owner's example was vomiting after a dose as well as condom break/slip) and
+// aftercare/mood. Both are facts noticed at the time, never derived; neither
+// duplicates myPosition's neutral acts (Kissing/Cuddling/Groping) or the
+// 0-100 enjoymentRating number.
+export const PROTECTION_FAILURE_OPTIONS = [
+  "Condom broke", "Condom slipped", "No barrier used", "Vomited after dose", "Missed dose", "Other",
+];
+export const AFTERCARE_OPTIONS = [
+  "Cleaning / shower", "Food / drink", "Sleep", "Reassurance", "Cuddling", "Talked afterwards", "Felt close", "Felt distant", "Other",
+];
+
 export const PREP_COVERAGE_OPTIONS = [
   "Adequate - daily (≥4/week)", "Adequate - Event-based (2-1-1)",
   "Missed dose", "Inadequate/recently started", "Not on PrEP",
@@ -164,6 +176,14 @@ export const DEFAULT_ENCOUNTER = {
   notes: "",
   enjoymentRating: null,
   symptomsNoted: [],
+  // ADDED 19 Nov 2026 — owner ask. "Contraceptive failure" covers condom
+  // break/slip AND medication failure (e.g. vomiting after a dose), not just
+  // barrier failure; it is a fact the user noticed, never a derived state.
+  protectionFailure: [],
+  // Aftercare/mood: cuddling/kissing/groping already exist as myPosition
+  // neutral acts; this captures the rest (cleaning, food, sleep, reassurance,
+  // mood) and stops overloading enjoymentRating (a 0-100 number) with feelings.
+  aftercare: [],
   // ADDED (Session feature) - grouping id for a live Session; empty when
   // the encounter is standalone. Loads/fists are facts; distinct people and
   // kinks are derived from the linked encounters.

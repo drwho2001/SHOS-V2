@@ -7,7 +7,6 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens"
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
-import { LOCATION_TYPE_OPTIONS } from "../../repositories/locationsRepository";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { LocationsRepository } from "../../repositories/locationsRepository";
 import { KinkRegistry } from "../../registries/kinkRegistry";
@@ -21,6 +20,11 @@ import { OptionListDetail, ICON_COMPONENTS as OPTION_LIST_ICON_COMPONENTS } from
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../../repositories/customOptionListsRepository";
 
 function LocationExtraFields({ entry, refresh, T, color }) {
+  // 19 Nov — location types are now user-editable (e.g. "His caravan").
+  // Seeded from the old fixed list; new values save straight to the record.
+  const [typeOptions, setTypeOptions] = useLoadedMemo(() => CustomOptionListsRepository.getRanked("locationType"), [], []);
+  const addType = async (value) => { await CustomOptionListsRepository.add("locationType", value); setTypeOptions(await CustomOptionListsRepository.getRanked("locationType")); };
+  const [newType, setNewType] = useState("");
   const [address, setAddress] = useState(entry.address || "");
   // ADDED 21 Oct 2026 - the postcode, as its own field rather than part of
   // the address string. The clinic visit's widget shows the place's name and
@@ -39,13 +43,14 @@ function LocationExtraFields({ entry, refresh, T, color }) {
     <div style={{ paddingTop: 4 }}>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Type</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
-        {LOCATION_TYPE_OPTIONS.map((t) => (
+        {[...new Set([...typeOptions, ...(entry.type ? [entry.type] : [])])].map((t) => (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setType(t)}
             style={{ padding: "4px 9px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${color}`, color: entry.type === t ? "#FFFFFF" : color, background: entry.type === t ? color : "transparent" }}>
             {t}
           </div>
         ))}
       </div>
+      <input value={newType} onChange={(e) => setNewType(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && newType.trim()) { e.preventDefault(); const v = newType.trim(); addType(v); setType(v); setNewType(""); } }} placeholder="Add a type (e.g. His caravan)" aria-label="Add a location type" style={{ ...inputStyle, marginBottom: 10 }} />
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Address</div>
       <input value={address} onChange={(e) => setAddress(e.target.value)} onBlur={commitAddress} placeholder="e.g. 56 Dean Street" style={inputStyle} />
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Postcode</div>

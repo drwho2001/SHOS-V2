@@ -118,6 +118,11 @@ const SEED_LISTS = {
   // plain list, no clinical meaning attached.
   ethnicity: ["White", "Mixed", "Asian", "Black", "Other"],
   build: ["Slim", "Average", "Athletic", "Muscular", "Heavy"],
+  // ADDED 19 Nov 2026 — location types become user-editable so "His caravan"
+  // and similar real places can be added. Seeded from LOCATION_TYPE_OPTIONS'
+  // values (without emoji keys, which are display-only); old records whose
+  // `type` still holds an emoji-tagged string keep rendering as before.
+  locationType: ["His House", "His Car", "My House", "My Car", "Public", "Cruising", "Sauna", "Hotel", "Event", "Clinic", "Other"],
   // ADDED — real ask: contraception, gated to Female/Trans-male (see
   // both edit screens' own comments on the exact gating condition).
   // Testosterone is included because it's still worth tracking for a

@@ -17,7 +17,7 @@
 // the three export sheets, and the lazy wiring. Behavior unchanged.
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback } from "react";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../calculations/designTokens";
-import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor, ShareNetworkIcon as ShareNetwork, MagnifyingGlassIcon as SearchIcon } from "@phosphor-icons/react";
+import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor, ShareNetworkIcon as ShareNetwork, MagnifyingGlassIcon as SearchIcon, MapPinIcon as MapPin } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL, getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend, getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth, getPositiveTestsByOrganism, getTestsBySite } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
@@ -32,6 +32,7 @@ import { useTranslation } from "../i18n/index.js";
 const DeveloperToolsScreen = lazy(() => import("./settings/DeveloperToolsScreen"));
 const ManageListsScreen = lazy(() => import("./settings/ManageListsScreen"));
 const ResourcesScreen = lazy(() => import("./settings/ResourcesScreen"));
+const LocationsScreen = lazy(() => import("./settings/LocationsScreen"));
 const PrivacyScreen = lazy(() => import("./settings/PrivacyScreen"));
 const PreferencesScreen = lazy(() => import("./settings/PreferencesScreen"));
 const NotificationsScreen = lazy(() => import("./settings/NotificationsScreen"));
@@ -517,6 +518,7 @@ const SETTINGS_SEARCH_INDEX = [
   { label: "Notifications", screen: "notifications", keywords: ["notification", "notifications", "reminder", "reminders", "alarm", "sound", "vibrate", "due meds", "testing reminder", "clinic reminder"] },
   { label: "Colour scheme", screen: "design", keywords: ["colour", "color", "scheme", "theme", "font", "appearance", "dark"] },
   { label: "Manage lists", screen: "managelists", keywords: ["manage lists", "registry", "registries", "locations", "lists", "options", "kink", "protection", "symptoms", "organism", "results"] },
+  { label: "Locations", screen: "locations", keywords: ["locations", "location", "address", "addresses", "directions", "maps", "postcode", "places", "venue"] },
   { label: "Resources", screen: "resources", keywords: ["resources", "links", "refuge", "clinic", "directory", "website", "phone"] },
   { label: "Glossary", screen: "glossary", keywords: ["glossary", "jargon", "terms", "definitions", "u=u", "clinical evidence"] },
   { label: "Guide", screen: "guide", keywords: ["guide", "tour", "help", "tutorial", "walkthrough", "onboarding"] },
@@ -545,7 +547,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   // that row falls back to loading on tap, exactly as without this.
   useEffect(() => {
     const warm = (name) => import(`./settings/${name}Screen.jsx`).catch(() => {});
-    ["DeveloperTools", "ManageLists", "Resources", "Privacy", "Preferences", "Notifications", "NotificationHistory", "ErrorLog", "AutomaticBackups", "BackupExport", "DataNetwork", "Widgets", "Glossary", "Guide", "Design", "Stats", "Calendar", "Trash", "About", "Share"].forEach(warm);
+    ["DeveloperTools", "ManageLists", "Resources", "Locations", "Privacy", "Preferences", "Notifications", "NotificationHistory", "ErrorLog", "AutomaticBackups", "BackupExport", "DataNetwork", "Widgets", "Glossary", "Guide", "Design", "Stats", "Calendar", "Trash", "About", "Share"].forEach(warm);
   }, []);
 
   const [showBackupExport, setShowBackupExport] = useState(false);
@@ -565,6 +567,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
   const [showDataNetwork, setShowDataNetwork] = useState(false);
   // ADDED 1 Sep 2026 — real ask: a Resources section.
   const [showResources, setShowResources] = useState(false);
+  const [showLocations, setShowLocations] = useState(false);
   // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary.
   // CHANGED 2 Oct 2026 — can be opened directly to this screen, so the U=U note
   // on any record can LINK here rather than expanding a panel of its own. Without
@@ -658,6 +661,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
     setShowDesign(screen === "design");
     setShowManageLists(screen === "managelists");
     setShowResources(screen === "resources");
+    setShowLocations(screen === "locations");
     setShowGlossary(screen === "glossary");
     setShowGuide(screen === "guide");
     setShowStats(screen === "stats");
@@ -694,6 +698,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
     if (showNotifications) { setShowNotifications(false); return true; }
     if (showDataNetwork) { setShowDataNetwork(false); return true; }
     if (showResources) { setShowResources(false); return true; }
+    if (showLocations) { setShowLocations(false); return true; }
     if (showClinicalEvidence) { setShowClinicalEvidence(false); return true; }
     if (showGlossary) { setShowGlossary(false); return true; }
     if (showGuide) { setShowGuide(false); return true; }
@@ -709,7 +714,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
     // them), so a back press has to close the topmost one first.
     if (showBackupExport) { setShowBackupExport(false); return true; }
     return false; // nothing open on top — let App.jsx's own fallback close all of Settings
-  }, [showCalendar, showAbout, showShare, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showWidgets]);
+  }, [showCalendar, showAbout, showShare, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showLocations, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showWidgets]);
 
   // Escape mirrors the back button exactly, including the fall-through: if a
   // sub-screen is open it steps back one level, and only if nothing is open on
@@ -927,6 +932,7 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
             (see ManageListsScreen's own comment). */}
         <SettingsRow icon={ListTree} label="Manage lists" onClick={() => setShowManageLists(true)} />
         {/* ADDED 1 Sep 2026 — real ask: a Resources section. */}
+        <SettingsRow icon={MapPin} label="Locations" onClick={() => setShowLocations(true)} />
         <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
         {/* ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary. */}
         <SettingsRow icon={BookOpen} label="Glossary" onClick={() => setShowGlossary(true)} />
@@ -1016,6 +1022,9 @@ function SettingsScreen({ onClose, isScreen, onExport, onImportClick, status, on
       )}
       {showResources && (
         <ResourcesScreen onClose={() => setShowResources(false)} />
+      )}
+      {showLocations && (
+        <LocationsScreen onClose={() => setShowLocations(false)} />
       )}
       {showGlossary && (
         <GlossaryScreen onClose={() => setShowGlossary(false)} onOpenClinicalEvidence={() => setShowClinicalEvidence(true)} />
