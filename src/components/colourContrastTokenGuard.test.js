@@ -19,9 +19,31 @@ describe("accepted contrast token changes", () => {
     expect(tokens).toMatch(/red: "#C02020",\s*green: "#0F6A17"/);
   });
 
+  it("uses the companion teal fill for white App Lock text", () => {
+    expect(tokens).toMatch(/ACCENT_SOLID_FILL = \{\s*home: "#007D7D"/);
+    const app = read("src/App.jsx");
+    expect(app).toMatch(/background: ACCENT_SOLID_FILL\.home/);
+    expect(app).toMatch(/ACCENT_SOLID_FILL, RADIUS/);
+  });
+
+  it("uses text-safe red for the Needs-action stat subtitle", () => {
+    const med = read("src/modules/SHOS_Medication_Dashboard_Prototype.jsx");
+    expect(med).toMatch(/subtitleTint/);
+    expect(med).toMatch(/subtitleTint=\{needsActionMeds\.length > 0 \? T\.actionRedText : undefined\}/);
+  });
+
   it("does not repurpose the amber fill token as text", () => {
     expect(tokens).toMatch(/amber: "#F59E0B"/);
     expect(tokens).toMatch(/amberText: "#926100"/);
+  });
+
+  it("uses option A for adherence numbers: near-black text, amber border/flame", () => {
+    const med = read("src/modules/SHOS_Medication_Dashboard_Prototype.jsx");
+    expect(med).toMatch(/text: darkMode \? ACTION\.amber : T\.textPrimary/);
+    expect(med).toMatch(/color: streakTone\.text \|\| streakTone\.accent/);
+    expect(med).toMatch(/textColor=\{sevenTone\.text \|\| sevenTone\.accent\}/);
+    expect(med).toMatch(/textColor=\{containerTone\.text \|\| containerTone\.accent\}/);
+    expect(med).toMatch(/const valueColor = textColor \|\| accent \|\| T\.medsBlue/);
   });
 
   it("no white text remains on the pale Encounter chips", () => {

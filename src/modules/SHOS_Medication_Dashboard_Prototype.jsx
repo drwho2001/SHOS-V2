@@ -238,22 +238,26 @@ function HoldButton({ onStep, dir, children, style }) {
   );
 }
 
-function StatTile({ label, value, tint, subtitle, onClick, T }) {
+function StatTile({ label, value, tint, subtitle, subtitleTint, onClick, T }) {
   // §49b — colour-indent/backfill: tinted background + coloured border,
   // matching encounters-card-mockup.html chip style.
   return (
      <div onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : -1} aria-label={onClick ? label : undefined} onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined} style={{ background: tint ? `${tint}15` : T.surface, border: `1px solid ${tint || T.border}`, borderRadius: radius.md, padding: "14px 16px", flex: "1 1 0", minWidth: 0, cursor: onClick ? "pointer" : "default" }}>
       <div style={{ fontFamily: FONT_FAMILY, fontSize: 22, fontWeight: 600, color: tint || T.textPrimary }}>{value}</div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{label}</div>
-      {subtitle && <div style={{ fontSize: 11, color: tint || T.textSecondary, marginTop: 3, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>}
+      {subtitle && <div style={{ fontSize: 11, color: subtitleTint || tint || T.textSecondary, marginTop: 3, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>}
     </div>
   );
 }
 
 // Redesigned for more contrast per the user's ask: tinted background/border, fraction shown as the
 // primary value with the percentage as a secondary line, per the user's "give absolute value" request.
-function AdherencePill({ label, hit, expected, pct, hasData, T, info, accent, trend }) {
-  const valueColor = accent || T.medsBlue;
+function AdherencePill({ label, hit, expected, pct, hasData, T, info, accent, textColor, trend }) {
+  // 19 Nov (owner, option A): the amber TONE stays in the border/flame; the
+  // number itself uses near-black on light tints so it is actually legible
+  // (16:1 vs the 5:1 dark-amber that felt weaker). Dark mode keeps its bright
+  // accent, which already passes. Other tones pass no textColor and are unchanged.
+  const valueColor = textColor || accent || T.medsBlue;
   // FIXED 30 Sep 2026 - this component recomputed the percentage instead of
   // reading the one that owns it, so the two drifted apart and the card began
   // DISAGREEING WITH ITSELF. medicationCalculations' windowStats() was
@@ -715,7 +719,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         const toneFor = (ratio) => ratio === null ? "neutral" : ratio >= 0.8 ? "green" : ratio >= 0.5 ? "amber" : "red";
         const tone = (name) => {
           if (name === "green") return { accent: T.actionGreen, bg: darkMode ? "#5FD9A440" : "#1B9E7715", border: darkMode ? "#5FD9A466" : "#1B9E7740" };
-          if (name === "amber") return { accent: "#F59E0B", bg: darkMode ? "#F59E0B12" : "#F59E0B15", border: "#F59E0B66" };
+          if (name === "amber") return { accent: "#F59E0B", text: darkMode ? ACTION.amber : T.textPrimary, bg: darkMode ? "#F59E0B12" : "#F59E0B15", border: "#F59E0B66" };
           if (name === "red") return { accent: T.actionRed, bg: `${T.actionRed}12`, border: `${T.actionRed}66` };
           return { accent: T.medsBlue, bg: `${T.medsBlue}15`, border: `${T.medsBlue}40` };
         };
@@ -730,7 +734,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             <div style={groupTitleStyle}>{tr("medication.adherence", "Adherence")}</div>
             <div style={{ display: "flex", alignItems: "stretch", gap: 6 }}>
               <div style={tileStyle(streakTone)}>
-                <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: streakTone.accent, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                <div style={{ fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: 700, color: streakTone.text || streakTone.accent, display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
                   {/* A flame should look like a flame: filled and orangey-red
                       whenever there is a live streak, muted when there is none.
                       The tile border/value still carry the verdict colour. */}
@@ -740,7 +744,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                 <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 2 }}>{tr("medication.streak", "streak")}</div>
               </div>
               <div style={tileStyle(sevenTone)}>
-                <AdherencePill T={T} accent={sevenTone.accent} trend={adherenceTrend} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
+                <AdherencePill T={T} accent={sevenTone.accent} textColor={sevenTone.text || sevenTone.accent} trend={adherenceTrend} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
               </div>
               {adherence.sinceRefillAnchored ? (
                 /* Labelled "this container", not "this refill", because that is
@@ -753,7 +757,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                    tile says "No container yet" rather than repeating it under
                    a second label and implying two pieces of evidence. */
                 <div style={tileStyle(containerTone)}>
-                  <AdherencePill T={T} accent={containerTone.accent} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} pct={adherence.sinceRefill.pct} hasData={adherence.sinceRefill.hasData} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
+                  <AdherencePill T={T} accent={containerTone.accent} textColor={containerTone.text || containerTone.accent} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} pct={adherence.sinceRefill.pct} hasData={adherence.sinceRefill.hasData} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
                 </div>
               ) : (
                 <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: `1px dashed ${T.border}`, borderRadius: radius.sm, padding: "9px 4px", fontSize: 10, color: T.textDisabled, textAlign: "center", lineHeight: 1.25 }}>
@@ -2620,6 +2624,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             ? <StatTile key={s.key} T={T} label={s.label} value={activeMeds.length} tint={T.medsBlue} onClick={() => setTab("Registry")} />
             : <StatTile key={s.key} T={T} label={s.label} value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
                 subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
+                subtitleTint={needsActionMeds.length > 0 ? T.actionRedText : undefined}
                 onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
           )}
         </div>

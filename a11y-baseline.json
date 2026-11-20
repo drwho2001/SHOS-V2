@@ -1,10 +1,6 @@
 {
-  "color-contrast|serious": {
-    "count": 14,
-    "reason": "Accepted at baseline 19 Nov 2026 — see COMPACTION-HANDOFF.md. Owner explicitly accepted white-on-teal (#fff on #008585 = 4.47) as-is. Ratchet: shrink deliberately; small Windows/Linux font-metric drift is advisory, new rules and large jumps fail."
-  },
   "nested-interactive|serious": {
     "count": 38,
-    "reason": "Accepted at baseline 19 Nov 2026 — clickable card rows contain focusable detail affordances; a dedicated interaction refactor is a separate task. Ratchet: shrink deliberately; small cross-platform drift advisory."
+    "reason": "Accepted at baseline 19 Nov 2026 — clickable card rows contain focusable detail affordances; a dedicated interaction refactor is a separate task. Ratchet: shrink deliberately; small cross-platform drift advisory. Colour-contrast rule cleared 14 → 0 on 20 Nov (teal companion, text-safe red subtitle, near-black adherence numbers) and was removed from this baseline."
   }
 }

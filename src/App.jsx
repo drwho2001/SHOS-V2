@@ -54,7 +54,7 @@ import { getClinicVisitDueState, handleSnoozeClinicVisit, syncClinicVisitReminde
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
-import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, ACCENT_SOLID_FILL, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
 // ADDED 28 Sep 2026 (Phase 2b) — the pure "what does back do" / "should the
 // search-return affordance show" decisions, split out of this file precisely so
 // they can be unit-tested. See backNavigation.js's own header.
@@ -712,7 +712,7 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
         {/* CHANGED 26 Aug 2026 — real ask: App Lock is a Home/global
             concern, not a Healthcare one — was wrongly using
             ACCENTS.healthcare (green), now correctly Home's teal. */}
-        <button onClick={onOpenSettings} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>
+        <button onClick={onOpenSettings} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: ACCENT_SOLID_FILL.home, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>
           Set up App Lock
         </button>
         <div style={{ display: "flex", gap: 8 }}>

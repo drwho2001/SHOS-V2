@@ -131,6 +131,16 @@ export const NEUTRAL_DARK = {
 // guessed) — "#0E8144" sits in it (white text 4.95:1, dark-surface
 // 3.43:1), so every Healthcare-tab dark-mode fill and icon can keep
 // using the one value, no per-site text-color branching needed.
+// 19 Nov 2026 — companion FILL for white text on an accent. Same pattern as
+// the healthcare companion (#0E8144): one value that clears BOTH bars,
+// ≥4.5:1 under white text and ≥3:1 as a shape on the dark surface. Home's
+// #008585 measures 4.47 under white text (0.03 short); #007D7D is 4.97 /
+// 3.42. ACCENTS.home itself is unchanged — it is also used as an icon/text
+// colour where darkening it would be wrong.
+export const ACCENT_SOLID_FILL = {
+  home: "#007D7D",
+};
+
 const DEFAULT_ACCENTS = {
   contacts: "#B36205",
   encounters: "#7F30A6",
