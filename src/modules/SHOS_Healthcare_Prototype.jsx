@@ -12,7 +12,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { SkeletonList } from "../components/Skeleton";
 import { useTranslation } from "../i18n/index.js";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar, GearIcon as SettingsIcon } from "@phosphor-icons/react";
-import QuickExitButton from "../components/QuickExitButton";
+import ModuleBanner from "../components/ModuleBanner";
 import { TestingRepository } from "../repositories/testingRepository";
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -333,17 +333,27 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           the notch. */}
       {/* One sticky stack: the blue title band remains visually distinct
           from the dark sub-tabs, while both stay attached during scrolling. */}
-      <div ref={healthcareHeaderRef} style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.bg, marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)" }}>
-        <div style={{ position: "relative", background: T.healthcare, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px" }}>
-          <div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcare, pointerEvents: "none" }} />
-          <div style={{ padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("healthcare.title", "Healthcare")}</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowHealthcareSettings(true)} role="button" tabIndex={0} aria-label={tr("healthcare.settings", "Healthcare settings")} title={tr("healthcare.settings", "Healthcare settings")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowHealthcareSettings(true); } }} />
-            {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
-          </div>
-          </div>
-        </div>
+      {/* CHANGED 24 Nov 2026 — BACKLOG 0b: the two-band stack now uses
+          ModuleBanner. The escape-hatch props are deliberate, not drift:
+          headerRef stays on the measured element so --shos-sticky-header-h
+          keeps measuring the same box; outerStyle reproduces the original
+          border/radius/overflow so that height cannot change and the
+          "More" dropdown is not clipped; notchBand, childrenPadding and
+          the passed-in tab row keep the inner DOM unchanged; actionsGap
+          keeps gear and Quick Exit 4px apart. No banner Search: Healthcare
+          has no module-wide search, only sub-tab-local filters. */}
+      <ModuleBanner
+        headerRef={healthcareHeaderRef}
+        title={tr("healthcare.title", "Healthcare")}
+        accent={T.healthcare}
+        bg={T.bg}
+        notchBand={<div aria-hidden="true" data-notch-band="1" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: "env(safe-area-inset-top)", background: T.healthcare, pointerEvents: "none" }} />}
+        settings={<SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowHealthcareSettings(true)} role="button" tabIndex={0} aria-label={tr("healthcare.settings", "Healthcare settings")} title={tr("healthcare.settings", "Healthcare settings")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowHealthcareSettings(true); } }} />}
+        onQuickExit={onQuickExit}
+        outerStyle={{ borderBottom: "none", borderRadius: "0", overflow: "visible" }}
+        childrenPadding="0"
+        actionsGap={4}
+      >
         <div style={{ padding: "8px 16px 8px" }}>
           {/* CHANGED 5 Nov 2026 — real ask: "healthcare tabs (testing
               symptoms etc) are a bit too big/wide". They were a
@@ -392,7 +402,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           )}
           </div>
         </div>
-      </div>
+      </ModuleBanner>
       <div style={{ padding: "14px 16px 0" }}>
         {/* CHANGED — real fix: moved to its own row below the sub-tab
             pills, instead of squeezed alongside them in one row —

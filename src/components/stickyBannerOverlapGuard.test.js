@@ -24,13 +24,13 @@ const read = (f) => readFileSync(path.join(process.cwd(), f), "utf8");
 // detail header is still an inline sticky header and keeps the literal
 // pair (one, down from two).
 const DIRECT_BANNERS = [
-  ["src/modules/SHOS_Healthcare_Prototype.jsx", 1],
   ["src/modules/SHOS_Encounters_Prototype.jsx", 1],
 ];
 const SHARED_BANNERS = [
   ["src/modules/SHOS_Contacts_Prototype.jsx", 0],
   ["src/modules/SHOS_Medication_Dashboard_Prototype.jsx", 0],
   ["src/modules/SHOS_Encounters_Prototype.jsx", 1], // detail header
+  ["src/modules/SHOS_Healthcare_Prototype.jsx", 0],
 ];
 const negatives = (src) => src.match(/marginTop: "calc\(-1 \* env\(safe-area-inset-top\)\)"/g) || [];
 const bottoms = (src) => src.match(/marginBottom: "env\(safe-area-inset-top\)"/g) || [];

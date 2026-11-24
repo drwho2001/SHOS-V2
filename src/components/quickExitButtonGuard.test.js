@@ -23,12 +23,12 @@ const COMPONENT = read("src/components/QuickExitButton.jsx");
 const MODULE_BANNER = read("src/components/ModuleBanner.jsx");
 const DIRECT_TOP_BARS = [
   "src/modules/SHOS_Home_Prototype.jsx",
-  "src/modules/SHOS_Healthcare_Prototype.jsx",
 ];
 const SHARED_TOP_BARS = [
   "src/modules/SHOS_Contacts_Prototype.jsx",
   "src/modules/SHOS_Medication_Dashboard_Prototype.jsx",
   "src/modules/SHOS_Encounters_Prototype.jsx",
+  "src/modules/SHOS_Healthcare_Prototype.jsx",
 ];
 
 describe("standardised Quick Exit control", () => {

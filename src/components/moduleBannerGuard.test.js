@@ -20,6 +20,7 @@ const TABS = read("src/components/TabStickyHeader.jsx");
 const MED = read("src/modules/SHOS_Medication_Dashboard_Prototype.jsx");
 const CONTACTS = read("src/modules/SHOS_Contacts_Prototype.jsx");
 const ENCOUNTERS = read("src/modules/SHOS_Encounters_Prototype.jsx");
+const HEALTHCARE = read("src/modules/SHOS_Healthcare_Prototype.jsx");
 
 describe("BACKLOG 0b shared module banner", () => {
   it("owns the icon order: Search, Select, module extras, Settings, Quick Exit", () => {
@@ -84,6 +85,38 @@ describe("BACKLOG 0b shared module banner", () => {
     // The detail header is deliberately not a module banner: it keeps its
     // own in-flow shape and must not be converted to ModuleBanner.
     expect(ENCOUNTERS.match(/<ModuleBanner\b/g) || []).toHaveLength(1);
+  });
+
+  it("ModuleBanner exposes the measurement escape hatches without changing its defaults", () => {
+    expect(BANNER).toMatch(/ref=\{headerRef\}/);
+    expect(BANNER).toMatch(/\.\.\.outerStyle/);
+    expect(BANNER).toMatch(/\{notchBand\}/);
+    expect(BANNER).toMatch(/padding: childrenPadding/);
+    expect(BANNER).toMatch(/gap: actionsGap/);
+    expect(BANNER).toMatch(/childrenPadding = "6px 16px 0"/);
+    expect(BANNER).toMatch(/actionsGap = 14/);
+  });
+
+  it("Healthcare keeps its measured two-band header geometry", () => {
+    expect(HEALTHCARE).toMatch(/import ModuleBanner/);
+    expect(HEALTHCARE).toMatch(/<ModuleBanner\b/);
+    expect(HEALTHCARE.match(/<ModuleBanner\b/g) || []).toHaveLength(1);
+    // The ref must stay on the element whose offsetHeight is written to
+    // --shos-sticky-header-h; six embedded detail bars read that variable.
+    expect(HEALTHCARE).toMatch(/headerRef=\{healthcareHeaderRef\}/);
+    // No default border/radius/overflow: they would change the measured
+    // height and clip the absolutely-positioned More menu.
+    expect(HEALTHCARE).toMatch(/outerStyle=\{\{ borderBottom: "none", borderRadius: "0", overflow: "visible" \}\}/);
+    // Original inner DOM, padding and icon gap, preserved byte for byte.
+    expect(HEALTHCARE).toMatch(/childrenPadding="0"/);
+    expect(HEALTHCARE).toMatch(/actionsGap=\{4\}/);
+    expect(HEALTHCARE).toMatch(/<div style=\{\{ padding: "8px 16px 8px" \}\}>/);
+    expect(HEALTHCARE).toMatch(/data-notch-band="1"/);
+    expect(HEALTHCARE).toMatch(/role="tablist"/);
+    expect(HEALTHCARE).toMatch(/More ▾/);
+    // Healthcare has no module-wide search; a banner Search would be
+    // decoration that duplicates the sub-tab-local filters.
+    expect(HEALTHCARE).not.toMatch(/onSearch=/);
   });
 
   it("TabStickyHeader takes its offset from the one shared token", () => {

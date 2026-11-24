@@ -34,9 +34,21 @@ export function ModuleBanner({
   settings,
   onQuickExit,
   children,
+  // 24 Nov challenge pass: these four escape hatches exist for Healthcare,
+  // whose two-band header was measured on device. `headerRef` must sit on
+  // the SAME outer element so --shos-sticky-header-h keeps measuring the
+  // same box; `outerStyle` removes the default border/radius/overflow that
+  // would change that height and clip the "More" dropdown; `notchBand` and
+  // `childrenPadding` preserve the original inner DOM exactly. Defaults
+  // keep the already-converted modules untouched.
+  headerRef,
+  outerStyle,
+  notchBand,
+  childrenPadding = "6px 16px 0",
+  actionsGap = 14,
 }) {
   return (
-    <div style={{
+    <div ref={headerRef} style={{
       position: "sticky",
       top: "var(--shos-top-banner-h, 0px)",
       zIndex: 6,
@@ -46,8 +58,10 @@ export function ModuleBanner({
       overflow: "hidden",
       marginTop: "calc(-1 * env(safe-area-inset-top))",
       marginBottom: "env(safe-area-inset-top)",
+      ...outerStyle,
     }}>
       <div style={{
+        position: "relative",
         background: accent,
         borderBottom: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "0 0 16px 16px",
@@ -56,8 +70,9 @@ export function ModuleBanner({
         alignItems: "center",
         justifyContent: "space-between",
       }}>
+        {notchBand}
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{title}</h1>
-        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: actionsGap, alignItems: "center" }}>
           {onSearch && (
             <Search
               size={24}
@@ -81,7 +96,7 @@ export function ModuleBanner({
           {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
         </div>
       </div>
-      {children && <div style={{ background: bg, padding: "6px 16px 0" }}>{children}</div>}
+      {children && <div style={{ background: bg, padding: childrenPadding }}>{children}</div>}
     </div>
   );
 }
