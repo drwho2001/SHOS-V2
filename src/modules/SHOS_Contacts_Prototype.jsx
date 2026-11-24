@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
-import QuickExitButton from "../components/QuickExitButton";
+import ModuleBanner from "../components/ModuleBanner";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
 import { FormTabs } from "../components/FormTabs";
@@ -3352,6 +3352,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   const { t: tr } = useTranslation();
+  // CHANGED 24 Nov 2026 — BACKLOG 0b: the banner now owns the Search
+  // control, as in Medication. The field stays in the list (smoke and
+  // keyboard focus target it by placeholder); this ref is the seam that
+  // lets the banner icon focus it without duplicating the input.
+  const contactSearchInputRef = useRef(null);
+  const openContactSearch = () => {
+    setTimeout(() => contactSearchInputRef.current?.focus(), 50);
+  };
   // ADDED 19 Aug 2026 — real ask: configurable inactive threshold.
   // FIXED 9 Sep 2026 — real bug found live: getPreferences() is async,
   // so chaining .inactiveThresholdDays directly onto its return value
@@ -3587,50 +3595,38 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           The safe-area inset moved from `top` into the banner's own
           top padding, so only the title/icons — not the colour — sit
           below the notch. */}
-      <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.contactsBanner, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{tr("contacts.title", "Contacts")}</h1>
-        {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
-            live here now (Doc 1: My Profile isn't a primary-nav tab;
-            Import creates a Contact, so it belongs where Contacts are
-            managed). Temporary home until a real Settings screen exists
-            for My Profile and a proper Add-Contact menu exists for
-            Import — flagged in Doc 1 notes, not the final placement. */}
-        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-          {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
-              matching Medication's pattern — long-press stays as an
-              additional quick entry, this is the reliable click-based
-              one (long-press alone can be unreliable via mouse, e.g.
-              in a desktop preview). */}
-          {/* ADDED — real ask: a duplicate checker for Contacts, same
-              badge-opens-a-panel pattern as the shared registries' own
-              duplicate checker (SHOS_RegistryManagement_Prototype.jsx),
-              styled to match this file's own existing amber duplicate-
-              warning (the live "possible duplicate" nudge shown while
-              adding a new contact, further down this file) rather than
-              that screen's red — this is a softer, scored signal, not
-              a same-name exact flag. */}
-          {duplicateCandidates.length > 0 && (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: T.actionAmberSurface, color: T.actionAmberText, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>
-              <AlertTriangle size={12} color={T.actionAmberText} /> {duplicateCandidates.length}
-            </div>
-          )}
+      {/* CHANGED 24 Nov 2026 — BACKLOG 0b: Contacts had six banner controls
+          and no banner Search. The banner now uses the shared ModuleBanner,
+          whose icon order is Search -> Select -> module actions -> Settings
+          -> Quick Exit. My Profile and Import remain module-specific actions
+          inside the `extras` slot; nothing was removed from the screen. */}
+      <ModuleBanner
+        title={tr("contacts.title", "Contacts")}
+        accent={T.contactsBanner}
+        bg={T.contactsBanner}
+        onSearch={openContactSearch}
+        searchLabel="Search contacts"
+        select={
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer"}}>
             {selectMode ? "Done" : "Select"}
           </span>
-          {/* CHANGED 19 Aug 2026 — real icon confusion the user flagged:
-              Upload reads as "sending data out", which is backwards for
-              an action that brings someone else's shared profile IN.
-              Download's arrow-into-tray matches the actual direction.
-              CHANGED 26 Aug 2026 — moved into the banner, white. */}
-          {onOpenImportProfile && <Download role="button" tabIndex={0} aria-label="Import profile from file" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}} onClick={onOpenImportProfile} />}
-          {onOpenMyProfile && <User role="button" tabIndex={0} aria-label="Open My Profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenMyProfile} />}
-          {/* ADDED 15 Sep 2026 — real ask: a real in-module settings
-              screen (see ContactsSettingsScreen's own comment above),
-              matching Medication Dashboard's own gear-icon placement. */}
-          {onOpenContactsSettings && <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
-          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
-        </div>
-      </div>
+        }
+        extras={
+          <>
+            {duplicateCandidates.length > 0 && (
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: T.actionAmberSurface, color: T.actionAmberText, fontSize: TYPE.control.fontSize, fontWeight: 700, cursor: "pointer"}}>
+                <AlertTriangle size={12} color={T.actionAmberText} /> {duplicateCandidates.length}
+              </div>
+            )}
+            {onOpenImportProfile && <Download role="button" tabIndex={0} aria-label="Import profile from file" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10}} onClick={onOpenImportProfile} />}
+            {onOpenMyProfile && <User role="button" tabIndex={0} aria-label="Open My Profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenMyProfile} />}
+          </>
+        }
+        settings={
+          onOpenContactsSettings ? <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" /> : null
+        }
+        onQuickExit={onQuickExit}
+      />
 
       {showDuplicates && (
         <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
@@ -3768,7 +3764,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       </div>
 
       <div style={{ padding: "0 16px 10px", display: "flex", alignItems: "center", gap: 8 }}>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts" aria-label="Search contacts"
+        <input ref={contactSearchInputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts" aria-label="Search contacts"
           style={{ flex: 1, padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box", minHeight: 44 }} />
         {/* ADDED 26 Aug 2026 — real ask: filter by role/position, not
             just search. */}

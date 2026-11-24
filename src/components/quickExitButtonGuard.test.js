@@ -8,16 +8,25 @@
 // 32px vs 44px hit targets, title on only some, and hardcoded English labels.
 // Testing's bottom EXIT row and Partner Notification's sheet footer are not
 // top bars and keep their own contextual layout; they are out of scope here.
+//
+// CHANGED 24 Nov 2026 — BACKLOG 0b shared ModuleBanner: Contacts and
+// Medication now render Quick Exit through ModuleBanner instead of directly.
+// The guard follows the ownership rather than losing coverage: the shared
+// component must render QuickExitButton, and those two modules must hand it
+// `onQuickExit` and keep no direct SignOut render of their own.
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
 const read = (rel) => fs.readFileSync(path.join(process.cwd(), rel), "utf8");
 const COMPONENT = read("src/components/QuickExitButton.jsx");
-const TOP_BARS = [
+const MODULE_BANNER = read("src/components/ModuleBanner.jsx");
+const DIRECT_TOP_BARS = [
   "src/modules/SHOS_Home_Prototype.jsx",
   "src/modules/SHOS_Encounters_Prototype.jsx",
   "src/modules/SHOS_Healthcare_Prototype.jsx",
+];
+const SHARED_TOP_BARS = [
   "src/modules/SHOS_Contacts_Prototype.jsx",
   "src/modules/SHOS_Medication_Dashboard_Prototype.jsx",
 ];
@@ -43,12 +52,30 @@ describe("standardised Quick Exit control", () => {
     expect(props.length).toBe(3);
   });
 
-  it("every top bar uses the shared component, not its own SignOut render", () => {
-    for (const rel of TOP_BARS) {
+  it("every direct top bar uses the shared component, not its own SignOut render", () => {
+    for (const rel of DIRECT_TOP_BARS) {
       const src = read(rel);
       expect(src, `${rel} must import QuickExitButton`).toMatch(/import QuickExitButton/);
       expect(src, `${rel} must render QuickExitButton`).toMatch(/<QuickExitButton/);
       expect(src, `${rel} still renders its own SignOut`).not.toMatch(/<SignOut\b/);
+    }
+  });
+
+  it("the shared ModuleBanner renders Quick Exit last, from one owner", () => {
+    expect(MODULE_BANNER).toMatch(/import QuickExitButton/);
+    expect(MODULE_BANNER).toMatch(/<QuickExitButton/);
+    expect(MODULE_BANNER.indexOf("{onQuickExit && <QuickExitButton"))
+      .toBeGreaterThan(MODULE_BANNER.indexOf("{settings}"));
+  });
+
+  it("module banners converted to ModuleBanner pass onQuickExit through it", () => {
+    for (const rel of SHARED_TOP_BARS) {
+      const src = read(rel);
+      expect(src, `${rel} must import ModuleBanner`).toMatch(/import ModuleBanner/);
+      expect(src, `${rel} must render ModuleBanner`).toMatch(/<ModuleBanner\b/);
+      expect(src, `${rel} must hand Quick Exit to the banner`).toMatch(/onQuickExit=\{onQuickExit\}/);
+      expect(src, `${rel} still renders its own SignOut`).not.toMatch(/<SignOut\b/);
+      expect(src, `${rel} still renders QuickExitButton directly`).not.toMatch(/<QuickExitButton\b/);
     }
   });
 
