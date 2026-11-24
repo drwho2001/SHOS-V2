@@ -17,7 +17,7 @@
 import React from "react";
 import { STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 
-export function TabStickyHeader({ children, background, ariaLabel, zIndex = 6 }) {
+export function TabStickyHeader({ children, background, ariaLabel, zIndex = 6, padding = "10px 16px 4px" }) {
   return (
     <div
       role="group"
@@ -27,7 +27,7 @@ export function TabStickyHeader({ children, background, ariaLabel, zIndex = 6 })
         top: `calc(var(--shos-top-banner-h, 0px) + ${STICKY_SUBHEADING_TOP})`,
         zIndex,
         background: background || "transparent",
-        padding: "10px 16px 4px",
+        padding,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

@@ -20,13 +20,17 @@ import path from "node:path";
 
 const read = (f) => readFileSync(path.join(process.cwd(), f), "utf8");
 
+// CHANGED 24 Nov: Encounters' list banner moved to ModuleBanner; its
+// detail header is still an inline sticky header and keeps the literal
+// pair (one, down from two).
 const DIRECT_BANNERS = [
   ["src/modules/SHOS_Healthcare_Prototype.jsx", 1],
-  ["src/modules/SHOS_Encounters_Prototype.jsx", 2],
+  ["src/modules/SHOS_Encounters_Prototype.jsx", 1],
 ];
 const SHARED_BANNERS = [
-  "src/modules/SHOS_Contacts_Prototype.jsx",
-  "src/modules/SHOS_Medication_Dashboard_Prototype.jsx",
+  ["src/modules/SHOS_Contacts_Prototype.jsx", 0],
+  ["src/modules/SHOS_Medication_Dashboard_Prototype.jsx", 0],
+  ["src/modules/SHOS_Encounters_Prototype.jsx", 1], // detail header
 ];
 const negatives = (src) => src.match(/marginTop: "calc\(-1 \* env\(safe-area-inset-top\)\)"/g) || [];
 const bottoms = (src) => src.match(/marginBottom: "env\(safe-area-inset-top\)"/g) || [];
@@ -47,13 +51,13 @@ describe("sticky module banners give back the safe-area margin", () => {
     });
   }
 
-  for (const file of SHARED_BANNERS) {
-    it(`${file}: uses the shared ModuleBanner and keeps no local banner copy`, () => {
+  for (const [file, inlineCount] of SHARED_BANNERS) {
+    it(`${file}: uses the shared ModuleBanner and keeps only its declared inline headers`, () => {
       const src = read(file);
       expect(src).toMatch(/import ModuleBanner/);
       expect(src.match(/<ModuleBanner\b/g) || []).toHaveLength(1);
-      expect(negatives(src)).toHaveLength(0);
-      expect(bottoms(src)).toHaveLength(0);
+      expect(negatives(src)).toHaveLength(inlineCount);
+      expect(bottoms(src)).toHaveLength(inlineCount);
     });
   }
 

@@ -19,6 +19,7 @@ const BANNER = read("src/components/ModuleBanner.jsx");
 const TABS = read("src/components/TabStickyHeader.jsx");
 const MED = read("src/modules/SHOS_Medication_Dashboard_Prototype.jsx");
 const CONTACTS = read("src/modules/SHOS_Contacts_Prototype.jsx");
+const ENCOUNTERS = read("src/modules/SHOS_Encounters_Prototype.jsx");
 
 describe("BACKLOG 0b shared module banner", () => {
   it("owns the icon order: Search, Select, module extras, Settings, Quick Exit", () => {
@@ -50,8 +51,12 @@ describe("BACKLOG 0b shared module banner", () => {
     expect(MED).toMatch(/<ModuleBanner[\s\S]*?role="tablist"[\s\S]*?<\/ModuleBanner>/);
   });
 
-  it("Medication and Contacts render the shared banner with their own accents", () => {
-    for (const [src, accent] of [[MED, "accent={T.medsBlue}"], [CONTACTS, "accent={T.contactsBanner}"]]) {
+  it("converted modules render the shared banner with their own accents", () => {
+    for (const [src, accent] of [
+      [MED, "accent={T.medsBlue}"],
+      [CONTACTS, "accent={T.contactsBanner}"],
+      [ENCOUNTERS, "accent={T.encountersPink}"],
+    ]) {
       expect(src).toMatch(/import ModuleBanner/);
       expect(src).toMatch(/<ModuleBanner\b/);
       expect(src.includes(accent)).toBe(true);
@@ -60,17 +65,31 @@ describe("BACKLOG 0b shared module banner", () => {
     }
   });
 
-  it("Contacts' banner Search focuses the real field, it does not duplicate it", () => {
-    expect(CONTACTS).toMatch(/const contactSearchInputRef = useRef\(null\)/);
-    expect(CONTACTS).toMatch(/contactSearchInputRef\.current\?\.focus\(\)/);
-    expect(CONTACTS).toMatch(/<input ref=\{contactSearchInputRef\}/);
-    expect(CONTACTS).toMatch(/placeholder="Search contacts"/);
+  it("converted modules' banner Search focuses the real field, not a duplicate", () => {
+    for (const [src, ref, placeholder] of [
+      [CONTACTS, "contactSearchInputRef", 'placeholder="Search contacts"'],
+      [ENCOUNTERS, "encounterSearchInputRef", 'placeholder="Search encounters"'],
+    ]) {
+      expect(src).toMatch(new RegExp(`const ${ref} = useRef\\(null\\)`));
+      expect(src).toMatch(new RegExp(`${ref}\\.current\\?\\.focus\\(\\)`));
+      expect(src).toMatch(new RegExp(`<input ref=\\{${ref}\\}`));
+      expect(src).toMatch(new RegExp(placeholder.replace(/"/g, '\\"')));
+    }
+  });
+
+  it("Encounters migrated its action bar into the shared TabStickyHeader", () => {
+    expect(ENCOUNTERS).toMatch(/import TabStickyHeader/);
+    expect(ENCOUNTERS).toMatch(/<TabStickyHeader\b/);
+    expect(ENCOUNTERS).toMatch(/<\/TabStickyHeader>/);
+    // The detail header is deliberately not a module banner: it keeps its
+    // own in-flow shape and must not be converted to ModuleBanner.
+    expect(ENCOUNTERS.match(/<ModuleBanner\b/g) || []).toHaveLength(1);
   });
 
   it("TabStickyHeader takes its offset from the one shared token", () => {
     expect(TABS).toMatch(/import \{ STICKY_SUBHEADING_TOP \} from "\.\.\/calculations\/designTokens"/);
     expect(TABS).toMatch(/top: `calc\(var\(--shos-top-banner-h, 0px\) \+ \$\{STICKY_SUBHEADING_TOP\}\)`/);
     expect(TABS).not.toMatch(/\+ 58px/);
-    expect(TABS).toMatch(/padding: "10px 16px 4px"/);
+    expect(TABS).toMatch(/padding = "10px 16px 4px"/);
   });
 });

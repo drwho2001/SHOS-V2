@@ -15,7 +15,8 @@
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, lazy, Suspense } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
-import QuickExitButton from "../components/QuickExitButton";
+import ModuleBanner from "../components/ModuleBanner";
+import TabStickyHeader from "../components/TabStickyHeader";
 import EmptyState from "../components/EmptyState";
 import UndoToast from "../components/UndoToast";
 import { FormTabs } from "../components/FormTabs";
@@ -82,7 +83,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent, STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
+import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { collapseChips } from "../calculations/chipVisibility";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useTranslation } from "../i18n/index.js";
@@ -1412,6 +1413,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // invisible to this box even though Global Search would find it —
   // now matches the exact same field set for consistency.
   const [query, setQuery] = useState("");
+  // CHANGED 24 Nov 2026 — BACKLOG 0b: the banner owns the Search control,
+  // as in Medication and Contacts. The field stays here and keeps its
+  // placeholder; this ref is the seam the banner icon uses to focus it.
+  const encounterSearchInputRef = useRef(null);
+  const openEncounterSearch = () => {
+    setTimeout(() => encounterSearchInputRef.current?.focus(), 50);
+  };
   const [dismissedPrepWarning, setDismissedPrepWarning] = useState(false);
   const encountersList = useMemo(() => encounters || [], [encounters]);
   const anyPrepCoverage = encountersList?.some((e) => e.myPrepCoverage) && !dismissedPrepWarning;
@@ -1578,16 +1586,26 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           while the title/icons stay safely below the notch. This
           outer wrapper's T.bg background is now effectively unused
           (zero height above the inner banner) but harmless to leave. */}
-      <div style={{ position: "sticky", top: "var(--shos-top-banner-h, 0px)", zIndex: 6, background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", marginTop: "calc(-1 * env(safe-area-inset-top))", marginBottom: "env(safe-area-inset-top)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>{tr("encounters.title", "Encounter")}</h1>
-        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-          <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowEncounterSettings(true)} role="button" tabIndex={0} aria-label={tr("encounters.settings", "Encounter settings")} title={tr("encounters.settings", "Encounter settings")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowEncounterSettings(true); } }} />
+      {/* CHANGED 24 Nov 2026 — BACKLOG 0b: the shared ModuleBanner now
+          owns this banner's structure and icon order. Encounters gains a
+          banner Search like Medication/Contacts; the detail header below
+          keeps its own in-flow shape (it is not a module banner). */}
+      <ModuleBanner
+        title={tr("encounters.title", "Encounter")}
+        accent={T.encountersPink}
+        bg={T.bg}
+        onSearch={openEncounterSearch}
+        searchLabel="Search encounters"
+        select={
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? exitSelectMode() : setSelectMode(true); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: TYPE.control.fontSize, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
-          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
-        </div>
-      </div>
+        }
+        settings={
+          <SettingsIcon size={24} color="#FFFFFF" style={{ cursor: "pointer", padding: 10, margin: "-10px 0" }} onClick={() => setShowEncounterSettings(true)} role="button" tabIndex={0} aria-label={tr("encounters.settings", "Encounter settings")} title={tr("encounters.settings", "Encounter settings")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowEncounterSettings(true); } }} />
+        }
+        onQuickExit={onQuickExit}
+      />
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
         {selectMode && (
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 8, boxSizing: "border-box", width: "100%", maxWidth: 760, margin: "0 auto" }}>
@@ -1630,7 +1648,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         {/* ADDED 1 Sep 2026 — real ask: search within module, same
             placement/pattern as every sibling module's own search box. */}
         <div style={{ padding: "8px 16px 0" }}>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search encounters"
+          <input ref={encounterSearchInputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search encounters"
             style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, boxSizing: "border-box" }} />
         </div>
         {activeSession && (
@@ -1689,7 +1707,12 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             </div>
           </div>
         )}
-        <div style={{ padding: "4px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: `calc(var(--shos-top-banner-h, 0px) + ${STICKY_SUBHEADING_TOP})`, zIndex: 5, background: T.bg }}>
+        {/* CHANGED 24 Nov 2026 — BACKLOG 0b: this was the best existing
+            per-tab action bar; its actions now live inside the shared
+            TabStickyHeader so the offset and compact padding have one
+            owner. Only the padding is kept at the old value: 4px from
+            the search row above, not the 10px default. */}
+        <TabStickyHeader ariaLabel="Encounter list actions" background={T.bg} zIndex={5} padding="4px 16px 0">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div role="switch" aria-checked={showArchived} tabIndex={0} aria-label="Show archived encounters" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowArchived((s) => !s); } }} onClick={() => setShowArchived((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${showArchived ? T.encountersPink : T.border}`, background: showArchived ? `${T.encountersPink}15` : "transparent", fontSize: 11, color: showArchived ? T.encountersPink : T.textSecondary, fontWeight: 600 }}>
               {showArchived ? "Hide archived" : "Show archived"}
@@ -1727,7 +1750,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
             {visible.length > 0 ? `${visible.length} encounters${dateFilter ? ` (filtered)` : ""}${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No encounters match" : "No encounters logged"}
           </div>
-        </div>
+        </TabStickyHeader>
         {sessionSummaries.length > 0 && (
           <div ref={sessionSummariesRef} id="encounter-session-summaries" aria-hidden={!showSessionSummaries} style={{ padding: "8px 16px 0", display: showSessionSummaries ? "flex" : "none", gap: 8, overflowX: "auto", scrollMarginTop: "calc(env(safe-area-inset-top) + 110px)" }}>
             {sessionSummaries.map((session) => {
@@ -2254,7 +2277,7 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
   const selectedBarrier = hasBarrierMethod(selectedProtectionNames);
   const showNoBarrier = protectionNamesLoaded && !selectedBarrier;
   // ADDED 8 Nov 2026 — this sheet's banner is a ~58px bar pinned at top:0, but
-  // the tabs were pinned at STICKY_SUBHEADING_TOP (safe-area + 58), a token that
+  // the tabs were pinned at the shared subheading offset (safe-area + 58), a token that
   // is only correct for page-level banners that carry their own inset. Here the
   // inset is spent by the scroll root instead, so the tabs sat exactly one
   // status bar too low with a strip of page background between banner and tabs.
