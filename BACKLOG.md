@@ -2628,3 +2628,6 @@ Shipped: R13 (No barrier method search/filter + canonical label); R1 (update ban
 Owner finding: stayed in a hotel and had someone over. Typing a hotel into the encounter Location picker would call LocationsRepository.findOrCreate() and leave a permanent saved place, and the contact-derived suggestions could write a route to an address on the owner. Built: (1) Hotel added to ENCOUNTER_TYPE_OPTIONS with a render-only bed icon, matching Sauna; (2) temporaryLocation, a plain string on the encounter only, with a form field labelled "Temporary location" that never calls the location registry, shown on the card and in the detail view and masked under Anonymise via src/calculations/encounterLocationLabel.js. Guards: hotelTemporaryLocationGuard.test.js and encounterLocationLabel.test.js. Not a repository, so no backup wiring change; defensive-default merge keeps old records valid.
 
 Status: shipped locally, not pushed.
+### 25 Nov 2026 - CI fix (ModuleBanner raw colour)
+
+Build Android APK gate failed on the pushed SHA: styleColourGuard.test.js rejected components/ModuleBanner.jsx as a new file with one raw hex read. Fixed by adding BANNER_TEXT to designTokens.js and replacing the three literal white text/icon colours in the shared banner. No baseline entry was added - a token is the correct fix, not an exception.

@@ -21,7 +21,7 @@
 import React from "react";
 import { MagnifyingGlassIcon as Search } from "@phosphor-icons/react";
 import QuickExitButton from "./QuickExitButton";
-import { TYPE } from "../calculations/designTokens";
+import { TYPE, BANNER_TEXT } from "../calculations/designTokens";
 
 export function ModuleBanner({
   title,
@@ -71,12 +71,12 @@ export function ModuleBanner({
         justifyContent: "space-between",
       }}>
         {notchBand}
-        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>{title}</h1>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: BANNER_TEXT }}>{title}</h1>
         <div style={{ display: "flex", gap: actionsGap, alignItems: "center" }}>
           {onSearch && (
             <Search
               size={24}
-              color="#FFFFFF"
+              color={BANNER_TEXT}
               style={{ cursor: "pointer", padding: 10, boxSizing: "content-box", marginTop: -10, marginRight: -10, marginBottom: -10, marginLeft: -10 }}
               onClick={onSearch}
               role="button"
@@ -93,7 +93,7 @@ export function ModuleBanner({
           {select}
           {extras}
           {settings}
-          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color="#FFFFFF" />}
+          {onQuickExit && <QuickExitButton onQuickExit={onQuickExit} color={BANNER_TEXT} />}
         </div>
       </div>
       {children && <div style={{ background: bg, padding: childrenPadding }}>{children}</div>}

@@ -52,6 +52,13 @@ export const TOAST = {
   text: "#FFFFFF",
 };
 
+// 25 Nov 2026 — text and icons on a filled module accent banner. One owner
+// so a shared component never has to read a raw hex literal: the previous
+// ModuleBanner copy of "#FFFFFF" was rejected by styleColourGuard as a new
+// file with a raw colour read, which is the right gate. Fixed fill inversion
+// is intentional here, same reasoning as TOAST.text, and is not theme-aware.
+export const BANNER_TEXT = "#FFFFFF";
+
 // Dark-mode counterpart, values matched to Medication's own hand-tuned
 // DARK object (the module dark mode was first built for) so every
 // module now adopting dark mode reads as one consistent system rather
