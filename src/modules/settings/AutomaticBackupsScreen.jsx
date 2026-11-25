@@ -11,6 +11,7 @@ import { isCustomAutoExportFolderAvailable, pickAutoExportFolder } from "../../s
 import { getLastBackupInfo } from "../../storage/backupService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 const AUTO_EXPORT_INTERVAL_OPTIONS = [
   { days: 1, label: "Daily" },
@@ -41,6 +42,8 @@ export function AutomaticBackupsScreen({ onClose }) {
   const [lastBackupInfo, setLastBackupInfo] = useLoadedState(() => getLastBackupInfo(), [], { lastAt: null, daysSince: null, dueForReminder: false });
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog.
+  useEscapeToClose(onClose);
   // ADDED — real ask: an editable save location, previously stuck on
   // the public Documents folder with no way to change it. Native-only —
   // checked once on mount, not every render, same pattern as the

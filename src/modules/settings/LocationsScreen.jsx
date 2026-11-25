@@ -9,6 +9,7 @@ import { CaretLeftIcon as ChevronLeft, MapPinIcon as MapPin, CopyIcon as Copy, A
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { LocationsRepository } from "../../repositories/locationsRepository";
 import { ContactRepository } from "../../repositories/contactRepository";
@@ -69,6 +70,8 @@ export function LocationsScreen({ onClose }) {
   const [status, setStatus] = useState("");
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog.
+  useEscapeToClose(onClose);
 
   const locations = useLoadedMemo(() => LocationsRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);

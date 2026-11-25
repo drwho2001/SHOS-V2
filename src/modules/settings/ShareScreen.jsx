@@ -9,6 +9,7 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calcula
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 const APK_URL = "https://github.com/drwho2001/SHOS-V2/releases/latest";
 const WEB_URL = "https://drwho2001.github.io/SHOS-V2/";
@@ -19,6 +20,8 @@ export function ShareScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog.
+  useEscapeToClose(onClose);
   const isDesktopWidth = useIsDesktopWidth();
 
   const shareLink = async () => {

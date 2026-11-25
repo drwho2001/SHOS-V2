@@ -2,6 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { useReducedMotion } from "../../calculations/useReducedMotion";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, ArrowUUpLeftIcon as ResetIcon } from "@phosphor-icons/react";
@@ -285,6 +286,8 @@ export function DesignScreen({ onClose }) {
   const reducedMotion = useReducedMotion();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog.
+  useEscapeToClose(onClose);
 
   // CHANGED — Phase 2 encryption groundwork: ModuleColorRepository is
   // now async — every handler below awaits its write, then awaits a

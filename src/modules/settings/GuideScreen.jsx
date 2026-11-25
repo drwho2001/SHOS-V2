@@ -7,6 +7,7 @@ import { ACCENT_TEXT_SAFE, NEUTRAL, RADIUS, TYPE } from "../../calculations/desi
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { ANONYMISE_MODE_SURFACES } from "../../calculations/anonymiseDisplay";
 
 const GUIDE_SECTIONS = [
@@ -82,6 +83,9 @@ export function GuideScreen({ onClose, onStartTour }) {
   const isDesktopWidth = useIsDesktopWidth();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): closing the guide with Escape leaves the sub-screen open,
+  // matching the tour's X/back behaviour rather than navigating away.
+  useEscapeToClose(onClose);
 
   return (
     <div ref={dialogRef} role="dialog" aria-label={t("guide.title", "Guide")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>

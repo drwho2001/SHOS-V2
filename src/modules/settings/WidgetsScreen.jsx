@@ -13,6 +13,7 @@ import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { tierFor, isDataWidget } from "../../calculations/widgetPrivacy";
 import { syncAllWidgets } from "../../calculations/syncAllWidgets";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 export function WidgetsScreen({ onClose }) {
   const { t } = useTranslation();
@@ -20,6 +21,8 @@ export function WidgetsScreen({ onClose }) {
   const T = darkMode ? DARK : NEUTRAL;
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog.
+  useEscapeToClose(onClose);
   const [widgetPrefs, setWidgetPrefs] = useLoadedState(() => 
     import("../../repositories/appPreferencesRepository").then(m => m.AppPreferencesRepository.getPreferences()), 
     [], 

@@ -26,6 +26,15 @@ const WITH_HOOK = [
   "ResourcesScreen.jsx",
   "ClinicalEvidenceScreen.jsx",
   "DataNetworkScreen.jsx",
+  // AX2 25 Nov, second chunk: no destructive confirm state in these screens.
+  "AutomaticBackupsScreen.jsx",
+  "DesignScreen.jsx",
+  "GuideScreen.jsx",
+  "LocationsScreen.jsx",
+  "ManageListsScreen.jsx",
+  "PreferencesScreen.jsx",
+  "ShareScreen.jsx",
+  "WidgetsScreen.jsx",
 ];
 const INLINE_ESCAPE = [
   "EncountersSettingsScreen.jsx",
@@ -40,6 +49,15 @@ const NEW_HOOK = [
   "ResourcesScreen.jsx",
   "ClinicalEvidenceScreen.jsx",
   "DataNetworkScreen.jsx",
+  // AX2 25 Nov, second chunk: no destructive confirm state in these screens.
+  "AutomaticBackupsScreen.jsx",
+  "DesignScreen.jsx",
+  "GuideScreen.jsx",
+  "LocationsScreen.jsx",
+  "ManageListsScreen.jsx",
+  "PreferencesScreen.jsx",
+  "ShareScreen.jsx",
+  "WidgetsScreen.jsx",
 ];
 
 describe("AX2 settings dialogs close with Escape", () => {
@@ -67,7 +85,7 @@ describe("AX2 settings dialogs close with Escape", () => {
     const dialogs = fs.readdirSync(SETTINGS)
       .filter((f) => f.endsWith(".jsx") && read(f).includes('role="dialog"'));
     expect(dialogs.length).toBeGreaterThanOrEqual(25);
-    expect(WITH_HOOK.length + INLINE_ESCAPE.length).toBe(11);
+    expect(WITH_HOOK.length + INLINE_ESCAPE.length).toBe(19);
   });
 
   it("the hook closes only the topmost dialog", () => {

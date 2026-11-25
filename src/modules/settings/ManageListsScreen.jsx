@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, ListCheck
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { useLoadedMemo, useLoadedState } from "../../calculations/loadedRepositoryState";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { LocationsRepository } from "../../repositories/locationsRepository";
@@ -106,6 +107,9 @@ export function ManageListsScreen({ onClose }) {
   }, [], {});
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog; any nested editor's
+  // own key handling wins first through the shared hook's defaultPrevented check.
+  useEscapeToClose(onClose);
 
   return (
     <div ref={dialogRef} role="dialog" aria-label={t("manageLists.title", "Manage lists")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
