@@ -2631,3 +2631,6 @@ Status: shipped locally, not pushed.
 ### 25 Nov 2026 - CI fix (ModuleBanner raw colour)
 
 Build Android APK gate failed on the pushed SHA: styleColourGuard.test.js rejected components/ModuleBanner.jsx as a new file with one raw hex read. Fixed by adding BANNER_TEXT to designTokens.js and replacing the three literal white text/icon colours in the shared banner. No baseline entry was added - a token is the correct fix, not an exception.
+### 25 Nov 2026 - Negative-status CI gate was vacuous
+
+scripts/check-negative-status.mjs defaulted ROOT to a hardcoded Windows path. On Linux CI all six target files resolved as missing and were "skipped", so the gate reported PASS without reading anything - which is why the stale CLAUDE.md phrase only failed locally. Fixed: default ROOT to process.cwd() (SHOS_WORKSPACE still overrides) and fail closed on a missing target instead of skipping. Verified normal run PASS and a bogus SHOS_WORKSPACE fails with six missing-target errors.

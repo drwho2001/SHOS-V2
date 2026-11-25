@@ -10,7 +10,12 @@ import { readFileSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { existsSync } from 'node:fs';
 
-const ROOT = process.env.SHOS_WORKSPACE || 'C:/Users/kanem/SHOS-V2';
+// 25 Nov 2026 — was hardcoded to this machine's Windows path. On Linux CI
+// every target then resolved to a missing file and the loop below skipped
+// them all, so the gate reported PASS while checking nothing. Default to
+// the workspace we are actually running in; SHOS_WORKSPACE remains an
+// explicit override for unusual checkouts.
+const ROOT = process.env.SHOS_WORKSPACE || process.cwd();
 // Scope selection is deliberate: check only files that a model is likely to read
 // as current instructions or current state. docs/HISTORY.md is a dated artifact
 // and is deliberately excluded — its task list is NOT current state, and blocking
@@ -60,7 +65,11 @@ const results = [];
 for (const rel of TARGETS) {
   const abs = join(ROOT, rel);
   if (!existsSync(abs)) {
-    console.error('skipping missing file', JSON.stringify(abs));
+    // Fail closed. Skipping made the whole gate vacuous on CI, which is
+    // worse than a false positive: it taught future sessions that PASS
+    // meant something when nothing had been read.
+    found += 1;
+    results.push(`${rel}:  TARGET FILE MISSING (${abs})`);
     continue;
   }
   const text = readFileSync(abs, 'utf8');
@@ -78,7 +87,7 @@ for (const rel of TARGETS) {
 }
 
 if (found) {
-  console.error('Negative-status phrases found — these read as "don\'t rebuild" to later sessions:\n');
+  console.error('Negative-status phrases / missing target files — these read as "don\'t rebuild" to later sessions:\n');
   for (const r of results) console.error(r);
   console.error(`\n${found} line(s). Review and remove, or add to ALLOWLIST in scripts/check-negative-status.mjs.`);
   process.exit(1);
