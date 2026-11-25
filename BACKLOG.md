@@ -2620,3 +2620,11 @@ link.
 ### Ranked fixes R1–R13
 Shipped: R13 (No barrier method search/filter + canonical label); R1 (update banner dismiss fix + APK link removed on web); biometric toggle gated on web — see `docs/HISTORY.md`. Open, in priority order: R2 icon 404s + CSP; R3 restore demo data; R4 repeated summary cards + allergies green outline for NKDA/none/N/A; R5 hCG fields; R6 multiple mounted dialogs; R7 vaginal health removal; R8 transient zero counts; R9 overlapping ongoing periods; R10 onboarding polish; R11 Safety Share empty fields; R12 consistency nits. Full detail with effort/risk/code refs: `BETA-ACTION-PLAN.md`.
 
+
+---
+
+## 25 Nov 2026 - Temporary encounter location / Hotel category (SHIPPED locally)
+
+Owner finding: stayed in a hotel and had someone over. Typing a hotel into the encounter Location picker would call LocationsRepository.findOrCreate() and leave a permanent saved place, and the contact-derived suggestions could write a route to an address on the owner. Built: (1) Hotel added to ENCOUNTER_TYPE_OPTIONS with a render-only bed icon, matching Sauna; (2) temporaryLocation, a plain string on the encounter only, with a form field labelled "Temporary location" that never calls the location registry, shown on the card and in the detail view and masked under Anonymise via src/calculations/encounterLocationLabel.js. Guards: hotelTemporaryLocationGuard.test.js and encounterLocationLabel.test.js. Not a repository, so no backup wiring change; defensive-default merge keeps old records valid.
+
+Status: shipped locally, not pushed.

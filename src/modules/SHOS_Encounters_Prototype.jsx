@@ -28,7 +28,7 @@ import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star, GearIcon as SettingsIcon } from "@phosphor-icons/react";
+import { PlusIcon as Plus, EyeIcon as Eye, EyeSlashIcon as EyeSlash, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, BedIcon as Bed, DropIcon as SaunaDrop, DropSlashIcon as DropSlash, ConfettiIcon as Confetti, CalendarIcon as Calendar, ClockIcon as Clock, StarIcon as Star, GearIcon as SettingsIcon } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
@@ -47,6 +47,7 @@ import { TrashRepository } from "../repositories/trashRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { timeOfDay, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
+import { formatEncounterLocation } from "../calculations/encounterLocationLabel.js";
 import { inferProtectionContext, findPrEPMedication, resolveDoxyPepDisplay } from "../calculations/encounterProtectionContext";
 import { findDoxyPepMedication } from "../calculations/doxyPepCalculations";
 import { MedicationRepository } from "../repositories/medicationRepository";
@@ -1089,6 +1090,7 @@ const ENCOUNTER_TYPE_ICONS = {
   Group: Users,
   "Date/Chill": Coffee,
   Sauna: SaunaDrop,
+  Hotel: Bed,
   Event: Confetti,
 };
 
@@ -1238,7 +1240,10 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <MapPin size={11} style={{ flex: "0 0 11px" }} />
-                <span>{locationName}</span>
+                {/* 25 Nov (owner): a hotel stay is a ONE-OFF encounter
+                    detail, not a saved place. Shown beside any saved place
+                    and masked under Anonymise without touching the registry. */}
+                <span>{formatEncounterLocation({ savedName: locationName, temporary: encounter.temporaryLocation, anonymise })}</span>
                 {attendeeChips.length > 0 && <span> · </span>}
                 {attendeeChips}
                 {encounter.encounterType && <><span> · </span><span>{encounter.encounterType}</span></>}
@@ -2137,9 +2142,14 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           </SectionCard>
         )}
 
-        {locationName && (
+        {(locationName || encounter.temporaryLocation) && (
           <SectionCard title={tr("encounters.location", "Location")} T={T}>
-            <ReadRow label="Location" value={locationName} T={T} />
+            <ReadRow label={tr("encounters.location", "Location")} value={locationName} T={T} />
+            <ReadRow
+              label={tr("encounters.tempLocation", "Temporary location")}
+              value={encounter.temporaryLocation ? (anonymise ? ANONYMISED : encounter.temporaryLocation) : ""}
+              T={T}
+            />
           </SectionCard>
         )}
 
@@ -2638,6 +2648,22 @@ function EncounterEditSheet({ T, encounterId, initialSessionId = "", onClose, on
         <SectionCard title={tr("encounters.attendeesLocation", "Attendees & Location")} T={T}>
           <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} onAddAnonymous={addAnonymousAttendee} />
           <RegistrySinglePicker label={tr("encounters.location", "Location")} value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder={tr("encounters.locationPlaceholder", "e.g. His place, Sauna, or a written address")} showLocateButton contacts={contacts} attendeeIds={form.attendeeIds} />
+        {/* ADDED 25 Nov (owner's real finding): a hotel stay with someone
+            over is a one-off WHERE, not a permanent place. Typing a hotel
+            into the picker above would call findOrCreate() and leave a saved
+            location behind; this field stays on the encounter only and is
+            never written to LocationsRepository or My Profile. */}
+        <div style={{ paddingTop: 10 }}>
+          <label htmlFor="encounter-temp-location" style={{ display: "block", fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 4 }}>
+            {tr("encounters.tempLocation", "Temporary location")}
+          </label>
+          <input id="encounter-temp-location" value={form.temporaryLocation || ""} onChange={set("temporaryLocation")}
+            placeholder={tr("encounters.tempLocationPlaceholder", "Hotel name or room — not saved as a place")} aria-label={tr("encounters.tempLocation", "Temporary location")}
+            style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.bg, color: T.textPrimary, fontFamily: FONT_FAMILY, fontSize: TYPE.control.fontSize, minHeight: 44 }} />
+          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 4 }}>
+            {tr("encounters.tempLocationHelp", "For one-off stays such as a hotel. Stored on this encounter only — no saved place, no address on you.")}
+          </div>
+        </div>
         </SectionCard>
         </div>
 

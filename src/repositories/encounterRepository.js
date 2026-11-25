@@ -66,7 +66,11 @@ export const STORAGE_KEY = "shos_encounters";
 // pass, not silently while porting).
 // ---------------------------------------------------------------------
 
-export const ENCOUNTER_TYPE_OPTIONS = ["Hookup", "Group", "Date/Chill", "Sauna", "Event", "Other"];
+// ADDED 25 Nov (owner): "Hotel" is a real encounter context - a stay where
+// someone came over - and the owner asked for it to work like Sauna: a
+// category on the encounter, no permanent place/address required. Hotel was
+// already a LOCATION TYPE; this is the encounter-side category it lacked.
+export const ENCOUNTER_TYPE_OPTIONS = ["Hookup", "Group", "Date/Chill", "Sauna", "Hotel", "Event", "Other"];
 
 // CHANGED 18 Aug 2026 — "Anal – top"/"Anal - bottom" renamed to
 // "Anal - giving"/"Anal - receiving" for consistency with every other
@@ -153,6 +157,13 @@ export const DEFAULT_ENCOUNTER = {
   // an oversight, same as AttendeePicker's single-contact-per-Location
   // choice in locationsRepository.js.
   locationId: "",
+  // ADDED 25 Nov (owner): a ONE-OFF location for the encounter only - e.g.
+  // "Hotel X, room 412". Deliberately NOT a Locations registry entry and
+  // never an address on My Profile: findOrCreate() would make it a saved
+  // place that outlives the stay, which is exactly what the owner refused.
+  // Plain string on the record (like `notes`), so defensive-default merge
+  // keeps old backups valid and no new repository is involved.
+  temporaryLocation: "",
   myPosition: [],
   kinksInvolved: [],
   myRole: "",
