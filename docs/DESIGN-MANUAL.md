@@ -399,6 +399,7 @@ SHOS ships the same React UI to all platforms, but the surrounding shell and cap
 - Reduced motion is supported through `useReducedMotion`. Respect it for transitions and animated UI.
 - Quick exit is available on screens and must remain functional. A visible panic control that does nothing is worse than no control.
 - Touch targets should be at least 44px high for interactive controls. The card action tiers are the documented exception: in-card `.btn` is 40px and `.btn-sm` is 32px so two actions fit a dense card row; screen-level primary CTAs still meet 44px.
+- AX3 (25 Nov): at `font_scale 1.3` the Encounter screen wraps cleanly, but Healthcare's shortcut row clipped "Attachments" off the right edge. That row now wraps with `rowGap: 6` so every entry point stays reachable. Do not fix clipping with `overflow: hidden` on a row that contains the "More" dropdown - it would clip the menu instead.
 - Use `aria-live="polite"` for status updates.
 - Icon-only controls need accessible labels.
 - Contrast must pass WCAG for text and UI components.

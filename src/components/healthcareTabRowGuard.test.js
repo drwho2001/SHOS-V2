@@ -39,6 +39,13 @@ describe("Healthcare tab row", () => {
     expect(generalPrefs).not.toMatch(/HealthcareTabsCard/);
   });
 
+  it("large text wraps the shortcut row instead of clipping the last entry", () => {
+    // AX3 25 Nov: at font_scale 1.3 "Attachments" was cut off at the right
+    // edge. Wrapping is the only fix that keeps every shortcut reachable
+    // without hiding the More dropdown behind an overflow container.
+    expect(hc).toMatch(/flexWrap: "wrap", rowGap: 6, paddingBottom: 10/);
+  });
+
   it("renders stats only for tabs that have them", () => {
     expect(hc).toMatch(/summaryStatsForTab\(subTab, summary\)\.length > 0/);
   });

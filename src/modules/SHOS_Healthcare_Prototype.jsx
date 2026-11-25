@@ -412,7 +412,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             audit): same keyboard-unreachable bug as the sub-tab pills
             above — these 3 are Healthcare's only entry points to
             Episodes/Attachments/Clinic Card. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, paddingBottom: 10, borderBottom: `1px solid ${T.border}` }}>
+        {/* AX3 (25 Nov, font_scale 1.3): this row clipped "Attachments" off
+            the right edge at large text. Wrapping keeps every entry point
+            reachable; the sub-tab pills above stay one row at normal scale. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", rowGap: 6, paddingBottom: 10, borderBottom: `1px solid ${T.border}` }}>
           <div onClick={() => setShowTimeline(true)} role="button" tabIndex={0} aria-label="Episodes"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowTimeline(true); } }}
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", minHeight: 44 }}>
