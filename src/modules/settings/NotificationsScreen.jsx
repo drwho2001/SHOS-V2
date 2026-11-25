@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DownloadS
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../../repositories/notificationPreferencesRepository";
@@ -360,6 +361,9 @@ export function NotificationsScreen({ onClose }) {
   const [refreshKey, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [showHistory, setShowHistory] = useState(false);
+  // AX2 (25 Nov): the notification-history screen is nested here, so Escape
+  // returns from history to Notifications before leaving the module settings.
+  useEscapeToClose(showHistory ? () => setShowHistory(false) : onClose);
   // CHANGED — Phase 2 encryption groundwork: NotificationPreferencesRepository
   // is now async too — same useLoadedMemo/refreshKey pattern as medPrefs.
   const notifPrefs = useLoadedMemo(() => NotificationPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_NOTIFICATION_PREFERENCES);

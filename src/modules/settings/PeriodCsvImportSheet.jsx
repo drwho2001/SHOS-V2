@@ -6,6 +6,7 @@ import { XIcon as X, UploadSimpleIcon as Upload } from "@phosphor-icons/react";
 import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, TOAST, ACTION_TEXT_SAFE, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { buildPeriodImportPreview, savePeriodImport } from "../../calculations/periodCsvImport.js";
 import { MenstrualCycleRepository } from "../../repositories/menstrualCycleRepository.js";
 
@@ -20,6 +21,8 @@ export default function PeriodCsvImportSheet({ onClose, onImported }) {
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  // AX2 (25 Nov): Escape must not abandon an import mid-write.
+  useEscapeToClose(onClose, !saving);
 
   const analyse = async (text, format) => {
     const existing = await MenstrualCycleRepository.getAll();

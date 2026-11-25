@@ -338,7 +338,7 @@ Record cards in this app share one anatomy: **title row → byline → grouped c
 ### 10.4 Dialogs and overlays
 
 - Modal overlays should use `role="dialog"` and `aria-modal="true"` where appropriate.
-- Escape-to-close should be wired with `useEscapeToClose`. AX2 (25 Nov) added it to About, Glossary, Resources, Clinical Evidence, Data & network, Automatic backups, Colour scheme, Guide, Locations, Manage lists, Preferences, Share and Widgets — two scoped chunks of dialogs with no destructive confirm state. Encounters and Healthcare module settings handle Escape inline; the six remaining dialogs (Backup & export, Developer tools, Notifications, Period CSV import, Stats, Trash) need per-screen review because they nest sheets or confirmation state. `src/components/settingsEscapeToCloseGuard.test.js` locks the covered set and its count.
+- Escape-to-close should be wired with `useEscapeToClose`. AX2 (25 Nov) added it to About, Glossary, Resources, Clinical Evidence, Data & network, Automatic backups, Colour scheme, Guide, Locations, Manage lists, Preferences, Share and Widgets — two scoped chunks of dialogs with no destructive confirm state. Encounters and Healthcare module settings handle Escape inline. The third chunk (Backup & export, Developer tools, Notifications, Period CSV import, Stats, Trash) completes AX2: each closes its nested sheet or confirmation first, and the CSV import sheet disables Escape while a write is in progress. All 25 settings dialogs are now covered. `src/components/settingsEscapeToCloseGuard.test.js` locks the covered set and its count.
 - Fixed overlays are not all modals. Review intent before adding dialog semantics.
 - Overlay back behaviour should use the shared overlay back stack where applicable.
 

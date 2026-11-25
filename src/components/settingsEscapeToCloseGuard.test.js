@@ -1,10 +1,10 @@
 // settingsEscapeToCloseGuard.test.js — AX2, 25 Nov 2026.
 //
 // 20 Nov inventory: 25 settings screens render role="dialog", only six had
-// Escape-to-close. This guard is deliberately INCREMENTAL: it locks the 11
-// screens that are now covered and states the remaining ones rather than
-// pretending a blanket sweep is safe. Several of the rest have layered
-// confirm dialogs whose Escape semantics need per-screen thought.
+// Escape-to-close. All 25 settings dialogs are now covered, in three scoped
+// chunks. The last six have nested sheets or confirm state, so their hook
+// closes that inner layer first; the guard asserts that ordering rather than
+// letting a future edit turn Escape into a parent-screen exit.
 //
 // The shared hook owns topmost-only handling and unmount cleanup, so one
 // screen cannot steal Escape from a confirm stacked above it.
@@ -35,6 +35,13 @@ const WITH_HOOK = [
   "PreferencesScreen.jsx",
   "ShareScreen.jsx",
   "WidgetsScreen.jsx",
+  // AX2 25 Nov, third chunk: nested sheets/confirm state, closed before the screen.
+  "BackupExportScreen.jsx",
+  "DeveloperToolsScreen.jsx",
+  "NotificationsScreen.jsx",
+  "PeriodCsvImportSheet.jsx",
+  "StatsScreen.jsx",
+  "TrashScreen.jsx",
 ];
 const INLINE_ESCAPE = [
   "EncountersSettingsScreen.jsx",
@@ -43,6 +50,15 @@ const INLINE_ESCAPE = [
 // The five added in this chunk have no layered confirm, so they pass onClose
 // directly. ErrorLog/NotificationHistory pass a ternary that closes a
 // confirmation first - that is why their call cannot be asserted the same way.
+// These six have a nested overlay; Escape must close that before the screen.
+const NESTED_ESCAPE = {
+  "BackupExportScreen.jsx": /showPeriodImport \? \(\) => setShowPeriodImport\(false\) : onClose/,
+  "DeveloperToolsScreen.jsx": /sampleList \? \(\) => setSampleList\(null\) : onClose/,
+  "NotificationsScreen.jsx": /showHistory \? \(\) => setShowHistory\(false\) : onClose/,
+  "PeriodCsvImportSheet.jsx": /useEscapeToClose\(onClose, !saving\)/,
+  "StatsScreen.jsx": /if \(showCustomize\) setShowCustomize\(false\)/,
+  "TrashScreen.jsx": /if \(confirmDeleteEntry\) setConfirmDeleteEntry\(null\)/,
+};
 const NEW_HOOK = [
   "AboutScreen.jsx",
   "GlossaryScreen.jsx",
@@ -74,6 +90,12 @@ describe("AX2 settings dialogs close with Escape", () => {
     }
   });
 
+  it("nested overlays close before their parent settings screen", () => {
+    for (const [file, pattern] of Object.entries(NESTED_ESCAPE)) {
+      expect(read(file), `${file} lost its nested-Escape ordering`).toMatch(pattern);
+    }
+  });
+
   it("the two module settings screens already handle Escape inline", () => {
     for (const file of INLINE_ESCAPE) {
       expect(read(file), `${file} lost its inline Escape handler`)
@@ -85,7 +107,7 @@ describe("AX2 settings dialogs close with Escape", () => {
     const dialogs = fs.readdirSync(SETTINGS)
       .filter((f) => f.endsWith(".jsx") && read(f).includes('role="dialog"'));
     expect(dialogs.length).toBeGreaterThanOrEqual(25);
-    expect(WITH_HOOK.length + INLINE_ESCAPE.length).toBe(19);
+    expect(WITH_HOOK.length + INLINE_ESCAPE.length).toBe(25);
   });
 
   it("the hook closes only the topmost dialog", () => {

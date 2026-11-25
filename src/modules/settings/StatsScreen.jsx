@@ -2,6 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { FONT_FAMILY, NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, NEUTRAL, RADIUS, TYPE, resolveDarkAccent, deriveDarkAccent } from "../../calculations/designTokens";
@@ -85,6 +86,14 @@ export function StatsScreen({ onClose }) {
   const [showCustomize, setShowCustomize] = useState(false);
   const [visibleStats, setVisibleStats] = useState({ encounters: true, testing: true, healthcare: true, medication: true, contacts: true, detailed: false });
 
+  // AX2 (25 Nov): these three panels are inline overlays, not dialogs.
+  // Escape closes the topmost open one before leaving Stats.
+  useEscapeToClose(() => {
+    if (showCustomize) setShowCustomize(false);
+    else if (showDetailedStats) setShowDetailedStats(false);
+    else if (showOrganismInfo) setShowOrganismInfo(false);
+    else onClose();
+  });
   const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
   const locations = useLoadedMemo(() => LocationsRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);

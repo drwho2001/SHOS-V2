@@ -8,6 +8,7 @@ import { CheckIcon as Check, CaretLeftIcon as ChevronLeft } from "@phosphor-icon
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { ContactRepository } from "../../repositories/contactRepository";
@@ -80,6 +81,14 @@ export function TrashScreen({ onClose }) {
   const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  // AX2 (25 Nov): all three delete confirmations are inline in this screen.
+  // Escape closes the active one first; only then does it leave Trash.
+  useEscapeToClose(() => {
+    if (confirmDeleteEntry) setConfirmDeleteEntry(null);
+    else if (confirmDeleteAll) setConfirmDeleteAll(false);
+    else if (confirmDeleteSelected) setConfirmDeleteSelected(false);
+    else onClose();
+  });
 
   const restoreEntries = async (entries) => {
     for (const entry of entries) {

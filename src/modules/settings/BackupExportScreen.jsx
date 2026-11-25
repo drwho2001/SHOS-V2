@@ -7,6 +7,7 @@ import { ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { countSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 import PeriodCsvImportSheet from "./PeriodCsvImportSheet.jsx";
 
 export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
@@ -30,6 +31,9 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
   }, []);
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): the period-import sheet is nested here, so Escape closes
+  // that first; only a second Escape leaves Backup & export.
+  useEscapeToClose(showPeriodImport ? () => setShowPeriodImport(false) : onClose);
   // Local copy of SettingsScreen's own SettingsRow — that one is
   // defined inside SettingsScreen's own closure (over its darkMode),
   // not at module scope, so it isn't reachable from this standalone
