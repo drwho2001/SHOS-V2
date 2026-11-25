@@ -31,6 +31,20 @@ const SCREENS = [
   { name: "Encounter", marker: "Select" },
   { name: "Medication", marker: "Active medications" },
   { name: "Healthcare", marker: "Healthcare" },
+  // AX1 25 Nov: full pass now includes the Settings overlay and its
+  // sub-screens. Each one reloads first so a previous overlay cannot leak
+  // into the next measurement.
+  { name: "Settings", marker: "Backup & Export", settings: true },
+  { name: "About", marker: "About", settings: true, row: "About" },
+  { name: "Backup & Export", marker: "Backup & Export", settings: true, row: "Backup & Export" },
+  { name: "Privacy", marker: "Privacy", settings: true, row: "Privacy" },
+  { name: "Data & network", marker: "Data & network", settings: true, row: "Data & network" },
+  { name: "Widgets", marker: "Widgets", settings: true, row: "Widgets" },
+  { name: "Preferences", marker: "Preferences", settings: true, row: "Preferences" },
+  { name: "Notifications", marker: "Notifications", settings: true, row: "Notifications" },
+  { name: "Colour scheme", marker: "Colour scheme", settings: true, row: "Colour scheme" },
+  { name: "Manage lists", marker: "Manage lists", settings: true, row: "Manage lists" },
+  { name: "Locations", marker: "Locations", settings: true, row: "Locations" },
 ];
 
 function startServer() {
@@ -65,7 +79,25 @@ function startServer() {
       await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Skip")?.click());
       await page.waitForTimeout(1500);
       for (const screen of SCREENS) {
-        if (screen.name !== "Home") {
+        if (screen.settings) {
+          // Reload per settings screen: the Settings overlay is a fixed
+          // dialog, and stacking sub-screens from a previous measurement
+          // would audit whichever one happened to be on top.
+          await page.goto(url, { waitUntil: "networkidle" });
+          await page.waitForTimeout(800);
+          await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Skip")?.click());
+          await page.waitForTimeout(800);
+          await page.evaluate(() => document.querySelector('[aria-label="Settings"]')?.click());
+          await page.waitForTimeout(500);
+          if (screen.row) {
+            await page.evaluate(row => {
+              const el = [...document.querySelectorAll('[role="button"], button, [tabindex="0"]')]
+                .find(e => (e.textContent || "").trim().startsWith(row));
+              el?.click();
+            }, screen.row);
+            await page.waitForTimeout(500);
+          }
+        } else if (screen.name !== "Home") {
           await page.evaluate(lbl => [...document.querySelectorAll("[aria-label]")].find(e => e.getAttribute("aria-label") === lbl)?.click(), screen.name);
         }
         await page.waitForFunction(

@@ -402,7 +402,7 @@ SHOS ships the same React UI to all platforms, but the surrounding shell and cap
 - AX3 (25 Nov): at `font_scale 1.3` the Encounter screen wraps cleanly, but Healthcare's shortcut row clipped "Attachments" off the right edge. That row now wraps with `rowGap: 6` so every entry point stays reachable. Do not fix clipping with `overflow: hidden` on a row that contains the "More" dropdown - it would clip the menu instead.
 - Use `aria-live="polite"` for status updates.
 - Icon-only controls need accessible labels.
-- Contrast must pass WCAG for text and UI components.
+- Contrast must pass WCAG for text and UI components. AX1 (25 Nov) ran axe across the four module screens plus Settings and 10 sub-screens at two viewports: no new violations; the only finding remains the 38 baselined nested-interactive nodes (Home 1 + Encounter 18 per viewport). `scripts/a11y-gate.cjs` owns the sweep and re-runs it in CI.
 - Keyboard navigation should work for header icons and interactive elements.
 
 ## 13. Privacy-sensitive UI

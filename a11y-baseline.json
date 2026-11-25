@@ -1,6 +1,6 @@
 {
   "nested-interactive|serious": {
     "count": 38,
-    "reason": "Accepted at baseline 19 Nov 2026 — clickable card rows contain focusable detail affordances; a dedicated interaction refactor is a separate task. Ratchet: shrink deliberately; small cross-platform drift advisory. Colour-contrast rule cleared 14 → 0 on 20 Nov (teal companion, text-safe red subtitle, near-black adherence numbers) and was removed from this baseline."
+    "reason": "Accepted at baseline 19 Nov 2026 — clickable card rows contain focusable detail affordances; a dedicated interaction refactor is a separate task. Ratchet: shrink deliberately; small cross-platform drift advisory. Colour-contrast rule cleared 14 → 0 on 20 Nov (teal companion, text-safe red subtitle, near-black adherence numbers) and was removed from this baseline. Full sweep 25 Nov added the Settings overlay and 10 sub-screens at 2 viewports: all clean, count unchanged at 38 (Home 1 + Encounter 18 per viewport)."
   }
 }
