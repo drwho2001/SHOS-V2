@@ -338,7 +338,7 @@ Record cards in this app share one anatomy: **title row → byline → grouped c
 ### 10.4 Dialogs and overlays
 
 - Modal overlays should use `role="dialog"` and `aria-modal="true"` where appropriate.
-- Escape-to-close should be wired with `useEscapeToClose`.
+- Escape-to-close should be wired with `useEscapeToClose`. AX2 (25 Nov) added it to About, Glossary, Resources, Clinical Evidence and Data & network — the first scoped chunk of read-only settings screens. Encounters and Healthcare module settings handle Escape inline; the remaining settings dialogs need per-screen review because some stack confirm dialogs. `src/components/settingsEscapeToCloseGuard.test.js` locks the covered set and its count.
 - Fixed overlays are not all modals. Review intent before adding dialog semantics.
 - Overlay back behaviour should use the shared overlay back stack where applicable.
 

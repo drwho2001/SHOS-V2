@@ -9,6 +9,7 @@ import { useReducedMotion } from "../../calculations/useReducedMotion";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 export function DataNetworkScreen({ onClose }) {
   const { t } = useTranslation();
@@ -17,6 +18,8 @@ export function DataNetworkScreen({ onClose }) {
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this settings dialog.
+  useEscapeToClose(onClose);
 
   const toggleAddressLookup = async () => {
     setPrefs(await AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));

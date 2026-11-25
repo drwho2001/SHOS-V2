@@ -27,6 +27,7 @@ import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { U_U_SOURCES, EVIDENCE_GROUPS } from "./clinicalEvidence";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 // The one-sentence takeaway, leading the entry - the owner's own wording, and
 // deliberately NOT phrased about the reader. It states what the science is, not
@@ -104,6 +105,8 @@ export default function ClinicalEvidenceScreen({ onClose }) {
 
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): immutable, read-only evidence screen - Escape closes it.
+  useEscapeToClose(onClose);
 
   return (
     <div

@@ -9,12 +9,16 @@ import { ACCENTS, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calcula
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 export function AboutScreen({ onClose }) {
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): Escape closes this read-only dialog; the shared hook owns
+  // topmost-only handling so a stacked confirm still wins over this screen.
+  useEscapeToClose(onClose);
   // ADDED — real audit finding (desktop full-width sweep): this
   // screen's minimal content (one short card + a couple of centered
   // lines) has nothing to grid or column — a maxWidth cap + center is

@@ -7,6 +7,7 @@ import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
 import { useTranslation } from "../../i18n/index.js";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 
 const GLOSSARY_TERMS = [
@@ -57,6 +58,8 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
   const isDesktopWidth = useIsDesktopWidth();
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
+  // AX2 (25 Nov): read-only dialog - Escape closes it, like its siblings.
+  useEscapeToClose(onClose);
 
   return (
     <div ref={dialogRef} role="dialog" aria-label={t("glossary.title", "Glossary")} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: FONT_FAMILY }}>
