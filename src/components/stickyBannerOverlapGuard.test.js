@@ -39,8 +39,20 @@ describe("sticky module banners give back the safe-area margin", () => {
   it("the shared ModuleBanner owns the sticky offset and the matching pair", () => {
     const src = read("src/components/ModuleBanner.jsx");
     expect(src).toMatch(/top: "var\(--shos-top-banner-h, 0px\)"/);
-    expect(negatives(src).length).toBe(1);
-    expect(bottoms(src).length).toBe(1);
+    // 26 Nov: the margin pair and top padding are root-owned variables. When
+    // a due/refill banner is up they drop the safe-area inset so the module
+    // title does not sit a second inset below it.
+    expect(src).toMatch(/marginTop: "var\(--shos-banner-top-margin, calc\(-1 \* env\(safe-area-inset-top\)\)\)"/);
+    expect(src).toMatch(/marginBottom: "var\(--shos-banner-bottom-margin, env\(safe-area-inset-top\)\)"/);
+    expect(src).toMatch(/padding: "var\(--shos-banner-pad-top, calc\(16px \+ env\(safe-area-inset-top\)\)\) 16px 14px"/);
+  });
+
+  it("the app root drops the banner inset only while a banner is present", () => {
+    const src = read("src/App.jsx");
+    expect(src).toMatch(/"--shos-top-banner-h": `\$\{topBannerTotal\}px`/);
+    expect(src).toMatch(/"--shos-banner-top-margin": topBannerTotal > 0 \? "0px" : "calc\(-1 \* env\(safe-area-inset-top\)\)"/);
+    expect(src).toMatch(/"--shos-banner-bottom-margin": topBannerTotal > 0 \? "0px" : "env\(safe-area-inset-top\)"/);
+    expect(src).toMatch(/"--shos-banner-pad-top": topBannerTotal > 0 \? "16px" : "calc\(16px \+ env\(safe-area-inset-top\)\)"/);
   });
 
   for (const [file, expected] of DIRECT_BANNERS) {

@@ -2957,6 +2957,15 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     }} />;
   }
 
+  // 26 Nov (owner finding): when a due/refill banner is up, a module banner
+  // cannot pull its background to the true screen edge any more — the
+  // banner stack is already occupying that space. Keeping the negative
+  // top margin and the env() top padding on the module banner in that
+  // state stacked TWO safe-area insets, leaving a large empty band above
+  // the title. Publish the whole banner treatment as root variables so
+  // ModuleBanner can drop the inset when a banner is present and keep
+  // it when the screen is bare.
+  const topBannerTotal = dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight;
   return (
     // CHANGED — real device finding: the due-reminder stack above is
     // `position: fixed`, so every module's own `position: sticky, top: 0`
@@ -2974,7 +2983,11 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // and sit flush below the banner card when one is, with no gap and
     // no double counted inset. <main> below keeps env+content so Home
     // (which has no header of its own) still clears the status bar.
-    <div style={{ height: "var(--shos-app-height, 100vh)", overflow: "hidden", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column", "--shos-top-banner-h": `${dueBannerHeight + refillBannerHeight + refillAwaitingBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px` }}>
+    <div style={{ height: "var(--shos-app-height, 100vh)", overflow: "hidden", background: darkMode ? DARK.bg : NEUTRAL.bg, display: "flex", flexDirection: "column",
+      "--shos-top-banner-h": `${topBannerTotal}px`,
+      "--shos-banner-top-margin": topBannerTotal > 0 ? "0px" : "calc(-1 * env(safe-area-inset-top))",
+      "--shos-banner-bottom-margin": topBannerTotal > 0 ? "0px" : "env(safe-area-inset-top)",
+      "--shos-banner-pad-top": topBannerTotal > 0 ? "16px" : "calc(16px + env(safe-area-inset-top))" }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
 
       {/* ADDED 3 Sep 2026 — real ask: "clear notification awareness"

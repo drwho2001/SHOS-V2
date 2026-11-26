@@ -56,8 +56,8 @@ export function ModuleBanner({
       borderBottom: "1px solid rgba(0,0,0,0.08)",
       borderRadius: "0 0 16px 16px",
       overflow: "hidden",
-      marginTop: "calc(-1 * env(safe-area-inset-top))",
-      marginBottom: "env(safe-area-inset-top)",
+      marginTop: "var(--shos-banner-top-margin, calc(-1 * env(safe-area-inset-top)))",
+      marginBottom: "var(--shos-banner-bottom-margin, env(safe-area-inset-top))",
       ...outerStyle,
     }}>
       <div style={{
@@ -65,7 +65,7 @@ export function ModuleBanner({
         background: accent,
         borderBottom: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "0 0 16px 16px",
-        padding: "calc(16px + env(safe-area-inset-top)) 16px 14px",
+        padding: "var(--shos-banner-pad-top, calc(16px + env(safe-area-inset-top))) 16px 14px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
