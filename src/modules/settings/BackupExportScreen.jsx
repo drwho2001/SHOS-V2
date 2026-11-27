@@ -9,6 +9,7 @@ import { countSampleData, onSampleDataChanged } from "../../repositories/clearSa
 import { useTranslation } from "../../i18n/index.js";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
 import PeriodCsvImportSheet from "./PeriodCsvImportSheet.jsx";
+import AppleHealthImportSheet from "./AppleHealthImportSheet.jsx";
 
 export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
   const { t } = useTranslation();
@@ -18,6 +19,11 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
   const [sampleDataCount, setSampleDataCount] = useState(0);
   // Import v1 — on-device period CSV import, previewed before saving.
   const [showPeriodImport, setShowPeriodImport] = useState(false);
+  // Import v2 — real Apple Health XML export, measurements only.
+  const [showHealthImport, setShowHealthImport] = useState(false);
+  // The sheet disables its own Escape hook while writing; the parent must
+  // not dismiss it out from under an in-flight save either.
+  const [healthImportBusy, setHealthImportBusy] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   useEffect(() => {
     let cancelled = false;
@@ -31,9 +37,11 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
   }, []);
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
-  // AX2 (25 Nov): the period-import sheet is nested here, so Escape closes
-  // that first; only a second Escape leaves Backup & export.
-  useEscapeToClose(showPeriodImport ? () => setShowPeriodImport(false) : onClose);
+  // AX2 (25 Nov): the import sheets are nested here, so Escape closes
+  // whichever is open first; only a second Escape leaves Backup & export.
+  // A no-op handler while busy keeps this listener registered but makes the
+  // topmost-overlay rule hand Escape to nobody; the sheet owns dismissal.
+  useEscapeToClose(showHealthImport ? (healthImportBusy ? () => {} : () => setShowHealthImport(false)) : showPeriodImport ? () => setShowPeriodImport(false) : onClose);
   // Local copy of SettingsScreen's own SettingsRow — that one is
   // defined inside SettingsScreen's own closure (over its darkMode),
   // not at module scope, so it isn't reachable from this standalone
@@ -131,6 +139,9 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
         {/* Import v1 — a CSV of period dates (SHOS's own export or a Clue-style
             file), on-device only, previewed before anything is written. */}
         <SettingsRow icon={FileCsv} label={t("backup.importPeriodsCsv", "Import periods from CSV…")} onClick={() => { setImportStatus(""); setShowPeriodImport(true); }} />
+        {/* Import v2 — real Apple Health XML, measurements only (no invented
+            sample format). Previewed before anything is written. */}
+        <SettingsRow icon={Upload} label={t("backup.importAppleHealth", "Import measurements from Apple Health…")} onClick={() => { setImportStatus(""); setShowHealthImport(true); }} />
         {importStatus && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "0 16px 10px", textAlign: "center" }}>{importStatus}</div>}
         {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
             setting belongs next to the other backup controls, not
@@ -142,6 +153,13 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
         <PeriodCsvImportSheet
           onClose={() => setShowPeriodImport(false)}
           onImported={(n) => setImportStatus(t("backup.importPeriodsDone", "Added {count} period(s).").replace("{count}", String(n)))}
+        />
+      )}
+      {showHealthImport && (
+        <AppleHealthImportSheet
+          onClose={() => setShowHealthImport(false)}
+          onBusyChange={setHealthImportBusy}
+          onImported={(n) => setImportStatus(t("backup.importHealthDone", "Added {count} measurement(s).").replace("{count}", String(n)))}
         />
       )}
     </div>

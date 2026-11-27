@@ -403,6 +403,7 @@
     "generalSettings": "General settings",
     "save": "Save",
     "saving": "Saving…",
+    "importing": "Importing…",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -593,6 +594,8 @@
     "restore": "Restore from backup",
     "importPeriodsCsv": "Import periods from CSV…",
     "importPeriodsDone": "Added {count} period(s).",
+    "importAppleHealth": "Import measurements from Apple Health…",
+    "importHealthDone": "Added {count} measurement(s).",
     "automaticBackups": "Automatic backups"
   },
   "importPeriod": {
@@ -601,6 +604,16 @@
     "choose": "Choose CSV file",
     "dateFormat": "Date format in the file",
     "confirm": "Add {count} periods"
+  },
+  "importHealth": {
+    "title": "Import measurements from Apple Health",
+    "intro": "Picks an Apple Health XML export on this device only. Nothing is uploaded. Only step count and walking/running distance Record samples are imported; other elements are left alone. Existing measurements are never overwritten.",
+    "choose": "Choose Apple Health XML file",
+    "tooLarge": "This file is too large. Export a narrower date range from Apple Health and try again.",
+    "rowsLabel": "measurement(s) to add",
+    "truncated": "Preview capped at the first 2,000 rows. Export a narrower date range to import more.",
+    "skipped": "Record samples skipped — no SHOS mapping, unit mismatch, duplicate or unreadable value.",
+    "confirm": "Add {count} measurements"
   },
   "guide": {
     "title": "Guide",

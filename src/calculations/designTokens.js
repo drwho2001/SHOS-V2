@@ -58,6 +58,8 @@ export const TOAST = {
 // file with a raw colour read, which is the right gate. Fixed fill inversion
 // is intentional here, same reasoning as TOAST.text, and is not theme-aware.
 export const BANNER_TEXT = "#FFFFFF";
+// Modal scrim, shared so a new sheet never introduces another raw rgba literal.
+export const SCRIM = "rgba(0,0,0,0.4)";
 
 // Dark-mode counterpart, values matched to Medication's own hand-tuned
 // DARK object (the module dark mode was first built for) so every

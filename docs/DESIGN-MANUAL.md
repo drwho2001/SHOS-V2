@@ -509,3 +509,37 @@ These are current audit items. They are not standards and should not be copied. 
 - Keep visual references privacy-safe.
 - Do not turn observed variation into a rule without checking whether it is intentional.
 - When a design pass changes the visual language, preserve semantic roles so accessibility and privacy behaviour remain stable.
+
+## 19. Import safety rails (import v2, 27 Nov 2026)
+
+Cross-app import is measured against real public exports, never against an
+invented sample format. The first source is the real Apple Health export at
+`tdda/applehealthdata/testdata/export6s3sample.xml`; its complete record set is
+step count (`count`) and walking/running distance (`km`), so this slice maps
+only those two HK types into the measurement domain and leaves every other
+XML element alone. The copy says "Record samples skipped" for unmapped Record
+attributes and says other elements are left alone, so it stays truthful when
+a real export also contains `Workout` or `ActivitySummary` elements.
+
+The rails every import sheet follows:
+
+- Read the file on the device, preview the exact rows, write only after an
+  explicit confirm. Picking a second file clears the first preview before the
+  read starts, and the import control is disabled while reading or writing.
+- Check `file.size` before reading it. A 25 MB ceiling and a 2,000-row preview
+  cap ask for a narrower export rather than exhausting the WebView that
+  hosts the app.
+- Reject a unit that has no explicit mapping; never silently convert it.
+  Reject impossible calendar digits and an empty value, since `Number("")` is
+  a legitimate-looking zero.
+- Keep Apple's local wall-clock digits in SHOS's fake-UTC form; do not apply
+  the offset as a timezone shift.
+- Deduplicate against existing records by type and date, and against other
+  imported samples by type, full interval and value. A start-only key merges
+  two distinct hours at the DST fall-back.
+- Write with the repository's `create()` so generated IDs append instead of
+  overwriting real records. Keep the canonical transferable field names and
+  explicit entered/canonical units from `canonicalImportFieldsGuard.test.js`.
+- Dismissal is disabled while a write is in flight, including the parent
+  screen's Escape handler — a completed import must be able to report its
+  result before the sheet disappears.
