@@ -8,6 +8,7 @@ import { FONT_FAMILY, NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, TOAST, ACTION_TEXT
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useTranslation } from "../../i18n/index.js";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
+import { useOverlayBackHandler } from "../../components/useOverlayBackHandler";
 import { buildMeasurementPreview, saveMeasurementImport, MAX_IMPORT_BYTES } from "../../calculations/appleHealthImport.js";
 import { MeasurementRepository } from "../../repositories/measurementRepository.js";
 
@@ -15,6 +16,7 @@ export default function AppleHealthImportSheet({ onClose, onImported, onBusyChan
   const { t } = useTranslation();
   const [darkMode] = useDarkModePreference();
   const inputRef = useRef(null);
+  const rawRef = useRef("");
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
@@ -22,6 +24,7 @@ export default function AppleHealthImportSheet({ onClose, onImported, onBusyChan
   // The parent holds the only other Escape listener while this sheet is
   // mounted. While a write is in flight neither side may dismiss the sheet.
   useEscapeToClose(onClose, !saving && !reading);
+  useOverlayBackHandler(() => { if (saving || reading) return true; onClose?.(); return true; });
 
   const analyse = async (text) => {
     const existing = await MeasurementRepository.getAll();
@@ -41,8 +44,10 @@ export default function AppleHealthImportSheet({ onClose, onImported, onBusyChan
       return;
     }
     setReading(true);
+    onBusyChange?.(true);
     try {
       const text = await file.text();
+      rawRef.current = text;
       // Do not keep the whole export in React state: even a permitted 25 MB
       // file is a large string to hold for the lifetime of the sheet.
       await analyse(text);
@@ -50,11 +55,21 @@ export default function AppleHealthImportSheet({ onClose, onImported, onBusyChan
       setError(err?.message || "Could not read that file.");
     } finally {
       setReading(false);
+      onBusyChange?.(false);
     }
   };
 
   const doImport = async () => {
     if (!preview?.rows?.length || preview.error || saving || reading) return;
+    if (rawRef.current) {
+      const existing = await MeasurementRepository.getAll();
+      const fresh = buildMeasurementPreview(rawRef.current, existing);
+      if (fresh.error || fresh.rows.length !== preview.rows.length) {
+        setPreview(fresh);
+        setError(t("importHealth.changed", "The data changed since this preview. Review the updated list before importing."));
+        return;
+      }
+    }
     setSaving(true);
     onBusyChange?.(true);
     try {
@@ -63,7 +78,9 @@ export default function AppleHealthImportSheet({ onClose, onImported, onBusyChan
       onImported?.(n);
       onClose();
     } catch (err) {
-      setError(err?.message || "Import failed.");
+      setPreview(null);
+      rawRef.current = "";
+      setError(err?.message || "Import failed. Some records may already have been added; review the file again before retrying.");
       setSaving(false);
       onBusyChange?.(false);
     }

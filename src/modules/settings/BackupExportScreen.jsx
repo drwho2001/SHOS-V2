@@ -10,6 +10,7 @@ import { useTranslation } from "../../i18n/index.js";
 import { useEscapeToClose } from "../../components/useEscapeToClose";
 import PeriodCsvImportSheet from "./PeriodCsvImportSheet.jsx";
 import AppleHealthImportSheet from "./AppleHealthImportSheet.jsx";
+import FhirImportSheet from "./FhirImportSheet.jsx";
 
 export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
   const { t } = useTranslation();
@@ -24,6 +25,9 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
   // The sheet disables its own Escape hook while writing; the parent must
   // not dismiss it out from under an in-flight save either.
   const [healthImportBusy, setHealthImportBusy] = useState(false);
+  // Import v2 second slice — real FHIR Bundle JSON.
+  const [showFhirImport, setShowFhirImport] = useState(false);
+  const [fhirImportBusy, setFhirImportBusy] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +45,12 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
   // whichever is open first; only a second Escape leaves Backup & export.
   // A no-op handler while busy keeps this listener registered but makes the
   // topmost-overlay rule hand Escape to nobody; the sheet owns dismissal.
-  useEscapeToClose(showHealthImport ? (healthImportBusy ? () => {} : () => setShowHealthImport(false)) : showPeriodImport ? () => setShowPeriodImport(false) : onClose);
+  useEscapeToClose(
+    showFhirImport ? (fhirImportBusy ? () => {} : () => setShowFhirImport(false))
+      : showHealthImport ? (healthImportBusy ? () => {} : () => setShowHealthImport(false))
+        : showPeriodImport ? () => setShowPeriodImport(false)
+          : onClose
+  );
   // Local copy of SettingsScreen's own SettingsRow — that one is
   // defined inside SettingsScreen's own closure (over its darkMode),
   // not at module scope, so it isn't reachable from this standalone
@@ -142,6 +151,8 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
         {/* Import v2 — real Apple Health XML, measurements only (no invented
             sample format). Previewed before anything is written. */}
         <SettingsRow icon={Upload} label={t("backup.importAppleHealth", "Import measurements from Apple Health…")} onClick={() => { setImportStatus(""); setShowHealthImport(true); }} />
+        {/* Import v2 second slice — real FHIR Bundle JSON, previewed first. */}
+        <SettingsRow icon={Upload} label={t("backup.importFhir", "Import from a FHIR bundle…")} onClick={() => { setImportStatus(""); setShowFhirImport(true); }} />
         {importStatus && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "0 16px 10px", textAlign: "center" }}>{importStatus}</div>}
         {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
             setting belongs next to the other backup controls, not
@@ -160,6 +171,13 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
           onClose={() => setShowHealthImport(false)}
           onBusyChange={setHealthImportBusy}
           onImported={(n) => setImportStatus(t("backup.importHealthDone", "Added {count} measurement(s).").replace("{count}", String(n)))}
+        />
+      )}
+      {showFhirImport && (
+        <FhirImportSheet
+          onClose={() => setShowFhirImport(false)}
+          onBusyChange={setFhirImportBusy}
+          onImported={(c) => setImportStatus(t("backup.importFhirDone", "Added {count} record(s).").replace("{count}", String(c.meds + c.vaccines)))}
         />
       )}
     </div>

@@ -543,3 +543,27 @@ The rails every import sheet follows:
 - Dismissal is disabled while a write is in flight, including the parent
   screen's Escape handler — a completed import must be able to report its
   result before the sheet disappears.
+
+### 19.1 FHIR Bundle import (second slice, 28 Nov 2026)
+
+The second real fixture is the HL7 PHR IG Synthea HIV patient bundle
+(`Cyril535 Koepp521`, 776 entries: 17 MedicationRequest, 9 Immunization). The
+same rails apply, with three clinical-safety additions:
+
+- A bare `doseQuantity.value` is never written as `unitsPerDose`. The real
+  fixture has no dose unit at all, so units per dose stays at the repository
+  default and the original value is kept verbatim in the record's notes.
+- FHIR timestamps are sliced as wall-clock digits before any `Date` parsing;
+  `new Date("1988-12-12")` shifts the day west of UTC.
+- Every imported medication is created with `create(row, { archived: true })`.
+  A follow-up `update()` left a window where an old prescription existed as an
+  active, reminder-generating medication; the archived flag is now written in
+  the same persist. The original FHIR status is preserved in notes so an owner
+  can decide what to reactivate. A count-like unit (tablet/capsule/dose) is
+  the only dose unit safe to carry into `unit`/`unitsPerDose`; a strength such
+  as `500 mg` is kept in notes instead.
+
+`medicationReference` is resolved through the Bundle when a `Medication`
+resource exists and reported as skipped when it does not; dereferencing the
+reference blindly is a TypeError that kills the whole batch. Resource types
+outside the two mapped domains are counted in the preview and left alone.

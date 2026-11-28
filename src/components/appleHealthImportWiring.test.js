@@ -39,6 +39,8 @@ describe("Apple Health import wiring", () => {
     expect(doImport).toMatch(/await saveMeasurementImport\(preview\.rows\)/);
     expect(doImport).toMatch(/if \(!preview\?\.rows\?\.length/s);
     expect(doImport).toMatch(/onBusyChange\?\.\(true\)/);
+    expect(doImport).toMatch(/buildMeasurementPreview\(rawRef\.current, existing\)/);
+    expect(ui).toMatch(/useOverlayBackHandler\(/);
     const screen = read("src/modules/settings/BackupExportScreen.jsx");
     expect(screen).toMatch(/healthImportBusy \? \(\) => \{\}/);
   });

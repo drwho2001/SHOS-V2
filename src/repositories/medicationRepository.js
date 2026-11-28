@@ -358,7 +358,11 @@ export const MedicationRepository = {
   // repository already uses, which also means any FUTURE field added
   // to DEFAULT_MEDICATION is automatically included here — this exact
   // bug class can't recur.
-  async create(data) {
+  // `archived` is an explicit create-time option for importers that bring in
+  // historical prescriptions: writing archived in ONE persist avoids the
+  // window between create() and a follow-up update() where an old regimen
+  // would exist as an active, reminder-generating medication.
+  async create(data, options = {}) {
     await ensureLoaded();
     const newMedication = {
       ...DEFAULT_MEDICATION,
@@ -366,7 +370,7 @@ export const MedicationRepository = {
       isDemo: false,
       id: generateMedicationId(),
       refillRequestedAt: null,
-      isArchived: false,
+      isArchived: options.archived === true,
       sortOrder: medications.length,
     };
     medications = [...medications, newMedication];

@@ -52,7 +52,9 @@ const INLINE_ESCAPE = [
 // confirmation first - that is why their call cannot be asserted the same way.
 // These six have a nested overlay; Escape must close that before the screen.
 const NESTED_ESCAPE = {
-  "BackupExportScreen.jsx": /showPeriodImport \? \(\) => setShowPeriodImport\(false\) : onClose/,
+  // Import v2 adds two nested sheets above the v1 one; the guard tracks the
+  // topmost layer, not a single fixed expression.
+  "BackupExportScreen.jsx": /showFhirImport \? \(fhirImportBusy \? \(\) => \{\}/,
   "DeveloperToolsScreen.jsx": /sampleList \? \(\) => setSampleList\(null\) : onClose/,
   "NotificationsScreen.jsx": /showHistory \? \(\) => setShowHistory\(false\) : onClose/,
   "PeriodCsvImportSheet.jsx": /useEscapeToClose\(onClose, !saving\)/,
